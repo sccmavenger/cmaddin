@@ -4,7 +4,7 @@
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:CloudJourneyAddin.Converters"
         Title="Cloud Journey Progress Dashboard v2.4.0" 
-        MinWidth="1200" MinHeight="700"
+        Height="900" Width="1400"
         WindowStartupLocation="CenterScreen"
         Background="#F5F5F5">
 
@@ -127,23 +127,9 @@
                                 Style="{StaticResource ActionButton}"
                                 Background="#107C10"
                                 Visibility="{Binding UseRealData, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"
-                                ToolTip="Connect to Microsoft Graph (Intune)"
+                                ToolTip="Connect to Microsoft Graph"
                                 Margin="0,0,5,0" Padding="10,5"/>
-                        <Button Content="🖥️ ConfigMgr" 
-                                Command="{Binding ConnectToConfigMgrCommand}"
-                                Style="{StaticResource ActionButton}"
-                                Background="#0078D4"
-                                Visibility="{Binding IsConfigMgrConnected, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"
-                                ToolTip="Connect to ConfigMgr Admin Service"
-                                Margin="0,0,5,0" Padding="10,5"/>
-                        <Button Content="🖥️✓ ConfigMgr" 
-                                Style="{StaticResource ActionButton}"
-                                Background="#107C10"
-                                Visibility="{Binding IsConfigMgrConnected, Converter={StaticResource BoolToVisibilityConverter}}"
-                                ToolTip="ConfigMgr Admin Service Connected"
-                                IsEnabled="False"
-                                Margin="0,0,5,0" Padding="10,5"/>
-                        <Button Content="📊 Diagnostics" 
+                        <Button Content="� Diagnostics" 
                                 Command="{Binding ShowDiagnosticsCommand}"
                                 Style="{StaticResource ActionButton}"
                                 Background="#FF8C00"
@@ -239,6 +225,45 @@
 
                     <!-- Left Column -->
                     <StackPanel Grid.Column="0">
+                        <!-- 1. Overall Migration Status -->
+                        <Border Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <TextBlock Text="📊 Overall Migration Status" Style="{StaticResource SectionTitle}"/>
+                                
+                                <Grid Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Workloads Transitioned" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock Style="{StaticResource MetricValue}">
+                                            <Run Text="{Binding MigrationStatus.WorkloadsTransitioned, Mode=OneWay}"/>
+                                            <Run Text=" of " FontSize="16"/>
+                                            <Run Text="{Binding MigrationStatus.TotalWorkloads, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Completion" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock Text="{Binding MigrationStatus.CompletionPercentage, Mode=OneWay, Converter={StaticResource PercentageConverter}}" 
+                                                   Style="{StaticResource MetricValue}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <ProgressBar Height="20" 
+                                             Value="{Binding MigrationStatus.CompletionPercentage, Mode=OneWay}" 
+                                             Maximum="100"
+                                             Foreground="#0078D4"
+                                             Background="#E0E0E0"
+                                             Margin="0,0,0,10"/>
+
+                                <TextBlock Text="{Binding MigrationStatus.ProjectedFinishDate, StringFormat='Projected finish: {0:MMMM yyyy}'}" 
+                                           FontSize="13" Foreground="#666666"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- 2. Device Enrollment -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>
@@ -623,6 +648,77 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- 5. Workload Trend Tracking (Phase 1 AI) -->
+                        <Border Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <TextBlock Text="📊 Workload Velocity Tracking" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="Historical progress and migration velocity analysis" 
+                                           FontSize="12" Foreground="#666666" Margin="0,0,0,15"/>
+
+                                <!-- Velocity Chart -->
+                                <lvc:CartesianChart Height="300" Series="{Binding WorkloadTrendSeries}" 
+                                                    LegendLocation="Right" Margin="0,0,0,20">
+                                    <lvc:CartesianChart.AxisX>
+                                        <lvc:Axis Labels="{Binding WorkloadTrendLabels}" Title="Date"/>
+                                    </lvc:CartesianChart.AxisX>
+                                    <lvc:CartesianChart.AxisY>
+                                        <lvc:Axis Title="Completion %" MinValue="0" MaxValue="100"/>
+                                    </lvc:CartesianChart.AxisY>
+                                </lvc:CartesianChart>
+
+                                <!-- Velocity Indicators -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Background="#F1F8F4" BorderBrush="#107C10" 
+                                            BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,5,0">
+                                        <StackPanel>
+                                            <TextBlock Text="🚀 Excellent Velocity" FontWeight="SemiBold" 
+                                                       FontSize="12" Foreground="#107C10" Margin="0,0,0,5"/>
+                                            <TextBlock FontSize="11" Foreground="#666">
+                                                <Run Text="{Binding ExcellentVelocityCount}"/>
+                                                <Run Text="workloads"/>
+                                                <LineBreak/>
+                                                <Run Text="&gt;15% per week"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Grid.Column="1" Background="#FFF9E6" BorderBrush="#FDB813" 
+                                            BorderThickness="1" CornerRadius="6" Padding="12" Margin="5,0">
+                                        <StackPanel>
+                                            <TextBlock Text="⚡ Good Velocity" FontWeight="SemiBold" 
+                                                       FontSize="12" Foreground="#FDB813" Margin="0,0,0,5"/>
+                                            <TextBlock FontSize="11" Foreground="#666">
+                                                <Run Text="{Binding GoodVelocityCount}"/>
+                                                <Run Text="workloads"/>
+                                                <LineBreak/>
+                                                <Run Text="10-15% per week"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Grid.Column="2" Background="#FFF4F4" BorderBrush="#D13438" 
+                                            BorderThickness="1" CornerRadius="6" Padding="12" Margin="5,0,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="📉 Stalled" FontWeight="SemiBold" 
+                                                       FontSize="12" Foreground="#D13438" Margin="0,0,0,5"/>
+                                            <TextBlock FontSize="11" Foreground="#666">
+                                                <Run Text="{Binding StalledWorkloadCount}"/>
+                                                <Run Text="workloads"/>
+                                                <LineBreak/>
+                                                <Run Text="&lt;5% per week"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <!-- 6. Application Migration Analysis (Phase 2 Feature) -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>
@@ -800,6 +896,56 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- 7. Remaining Workloads (HIDDEN - Low value for admins) -->
+                        <Border Style="{StaticResource SectionCard}" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="📋 Workload Status" Style="{StaticResource SectionTitle}"/>
+                                
+                                <ItemsControl ItemsSource="{Binding Workloads}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="0,10">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/>
+                                                        <TextBlock Text="{Binding Description}" 
+                                                                   FontSize="12" Foreground="#666666" 
+                                                                   TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+
+                                                    <Border Grid.Column="1" 
+                                                            Background="{Binding Status, Converter={StaticResource WorkloadStatusConverter}}"
+                                                            CornerRadius="12" Padding="10,5" Margin="10,0">
+                                                        <TextBlock Text="{Binding Status}" 
+                                                                   FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                                    </Border>
+
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                        <Button Content="Start" 
+                                                                Command="{Binding DataContext.StartMigrationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding Mode=OneWay}"
+                                                                Style="{StaticResource ActionButton}"
+                                                                Visibility="{Binding Status, Converter={StaticResource WorkloadStatusConverter}, ConverterParameter=NotStarted}"/>
+                                                        <Button Content="Learn More" 
+                                                                Command="{Binding DataContext.LearnMoreCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding LearnMoreUrl}"
+                                                                Style="{StaticResource ActionButton}"
+                                                                Background="#666666"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
                         <!-- 4. Security & Compliance Scorecard -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>
@@ -825,6 +971,56 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 6. ROI & Savings -->
+                        <Border Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="💰 ROI &amp; Savings Projection" Style="{StaticResource SectionTitle}" Margin="0,0,10,0"/>
+                                    <Border Background="#FFA500" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="⚠️ ESTIMATED DATA" FontSize="11" FontWeight="Bold" Foreground="White"
+                                                   ToolTip="These are industry average estimates, not your actual costs"/>
+                                    </Border>
+                                </StackPanel>
+                                
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,15">
+                                        <TextBlock Text="Estimated Annual Savings" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock Text="{Binding ROIData.EstimatedAnnualSavings, Converter={StaticResource CurrencyConverter}}" 
+                                                   Style="{StaticResource MetricValue}" Foreground="#107C10"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,15">
+                                        <TextBlock Text="Infrastructure Cost Reduction" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock Text="{Binding ROIData.InfrastructureCostReduction, Converter={StaticResource CurrencyConverter}}" 
+                                                   Style="{StaticResource MetricValue}" FontSize="20"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+                                        <TextBlock Text="Patch Cycle Reduction" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock Style="{StaticResource MetricValue}" FontSize="20">
+                                            <Run Text="{Binding ROIData.PatchCycleDaysReduced, Mode=OneWay}"/>
+                                            <Run Text=" days" FontSize="14"/>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
+                                        <TextBlock Text="Admin Time Reduction" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock Text="{Binding ROIData.AdminTimeReduction, Converter={StaticResource PercentageConverter}}" 
+                                                   Style="{StaticResource MetricValue}" FontSize="20"/>
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
                         </Border>
 
@@ -882,6 +1078,35 @@
 
                     <!-- Right Column -->
                     <StackPanel Grid.Column="2">
+                        <!-- 5. Peer Benchmarking -->
+                        <Border Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <TextBlock Text="📈 Peer Benchmarking" Style="{StaticResource SectionTitle}"/>
+                                
+                                <TextBlock Text="{Binding PeerBenchmark.OrganizationCategory}" 
+                                           FontSize="11" Foreground="#666666" Margin="0,0,0,10"/>
+
+                                <StackPanel Margin="0,0,0,15">
+                                    <TextBlock Text="Your Progress" Style="{StaticResource MetricLabel}"/>
+                                    <TextBlock Text="{Binding PeerBenchmark.YourProgress, Converter={StaticResource PercentageConverter}}" 
+                                               Style="{StaticResource MetricValue}" FontSize="20"/>
+                                </StackPanel>
+
+                                <TextBlock Text="You are ahead of" FontSize="12" Foreground="#666666"/>
+                                <TextBlock FontSize="32" FontWeight="Bold" Foreground="#107C10" HorizontalAlignment="Center" Margin="0,5">
+                                    <Run Text="{Binding PeerBenchmark.PercentileRank, Mode=OneWay}"/>
+                                    <Run Text="%" FontSize="24"/>
+                                </TextBlock>
+                                <TextBlock Text="of similar organizations" FontSize="12" Foreground="#666666" 
+                                           HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+                                <ProgressBar Height="15" 
+                                             Value="{Binding PeerBenchmark.PercentileRank}" 
+                                             Maximum="100"
+                                             Foreground="#107C10"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- 7. Alerts & Nudges -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>
@@ -1043,6 +1268,41 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- 8. Milestones -->
+                        <Border Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <TextBlock Text="🎯 Recent Milestones" Style="{StaticResource SectionTitle}"/>
+                                
+                                <!-- Empty state when authenticated -->
+                                <Border Background="#F0F9FF" CornerRadius="4" Padding="20" Margin="0,10,0,0"
+                                        Visibility="{Binding Milestones.Count, Converter={StaticResource CountToVisibilityConverter}}">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="🚧 No milestones yet" FontSize="14" FontWeight="SemiBold" Foreground="#666" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Milestones will appear as you progress" FontSize="11" Foreground="#999" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <ItemsControl ItemsSource="{Binding Milestones}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#F0F9FF" CornerRadius="4" Padding="12" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <TextBlock FontSize="20" Text="{Binding Icon}" Margin="0,0,0,5"/>
+                                                    <TextBlock Text="{Binding Title}" 
+                                                               FontWeight="SemiBold" FontSize="13"/>
+                                                    <TextBlock Text="{Binding Description}" 
+                                                               FontSize="11" Foreground="#666666" 
+                                                               TextWrapping="Wrap" Margin="0,3,0,5"/>
+                                                    <TextBlock Text="{Binding AchievedDate, StringFormat='{}{0:MMM d, yyyy}'}" 
+                                                               FontSize="10" Foreground="#999999"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
                         <!-- 10. Engagement Options -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>
@@ -1084,7 +1344,7 @@
                 <TabItem Header="📱 Enrollment">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel>
-                            <!-- AI Status Banner (Azure OpenAI required) -->
+                            <!-- AI Status Banner (shown when fallback to rules) -->
                             <Border Background="#FFF3CD" Padding="15" CornerRadius="4" Margin="0,0,0,15"
                                     Visibility="{Binding IsAIAvailable, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}">
                                 <Grid>
@@ -1093,8 +1353,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="⚠️ AZURE OPENAI REQUIRED" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
-                                        <TextBlock Text="AI-powered enrollment momentum insights require Azure OpenAI configuration. Configure Azure OpenAI to enable this feature." 
+                                        <TextBlock Text="⚠️ AI INSIGHTS UNAVAILABLE" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
+                                        <TextBlock Text="Azure OpenAI is not configured or unreachable. Showing rule-based recommendations instead." 
                                                    FontSize="12" Foreground="#856404" TextWrapping="Wrap" Margin="0,5,0,0"/>
                                     </StackPanel>
                                     <Button Grid.Column="1" Content="🤖 Configure AI" 
@@ -1102,40 +1362,6 @@
                                             Style="{StaticResource ActionButton}"
                                             Background="#FF8C00"
                                             VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
-
-                            <!-- v2.6.0: ENROLLMENT BLOCKERS ALERT BANNER -->
-                            <Border Background="#FFF3CD" BorderBrush="#FF8C00" BorderThickness="2" Padding="15" CornerRadius="4" Margin="0,0,0,15"
-                                    Visibility="{Binding EnrollmentBlockers.TotalBlockedDevices, Converter={StaticResource CountToVisibilityConverter}}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock FontWeight="Bold" FontSize="14" Foreground="#856404">
-                                            <Run Text="⚠️ ENROLLMENT BLOCKERS DETECTED: "/>
-                                            <Run Text="{Binding EnrollmentBlockers.TotalBlockedDevices, Mode=OneWay}"/>
-                                            <Run Text=" devices cannot enroll"/>
-                                        </TextBlock>
-                                        <ItemsControl ItemsSource="{Binding EnrollmentBlockers.BlockerCategories}" Margin="0,8,0,0">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock FontSize="12" Foreground="#856404" Margin="0,2,0,0">
-                                                        <Run Text="• "/>
-                                                        <Run Text="{Binding BlockerType}" FontWeight="SemiBold"/>
-                                                        <Run Text=": "/>
-                                                        <Run Text="{Binding DeviceCount}"/>
-                                                        <Run Text=" devices - "/>
-                                                        <Run Text="{Binding Description}"/>
-                                                    </TextBlock>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="32" FontWeight="Bold" Foreground="#FF8C00"
-                                               Text="{Binding EnrollmentBlockers.TotalBlockedDevices, Mode=OneWay}" Margin="20,0,0,0"/>
                                 </Grid>
                             </Border>
 
@@ -1414,176 +1640,139 @@
                                 </Grid>
                             </Border>
 
-                            <!-- v2.6.0: DEVICE READINESS BREAKDOWN -->
-                            <Border Style="{StaticResource SectionCard}" Visibility="{Binding DeviceReadiness, Converter={StaticResource NullToVisibilityConverter}}">
-                                <StackPanel>
-                                    <TextBlock Text="🎯 Device Readiness Breakdown" Style="{StaticResource SectionTitle}"/>
-                                    <TextBlock Text="ConfigMgr client health analysis - prioritize high-success devices for faster enrollment" 
-                                               FontSize="12" Foreground="#666666" Margin="0,0,0,15"/>
-
-                                    <!-- Three Category Cards -->
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="15"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="15"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <!-- HIGH SUCCESS CARD -->
-                                        <Border Grid.Column="0" Background="#E8F5E9" BorderBrush="#107C10" BorderThickness="2" 
-                                                CornerRadius="8" Padding="15">
-                                            <StackPanel>
-                                                <TextBlock Text="✅ HIGH SUCCESS" FontSize="13" FontWeight="Bold" Foreground="#107C10" Margin="0,0,0,10"/>
-                                                
-                                                <TextBlock FontSize="32" FontWeight="Bold" Foreground="#107C10" Margin="0,0,0,5"
-                                                           Text="{Binding DeviceReadiness.HighSuccessDevices, Mode=OneWay}"/>
-                                                <TextBlock Text="devices ready" FontSize="11" Foreground="#666" Margin="0,0,0,10"/>
-                                                
-                                                <Border Height="1" Background="#CCCCCC" Margin="0,5,0,10"/>
-                                                
-                                                <StackPanel>
-                                                    <Grid Margin="0,0,0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Avg Health:" FontSize="11" Foreground="#666"/>
-                                                        <TextBlock Grid.Column="1" FontSize="11" FontWeight="SemiBold" Foreground="#107C10">
-                                                            <Run Text="{Binding DeviceReadiness.HighSuccessHealthAvg, StringFormat='{}{0:F0}%', Mode=OneWay}"/>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                    <Grid Margin="0,0,0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Success Rate:" FontSize="11" Foreground="#666"/>
-                                                        <TextBlock Grid.Column="1" FontSize="11" FontWeight="SemiBold" Foreground="#107C10">
-                                                            <Run Text="{Binding DeviceReadiness.HighSuccessPredictedRate, StringFormat='{}{0:F0}%', Mode=OneWay}"/>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Max Velocity:" FontSize="11" Foreground="#666"/>
-                                                        <TextBlock Grid.Column="1" FontSize="11" FontWeight="SemiBold" Foreground="#107C10">
-                                                            <Run Text="{Binding DeviceReadiness.HighSuccessRecommendedVelocity, Mode=OneWay}"/>
-                                                            <Run Text="/week"/>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                </StackPanel>
-                                                
-                                                <TextBlock Text="💚 Enroll these first" FontSize="11" FontWeight="SemiBold" Foreground="#107C10" 
-                                                           Margin="0,10,0,0" TextAlignment="Center"/>
-                                            </StackPanel>
-                                        </Border>
-
-                                        <!-- MODERATE SUCCESS CARD -->
-                                        <Border Grid.Column="2" Background="#E3F2FD" BorderBrush="#0078D4" BorderThickness="2" 
-                                                CornerRadius="8" Padding="15">
-                                            <StackPanel>
-                                                <TextBlock Text="⚖️ MODERATE SUCCESS" FontSize="13" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,10"/>
-                                                
-                                                <TextBlock FontSize="32" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,5"
-                                                           Text="{Binding DeviceReadiness.ModerateSuccessDevices, Mode=OneWay}"/>
-                                                <TextBlock Text="devices ready" FontSize="11" Foreground="#666" Margin="0,0,0,10"/>
-                                                
-                                                <Border Height="1" Background="#CCCCCC" Margin="0,5,0,10"/>
-                                                
-                                                <StackPanel>
-                                                    <Grid Margin="0,0,0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Avg Health:" FontSize="11" Foreground="#666"/>
-                                                        <TextBlock Grid.Column="1" FontSize="11" FontWeight="SemiBold" Foreground="#0078D4">
-                                                            <Run Text="{Binding DeviceReadiness.ModerateSuccessHealthAvg, StringFormat='{}{0:F0}%', Mode=OneWay}"/>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                    <Grid Margin="0,0,0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Success Rate:" FontSize="11" Foreground="#666"/>
-                                                        <TextBlock Grid.Column="1" FontSize="11" FontWeight="SemiBold" Foreground="#0078D4">
-                                                            <Run Text="{Binding DeviceReadiness.ModerateSuccessPredictedRate, StringFormat='{}{0:F0}%', Mode=OneWay}"/>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Max Velocity:" FontSize="11" Foreground="#666"/>
-                                                        <TextBlock Grid.Column="1" FontSize="11" FontWeight="SemiBold" Foreground="#0078D4">
-                                                            <Run Text="{Binding DeviceReadiness.ModerateSuccessRecommendedVelocity, Mode=OneWay}"/>
-                                                            <Run Text="/week"/>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                </StackPanel>
-                                                
-                                                <TextBlock Text="💙 Enroll after high-success" FontSize="11" FontWeight="SemiBold" Foreground="#0078D4" 
-                                                           Margin="0,10,0,0" TextAlignment="Center"/>
-                                            </StackPanel>
-                                        </Border>
-
-                                        <!-- HIGH RISK CARD -->
-                                        <Border Grid.Column="4" Background="#FFEBEE" BorderBrush="#D13438" BorderThickness="2" 
-                                                CornerRadius="8" Padding="15">
-                                            <StackPanel>
-                                                <TextBlock Text="🔴 HIGH RISK" FontSize="13" FontWeight="Bold" Foreground="#D13438" Margin="0,0,0,10"/>
-                                                
-                                                <TextBlock FontSize="32" FontWeight="Bold" Foreground="#D13438" Margin="0,0,0,5"
-                                                           Text="{Binding DeviceReadiness.HighRiskDevices, Mode=OneWay}"/>
-                                                <TextBlock Text="devices" FontSize="11" Foreground="#666" Margin="0,0,0,10"/>
-                                                
-                                                <Border Height="1" Background="#CCCCCC" Margin="0,5,0,10"/>
-                                                
-                                                <StackPanel>
-                                                    <Grid Margin="0,0,0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Avg Health:" FontSize="11" Foreground="#666"/>
-                                                        <TextBlock Grid.Column="1" FontSize="11" FontWeight="SemiBold" Foreground="#D13438">
-                                                            <Run Text="{Binding DeviceReadiness.HighRiskHealthAvg, StringFormat='{}{0:F0}%', Mode=OneWay}"/>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                    <Grid Margin="0,0,0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Success Rate:" FontSize="11" Foreground="#666"/>
-                                                        <TextBlock Grid.Column="1" FontSize="11" FontWeight="SemiBold" Foreground="#D13438">
-                                                            <Run Text="{Binding DeviceReadiness.HighRiskPredictedRate, StringFormat='{}{0:F0}%', Mode=OneWay}"/>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                </StackPanel>
-                                                
-                                                <TextBlock Text="{Binding DeviceReadiness.HighRiskRecommendation, Mode=OneWay}" 
-                                                           FontSize="10" Foreground="#D13438" TextWrapping="Wrap"
-                                                           Margin="0,10,0,0" TextAlignment="Center" FontStyle="Italic"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- SMART ENROLLMENT MANAGEMENT (Agent Controls) -->
+                            <!-- SMART ENROLLMENT MANAGEMENT (Merged Device Readiness + Agent) -->
                             <Border Style="{StaticResource SectionCard}">
                                 <StackPanel>
                                     <!-- Main Header -->
-                                    <TextBlock Text="🤖 Smart Enrollment Management" Style="{StaticResource SectionTitle}"/>
-                                    <TextBlock Text="Optional autonomous enrollment agent with supervised mode" 
+                                    <TextBlock Text="🎯 Smart Enrollment Management" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="AI-powered readiness scoring with optional autonomous enrollment agent" 
                                                FontSize="12" Foreground="#666666" Margin="0,0,0,15"/>
+
+                                    <!-- ZONE 1: READINESS DASHBOARD -->
+                                    <Border Background="#F8F9FA" Padding="15" CornerRadius="6" Margin="0,0,0,15">
+                                        <StackPanel>
+                                            <TextBlock Text="📊 Device Readiness Overview" FontSize="13" FontWeight="Bold" Margin="0,0,0,12"/>
+                                            
+                                            <!-- Readiness Summary Grid -->
+                                            <Grid Margin="0,0,0,15">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="Excellent" Style="{StaticResource MetricLabel}"/>
+                                                    <TextBlock FontSize="20" FontWeight="Bold" Foreground="#107C10">
+                                                        <Run Text="{Binding ExcellentReadinessCount}"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="10" Foreground="#999">
+                                                        <Run Text="80+ score"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="Good" Style="{StaticResource MetricLabel}"/>
+                                                    <TextBlock FontSize="20" FontWeight="Bold" Foreground="#0078D4">
+                                                        <Run Text="{Binding GoodReadinessCount}"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="10" Foreground="#999">
+                                                        <Run Text="60-79 score"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="Fair" Style="{StaticResource MetricLabel}"/>
+                                                    <TextBlock FontSize="20" FontWeight="Bold" Foreground="#FDB813">
+                                                        <Run Text="{Binding FairReadinessCount}"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="10" Foreground="#999">
+                                                        <Run Text="40-59 score"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="3">
+                                                    <TextBlock Text="Poor" Style="{StaticResource MetricLabel}"/>
+                                                    <TextBlock FontSize="20" FontWeight="Bold" Foreground="#D13438">
+                                                        <Run Text="{Binding PoorReadinessCount}"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="10" Foreground="#999">
+                                                        <Run Text="&lt;40 score"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <!-- Ready for Enrollment Callout -->
+                                            <Border Background="#E3F2FD" BorderBrush="#0078D4" BorderThickness="2" 
+                                                    CornerRadius="6" Padding="15" Margin="0,0,0,15">
+                                                <StackPanel>
+                                                    <TextBlock FontWeight="Bold" FontSize="15" Margin="0,0,0,8">
+                                                        <Run Text="✅ READY FOR ENROLLMENT: "/>
+                                                        <Run Text="{Binding NextBatchSize, Mode=OneWay}" Foreground="#107C10"/>
+                                                        <Run Text=" devices"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="12" Foreground="#333" TextWrapping="Wrap" Margin="0,0,0,10">
+                                                        <Run Text="• "/>
+                                                        <Run Text="{Binding ExcellentReadinessCount}"/>
+                                                        <Run Text=" Excellent (80+ score) - Immediate enrollment recommended"/>
+                                                        <LineBreak/>
+                                                        <Run Text="• "/>
+                                                        <Run Text="{Binding GoodReadinessCount}"/>
+                                                        <Run Text=" Good (60-79 score) - Low risk"/>
+                                                    </TextBlock>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Button Content="📋 Export Device List"
+                                                                Command="{Binding ExportDeviceListCommand}"
+                                                                Style="{StaticResource ActionButton}"
+                                                                Background="#0078D4" Foreground="White"
+                                                                FontSize="12" Padding="12,6"
+                                                                HorizontalAlignment="Left"/>
+                                                        <TextBlock Text="💡 Want automated enrollment? Enable Agent below" 
+                                                                   FontSize="11" FontStyle="Italic" Foreground="#0078D4"
+                                                                   VerticalAlignment="Center" Margin="15,0,0,0"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Barriers and Risks -->
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Grid.Column="0" Background="#FFF9E6" BorderBrush="#FDB813" 
+                                                        BorderThickness="1" CornerRadius="6" Padding="12">
+                                                    <StackPanel>
+                                                        <TextBlock FontWeight="SemiBold" FontSize="12" Margin="0,0,0,8">
+                                                            <Run Text="⚠️ Needs Preparation: "/>
+                                                            <Run Text="{Binding DevicesNeedingPreparation}"/>
+                                                            <Run Text=" devices"/>
+                                                        </TextBlock>
+                                                        <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap">
+                                                            Fair/Poor readiness scores. Review apps, policies, and compliance before enrolling.
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <Border Grid.Column="2" Background="#FFEBEE" BorderBrush="#D13438" 
+                                                        BorderThickness="1" CornerRadius="6" Padding="12">
+                                                    <StackPanel>
+                                                        <TextBlock FontWeight="SemiBold" FontSize="12" Margin="0,0,0,8">
+                                                            <Run Text="🔴 High Risk: "/>
+                                                            <Run Text="{Binding HighRiskDeviceCount}"/>
+                                                            <Run Text=" devices"/>
+                                                        </TextBlock>
+                                                        <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap">
+                                                            Critical app or policy conflicts. Address blockers before enrollment.
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
 
                                     <!-- ZONE 2: AUTONOMOUS AGENT -->
                                     <Grid Margin="0,0,0,15">
@@ -1896,8 +2085,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="⚠️ AZURE OPENAI REQUIRED" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
-                                        <TextBlock Text="AI-powered workload recommendations require Azure OpenAI configuration. Configure Azure OpenAI to enable this feature." 
+                                        <TextBlock Text="⚠️ AI INSIGHTS UNAVAILABLE" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
+                                        <TextBlock Text="Azure OpenAI is not configured or unreachable. Showing rule-based recommendations instead." 
                                                    FontSize="12" Foreground="#856404" TextWrapping="Wrap" Margin="0,5,0,0"/>
                                     </StackPanel>
                                     <Button Grid.Column="1" Content="🤖 Configure AI" 
@@ -2033,127 +2222,6 @@
                                     </Border>
                                 </StackPanel>
                             </Border>
-
-                            <!-- 5. Workload Velocity Tracking (Moved from Overview) -->
-                            <Border Style="{StaticResource SectionCard}">
-                                <StackPanel>
-                                    <TextBlock Text="📊 Workload Velocity Tracking" Style="{StaticResource SectionTitle}"/>
-                                    <TextBlock Text="Historical progress and migration velocity analysis" 
-                                               FontSize="12" Foreground="#666666" Margin="0,0,0,15"/>
-
-                                    <!-- Velocity Chart -->
-                                    <lvc:CartesianChart Height="300" Series="{Binding WorkloadTrendSeries}" 
-                                                        LegendLocation="Right" Margin="0,0,0,20">
-                                        <lvc:CartesianChart.AxisX>
-                                            <lvc:Axis Labels="{Binding WorkloadTrendLabels}" Title="Date"/>
-                                        </lvc:CartesianChart.AxisX>
-                                        <lvc:CartesianChart.AxisY>
-                                            <lvc:Axis Title="Completion %" MinValue="0" MaxValue="100"/>
-                                        </lvc:CartesianChart.AxisY>
-                                    </lvc:CartesianChart>
-
-                                    <!-- Velocity Indicators -->
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <Border Grid.Column="0" Background="#F1F8F4" BorderBrush="#107C10" 
-                                                BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,5,0">
-                                            <StackPanel>
-                                                <TextBlock Text="🚀 Excellent Velocity" FontWeight="SemiBold" 
-                                                           FontSize="12" Foreground="#107C10" Margin="0,0,0,5"/>
-                                                <TextBlock FontSize="11" Foreground="#666">
-                                                    <Run Text="{Binding ExcellentVelocityCount}"/>
-                                                    <Run Text="workloads"/>
-                                                    <LineBreak/>
-                                                    <Run Text="&gt;15% per week"/>
-                                                </TextBlock>
-                                            </StackPanel>
-                                        </Border>
-
-                                        <Border Grid.Column="1" Background="#FFF9E6" BorderBrush="#FDB813" 
-                                                BorderThickness="1" CornerRadius="6" Padding="12" Margin="5,0">
-                                            <StackPanel>
-                                                <TextBlock Text="⚡ Good Velocity" FontWeight="SemiBold" 
-                                                           FontSize="12" Foreground="#FDB813" Margin="0,0,0,5"/>
-                                                <TextBlock FontSize="11" Foreground="#666">
-                                                    <Run Text="{Binding GoodVelocityCount}"/>
-                                                    <Run Text="workloads"/>
-                                                    <LineBreak/>
-                                                    <Run Text="10-15% per week"/>
-                                                </TextBlock>
-                                            </StackPanel>
-                                        </Border>
-
-                                        <Border Grid.Column="2" Background="#FFF4F4" BorderBrush="#D13438" 
-                                                BorderThickness="1" CornerRadius="6" Padding="12" Margin="5,0,0,0">
-                                            <StackPanel>
-                                                <TextBlock Text="📉 Stalled" FontWeight="SemiBold" 
-                                                           FontSize="12" Foreground="#D13438" Margin="0,0,0,5"/>
-                                                <TextBlock FontSize="11" Foreground="#666">
-                                                    <Run Text="{Binding StalledWorkloadCount}"/>
-                                                    <Run Text="workloads"/>
-                                                    <LineBreak/>
-                                                    <Run Text="&lt;5% per week"/>
-                                                </TextBlock>
-                                            </StackPanel>
-                                        </Border>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- 7. Workload Status (Moved from Overview) -->
-                            <Border Style="{StaticResource SectionCard}">
-                                <StackPanel>
-                                    <TextBlock Text="📋 Workload Status" Style="{StaticResource SectionTitle}"/>
-                                    
-                                    <ItemsControl ItemsSource="{Binding Workloads}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="0,10">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-
-                                                        <StackPanel Grid.Column="0">
-                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/>
-                                                            <TextBlock Text="{Binding Description}" 
-                                                                       FontSize="12" Foreground="#666666" 
-                                                                       TextWrapping="Wrap" Margin="0,2,0,0"/>
-                                                        </StackPanel>
-
-                                                        <Border Grid.Column="1" 
-                                                                Background="{Binding Status, Converter={StaticResource WorkloadStatusConverter}}"
-                                                                CornerRadius="12" Padding="10,5" Margin="10,0">
-                                                            <TextBlock Text="{Binding Status}" 
-                                                                       FontSize="11" Foreground="White" FontWeight="SemiBold"/>
-                                                        </Border>
-
-                                                        <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                                            <Button Content="Start" 
-                                                                    Command="{Binding DataContext.StartMigrationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="{Binding Mode=OneWay}"
-                                                                    Style="{StaticResource ActionButton}"
-                                                                    Visibility="{Binding Status, Converter={StaticResource WorkloadStatusConverter}, ConverterParameter=NotStarted}"/>
-                                                            <Button Content="Learn More" 
-                                                                    Command="{Binding DataContext.LearnMoreCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="{Binding LearnMoreUrl}"
-                                                                    Style="{StaticResource ActionButton}"
-                                                                    Background="#666666"/>
-                                                        </StackPanel>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -2171,8 +2239,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="⚠️ AZURE OPENAI REQUIRED" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
-                                        <TextBlock Text="AI-powered application recommendations require Azure OpenAI configuration. Configure Azure OpenAI to enable this feature." 
+                                        <TextBlock Text="⚠️ AI INSIGHTS UNAVAILABLE" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
+                                        <TextBlock Text="Azure OpenAI is not configured or unreachable. Showing rule-based recommendations instead." 
                                                    FontSize="12" Foreground="#856404" TextWrapping="Wrap" Margin="0,5,0,0"/>
                                     </StackPanel>
                                     <Button Grid.Column="1" Content="🤖 Configure AI" 
@@ -2394,8 +2462,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="⚠️ AZURE OPENAI REQUIRED" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
-                                        <TextBlock Text="AI-powered executive summary requires Azure OpenAI configuration. Configure Azure OpenAI to enable this feature." 
+                                        <TextBlock Text="⚠️ AI INSIGHTS UNAVAILABLE" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
+                                        <TextBlock Text="Azure OpenAI is not configured or unreachable. Showing rule-based recommendations instead." 
                                                    FontSize="12" Foreground="#856404" TextWrapping="Wrap" Margin="0,5,0,0"/>
                                     </StackPanel>
                                     <Button Grid.Column="1" Content="🤖 Configure AI" 
@@ -2515,159 +2583,6 @@
                                                    Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
                                         <TextBlock Text="{Binding ExecutiveSummary.NextCriticalAction}" 
                                                    FontSize="14" FontWeight="Bold" Foreground="#0078D4" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- 1. Overall Migration Status (Moved from Overview) -->
-                                <Border Style="{StaticResource SectionCard}">
-                                    <StackPanel>
-                                        <TextBlock Text="📊 Overall Migration Status" Style="{StaticResource SectionTitle}"/>
-                                        
-                                        <Grid Margin="0,0,0,15">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            
-                                            <StackPanel Grid.Column="0">
-                                                <TextBlock Text="Workloads Transitioned" Style="{StaticResource MetricLabel}"/>
-                                                <TextBlock Style="{StaticResource MetricValue}">
-                                                    <Run Text="{Binding MigrationStatus.WorkloadsTransitioned, Mode=OneWay}"/>
-                                                    <Run Text=" of " FontSize="16"/>
-                                                    <Run Text="{Binding MigrationStatus.TotalWorkloads, Mode=OneWay}"/>
-                                                </TextBlock>
-                                            </StackPanel>
-
-                                            <StackPanel Grid.Column="1">
-                                                <TextBlock Text="Completion" Style="{StaticResource MetricLabel}"/>
-                                                <TextBlock Text="{Binding MigrationStatus.CompletionPercentage, Mode=OneWay, Converter={StaticResource PercentageConverter}}" 
-                                                           Style="{StaticResource MetricValue}"/>
-                                            </StackPanel>
-                                        </Grid>
-
-                                        <ProgressBar Height="20" 
-                                                     Value="{Binding MigrationStatus.CompletionPercentage, Mode=OneWay}" 
-                                                     Maximum="100"
-                                                     Foreground="#0078D4"
-                                                     Background="#E0E0E0"
-                                                     Margin="0,0,0,10"/>
-
-                                        <TextBlock Text="{Binding MigrationStatus.ProjectedFinishDate, StringFormat='Projected finish: {0:MMMM yyyy}'}" 
-                                                   FontSize="13" Foreground="#666666"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- 5. Peer Benchmarking (Moved from Overview) -->
-                                <Border Style="{StaticResource SectionCard}">
-                                    <StackPanel>
-                                        <TextBlock Text="📈 Peer Benchmarking" Style="{StaticResource SectionTitle}"/>
-                                        
-                                        <TextBlock Text="{Binding PeerBenchmark.OrganizationCategory}" 
-                                                   FontSize="11" Foreground="#666666" Margin="0,0,0,10"/>
-
-                                        <StackPanel Margin="0,0,0,15">
-                                            <TextBlock Text="Your Progress" Style="{StaticResource MetricLabel}"/>
-                                            <TextBlock Text="{Binding PeerBenchmark.YourProgress, Converter={StaticResource PercentageConverter}}" 
-                                                       Style="{StaticResource MetricValue}" FontSize="20"/>
-                                        </StackPanel>
-
-                                        <TextBlock Text="You are ahead of" FontSize="12" Foreground="#666666"/>
-                                        <TextBlock FontSize="32" FontWeight="Bold" Foreground="#107C10" HorizontalAlignment="Center" Margin="0,5">
-                                            <Run Text="{Binding PeerBenchmark.PercentileRank, Mode=OneWay}"/>
-                                            <Run Text="%" FontSize="24"/>
-                                        </TextBlock>
-                                        <TextBlock Text="of similar organizations" FontSize="12" Foreground="#666666" 
-                                                   HorizontalAlignment="Center" Margin="0,0,0,10"/>
-
-                                        <ProgressBar Height="15" 
-                                                     Value="{Binding PeerBenchmark.PercentileRank}" 
-                                                     Maximum="100"
-                                                     Foreground="#107C10"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- 6. ROI & Savings (Moved from Overview) -->
-                                <Border Style="{StaticResource SectionCard}">
-                                    <StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="💰 ROI &amp; Savings Projection" Style="{StaticResource SectionTitle}" Margin="0,0,10,0"/>
-                                            <Border Background="#FFA500" CornerRadius="4" Padding="6,2">
-                                                <TextBlock Text="⚠️ ESTIMATED DATA" FontSize="11" FontWeight="Bold" Foreground="White"
-                                                           ToolTip="These are industry average estimates, not your actual costs"/>
-                                            </Border>
-                                        </StackPanel>
-                                        
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-
-                                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,15">
-                                                <TextBlock Text="Estimated Annual Savings" Style="{StaticResource MetricLabel}"/>
-                                                <TextBlock Text="{Binding ROIData.EstimatedAnnualSavings, Converter={StaticResource CurrencyConverter}}" 
-                                                           Style="{StaticResource MetricValue}" Foreground="#107C10"/>
-                                            </StackPanel>
-
-                                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,15">
-                                                <TextBlock Text="Infrastructure Cost Reduction" Style="{StaticResource MetricLabel}"/>
-                                                <TextBlock Text="{Binding ROIData.InfrastructureCostReduction, Converter={StaticResource CurrencyConverter}}" 
-                                                           Style="{StaticResource MetricValue}" FontSize="20"/>
-                                            </StackPanel>
-
-                                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
-                                                <TextBlock Text="Patch Cycle Reduction" Style="{StaticResource MetricLabel}"/>
-                                                <TextBlock Style="{StaticResource MetricValue}" FontSize="20">
-                                                    <Run Text="{Binding ROIData.PatchCycleDaysReduced, Mode=OneWay}"/>
-                                                    <Run Text=" days" FontSize="14"/>
-                                                </TextBlock>
-                                            </StackPanel>
-
-                                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
-                                                <TextBlock Text="Admin Time Reduction" Style="{StaticResource MetricLabel}"/>
-                                                <TextBlock Text="{Binding ROIData.AdminTimeReduction, Converter={StaticResource PercentageConverter}}" 
-                                                           Style="{StaticResource MetricValue}" FontSize="20"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- 8. Recent Milestones (Moved from Overview) -->
-                                <Border Style="{StaticResource SectionCard}">
-                                    <StackPanel>
-                                        <TextBlock Text="🎯 Recent Milestones" Style="{StaticResource SectionTitle}"/>
-                                        
-                                        <!-- Empty state when authenticated -->
-                                        <Border Background="#F0F9FF" CornerRadius="4" Padding="20" Margin="0,10,0,0"
-                                                Visibility="{Binding Milestones.Count, Converter={StaticResource CountToVisibilityConverter}}">
-                                            <StackPanel HorizontalAlignment="Center">
-                                                <TextBlock Text="🚧 No milestones yet" FontSize="14" FontWeight="SemiBold" Foreground="#666" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="Milestones will appear as you progress" FontSize="11" Foreground="#999" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                                            </StackPanel>
-                                        </Border>
-                                        
-                                        <ItemsControl ItemsSource="{Binding Milestones}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Background="#F0F9FF" CornerRadius="4" Padding="12" Margin="0,0,0,10">
-                                                        <StackPanel>
-                                                            <TextBlock FontSize="20" Text="{Binding Icon}" Margin="0,0,0,5"/>
-                                                            <TextBlock Text="{Binding Title}" 
-                                                                       FontWeight="SemiBold" FontSize="13"/>
-                                                            <TextBlock Text="{Binding Description}" 
-                                                                       FontSize="11" Foreground="#666666" 
-                                                                       TextWrapping="Wrap" Margin="0,3,0,5"/>
-                                                            <TextBlock Text="{Binding AchievedDate, StringFormat='{}{0:MMM d, yyyy}'}" 
-                                                                       FontSize="10" Foreground="#999999"/>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

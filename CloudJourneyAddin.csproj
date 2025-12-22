@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <AssemblyName>CloudJourneyAddin</AssemblyName>
     <!-- Version Information -->
-    <Version>2.4.0</Version>
-    <AssemblyVersion>2.4.0.0</AssemblyVersion>
-    <FileVersion>2.4.0.0</FileVersion>
+    <Version>2.4.1</Version>
+    <AssemblyVersion>2.4.1.0</AssemblyVersion>
+    <FileVersion>2.4.1.0</FileVersion>
     <Product>Cloud Journey Progress Dashboard</Product>
     <Company>Microsoft Configuration Manager</Company>
     <Copyright>Copyright © 2025</Copyright>
