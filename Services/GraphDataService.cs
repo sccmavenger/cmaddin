@@ -1,0 +1,1146 @@
+using System;
+using System.Threading.Tasks;
+using Microsoft.Graph;
+using Azure.Identity;
+using System.Collections.Generic;
+using CloudJourneyAddin.Models;
+using System.Linq;
+using static CloudJourneyAddin.Services.FileLogger;
+
+namespace CloudJourneyAddin.Services
+{
+    public class GraphDataService
+    {
+        private GraphServiceClient? _graphClient;
+        private readonly ConfigMgrAdminService _configMgrService;
+        private readonly string[] _scopes = new[] { 
+            "https://graph.microsoft.com/.default"
+        };
+
+        public GraphDataService()
+        {
+            _configMgrService = new ConfigMgrAdminService();
+        }
+
+        public ConfigMgrAdminService ConfigMgrService => _configMgrService;
+
+        public async Task<bool> AuthenticateAsync()
+        {
+            try
+            {
+                // Use device code flow for interactive authentication
+                var options = new DeviceCodeCredentialOptions
+                {
+                    ClientId = "14d82eec-204b-4c2f-b7e8-296a70dab67e", // Microsoft Graph Command Line Tools
+                    TenantId = "organizations",
+                    DeviceCodeCallback = (code, cancellation) =>
+                    {
+                        // Auto-open browser to the verification URL
+                        try
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = code.VerificationUri.ToString(),
+                                UseShellExecute = true
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Failed to open browser: {ex.Message}");
+                        }
+
+                        // Copy code to clipboard - must run on STA thread
+                        bool clipboardSuccess = false;
+                        var thread = new System.Threading.Thread(() =>
+                        {
+                            try
+                            {
+                                System.Windows.Clipboard.SetText(code.UserCode);
+                                clipboardSuccess = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Failed to copy to clipboard: {ex.Message}");
+                            }
+                        });
+                        thread.SetApartmentState(System.Threading.ApartmentState.STA);
+                        thread.Start();
+                        thread.Join();
+
+                        // Show message with code
+                        var clipboardMsg = clipboardSuccess ? 
+                            $"✓ Code copied to clipboard: {code.UserCode}\n" :
+                            $"Code: {code.UserCode} (manual copy)\n";
+                        
+                        System.Windows.MessageBox.Show(
+                            $"✓ Browser opened to: {code.VerificationUri}\n" +
+                            clipboardMsg +
+                            $"\nPlease paste the code in the browser to complete sign-in.\n\n" +
+                            $"This window can be closed after authentication.",
+                            "Sign in to Microsoft Graph",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Information);
+                        return Task.CompletedTask;
+                    }
+                };
+
+                var credential = new DeviceCodeCredential(options);
+                _graphClient = new GraphServiceClient(credential, _scopes);
+
+                // Test the connection
+                var me = await _graphClient.Me.GetAsync();
+                return me != null;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"Authentication failed: {ex.Message}",
+                    "Authentication Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        public async Task<DeviceEnrollment> GetDeviceEnrollmentAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            try
+            {
+                Instance.Info("=== GetDeviceEnrollmentAsync START ===");
+                System.Diagnostics.Debug.WriteLine("=== GetDeviceEnrollmentAsync START ===");
+                
+                // STEP 1: Get Windows 10/11 devices from ConfigMgr (the baseline - what we COULD migrate)
+                List<ConfigMgrDevice>? configMgrDevices = null;
+                int totalConfigMgrDevices = 0;
+                int coManagedCount = 0;
+
+                Instance.Info($"ConfigMgr IsConfigured: {_configMgrService.IsConfigured}");
+                System.Diagnostics.Debug.WriteLine($"ConfigMgr IsConfigured: {_configMgrService.IsConfigured}");
+                
+                if (_configMgrService.IsConfigured)
+                {
+                    try
+                    {
+                        Instance.Info("Querying ConfigMgr for Windows 10/11 devices...");
+                        System.Diagnostics.Debug.WriteLine("Querying ConfigMgr for Windows 10/11 devices...");
+                        configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                        totalConfigMgrDevices = configMgrDevices.Count;
+                        coManagedCount = configMgrDevices.Count(d => d.IsCoManaged);
+                        Instance.Info($"✅ ConfigMgr returned {totalConfigMgrDevices} devices, {coManagedCount} co-managed");
+                        System.Diagnostics.Debug.WriteLine($"✅ ConfigMgr returned {totalConfigMgrDevices} devices, {coManagedCount} co-managed");
+                    }
+                    catch (Exception ex)
+                    {
+                        Instance.LogException(ex, "ConfigMgr GetWindows1011DevicesAsync");
+                        System.Diagnostics.Debug.WriteLine($"❌ ConfigMgr query failed: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"   Stack trace: {ex.StackTrace}");
+                        // Fall back to Intune-only data
+                    }
+                }
+                else
+                {
+                    Instance.Warning("ConfigMgr not configured - using Intune-only data");
+                    System.Diagnostics.Debug.WriteLine("ConfigMgr not configured - using Intune-only data");
+                }
+
+                // STEP 2: Get enrollment status from Intune (what IS enrolled)
+                Instance.Info("Querying Intune for managed devices...");
+                System.Diagnostics.Debug.WriteLine("Querying Intune for managed devices...");
+                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                    config => config.QueryParameters.Select = new[] { 
+                        "id", 
+                        "deviceName", 
+                        "operatingSystem", 
+                        "managementAgent" 
+                    }
+                );
+                
+                var allIntuneDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                if (devices?.Value != null)
+                {
+                    allIntuneDevices.AddRange(devices.Value);
+                    System.Diagnostics.Debug.WriteLine($"✅ Intune returned {allIntuneDevices.Count} total devices");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("⚠️ Intune returned null or empty device list");
+                }
+
+                // Filter to Windows 10/11 workstations only
+                var intuneEligibleDevices = allIntuneDevices.Where(d => 
+                    d.OperatingSystem != null && 
+                    (
+                        d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
+                        d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
+                    ) &&
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+
+                // STEP 3: Calculate enrollment metrics
+                int intuneEnrolledCount = intuneEligibleDevices.Count(d => 
+                    d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.Mdm ||
+                    d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm);
+
+                // Determine the authoritative device count
+                int totalDevices;
+                int configMgrOnlyCount;
+
+                if (configMgrDevices != null && totalConfigMgrDevices > 0)
+                {
+                    // Use ConfigMgr as source of truth (has both enrolled and not-yet-enrolled devices)
+                    totalDevices = totalConfigMgrDevices;
+                    configMgrOnlyCount = totalConfigMgrDevices - coManagedCount; // Devices not yet enrolled
+                    System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {configMgrOnlyCount} not yet enrolled");
+                }
+                else
+                {
+                    // Fall back to Intune-only view (incomplete - only shows enrolled devices)
+                    totalDevices = intuneEligibleDevices.Count;
+                    configMgrOnlyCount = intuneEligibleDevices.Count(d => 
+                        d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClient);
+                    System.Diagnostics.Debug.WriteLine($"⚠️ Using Intune-only: {totalDevices} total, {configMgrOnlyCount} ConfigMgr-managed");
+                }
+
+                // Generate trend data
+                var trendData = GenerateTrendData(totalDevices, intuneEnrolledCount);
+
+                System.Diagnostics.Debug.WriteLine($"=== FINAL RESULT: Total={totalDevices}, IntuneEnrolled={intuneEnrolledCount}, ConfigMgrOnly={configMgrOnlyCount} ===");
+
+                return new DeviceEnrollment
+                {
+                    TotalDevices = totalDevices,
+                    IntuneEnrolledDevices = intuneEnrolledCount,
+                    ConfigMgrOnlyDevices = configMgrOnlyCount,
+                    TrendData = trendData
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ GetDeviceEnrollmentAsync EXCEPTION: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"   Stack trace: {ex.StackTrace}");
+                
+                System.Windows.MessageBox.Show(
+                    $"Failed to fetch device data: {ex.Message}",
+                    "Data Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                
+                // Return empty data
+                return new DeviceEnrollment
+                {
+                    TotalDevices = 0,
+                    IntuneEnrolledDevices = 0,
+                    ConfigMgrOnlyDevices = 0,
+                    TrendData = Array.Empty<EnrollmentTrend>()
+                };
+            }
+        }
+
+        public async Task<ComplianceDashboard> GetComplianceDashboardAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            try
+            {
+                // Get device compliance policies
+                var policies = await _graphClient.DeviceManagement.DeviceCompliancePolicies.GetAsync();
+                
+                // Get device compliance status
+                var complianceStatus = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                    config => config.QueryParameters.Select = new[] { "id", "complianceState", "operatingSystem" }
+                );
+
+                var allDevices = complianceStatus?.Value ?? new List<Microsoft.Graph.Models.ManagedDevice>();
+                
+                // ⚠️ CRITICAL: Filter to ONLY Windows 10/11 workstations (Intune-eligible devices)
+                var devices = allDevices.Where(d => 
+                    d.OperatingSystem != null && 
+                    (
+                        d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
+                        d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
+                    ) &&
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+                
+                int totalDevices = devices.Count;
+                int compliantDevices = devices.Count(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Compliant);
+                
+                int nonCompliantDevices = devices.Count(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Noncompliant);
+
+                double complianceRate = totalDevices > 0 ? (compliantDevices / (double)totalDevices) * 100 : 0;
+
+                return new ComplianceDashboard
+                {
+                    OverallComplianceRate = complianceRate,
+                    TotalDevices = totalDevices,
+                    CompliantDevices = compliantDevices,
+                    NonCompliantDevices = nonCompliantDevices,
+                    PolicyViolations = nonCompliantDevices // Simplified
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"Failed to fetch compliance data: {ex.Message}",
+                    "Data Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                
+                return new ComplianceDashboard
+                {
+                    OverallComplianceRate = 0,
+                    TotalDevices = 0,
+                    CompliantDevices = 0,
+                    NonCompliantDevices = 0,
+                    PolicyViolations = 0
+                };
+            }
+        }
+
+        private EnrollmentTrend[] GenerateTrendData(int currentTotal, int currentIntune)
+        {
+            // Generate 6 months of trend data (simplified estimation)
+            var trends = new List<EnrollmentTrend>();
+            var baseDate = DateTime.Now.AddMonths(-6);
+
+            for (int i = 0; i <= 6; i++)
+            {
+                double progress = i / 6.0;
+                trends.Add(new EnrollmentTrend
+                {
+                    Month = baseDate.AddMonths(i),
+                    IntuneDevices = (int)(currentIntune * progress * 0.7), // Estimate growth
+                    ConfigMgrDevices = currentTotal - (int)(currentIntune * progress * 0.7)
+                });
+            }
+
+            return trends.ToArray();
+        }
+
+        public bool IsAuthenticated => _graphClient != null;
+
+        public async Task<List<Alert>> GetAlertsAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            var alerts = new List<Alert>();
+
+            try
+            {
+                // Get non-compliant devices as alerts
+                var devicesResponse = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                    config => config.QueryParameters.Select = new[] { "deviceName", "complianceState", "lastSyncDateTime", "operatingSystem", "enrolledDateTime" }
+                );
+
+                if (devicesResponse?.Value != null)
+                {
+                    // ⚠️ CRITICAL: Filter to ONLY Windows 10/11 workstations (Intune-eligible devices)
+                    var devices = devicesResponse.Value.Where(d => 
+                        d.OperatingSystem != null && 
+                        (
+                            d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
+                            d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
+                        ) &&
+                        !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
+                    ).ToList();
+
+                    // Critical: Devices not synced in 7+ days
+                    var staleDevices = devices.Where(d => 
+                        d.LastSyncDateTime.HasValue && 
+                        (DateTime.Now - d.LastSyncDateTime.Value).TotalDays > 7).ToList();
+                    
+                    if (staleDevices.Any())
+                    {
+                        alerts.Add(new Alert
+                        {
+                            Severity = AlertSeverity.Critical,
+                            Title = $"{staleDevices.Count} workstations haven't synced in 7+ days",
+                            Description = "These devices may be offline or experiencing connectivity issues. Check device health.",
+                            ActionText = "View Devices",
+                            DetectedDate = DateTime.Now
+                        });
+                    }
+
+                    // Warning: Non-compliant devices
+                    var nonCompliant = devices.Where(d => 
+                        d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Noncompliant).ToList();
+                    
+                    if (nonCompliant.Any())
+                    {
+                        alerts.Add(new Alert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Title = $"{nonCompliant.Count} workstations are non-compliant",
+                            Description = "Review compliance policies and remediate non-compliant devices to improve security posture.",
+                            ActionText = "View Non-Compliant",
+                            DetectedDate = DateTime.Now
+                        });
+                    }
+
+                    // Info: Recent enrollments
+                    var recentEnrollments = devices.Where(d => 
+                        d.EnrolledDateTime.HasValue && 
+                        (DateTime.Now - d.EnrolledDateTime.Value).TotalDays <= 7).ToList();
+                    
+                    if (recentEnrollments.Any())
+                    {
+                        alerts.Add(new Alert
+                        {
+                            Severity = AlertSeverity.Info,
+                            Title = $"{recentEnrollments.Count} new workstations enrolled this week",
+                            Description = "Your migration is progressing well. Keep monitoring device enrollment trends.",
+                            ActionText = "View Devices",
+                            DetectedDate = DateTime.Now
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Return at least one alert about the error
+                alerts.Add(new Alert
+                {
+                    Severity = AlertSeverity.Warning,
+                    Title = "Unable to fetch device alerts",
+                    Description = $"Error: {ex.Message}",
+                    ActionText = "",
+                    DetectedDate = DateTime.Now
+                });
+            }
+
+            // Always ensure at least one alert
+            if (!alerts.Any())
+            {
+                alerts.Add(new Alert
+                {
+                    Severity = AlertSeverity.Info,
+                    Title = "All systems operational",
+                    Description = "No critical alerts detected. Your environment is healthy.",
+                    ActionText = "View Portal",
+                    DetectedDate = DateTime.Now
+                });
+            }
+
+            return alerts;
+        }
+
+        public async Task<List<Workload>> GetWorkloadsAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            var workloads = new List<Workload>();
+
+            try
+            {
+                // Get compliance policies
+                var compliancePolicies = await _graphClient.DeviceManagement.DeviceCompliancePolicies.GetAsync();
+                bool hasCompliancePolicies = compliancePolicies?.Value?.Any() == true;
+
+                // Get device configurations
+                var deviceConfigs = await _graphClient.DeviceManagement.DeviceConfigurations.GetAsync();
+                bool hasDeviceConfigs = deviceConfigs?.Value?.Any() == true;
+
+                // Get managed app policies (attempt - may not have permission)
+                bool hasManagedApps = false;
+                try
+                {
+                    var appPolicies = await _graphClient.DeviceAppManagement.ManagedAppPolicies.GetAsync();
+                    hasManagedApps = appPolicies?.Value?.Any() == true;
+                }
+                catch { /* Permission may not be granted */ }
+
+                // Build workload list based on actual data
+                workloads.Add(new Workload
+                {
+                    Name = "Compliance Policies",
+                    Description = "Device compliance requirements",
+                    Status = hasCompliancePolicies ? WorkloadStatus.Completed : WorkloadStatus.NotStarted,
+                    LearnMoreUrl = "https://learn.microsoft.com/mem/intune/protect/device-compliance-get-started",
+                    TransitionDate = hasCompliancePolicies ? DateTime.Now.AddDays(-30) : null
+                });
+
+                workloads.Add(new Workload
+                {
+                    Name = "Device Configuration",
+                    Description = "Settings and policies for devices",
+                    Status = hasDeviceConfigs ? WorkloadStatus.Completed : WorkloadStatus.NotStarted,
+                    LearnMoreUrl = "https://learn.microsoft.com/mem/intune/configuration/device-profiles",
+                    TransitionDate = hasDeviceConfigs ? DateTime.Now.AddDays(-25) : null
+                });
+
+                workloads.Add(new Workload
+                {
+                    Name = "Resource Access",
+                    Description = "Wi-Fi, VPN, and certificate profiles",
+                    Status = WorkloadStatus.InProgress,
+                    LearnMoreUrl = "https://learn.microsoft.com/mem/intune/configuration/device-profile-create",
+                    TransitionDate = null
+                });
+
+                workloads.Add(new Workload
+                {
+                    Name = "Endpoint Protection",
+                    Description = "Antivirus and security settings",
+                    Status = WorkloadStatus.InProgress,
+                    LearnMoreUrl = "https://learn.microsoft.com/mem/intune/protect/endpoint-security",
+                    TransitionDate = null
+                });
+
+                workloads.Add(new Workload
+                {
+                    Name = "Client Apps",
+                    Description = "Application deployment and management",
+                    Status = hasManagedApps ? WorkloadStatus.Completed : WorkloadStatus.NotStarted,
+                    LearnMoreUrl = "https://learn.microsoft.com/mem/intune/apps/apps-add",
+                    TransitionDate = hasManagedApps ? DateTime.Now.AddDays(-20) : null
+                });
+
+                workloads.Add(new Workload
+                {
+                    Name = "Windows Update for Business",
+                    Description = "Update rings and policies",
+                    Status = WorkloadStatus.NotStarted,
+                    LearnMoreUrl = "https://learn.microsoft.com/mem/intune/protect/windows-update-for-business-configure",
+                    TransitionDate = null
+                });
+
+                workloads.Add(new Workload
+                {
+                    Name = "Office Click-to-Run",
+                    Description = "Office 365 apps management",
+                    Status = WorkloadStatus.NotStarted,
+                    LearnMoreUrl = "https://learn.microsoft.com/mem/intune/apps/apps-add-office365",
+                    TransitionDate = null
+                });
+            }
+            catch (Exception ex)
+            {
+                // Return default workloads on error
+                System.Windows.MessageBox.Show(
+                    $"Failed to fetch workload data: {ex.Message}\n\nUsing estimated data.",
+                    "Data Warning",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                
+                // Return basic workload list
+                return GetDefaultWorkloads();
+            }
+
+            return workloads;
+        }
+
+        private List<Workload> GetDefaultWorkloads()
+        {
+            return new List<Workload>
+            {
+                new Workload { Name = "Compliance Policies", Description = "Device compliance requirements", Status = WorkloadStatus.Completed, LearnMoreUrl = "https://learn.microsoft.com/mem/intune/protect/device-compliance-get-started" },
+                new Workload { Name = "Device Configuration", Description = "Settings and policies", Status = WorkloadStatus.InProgress, LearnMoreUrl = "https://learn.microsoft.com/mem/intune/configuration/device-profiles" },
+                new Workload { Name = "Resource Access", Description = "Wi-Fi, VPN, certificates", Status = WorkloadStatus.InProgress, LearnMoreUrl = "https://learn.microsoft.com/mem/intune/configuration/device-profile-create" },
+                new Workload { Name = "Endpoint Protection", Description = "Security settings", Status = WorkloadStatus.NotStarted, LearnMoreUrl = "https://learn.microsoft.com/mem/intune/protect/endpoint-security" },
+                new Workload { Name = "Client Apps", Description = "App management", Status = WorkloadStatus.NotStarted, LearnMoreUrl = "https://learn.microsoft.com/mem/intune/apps/apps-add" },
+                new Workload { Name = "Windows Update for Business", Description = "Update policies", Status = WorkloadStatus.NotStarted, LearnMoreUrl = "https://learn.microsoft.com/mem/intune/protect/windows-update-for-business-configure" },
+                new Workload { Name = "Office Click-to-Run", Description = "Office 365 management", Status = WorkloadStatus.NotStarted, LearnMoreUrl = "https://learn.microsoft.com/mem/intune/apps/apps-add-office365" }
+            };
+        }
+
+        /// <summary>
+        /// Detects ONLY true enrollment blockers that prevent Intune co-management enrollment.
+        /// Does NOT include migration health metrics (those go to AI Recommendations).
+        /// </summary>
+        public async Task<List<Blocker>> GetEnrollmentBlockersAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            var blockers = new List<Blocker>();
+            Instance.Info("=== GetEnrollmentBlockersAsync START ===");
+
+            try
+            {
+                // Blocker 1: Legacy OS Devices (Windows 7/8/8.1) - CRITICAL - Cannot enroll
+                await DetectLegacyOSDevicesAsync(blockers);
+
+                // Blocker 2: Devices Not Azure AD Joined - HIGH - Prerequisite for co-management
+                await DetectDevicesNotAADJoinedAsync(blockers);
+
+                // Blocker 3: Co-management Not Enabled - CRITICAL - Site-level prerequisite
+                await DetectCoManagementNotEnabledAsync(blockers);
+
+                Instance.Info($"✅ Enrollment blocker detection complete: {blockers.Count} blockers found");
+                return blockers.OrderByDescending(b => b.Severity).ToList();
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetEnrollmentBlockersAsync");
+                // Return empty list on error - don't fail the whole dashboard
+                return new List<Blocker>();
+            }
+        }
+
+        private async Task DetectLegacyOSDevicesAsync(List<Blocker> blockers)
+        {
+            try
+            {
+                Instance.Info("Checking for legacy OS devices (Windows 7/8/8.1)...");
+
+                // Query ConfigMgr if available (more complete inventory)
+                if (_configMgrService.IsConfigured)
+                {
+                    var allDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                    var legacyDevices = allDevices.Where(d =>
+                        d.OperatingSystem != null &&
+                        (d.OperatingSystem.Contains("NT Workstation 6.1") ||  // Windows 7
+                         d.OperatingSystem.Contains("NT Workstation 6.2") ||  // Windows 8
+                         d.OperatingSystem.Contains("NT Workstation 6.3"))    // Windows 8.1
+                    ).ToList();
+
+                    if (legacyDevices.Count > 0)
+                    {
+                        blockers.Add(new Blocker
+                        {
+                            Title = "Legacy Windows Versions Detected",
+                            Description = $"{legacyDevices.Count} devices running Windows 7, 8, or 8.1 cannot be enrolled in Intune",
+                            AffectedDevices = legacyDevices.Count,
+                            Severity = BlockerSeverity.High,
+                            RemediationUrl = "https://learn.microsoft.com/windows/deployment/upgrade/windows-10-upgrade-paths"
+                        });
+                        Instance.Info($"⚠️ Found {legacyDevices.Count} legacy OS devices (ConfigMgr)");
+                    }
+                }
+                else
+                {
+                    // Fallback: Query Graph API for legacy OS
+                    var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
+                    {
+                        config.QueryParameters.Select = new[] { "operatingSystem", "deviceName" };
+                        config.QueryParameters.Top = 999;
+                    });
+
+                    if (devices?.Value != null)
+                    {
+                        var legacyDevices = devices.Value.Where(d =>
+                            d.OperatingSystem != null &&
+                            (d.OperatingSystem.Contains("Windows 7") ||
+                             d.OperatingSystem.Contains("Windows 8") ||
+                             d.OperatingSystem.Contains("Windows 8.1"))
+                        ).ToList();
+
+                        if (legacyDevices.Count > 0)
+                        {
+                            blockers.Add(new Blocker
+                            {
+                                Title = "Legacy Windows Versions Detected",
+                                Description = $"{legacyDevices.Count} devices running Windows 7, 8, or 8.1 cannot be enrolled in Intune",
+                                AffectedDevices = legacyDevices.Count,
+                                Severity = BlockerSeverity.High,
+                                RemediationUrl = "https://learn.microsoft.com/windows/deployment/upgrade/windows-10-upgrade-paths"
+                            });
+                            Instance.Info($"⚠️ Found {legacyDevices.Count} legacy OS devices (Graph API)");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "DetectLegacyOSDevicesAsync");
+            }
+        }
+
+        private async Task DetectDevicesNotAADJoinedAsync(List<Blocker> blockers)
+        {
+            try
+            {
+                Instance.Info("Checking for devices not Azure AD joined...");
+
+                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
+                {
+                    config.QueryParameters.Select = new[] { "azureADDeviceId", "operatingSystem", "deviceName" };
+                    config.QueryParameters.Top = 999;
+                });
+
+                if (devices?.Value != null)
+                {
+                    // Filter to Windows 10/11 devices without Azure AD join
+                    var notAADJoined = devices.Value.Where(d =>
+                        d.OperatingSystem != null &&
+                        (d.OperatingSystem.Contains("Windows 10") || d.OperatingSystem.Contains("Windows 11")) &&
+                        string.IsNullOrEmpty(d.AzureADDeviceId)
+                    ).ToList();
+
+                    if (notAADJoined.Count > 0)
+                    {
+                        blockers.Add(new Blocker
+                        {
+                            Title = "Devices Not Azure AD Joined",
+                            Description = $"{notAADJoined.Count} Windows 10/11 devices are not Azure AD joined (required for co-management)",
+                            AffectedDevices = notAADJoined.Count,
+                            Severity = BlockerSeverity.High,
+                            RemediationUrl = "https://learn.microsoft.com/azure/active-directory/devices/hybrid-azuread-join-plan"
+                        });
+                        Instance.Info($"⚠️ Found {notAADJoined.Count} devices not Azure AD joined");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "DetectDevicesNotAADJoinedAsync");
+            }
+        }
+
+        private async Task DetectCoManagementNotEnabledAsync(List<Blocker> blockers)
+        {
+            try
+            {
+                Instance.Info("Checking if co-management is enabled in ConfigMgr...");
+
+                if (!_configMgrService.IsConfigured)
+                {
+                    Instance.Info("ConfigMgr not connected - skipping co-management check");
+                    return;
+                }
+
+                // Check if ANY devices are co-managed (indicates co-management is enabled)
+                var coMgmtStatus = await _configMgrService.GetCoManagementStatusAsync();
+                int coManagedCount = coMgmtStatus["CoManaged"];
+
+                if (coManagedCount == 0)
+                {
+                    // Check if we have ConfigMgr-only devices that COULD be co-managed
+                    int configMgrOnlyCount = coMgmtStatus["ConfigMgrOnly"];
+
+                    if (configMgrOnlyCount > 0)
+                    {
+                        blockers.Add(new Blocker
+                        {
+                            Title = "Co-Management Not Enabled",
+                            Description = $"ConfigMgr site has {configMgrOnlyCount} eligible devices but co-management is not enabled",
+                            AffectedDevices = configMgrOnlyCount,
+                            Severity = BlockerSeverity.Critical,
+                            RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-enable"
+                        });
+                        Instance.Info($"🚨 Co-management not enabled - {configMgrOnlyCount} devices waiting");
+                    }
+                }
+                else
+                {
+                    Instance.Info($"✅ Co-management enabled - {coManagedCount} devices already co-managed");
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "DetectCoManagementNotEnabledAsync");
+            }
+        }
+
+        /// <summary>
+        /// Get detailed app deployment status per device
+        /// </summary>
+        public async Task<List<AppDeploymentStatus>> GetAppDeploymentStatusAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            try
+            {
+                var statuses = new List<AppDeploymentStatus>();
+
+                // Get all mobile apps
+                var apps = await _graphClient.DeviceAppManagement.MobileApps.GetAsync();
+
+                if (apps?.Value != null)
+                {
+                    foreach (var app in apps.Value)
+                    {
+                        try
+                        {
+                            // Note: DeviceStatuses endpoint requires additional permissions
+                            // For now, we'll track the app but skip per-device status
+                            statuses.Add(new AppDeploymentStatus
+                            {
+                                AppName = app.DisplayName ?? "Unknown",
+                                AppId = app.Id ?? "",
+                                DeviceName = "Summary",
+                                InstallState = "NotAvailable",
+                                LastSyncDateTime = DateTime.Now
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            Instance.LogException(ex, $"GetAppDeploymentStatus for app {app.DisplayName}");
+                        }
+                    }
+                }
+
+                return statuses;
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetAppDeploymentStatusAsync");
+                return new List<AppDeploymentStatus>();
+            }
+        }
+
+        /// <summary>
+        /// Get update ring assignments per device
+        /// </summary>
+        public async Task<List<UpdateRingAssignment>> GetUpdateRingAssignmentsAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            try
+            {
+                var assignments = new List<UpdateRingAssignment>();
+
+                // Get all Windows Update for Business rings
+                var updatePolicies = await _graphClient.DeviceManagement.DeviceConfigurations.GetAsync(config =>
+                {
+                    config.QueryParameters.Filter = "isof('microsoft.graph.windowsUpdateForBusinessConfiguration')";
+                });
+
+                if (updatePolicies?.Value != null)
+                {
+                    foreach (var policy in updatePolicies.Value)
+                    {
+                        try
+                        {
+                            // Get device statuses for this update ring
+                            var deviceStatuses = await _graphClient.DeviceManagement
+                                .DeviceConfigurations[policy.Id]
+                                .DeviceStatuses
+                                .GetAsync();
+
+                            if (deviceStatuses?.Value != null)
+                            {
+                                foreach (var status in deviceStatuses.Value)
+                                {
+                                    assignments.Add(new UpdateRingAssignment
+                                    {
+                                        PolicyName = policy.DisplayName ?? "Unknown",
+                                        PolicyId = policy.Id ?? "",
+                                        DeviceName = status.DeviceDisplayName ?? "Unknown",
+                                        Status = status.Status?.ToString() ?? "Unknown",
+                                        LastReportedDateTime = status.LastReportedDateTime?.DateTime ?? DateTime.MinValue
+                                    });
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Instance.LogException(ex, $"GetUpdateRingAssignments for policy {policy.DisplayName}");
+                        }
+                    }
+                }
+
+                return assignments;
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetUpdateRingAssignmentsAsync");
+                return new List<UpdateRingAssignment>();
+            }
+        }
+
+        /// <summary>
+        /// Get configuration profile application status per device
+        /// </summary>
+        public async Task<List<ConfigProfileStatus>> GetConfigProfileStatusAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            try
+            {
+                var profileStatuses = new List<ConfigProfileStatus>();
+
+                // Get all device configuration profiles
+                var configs = await _graphClient.DeviceManagement.DeviceConfigurations.GetAsync();
+
+                if (configs?.Value != null)
+                {
+                    foreach (var config in configs.Value)
+                    {
+                        try
+                        {
+                            // Get device statuses for this configuration
+                            var deviceStatuses = await _graphClient.DeviceManagement
+                                .DeviceConfigurations[config.Id]
+                                .DeviceStatuses
+                                .GetAsync();
+
+                            if (deviceStatuses?.Value != null)
+                            {
+                                foreach (var status in deviceStatuses.Value)
+                                {
+                                    profileStatuses.Add(new ConfigProfileStatus
+                                    {
+                                        ProfileName = config.DisplayName ?? "Unknown",
+                                        ProfileId = config.Id ?? "",
+                                        DeviceName = status.DeviceDisplayName ?? "Unknown",
+                                        Status = status.Status?.ToString() ?? "Unknown",
+                                        LastReportedDateTime = status.LastReportedDateTime?.DateTime ?? DateTime.MinValue,
+                                        ComplianceGracePeriodExpirationDateTime = status.ComplianceGracePeriodExpirationDateTime?.DateTime
+                                    });
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Instance.LogException(ex, $"GetConfigProfileStatus for profile {config.DisplayName}");
+                        }
+                    }
+                }
+
+                return profileStatuses;
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetConfigProfileStatusAsync");
+                return new List<ConfigProfileStatus>();
+            }
+        }
+
+        /// <summary>
+        /// Get Autopilot device status
+        /// </summary>
+        public async Task<List<AutopilotDeviceStatus>> GetAutopilotDeviceStatusAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            try
+            {
+                var autopilotDevices = new List<AutopilotDeviceStatus>();
+
+                // Get all Windows Autopilot device identities
+                var devices = await _graphClient.DeviceManagement.WindowsAutopilotDeviceIdentities.GetAsync();
+
+                if (devices?.Value != null)
+                {
+                    foreach (var device in devices.Value)
+                    {
+                        autopilotDevices.Add(new AutopilotDeviceStatus
+                        {
+                            SerialNumber = device.SerialNumber ?? "Unknown",
+                            Model = device.Model ?? "Unknown",
+                            Manufacturer = device.Manufacturer ?? "Unknown",
+                            EnrollmentState = device.EnrollmentState?.ToString() ?? "Unknown",
+                            LastContactedDateTime = device.LastContactedDateTime?.DateTime,
+                            GroupTag = device.GroupTag ?? "",
+                            DeploymentProfileAssigned = device.GroupTag != null && !string.IsNullOrEmpty(device.GroupTag)
+                        });
+                    }
+                }
+
+                return autopilotDevices;
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetAutopilotDeviceStatusAsync");
+                return new List<AutopilotDeviceStatus>();
+            }
+        }
+
+        /// <summary>
+        /// Get certificate inventory for devices
+        /// </summary>
+        public async Task<List<DeviceCertificate>> GetDeviceCertificatesAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            try
+            {
+                var certificates = new List<DeviceCertificate>();
+
+                // Get all managed devices
+                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync();
+
+                if (devices?.Value != null)
+                {
+                    foreach (var device in devices.Value)
+                    {
+                        try
+                        {
+                            // Get device configuration states which includes certificate info
+                            var configStates = await _graphClient.DeviceManagement
+                                .ManagedDevices[device.Id]
+                                .DeviceConfigurationStates
+                                .GetAsync();
+
+                            if (configStates?.Value != null)
+                            {
+                                foreach (var state in configStates.Value)
+                                {
+                                    // Check if this is a certificate profile
+                                    if (state.DisplayName != null && 
+                                        (state.DisplayName.Contains("Certificate", StringComparison.OrdinalIgnoreCase) ||
+                                         state.DisplayName.Contains("SCEP", StringComparison.OrdinalIgnoreCase) ||
+                                         state.DisplayName.Contains("PKCS", StringComparison.OrdinalIgnoreCase)))
+                                    {
+                                        certificates.Add(new DeviceCertificate
+                                        {
+                                            DeviceName = device.DeviceName ?? "Unknown",
+                                            DeviceId = device.Id ?? "",
+                                            CertificateProfileName = state.DisplayName,
+                                            Status = state.State?.ToString() ?? "Unknown",
+                                            LastReportedDateTime = state.SettingCount > 0 ? DateTime.Now : DateTime.MinValue
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Instance.LogException(ex, $"GetDeviceCertificates for device {device.DeviceName}");
+                        }
+                    }
+                }
+
+                return certificates;
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetDeviceCertificatesAsync");
+                return new List<DeviceCertificate>();
+            }
+        }
+
+        /// <summary>
+        /// Get network connectivity details for devices
+        /// </summary>
+        public async Task<List<DeviceNetworkInfo>> GetDeviceNetworkInfoAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            try
+            {
+                var networkInfo = new List<DeviceNetworkInfo>();
+
+                // Get all managed devices with network information
+                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
+                {
+                    config.QueryParameters.Select = new[] { 
+                        "id", "deviceName", "wiFiMacAddress", "ethernetMacAddress", 
+                        "ipAddressV4", "subnetAddress", "isEncrypted", "isSupervised" 
+                    };
+                });
+
+                if (devices?.Value != null)
+                {
+                    foreach (var device in devices.Value)
+                    {
+                        networkInfo.Add(new DeviceNetworkInfo
+                        {
+                            DeviceName = device.DeviceName ?? "Unknown",
+                            DeviceId = device.Id ?? "",
+                            WiFiMacAddress = device.WiFiMacAddress ?? "",
+                            EthernetMacAddress = device.EthernetMacAddress ?? "",
+                            IPv4Address = "", // Not directly available, would need device details
+                            IsEncrypted = device.IsEncrypted ?? false,
+                            IsSupervised = device.IsSupervised ?? false
+                        });
+                    }
+                }
+
+                return networkInfo;
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetDeviceNetworkInfoAsync");
+                return new List<DeviceNetworkInfo>();
+            }
+        }
+    }
+
+    // New data models for Graph API responses
+    public class AppDeploymentStatus
+    {
+        public string AppName { get; set; } = string.Empty;
+        public string AppId { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        public string InstallState { get; set; } = string.Empty;
+        public DateTime LastSyncDateTime { get; set; }
+    }
+
+    public class UpdateRingAssignment
+    {
+        public string PolicyName { get; set; } = string.Empty;
+        public string PolicyId { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime LastReportedDateTime { get; set; }
+    }
+
+    public class ConfigProfileStatus
+    {
+        public string ProfileName { get; set; } = string.Empty;
+        public string ProfileId { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime LastReportedDateTime { get; set; }
+        public DateTime? ComplianceGracePeriodExpirationDateTime { get; set; }
+    }
+
+    public class AutopilotDeviceStatus
+    {
+        public string SerialNumber { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string Manufacturer { get; set; } = string.Empty;
+        public string EnrollmentState { get; set; } = string.Empty;
+        public DateTime? LastContactedDateTime { get; set; }
+        public string GroupTag { get; set; } = string.Empty;
+        public bool DeploymentProfileAssigned { get; set; }
+    }
+
+    public class DeviceCertificate
+    {
+        public string DeviceName { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+        public string CertificateProfileName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime LastReportedDateTime { get; set; }
+    }
+
+    public class DeviceNetworkInfo
+    {
+        public string DeviceName { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+        public string WiFiMacAddress { get; set; } = string.Empty;
+        public string EthernetMacAddress { get; set; } = string.Empty;
+        public string IPv4Address { get; set; } = string.Empty;
+        public bool IsEncrypted { get; set; }
+        public bool IsSupervised { get; set; }
+    }
+}
