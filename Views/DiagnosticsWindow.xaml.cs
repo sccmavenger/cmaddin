@@ -62,6 +62,26 @@ namespace CloudJourneyAddin.Views
             ConfigMgrDataSources.Text = dataSources;
         }
 
+        public void SetAIStatus(bool connected, string message, string dataSources)
+        {
+            AIStatusIcon.Text = connected ? "✅" : "❌";
+            AIStatusIcon.Foreground = connected ? 
+                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green) :
+                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
+            AIStatusText.Text = message;
+            AIDataSources.Text = dataSources;
+        }
+
+        public void SetOverallStatus(bool fullyAuthenticated, string statusHeader, string statusMessage)
+        {
+            OverallStatusIcon.Text = fullyAuthenticated ? "✅" : "⚠️";
+            OverallStatusIcon.Foreground = fullyAuthenticated ? 
+                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green) :
+                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Orange);
+            OverallStatusHeader.Text = statusHeader;
+            OverallStatusText.Text = statusMessage;
+        }
+
         public void SetSectionsStatus(string status)
         {
             SectionsStatus.Text = status;

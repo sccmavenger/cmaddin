@@ -36,16 +36,16 @@ namespace CloudJourneyAddin.Services
                 trendData.Add(new EnrollmentTrend
                 {
                     Month = baseDate.AddMonths(i),
-                    IntuneDevices = 500 + (i * 150) + _random.Next(-50, 50),
-                    ConfigMgrDevices = 2000 - (i * 120)
+                    IntuneDevices = 23000 + (i * 6900) + _random.Next(-2300, 2300),
+                    ConfigMgrDevices = 92000 - (i * 5520)
                 });
             }
 
             return new DeviceEnrollment
             {
-                TotalDevices = 2500,
-                IntuneEnrolledDevices = 1400,
-                ConfigMgrOnlyDevices = 1100,
+                TotalDevices = 115000,
+                IntuneEnrolledDevices = 64400,
+                ConfigMgrOnlyDevices = 50600,
                 TrendData = trendData.ToArray()
             };
         }

@@ -1,8 +1,8 @@
 # Cloud Journey Add-in - Internal Documentation
-**Version 2.1.0** | December 19, 2025
+**Version 3.1.8** | December 22, 2025
 
 ## Overview
-Internal documentation for Version 2.1.0.
+Internal documentation for Version 3.1.8.
 
 ## Changes in This Version
 - Bug fix: GPT-4 JSON response parsing (markdown code block stripping)
