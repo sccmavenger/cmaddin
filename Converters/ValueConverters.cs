@@ -171,6 +171,21 @@ namespace CloudJourneyAddin.Converters
         }
     }
 
+    public class InverseCountToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            // Show when count is greater than 0 (inverse of CountToVisibilityConverter)
+            int count = value as int? ?? 0;
+            return count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class ObjectToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

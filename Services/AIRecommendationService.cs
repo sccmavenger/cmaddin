@@ -8,7 +8,7 @@ namespace CloudJourneyAddin.Services
 {
     /// <summary>
     /// AI-powered recommendation engine to guide migration and prevent stalls.
-    /// Uses customer journey insights to provide contextual guidance.
+    /// REQUIRES Azure OpenAI to be configured - no rule-based fallback.
     /// Enhanced with Phase 1: Phased Planning, Device Selection, and Trend Analysis.
     /// </summary>
     public class AIRecommendationService
@@ -17,7 +17,7 @@ namespace CloudJourneyAddin.Services
         private readonly PhasedMigrationService _phasedMigrationService;
         private readonly DeviceSelectionService _deviceSelectionService;
         private readonly WorkloadTrendService _workloadTrendService;
-        private readonly AzureOpenAIService? _openAIService;
+        private readonly AzureOpenAIService _openAIService;
         
         public AIRecommendationService(GraphDataService graphService)
         {
@@ -26,20 +26,16 @@ namespace CloudJourneyAddin.Services
             _deviceSelectionService = new DeviceSelectionService(graphService);
             _workloadTrendService = new WorkloadTrendService();
             
-            // Initialize Azure OpenAI if configured
-            try
+            // Initialize Azure OpenAI - REQUIRED
+            _openAIService = new AzureOpenAIService();
+            if (!_openAIService.IsConfigured)
             {
-                _openAIService = new AzureOpenAIService();
-                if (_openAIService.IsConfigured)
-                {
-                    FileLogger.Instance.Info("Azure OpenAI service initialized and configured");
-                }
+                var errorMsg = "Azure OpenAI is required but not configured. Please configure Azure OpenAI using the 🤖 AI button in the toolbar.";
+                FileLogger.Instance.Error(errorMsg);
+                throw new InvalidOperationException(errorMsg);
             }
-            catch (Exception ex)
-            {
-                FileLogger.Instance.Error($"Failed to initialize Azure OpenAI service: {ex.Message}");
-                _openAIService = null;
-            }
+            
+            FileLogger.Instance.Info("Azure OpenAI service initialized and configured successfully");
         }
 
         /// <summary>
@@ -284,62 +280,14 @@ namespace CloudJourneyAddin.Services
         {
             var recommendations = new List<AIRecommendation>();
 
-            // Try GPT-4 enhanced analysis first
-            if (_openAIService?.IsConfigured == true)
+            // Use GPT-4 enhanced analysis (required, no fallback)
+            var gpt4Recommendation = await AnalyzeStallWithGPT4Async(
+                enrollment, workloads, daysSinceProgress);
+            
+            if (gpt4Recommendation != null)
             {
-                try
-                {
-                    var gpt4Recommendation = await AnalyzeStallWithGPT4Async(
-                        enrollment, workloads, daysSinceProgress);
-                    
-                    if (gpt4Recommendation != null)
-                    {
-                        recommendations.Add(gpt4Recommendation);
-                        return recommendations;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    FileLogger.Instance.Warning($"GPT-4 stall analysis failed, using fallback: {ex.Message}");
-                    // Fall through to rule-based logic
-                }
+                recommendations.Add(gpt4Recommendation);
             }
-
-            // Fallback to rule-based logic
-            recommendations.AddRange(GenerateStallPreventionRecommendations(enrollment, workloads, daysSinceProgress));
-            return recommendations;
-        }
-
-        private List<AIRecommendation> GenerateStallPreventionRecommendations(
-            DeviceEnrollment enrollment,
-            List<Workload> workloads,
-            int daysSinceProgress)
-        {
-            var recommendations = new List<AIRecommendation>();
-
-            // Detect type of stall
-            bool enrollmentStalled = enrollment.IntuneEnrollmentPercentage < 75;
-            bool workloadStalled = workloads.Count(w => w.Status == WorkloadStatus.InProgress) > 0;
-            bool noWorkloadsStarted = workloads.All(w => w.Status == WorkloadStatus.NotStarted);
-
-            recommendations.Add(new AIRecommendation
-            {
-                Title = $"🚨 Migration Stalled: No Progress in {daysSinceProgress} Days",
-                Description = $"Migration momentum has stopped. This is a critical risk indicator. " +
-                              $"Common causes: Resource constraints, technical blockers, or lack of executive support.",
-                Rationale = "Microsoft data shows migrations stalled > 45 days have 70% risk of never completing. " +
-                           "Immediate intervention required to restart momentum.",
-                ActionSteps = GenerateStallRecoverySteps(enrollmentStalled, workloadStalled, noWorkloadsStarted, daysSinceProgress),
-                Priority = RecommendationPriority.Critical,
-                Category = RecommendationCategory.StallPrevention,
-                ImpactScore = 95,
-                EstimatedEffort = "1-2 weeks to restart",
-                ResourceLinks = new List<string>
-                {
-                    "https://aka.ms/FastTrack",
-                    "https://learn.microsoft.com/mem/intune/fundamentals/migration-guide"
-                }
-            });
 
             return recommendations;
         }
@@ -428,41 +376,6 @@ namespace CloudJourneyAddin.Services
             if (days < 30) return "Short stall";
             if (days < 60) return "Medium stall (concerning)";
             return "Long stall (critical intervention needed)";
-        }
-
-        private List<string> GenerateStallRecoverySteps(bool enrollmentStalled, bool workloadStalled, bool noWorkloadsStarted, int daysSinceProgress)
-        {
-            var steps = new List<string>
-            {
-                "1. Schedule emergency review meeting with project sponsor",
-                "2. Identify root cause:"
-            };
-
-            if (enrollmentStalled)
-            {
-                steps.Add("   - Enrollment issues? Check CMG connectivity, Azure AD sync");
-            }
-
-            if (workloadStalled)
-            {
-                steps.Add("   - Workload blocked? Review policy conflicts, licensing issues");
-            }
-
-            if (noWorkloadsStarted)
-            {
-                steps.Add("   - Prerequisites missing? Verify co-management, licensing, permissions");
-            }
-
-            steps.AddRange(new List<string>
-            {
-                "3. Reassess resources - do you have dedicated project time?",
-                "4. Consider Microsoft FastTrack assistance (free with 150+ licenses)",
-                "5. Break into smaller milestones - pick ONE workload to complete this month",
-                $"6. Set daily standup for next 2 weeks to rebuild momentum",
-                "7. Communicate progress to leadership weekly"
-            });
-
-            return steps;
         }
 
         #endregion

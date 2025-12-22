@@ -91,8 +91,11 @@ namespace CloudJourneyAddin.Views
                 // Determine appropriate window size based on screen resolution
                 if (workingArea.Width <= 1366) // Small screens (1366x768 or smaller)
                 {
-                    Width = Math.Max(minWidth, workingArea.Width * 0.85);
-                    Height = Math.Max(minHeight, workingArea.Height * 0.85);
+                    Width = Math.Max(1100, Math.Min(workingArea.Width * 0.95, maxWidth));
+                    Height = Math.Max(650, Math.Min(workingArea.Height * 0.90, maxHeight));
+                    
+                    // Enable scroll viewer for small screens
+                    System.Diagnostics.Debug.WriteLine("Small screen detected - using compact layout");
                 }
                 else if (workingArea.Width <= 1920) // Standard HD screens (1920x1080)
                 {
@@ -105,23 +108,40 @@ namespace CloudJourneyAddin.Views
                     Height = Math.Min(1000, maxHeight);
                 }
                 
-                // Ensure window fits on screen
+                // Ensure window doesn't exceed screen bounds
                 if (Width > maxWidth) Width = maxWidth;
                 if (Height > maxHeight) Height = maxHeight;
+                
+                // Ensure minimum sizes are met
+                if (Width < minWidth) Width = minWidth;
+                if (Height < minHeight) Height = minHeight;
                 
                 // Set window state
                 WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 WindowState = WindowState.Normal; // Ensure not maximized
                 
-                System.Diagnostics.Debug.WriteLine($"Screen: {workingArea.Width}x{workingArea.Height}, Window: {Width}x{Height}");
+                System.Diagnostics.Debug.WriteLine($"Screen Resolution: {workingArea.Width}x{workingArea.Height}");
+                System.Diagnostics.Debug.WriteLine($"Window Size: {Width}x{Height}");
+                System.Diagnostics.Debug.WriteLine($"Window fits on screen: {Width <= maxWidth && Height <= maxHeight}");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error setting adaptive window size: {ex.Message}");
                 // Fall back to reasonable defaults if detection fails
                 Width = 1200;
-                Height = 700;
+                Height = 800;
             }
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            // Open hyperlink URL in default browser
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = e.Uri.AbsoluteUri,
+                UseShellExecute = true
+            });
+            e.Handled = true;
         }
     }
 }
