@@ -994,7 +994,8 @@
                         </Border>
 
                         <!-- 6. Savings Unlock Insight - WHAT ACTIONS UNLOCK SAVINGS -->
-                        <Border Style="{StaticResource SectionCard}">
+                        <Border Style="{StaticResource SectionCard}"
+                                Visibility="{Binding SavingsUnlockInsight, Converter={StaticResource NullToVisibilityConverter}}">
                             <StackPanel>
                                 <TextBlock Text="💰 Unlock Savings with Action" Style="{StaticResource SectionTitle}"/>
                                 
@@ -1003,13 +1004,13 @@
                                     <StackPanel>
                                         <TextBlock Text="📱 Enrollment Impact" FontWeight="Bold" FontSize="13" Margin="0,0,0,5"/>
                                         <TextBlock FontSize="24" FontWeight="Bold" Foreground="#107C10" Margin="0,0,0,5">
-                                            <Run Text="{Binding SavingsUnlockInsight.SavingsLockedBehindEnrollment, Converter={StaticResource CurrencyConverter}}"/>
+                                            <Run Text="{Binding SavingsUnlockInsight.SavingsLockedBehindEnrollment, Converter={StaticResource CurrencyConverter}, Mode=OneWay}"/>
                                             <Run Text="/year" FontSize="14"/>
                                         </TextBlock>
                                         <TextBlock Text="locked behind device enrollment" FontSize="12" Foreground="#666" Margin="0,0,0,8"/>
                                         <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#333">
                                             <Run Text="✅ ACTION: "/>
-                                            <Run Text="{Binding SavingsUnlockInsight.RecommendedAction}" FontWeight="Normal"/>
+                                            <Run Text="{Binding SavingsUnlockInsight.RecommendedAction, Mode=OneWay}" FontWeight="Normal"/>
                                         </TextBlock>
                                     </StackPanel>
                                 </Border>
@@ -1019,12 +1020,12 @@
                                     <StackPanel>
                                         <TextBlock Text="🔄 Workload Transition Impact" FontWeight="Bold" FontSize="13" Margin="0,0,0,5"/>
                                         <TextBlock FontSize="24" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,5">
-                                            <Run Text="{Binding SavingsUnlockInsight.SavingsFromWorkloadTransition, Converter={StaticResource CurrencyConverter}}"/>
+                                            <Run Text="{Binding SavingsUnlockInsight.SavingsFromWorkloadTransition, Converter={StaticResource CurrencyConverter}, Mode=OneWay}"/>
                                             <Run Text="/year" FontSize="14"/>
                                         </TextBlock>
                                         <TextBlock FontSize="12" Foreground="#666" Margin="0,0,0,8">
                                             <Run Text="unlocked by transitioning "/>
-                                            <Run Text="{Binding SavingsUnlockInsight.WorkloadToTransition}" FontWeight="Bold"/>
+                                            <Run Text="{Binding SavingsUnlockInsight.WorkloadToTransition, Mode=OneWay}" FontWeight="Bold"/>
                                         </TextBlock>
                                         <TextBlock Text="{Binding SavingsUnlockInsight.NextSavingsMilestone}" 
                                                    FontSize="11" FontStyle="Italic" Foreground="#555"/>
@@ -1088,7 +1089,8 @@
                     <!-- Right Column -->
                     <StackPanel Grid.Column="2">
                         <!-- 5. Enrollment Acceleration - MATCH PEER VELOCITY -->
-                        <Border Style="{StaticResource SectionCard}">
+                        <Border Style="{StaticResource SectionCard}"
+                                Visibility="{Binding EnrollmentAccelerationInsight, Converter={StaticResource NullToVisibilityConverter}}">
                             <StackPanel>
                                 <TextBlock Text="🚀 Enrollment Acceleration" Style="{StaticResource SectionTitle}"/>
                                 
@@ -1136,7 +1138,7 @@
                                         <DataTemplate>
                                             <TextBlock FontSize="11" Foreground="#333" TextWrapping="Wrap" Margin="0,0,0,4">
                                                 <Run Text="• "/>
-                                                <Run Text="{Binding}"/>
+                                                <Run Text="{Binding Mode=OneWay}"/>
                                             </TextBlock>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -1306,7 +1308,8 @@
                         </Border>
 
                         <!-- 8. Progress Targets - FORWARD-LOOKING ACTIONS -->
-                        <Border Style="{StaticResource SectionCard}">
+                        <Border Style="{StaticResource SectionCard}"
+                                Visibility="{Binding ProgressTargets.Count, Converter={StaticResource CountToVisibilityConverter}}">
                             <StackPanel>
                                 <TextBlock Text="🎯 Your Progress Targets" Style="{StaticResource SectionTitle}"/>
                                 <TextBlock Text="Specific actions to achieve your next milestones" 
@@ -3140,7 +3143,7 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border Background="#FFEBEE" Padding="10" CornerRadius="4" Margin="0,0,0,8">
-                                                            <TextBlock Text="{Binding}" 
+                                                            <TextBlock Text="{Binding Mode=OneWay}" 
                                                                        FontSize="12" Foreground="#C62828" TextWrapping="Wrap"/>
                                                         </Border>
                                                     </DataTemplate>
@@ -3168,7 +3171,7 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border Background="#FFEBEE" Padding="10" CornerRadius="4" Margin="0,0,0,8">
-                                                            <TextBlock Text="{Binding}" 
+                                                            <TextBlock Text="{Binding Mode=OneWay}" 
                                                                        FontSize="12" Foreground="#C62828" TextWrapping="Wrap"/>
                                                         </Border>
                                                     </DataTemplate>
