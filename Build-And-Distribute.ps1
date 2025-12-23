@@ -169,53 +169,25 @@ if (-not $Version) {
         $userGuideContent = $userGuideContent -replace "Version $currentVersion", "Version $newVersion"
         $userGuideContent = $userGuideContent -replace "v$currentVersion", "v$newVersion"
         [System.IO.File]::WriteAllText($userGuidePath, $userGuideContent)
-        Write-Host "   [3/6] ✅ USER_GUIDE.md" -ForegroundColor Green
+        Write-Host "   [3/5] ✅ USER_GUIDE.md" -ForegroundColor Green
     }
     
-    # 4. Create INTERNAL_DOCS_vX.X.X.md
-    $oldInternalDocs = Join-Path $scriptDir "INTERNAL_DOCS_v$currentVersion.md"
-    $newInternalDocs = Join-Path $scriptDir "INTERNAL_DOCS_v$newVersion.md"
-    if (Test-Path $oldInternalDocs) {
-        Copy-Item $oldInternalDocs $newInternalDocs
-        $internalContent = Get-Content $newInternalDocs -Raw
-        $internalContent = $internalContent -replace "Version $currentVersion", "Version $newVersion"
-        $internalContent = $internalContent -replace "v$currentVersion", "v$newVersion"
-        [System.IO.File]::WriteAllText($newInternalDocs, $internalContent)
-    } else {
-        # Create new internal docs from template
-        $template = @"
-# Cloud Journey Add-in - Internal Documentation
-**Version $newVersion** | $(Get-Date -Format 'MMMM dd, yyyy')
-
-## Overview
-Internal documentation for version $newVersion.
-
-## Changes in This Version
-- Bug fix: GPT-4 JSON response parsing (markdown code block stripping)
-
-## Technical Details
-See CHANGELOG.md for complete details.
-"@
-        [System.IO.File]::WriteAllText($newInternalDocs, $template)
-    }
-    Write-Host "   [4/6] ✅ INTERNAL_DOCS_v$newVersion.md" -ForegroundColor Green
-    
-    # 5. DashboardWindow.xaml Title
+    # 4. DashboardWindow.xaml Title
     $xamlPath = Join-Path $scriptDir "Views\DashboardWindow.xaml"
     $xamlContent = Get-Content $xamlPath -Raw
     $xamlContent = $xamlContent -replace "v$currentVersion", "v$newVersion"
     [System.IO.File]::WriteAllText($xamlPath, $xamlContent)
-    Write-Host "   [5/6] ✅ DashboardWindow.xaml" -ForegroundColor Green
+    Write-Host "   [4/5] ✅ DashboardWindow.xaml" -ForegroundColor Green
     
-    # 6. DashboardViewModel.cs version log
+    # 5. DashboardViewModel.cs version log
     $viewModelPath = Join-Path $scriptDir "ViewModels\DashboardViewModel.cs"
     $viewModelContent = Get-Content $viewModelPath -Raw
     $viewModelContent = $viewModelContent -replace "Version: $currentVersion", "Version: $newVersion"
     [System.IO.File]::WriteAllText($viewModelPath, $viewModelContent)
-    Write-Host "   [6/6] ✅ DashboardViewModel.cs" -ForegroundColor Green
+    Write-Host "   [5/5] ✅ DashboardViewModel.cs" -ForegroundColor Green
     
     Write-Host ""
-    Write-Host "✅ All 6 locations updated to v$newVersion" -ForegroundColor Green
+    Write-Host "✅ All 5 locations updated to v$newVersion" -ForegroundColor Green
     Write-Host ""
     
     $currentVersion = $newVersion
@@ -228,10 +200,10 @@ Write-Host ""
 
 # ============================================
 # PRE-FLIGHT CHECKS (MANDATORY)
-# Per VERSIONING.md - ALL 6 locations MUST be updated
+# Per VERSIONING.md - ALL 5 locations MUST be updated
 # ============================================
-Write-Host "🔍 PRE-FLIGHT DOCUMENTATION CHECKS (6 Required)" -ForegroundColor Magenta
-Write-Host "Per VERSIONING.md: All 6 locations must be updated" -ForegroundColor Magenta
+Write-Host "🔍 PRE-FLIGHT DOCUMENTATION CHECKS (5 Required)" -ForegroundColor Magenta
+Write-Host "Per VERSIONING.md: All 5 locations must be updated" -ForegroundColor Magenta
 Write-Host "========================================" -ForegroundColor Magenta
 Write-Host ""
 
@@ -239,7 +211,7 @@ Write-Host "📦 Current Version: $currentVersion" -ForegroundColor Cyan
 Write-Host ""
 
 # Check 1: Version number updated in .csproj
-Write-Host "[CHECK 1/6] Version Number" -ForegroundColor Yellow
+Write-Host "[CHECK 1/5] Version Number" -ForegroundColor Yellow
 Write-Host "   Location: CloudJourneyAddin.csproj (line 10-12)" -ForegroundColor Gray
 Write-Host "   Current: $currentVersion" -ForegroundColor White
 Write-Host "   ✅ Version detected: $currentVersion" -ForegroundColor Green
@@ -275,20 +247,8 @@ if (Test-Path $userGuidePath) {
 }
 Write-Host ""
 
-# Check 4: Internal documentation created
-Write-Host "[CHECK 4/6] Internal Documentation" -ForegroundColor Yellow
-Write-Host "   Location: INTERNAL_DOCS_v$currentVersion.md" -ForegroundColor Gray
-$internalDocsPath = Join-Path $scriptDir "INTERNAL_DOCS_v$currentVersion.md"
-if (Test-Path $internalDocsPath) {
-    Write-Host "   ✅ Found: INTERNAL_DOCS_v$currentVersion.md" -ForegroundColor Green
-} else {
-    Write-Host "   ⚠️  WARNING: INTERNAL_DOCS_v$currentVersion.md not found" -ForegroundColor Yellow
-    Write-Host "   Continuing anyway..." -ForegroundColor Gray
-}
-Write-Host ""
-
-# Check 5: DashboardWindow.xaml Title
-Write-Host "[CHECK 5/6] DashboardWindow.xaml Title" -ForegroundColor Yellow
+# Check 4: DashboardWindow.xaml Title
+Write-Host "[CHECK 4/5] DashboardWindow.xaml Title" -ForegroundColor Yellow
 Write-Host "   Location: Views/DashboardWindow.xaml (line 6)" -ForegroundColor Gray
 $xamlPath = Join-Path $scriptDir "Views\DashboardWindow.xaml"
 if (Test-Path $xamlPath) {
@@ -304,8 +264,8 @@ if (Test-Path $xamlPath) {
 }
 Write-Host ""
 
-# Check 6: DashboardViewModel.cs version log
-Write-Host "[CHECK 6/6] DashboardViewModel.cs Version Log" -ForegroundColor Yellow
+# Check 5: DashboardViewModel.cs version log
+Write-Host "[CHECK 5/5] DashboardViewModel.cs Version Log" -ForegroundColor Yellow
 Write-Host "   Location: ViewModels/DashboardViewModel.cs (constructor)" -ForegroundColor Gray
 $viewModelPath = Join-Path $scriptDir "ViewModels\DashboardViewModel.cs"
 if (Test-Path $viewModelPath) {
@@ -569,7 +529,6 @@ Write-Host "✅ COMPLETED (verified during pre-flight):" -ForegroundColor Green
 Write-Host "   [✓] Version updated in .csproj" -ForegroundColor Gray
 Write-Host "   [✓] README.md updated with v$Version features" -ForegroundColor Gray
 Write-Host "   [✓] USER_GUIDE.md updated with v$Version" -ForegroundColor Gray
-Write-Host "   [✓] INTERNAL_DOCS_v$Version.md created" -ForegroundColor Gray
 Write-Host ""
 Write-Host "📋 RECOMMENDED NEXT STEPS:" -ForegroundColor Yellow
 Write-Host ""
