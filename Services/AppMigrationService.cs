@@ -36,8 +36,8 @@ namespace CloudJourneyAddin.Services
                 {
                     ApplicationName = "Microsoft Office 365 ProPlus",
                     DeploymentType = "MSI",
-                    TargetedDevices = 450,
-                    ComplexityScore = 15, // Low complexity - Intune has built-in Office deployment
+                    TargetedDevices = 1850,
+                    ComplexityScore = 15,
                     MigrationPath = MigrationPath.Recommended,
                     Recommendation = "Use Intune's built-in Office 365 deployment. No custom packaging needed.",
                     EstimatedEffort = "1-2 hours"
@@ -47,8 +47,8 @@ namespace CloudJourneyAddin.Services
                 {
                     ApplicationName = "Adobe Acrobat Reader DC",
                     DeploymentType = "EXE",
-                    TargetedDevices = 380,
-                    ComplexityScore = 25, // Low-medium complexity - common app
+                    TargetedDevices = 1620,
+                    ComplexityScore = 25,
                     MigrationPath = MigrationPath.IntuneWin,
                     Recommendation = "Convert to .intunewin package using Intune Content Prep Tool. Silent install parameters: /sAll /rs",
                     EstimatedEffort = "2-3 hours"
@@ -56,13 +56,90 @@ namespace CloudJourneyAddin.Services
 
                 apps.Add(new ApplicationMigrationAnalysis
                 {
+                    ApplicationName = "Google Chrome Enterprise",
+                    DeploymentType = "MSI",
+                    TargetedDevices = 2100,
+                    ComplexityScore = 20,
+                    MigrationPath = MigrationPath.Recommended,
+                    Recommendation = "Deploy via Intune Win32 app or use Microsoft Edge instead for better integration.",
+                    EstimatedEffort = "2-3 hours"
+                });
+
+                apps.Add(new ApplicationMigrationAnalysis
+                {
+                    ApplicationName = "7-Zip File Archiver",
+                    DeploymentType = "MSI",
+                    TargetedDevices = 980,
+                    ComplexityScore = 18,
+                    MigrationPath = MigrationPath.IntuneWin,
+                    Recommendation = "Simple MSI deployment. Convert to .intunewin and deploy with silent parameters.",
+                    EstimatedEffort = "1-2 hours"
+                });
+
+                apps.Add(new ApplicationMigrationAnalysis
+                {
+                    ApplicationName = "Microsoft Teams",
+                    DeploymentType = "EXE",
+                    TargetedDevices = 2450,
+                    ComplexityScore = 12,
+                    MigrationPath = MigrationPath.Recommended,
+                    Recommendation = "Use Intune's built-in Teams deployment or deploy new Teams 2.0 client.",
+                    EstimatedEffort = "1-2 hours"
+                });
+
+                apps.Add(new ApplicationMigrationAnalysis
+                {
+                    ApplicationName = "VLC Media Player",
+                    DeploymentType = "EXE",
+                    TargetedDevices = 450,
+                    ComplexityScore = 22,
+                    MigrationPath = MigrationPath.IntuneWin,
+                    Recommendation = "Package as Win32 app with silent install: /S /L=%TEMP%\\vlc_install.log",
+                    EstimatedEffort = "2 hours"
+                });
+
+                apps.Add(new ApplicationMigrationAnalysis
+                {
                     ApplicationName = "Custom LOB Application",
                     DeploymentType = "Script",
-                    TargetedDevices = 120,
-                    ComplexityScore = 75, // High complexity - custom deployment
+                    TargetedDevices = 320,
+                    ComplexityScore = 75,
                     MigrationPath = MigrationPath.RequiresReengineering,
                     Recommendation = "Application uses complex ConfigMgr Task Sequence. Consider PowerShell deployment script or Azure Arc for device management.",
                     EstimatedEffort = "2-3 weeks"
+                });
+
+                apps.Add(new ApplicationMigrationAnalysis
+                {
+                    ApplicationName = "SAP GUI Client",
+                    DeploymentType = "EXE",
+                    TargetedDevices = 180,
+                    ComplexityScore = 68,
+                    MigrationPath = MigrationPath.RequiresReengineering,
+                    Recommendation = "Complex enterprise app with multiple dependencies. Test thoroughly in Intune sandbox before production.",
+                    EstimatedEffort = "1-2 weeks"
+                });
+
+                apps.Add(new ApplicationMigrationAnalysis
+                {
+                    ApplicationName = "Notepad++",
+                    DeploymentType = "EXE",
+                    TargetedDevices = 680,
+                    ComplexityScore = 20,
+                    MigrationPath = MigrationPath.IntuneWin,
+                    Recommendation = "Straightforward Win32 app deployment. Use silent install: /S",
+                    EstimatedEffort = "1-2 hours"
+                });
+
+                apps.Add(new ApplicationMigrationAnalysis
+                {
+                    ApplicationName = "Cisco AnyConnect VPN",
+                    DeploymentType = "MSI",
+                    TargetedDevices = 1450,
+                    ComplexityScore = 45,
+                    MigrationPath = MigrationPath.IntuneWin,
+                    Recommendation = "Deploy as Win32 app. Consider migrating to Azure VPN or Always On VPN for better cloud integration.",
+                    EstimatedEffort = "4-6 hours"
                 });
 
                 FileLogger.Instance.Info($"Analyzed {apps.Count} applications for migration");

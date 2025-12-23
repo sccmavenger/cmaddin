@@ -1638,6 +1638,30 @@ namespace CloudJourneyAddin.ViewModels
             ProgressTargets.Clear();
             Milestones.Clear();
 
+            // Mock AI Action Summary for authenticated users
+            AIActionSummary = new AIActionSummary
+            {
+                PrimaryEnrollmentAction = "Enroll the 425 'Good' readiness devices (scores 60-79) using Phase 3 Autonomous Agent",
+                EnrollmentActionImpact = 425,
+                PrimaryWorkloadAction = "Transition Conditional Access workload to unlock modern security policies",
+                WorkloadActionImpact = "Unlock Zero Trust security and app protection policies",
+                EnrollmentBlockers = new List<string>
+                {
+                    "132 devices have insufficient disk space (<20GB free)",
+                    "48 devices running Windows 7 (OS upgrade required)",
+                    "25 devices have outdated TPM firmware (blocks BitLocker)"
+                },
+                WorkloadBlockers = new List<string>
+                {
+                    "Conditional Access policies not yet configured in Intune",
+                    "75% enrollment threshold not yet met (currently 58%)"
+                },
+                AIRecommendation = "Focus on device enrollment first. Use Phase 3 agent to auto-enroll 100 devices/week targeting 'Good' readiness scores. Once you reach 75% enrollment (3 weeks at current velocity), transition Conditional Access workload to unlock $105K annual savings from reduced infrastructure costs.",
+                WeeksToNextMilestone = 3,
+                IsAIPowered = false
+            };
+            OnPropertyChanged(nameof(AIActionSummary));
+
             // REAL ENROLLMENT BLOCKER DETECTION (only true prerequisites)
             Instance.Info("Detecting enrollment blockers...");
             try
@@ -1717,6 +1741,30 @@ namespace CloudJourneyAddin.ViewModels
             var progressTargets = await progressTargetsTask;
             foreach (var target in progressTargets)
                 ProgressTargets.Add(target);
+
+            // Mock AI Action Summary data
+            AIActionSummary = new AIActionSummary
+            {
+                PrimaryEnrollmentAction = "Enroll the 425 'Good' readiness devices (scores 60-79) using Phase 3 Autonomous Agent",
+                EnrollmentActionImpact = 425,
+                PrimaryWorkloadAction = "Transition Conditional Access workload to unlock modern security policies",
+                WorkloadActionImpact = "Unlock Zero Trust security and app protection policies",
+                EnrollmentBlockers = new List<string>
+                {
+                    "132 devices have insufficient disk space (<20GB free)",
+                    "48 devices running Windows 7 (OS upgrade required)",
+                    "25 devices have outdated TPM firmware (blocks BitLocker)"
+                },
+                WorkloadBlockers = new List<string>
+                {
+                    "Conditional Access policies not yet configured in Intune",
+                    "75% enrollment threshold not yet met (currently 58%)"
+                },
+                AIRecommendation = "Focus on device enrollment first. Use Phase 3 agent to auto-enroll 100 devices/week targeting 'Good' readiness scores. Once you reach 75% enrollment (3 weeks at current velocity), transition Conditional Access workload to unlock $105K annual savings from reduced infrastructure costs.",
+                WeeksToNextMilestone = 3,
+                IsAIPowered = false
+            };
+            OnPropertyChanged(nameof(AIActionSummary));
 
             var blockers = await blockersTask;
             Blockers.Clear();
