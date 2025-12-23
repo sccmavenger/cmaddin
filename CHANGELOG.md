@@ -1,5 +1,54 @@
 # Cloud Journey Dashboard - Change Log
 
+## [3.4.0] - 2025-01-XX (Phase 2/3 UI Controls)
+
+### Added
+- 🎛️ **Agent Phase Selector** - ComboBox to switch between 3 enrollment agent phases
+  - Phase 1: Supervised (all enrollments require approval - default)
+  - Phase 2: Conditional (auto-approve low/medium risk, require approval for high/critical)
+  - Phase 3: Autonomous (continuous monitoring with automatic enrollment)
+  - Replaces "Risk Tolerance" selector in Enrollment Readiness section
+  - Dynamic info panel shows phase-specific behavior descriptions
+- 📊 **View Monitoring Stats Button** - New button to view Phase 3 monitoring statistics
+  - Shows devices monitored, check interval, next check time
+  - Only visible when Phase 3 monitoring is active
+  - Opens dialog with monitoring service metrics
+- 📈 **Phase 3 Monitoring Status Panel** - Yellow panel showing continuous monitoring activity
+  - Displays: Devices Monitored count, Auto-Enrolled Today count, Next Check countdown
+  - Appears below agent completion message when Phase 3 is running
+  - Real-time updates during monitoring cycles
+- 🔵 **Phase 2 Auto-Approval Status Panel** - Blue panel showing auto-approval decisions
+  - Shows risk assessment results and auto-approval reasons
+  - Appears when Phase 2 agent processes devices
+  - Provides transparency into conditional autonomy decisions
+
+### Changed
+- 🔧 **Agent Initialization** - RiskAssessmentService now passed to EnrollmentReActAgent constructor
+  - Enables Phase 2 conditional autonomy features
+  - Agent phase selector updates agent.CurrentPhase property in real-time
+- 📝 **Agent Phase Info** - Dynamic phase descriptions in info panel
+  - Phase 1: Shows supervised behavior and safety features
+  - Phase 2: Explains auto-approval rules and risk scoring
+  - Phase 3: Describes continuous monitoring and auto-enrollment triggers
+- 🎨 **UI Layout** - Agent configuration section redesigned
+  - "Risk Tolerance" replaced with more descriptive "Agent Phase (NEW)" selector
+  - Tooltips added to phase options explaining behavior
+  - Monitoring controls grouped logically below phase selector
+
+### Technical
+- Added 9 new ViewModel properties: AgentPhaseIndex, IsMonitoringActive, MonitoredDeviceCount, AutoEnrolledToday, NextMonitoringCheck, ShowAutoApprovalStatus, AutoApprovalStatusMessage, AgentPhaseInfo
+- Added ViewMonitoringStatsCommand with OnViewMonitoringStats() implementation
+- Added OnAgentPhaseChanged() method to handle phase switching
+- Updated DashboardWindow.xaml with new panels and controls (lines 1828-2095)
+- Backend Phase 2/3 services (RiskAssessmentService, DeviceMonitoringService) unchanged from v3.3.1
+- **MINOR version bump** - New UI features exposing existing backend (3.3.1 → 3.4.0)
+
+### Known Issues
+- ⚠️ Monitoring service not auto-initialized (will fix in v3.5.0)
+- ⚠️ Phase changes during agent run don't affect current execution (by design)
+
+---
+
 ## [2.4.0] - 2025-12-20 (Smart Enrollment Management)
 
 ### Changed

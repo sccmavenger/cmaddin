@@ -12,8 +12,11 @@ using Microsoft.Extensions.Logging;
 namespace CloudJourneyAddin.Services
 {
     /// <summary>
-    /// ReAct Agent with function calling and local learning (v2.0)
+    /// ReAct Agent with function calling and local learning (v3.0)
     /// Implements: Reason → Act → Observe → Reflect loop
+    /// Phase 1: Supervised (requires approval)
+    /// Phase 2: Conditional autonomy (auto-approve low-risk)
+    /// Phase 3: Full autonomy (continuous monitoring)
     /// </summary>
     public class EnrollmentReActAgent
     {
@@ -22,26 +25,33 @@ namespace CloudJourneyAddin.Services
         private readonly ILogger<EnrollmentReActAgent> _logger;
         private readonly AgentToolkit _toolkit;
         private readonly AgentMemoryService _memory;
+        private readonly RiskAssessmentService _riskService;
 
         // Agent state
         private AgentExecutionTrace? _currentTrace;
         private AgentStrategy? _currentStrategy;
 
+        // Phase configuration
+        public AgentPhase CurrentPhase { get; set; } = AgentPhase.Phase1_Supervised;
+
         // Events for UI updates
         public event EventHandler<AgentReasoningStep>? ReasoningStepCompleted;
         public event EventHandler<AgentInsight>? InsightDiscovered;
         public event EventHandler<string>? StatusChanged;
+        public event EventHandler<AutoApprovalEventArgs>? DeviceAutoApproved;  // Phase 2
 
         public EnrollmentReActAgent(
             AzureOpenAIService aiService,
             GraphDataService graphService,
             AgentMemoryService memory,
-            ILogger<EnrollmentReActAgent> logger)
+            ILogger<EnrollmentReActAgent> logger,
+            RiskAssessmentService? riskService = null)
         {
             _aiService = aiService;
             _graphService = graphService;
             _memory = memory;
             _logger = logger;
+            _riskService = riskService ?? new RiskAssessmentService();
 
             // Initialize toolkit
             _toolkit = new AgentToolkit();
@@ -438,4 +448,23 @@ Strategy confidence: {_currentStrategy?.ConfidenceLevel:P0}";
             return $"{step.ToolToUse} completed";
         }
     }
+
+    // Phase 2/3 enhancements
+    public enum AgentPhase
+    {
+        Phase1_Supervised,      // All enrollments require approval
+        Phase2_Conditional,     // Auto-approve low-risk, require approval for high-risk
+        Phase3_FullAutonomy     // Fully autonomous with continuous monitoring
+    }
+
+    public class AutoApprovalEventArgs : EventArgs
+    {
+        public string DeviceId { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        public double ReadinessScore { get; set; }
+        public double RiskScore { get; set; }
+        public string RiskLevel { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+    }
 }
+

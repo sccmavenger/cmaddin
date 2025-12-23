@@ -91,21 +91,33 @@ namespace CloudJourneyAddin.Services.AgentTools
 
                 if (!string.IsNullOrEmpty(deviceId))
                 {
-                    // Single device analysis - would need device-specific API
+                    // PHASE 1: Single device analysis with real readiness calculation
+                    var readiness = await _graphService.CalculateDeviceReadinessAsync(deviceId);
+                    
                     var analysis = new
                     {
                         device_id = deviceId,
-                        device_name = $"Device-{deviceId.Substring(Math.Max(0, deviceId.Length - 4))}",
-                        readiness_score = 75,
-                        readiness_level = "Good",
-                        blockers = new List<string>(),
-                        recommendations = new List<string> { "Device-specific analysis requires additional API integration" }
+                        device_name = readiness.DeviceName,
+                        manufacturer = readiness.Manufacturer,
+                        model = readiness.Model,
+                        os_version = readiness.OSVersion,
+                        readiness_score = readiness.ReadinessScore,
+                        readiness_level = readiness.ReadinessLevel,
+                        issues = readiness.Issues,
+                        last_checked = readiness.LastChecked,
+                        recommendations = includeRecs ? GenerateRecommendations(readiness) : null
                     };
 
                     return new AgentToolResult
                     {
                         Success = true,
-                        Data = JsonSerializer.Serialize(analysis, new JsonSerializerOptions { WriteIndented = true })
+                        Data = JsonSerializer.Serialize(analysis, new JsonSerializerOptions { WriteIndented = true }),
+                        Metadata = new Dictionary<string, object>
+                        {
+                            ["readiness_score"] = readiness.ReadinessScore,
+                            ["readiness_level"] = readiness.ReadinessLevel,
+                            ["issue_count"] = readiness.Issues.Count
+                        }
                     };
                 }
                 else
@@ -154,6 +166,41 @@ namespace CloudJourneyAddin.Services.AgentTools
                     Error = $"Failed to analyze readiness: {ex.Message}"
                 };
             }
+        }
+
+        private List<string> GenerateRecommendations(DeviceReadiness readiness)
+        {
+            var recommendations = new List<string>();
+
+            if (readiness.ReadinessScore < 60)
+            {
+                recommendations.Add("Device needs preparation before enrollment");
+            }
+
+            foreach (var issue in readiness.Issues)
+            {
+                if (issue.Contains("Non-compliant"))
+                    recommendations.Add("Resolve compliance issues before enrolling");
+                else if (issue.Contains("not encrypted"))
+                    recommendations.Add("Enable BitLocker encryption");
+                else if (issue.Contains("Outdated"))
+                    recommendations.Add("Update Windows to latest version");
+                else if (issue.Contains("not seen"))
+                    recommendations.Add("Ensure device is online and connected");
+                else
+                    recommendations.Add($"Address: {issue}");
+            }
+
+            if (readiness.ReadinessScore >= 80)
+            {
+                recommendations.Add("✅ Device is ready for immediate enrollment");
+            }
+            else if (readiness.ReadinessScore >= 60)
+            {
+                recommendations.Add("Device is enrollment-ready but has minor issues to address");
+            }
+
+            return recommendations;
         }
 
         private List<string> GenerateRecommendations(dynamic device)

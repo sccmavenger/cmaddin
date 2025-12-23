@@ -117,7 +117,10 @@ namespace CloudJourneyAddin.ViewModels
                 // Create logger for agent (using FileLogger)
                 var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<EnrollmentReActAgent>.Instance;
                 
-                _enrollmentAgent = new EnrollmentReActAgent(aiService, _graphDataService, _agentMemoryService, logger);
+                // Create RiskAssessmentService for Phase 2
+                var riskService = new RiskAssessmentService();
+                
+                _enrollmentAgent = new EnrollmentReActAgent(aiService, _graphDataService, _agentMemoryService, logger, riskService);
                 
                 // Subscribe to agent events
                 _enrollmentAgent.ReasoningStepCompleted += OnAgentReasoningStepCompleted;
@@ -134,7 +137,7 @@ namespace CloudJourneyAddin.ViewModels
             
             // Initialize file logger
             Instance.Info("======== CloudJourney Dashboard Starting ========");
-            Instance.Info($"Version: 3.2.2 - Enrollment Agent (Production Build)");
+            Instance.Info($"Version: 3.4.2 - Enrollment Agent (Production Build)");
             Instance.Info($"User: {Environment.UserName}");
             Instance.Info($"Machine: {Environment.MachineName}");
             Instance.CleanupOldLogs(7); // Keep last 7 days
@@ -175,6 +178,7 @@ namespace CloudJourneyAddin.ViewModels
             StopAgentCommand = new RelayCommand(OnStopAgent, () => IsAgentRunning);
             SaveAgentConfigCommand = new RelayCommand(OnSaveAgentConfig);
             ViewAgentMemoryCommand = new RelayCommand(OnViewAgentMemory);
+            ViewMonitoringStatsCommand = new RelayCommand(OnViewMonitoringStats);
 
             InitializeCharts();
             WorkloadTrendSeries = new SeriesCollection();
@@ -560,6 +564,7 @@ namespace CloudJourneyAddin.ViewModels
         public ICommand StopAgentCommand { get; }
         public ICommand SaveAgentConfigCommand { get; }
         public ICommand ViewAgentMemoryCommand { get; }
+        public ICommand ViewMonitoringStatsCommand { get; }
         
         // Agent v2.0 properties
         public bool IsAgentRunning
@@ -602,6 +607,71 @@ namespace CloudJourneyAddin.ViewModels
         {
             get => _agentGoals;
             set => SetProperty(ref _agentGoals, value);
+        }
+        
+        // Phase 2/3 properties
+        private int _agentPhaseIndex = 2;
+        private bool _isMonitoringActive = false;
+        private DeviceMonitoringService? _monitoringService;
+        private int _monitoredDeviceCount = 0;
+        private int _autoEnrolledToday = 0;
+        private string _nextMonitoringCheck = "N/A";
+        private bool _showAutoApprovalStatus = false;
+        private string _autoApprovalStatusMessage = "";
+        private string _agentPhaseInfo = "ℹ️ Phase 1: Supervised Agent\n• Agent plans require your approval before execution\n• Emergency stop available at all times\n• Agent pauses if failure rate exceeds 15%\n• Complete audit trail of all agent actions";
+        
+        public int AgentPhaseIndex
+        {
+            get => _agentPhaseIndex;
+            set
+            {
+                if (SetProperty(ref _agentPhaseIndex, value))
+                {
+                    OnAgentPhaseChanged();
+                }
+            }
+        }
+        
+        public bool IsMonitoringActive
+        {
+            get => _isMonitoringActive;
+            set => SetProperty(ref _isMonitoringActive, value);
+        }
+        
+        public int MonitoredDeviceCount
+        {
+            get => _monitoredDeviceCount;
+            set => SetProperty(ref _monitoredDeviceCount, value);
+        }
+        
+        public int AutoEnrolledToday
+        {
+            get => _autoEnrolledToday;
+            set => SetProperty(ref _autoEnrolledToday, value);
+        }
+        
+        public string NextMonitoringCheck
+        {
+            get => _nextMonitoringCheck;
+            set => SetProperty(ref _nextMonitoringCheck, value);
+        }
+        
+        public bool ShowAutoApprovalStatus
+        {
+            get => _showAutoApprovalStatus;
+            set => SetProperty(ref _showAutoApprovalStatus, value);
+        }
+        
+        public string AutoApprovalStatusMessage
+        {
+            get => _autoApprovalStatusMessage;
+            set => SetProperty(ref _autoApprovalStatusMessage, value);
+        }
+        
+        public string AgentPhaseInfo
+        {
+            get => _agentPhaseInfo;
+            set => SetProperty(ref _agentPhaseInfo, value);
         }
 
         private void LogConnection(string message)
@@ -2457,19 +2527,30 @@ namespace CloudJourneyAddin.ViewModels
                 CurrentAgentTrace = trace;
                 IsAgentRunning = false;
                 
-                // TODO: Implement continuous monitoring service in future update
-                // For now, agent completes initial enrollment and user can re-run as needed
+                // Phase 3: Start continuous monitoring service
+                if (AgentPhaseIndex == 2 && trace.GoalAchieved)
+                {
+                    await StartPhase3MonitoringAsync();
+                }
                 
                 if (trace.GoalAchieved)
                 {
-                    AgentStatus = $"✅ Monitoring active - enrolling devices as they become ready";
-                    AgentCompletionMessage = $"Initial plan generated successfully! Enrolled {trace.Steps.Count} devices in first batch. Agent is now continuously monitoring device readiness and will automatically enroll devices as they improve from poor/fair to good/excellent status.";
+                    if (AgentPhaseIndex == 2)
+                    {
+                        AgentStatus = $"✅ Phase 3 monitoring active - auto-enrolling as devices improve";
+                        AgentCompletionMessage = $"Agent completed! Enrolled {trace.Steps.Count} devices. Continuous monitoring is now active - devices will be automatically enrolled when their readiness improves.";
+                    }
+                    else
+                    {
+                        AgentStatus = $"✅ Enrollment complete";
+                        AgentCompletionMessage = $"Agent completed successfully! Enrolled {trace.Steps.Count} devices.";
+                    }
                     Instance.Info($"Agent completed successfully: {trace.FinalSummary}");
                 }
                 else
                 {
-                    AgentStatus = $"⚠️ Monitoring active with warnings";
-                    AgentCompletionMessage = $"Initial enrollment complete with some warnings. {trace.FinalSummary}. Agent will continue monitoring and automatically enrolling devices as they become ready.";
+                    AgentStatus = $"⚠️ Completed with warnings";
+                    AgentCompletionMessage = $"Enrollment complete with some warnings. {trace.FinalSummary}";
                     Instance.Warning($"Agent completed with warnings: {trace.FinalSummary}");
                 }
             }
@@ -2499,8 +2580,112 @@ namespace CloudJourneyAddin.ViewModels
                 Instance.Info("Agent execution stopped by user");
             }
             
+            // Stop monitoring service if active
+            if (_monitoringService != null && IsMonitoringActive)
+            {
+                _monitoringService.StopMonitoring();
+                IsMonitoringActive = false;
+                Instance.Info("Phase 3 monitoring stopped");
+            }
+            
             // Clear the completion message when user stops the agent
             AgentCompletionMessage = null;
+        }
+        
+        /// <summary>
+        /// Start Phase 3 continuous monitoring
+        /// </summary>
+        private async Task StartPhase3MonitoringAsync()
+        {
+            try
+            {
+                Instance.Info("Starting Phase 3 continuous monitoring...");
+                
+                // Initialize monitoring service if not already created
+                if (_monitoringService == null)
+                {
+                    var riskService = new RiskAssessmentService();
+                    _monitoringService = new DeviceMonitoringService(_graphDataService, riskService, _enrollmentAgent);
+                    
+                    // Subscribe to monitoring events
+                    _monitoringService.StatusChanged += OnMonitoringStatusChanged;
+                    _monitoringService.DeviceReadinessChanged += OnDeviceReadinessChanged;
+                    _monitoringService.DeviceEnrolled += OnDeviceAutoEnrolled;
+                }
+                
+                // For now, start monitoring without pre-populating devices
+                // The agent will have already identified poor/fair devices during execution
+                // In a future update, we can query and add specific devices to monitor
+                
+                // Start the monitoring service
+                _monitoringService.StartMonitoring();
+                IsMonitoringActive = true;
+                MonitoredDeviceCount = 0; // Will be updated as devices are added
+                AutoEnrolledToday = 0;
+                
+                Instance.Info("Phase 3 monitoring started - will auto-enroll devices as they improve");
+                
+                // Update next check time
+                UpdateNextMonitoringCheck();
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "StartPhase3MonitoringAsync");
+            }
+        }
+        
+        /// <summary>
+        /// Update next monitoring check countdown
+        /// </summary>
+        private void UpdateNextMonitoringCheck()
+        {
+            if (_monitoringService != null && IsMonitoringActive)
+            {
+                var stats = _monitoringService.GetStatistics();
+                NextMonitoringCheck = $"{stats.NextCheckIn.TotalMinutes:F0} min";
+            }
+        }
+        
+        /// <summary>
+        /// Event handler for monitoring status changes
+        /// </summary>
+        private void OnMonitoringStatusChanged(object? sender, string status)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                Instance.Info($"Monitoring status: {status}");
+                UpdateNextMonitoringCheck();
+            });
+        }
+        
+        /// <summary>
+        /// Event handler for device readiness changes
+        /// </summary>
+        private void OnDeviceReadinessChanged(object? sender, DeviceReadinessChangedEventArgs e)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                Instance.Info($"Device readiness improved: {e.DeviceName} from {e.PreviousLevel} ({e.PreviousScore:F0}) to {e.NewLevel} ({e.NewScore:F0})");
+            });
+        }
+        
+        /// <summary>
+        /// Event handler for auto-enrollment events
+        /// </summary>
+        private void OnDeviceAutoEnrolled(object? sender, DeviceEnrolledEventArgs e)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (e.Success)
+                {
+                    AutoEnrolledToday++;
+                    Instance.Info($"Phase 3 auto-enrolled: {e.DeviceName} (readiness: {e.ReadinessScore:F0})");
+                }
+                else
+                {
+                    Instance.Warning($"Phase 3 auto-enrollment failed: {e.DeviceName} - {e.Message}");
+                }
+            });
         }
 
         /// <summary>
@@ -2551,6 +2736,99 @@ namespace CloudJourneyAddin.ViewModels
             catch (Exception ex)
             {
                 Instance.LogException(ex, "OnViewAgentMemory");
+            }
+        }
+        
+        /// <summary>
+        /// View monitoring statistics
+        /// </summary>
+        private void OnViewMonitoringStats()
+        {
+            try
+            {
+                if (_monitoringService == null || !IsMonitoringActive)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Monitoring is not currently active. Start the agent in Phase 3 mode to enable continuous monitoring.",
+                        "Monitoring Inactive",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                    return;
+                }
+                
+                var stats = _monitoringService.GetStatistics();
+                var message = $"📊 Monitoring Statistics\n\n" +
+                    $"Status: {(stats.IsActive ? "Active" : "Inactive")}\n" +
+                    $"Devices Monitored: {stats.DevicesMonitored}\n" +
+                    $"Check Interval: {stats.CheckInterval.TotalMinutes:F0} minutes\n" +
+                    $"Next Check In: {stats.NextCheckIn.TotalMinutes:F1} minutes\n";
+                
+                System.Windows.MessageBox.Show(
+                    message,
+                    "Monitoring Statistics",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "OnViewMonitoringStats");
+            }
+        }
+        
+        /// <summary>
+        /// Handle agent phase changes
+        /// </summary>
+        private void OnAgentPhaseChanged()
+        {
+            try
+            {
+                // Update agent phase info text
+                switch (AgentPhaseIndex)
+                {
+                    case 0: // Phase 1: Supervised
+                        AgentPhaseInfo = "ℹ️ Phase 1: Supervised Agent\n" +
+                            "• Agent plans require your approval before execution\n" +
+                            "• Emergency stop available at all times\n" +
+                            "• Agent pauses if failure rate exceeds 15%\n" +
+                            "• Complete audit trail of all agent actions";
+                        ShowAutoApprovalStatus = false;
+                        break;
+                        
+                    case 1: // Phase 2: Conditional
+                        AgentPhaseInfo = "ℹ️ Phase 2: Conditional Autonomy\n" +
+                            "• Low/Medium risk devices auto-approved\n" +
+                            "• High/Critical risk devices require approval\n" +
+                            "• Self-adjusting batch sizes based on success rate\n" +
+                            "• Risk assessment for every device";
+                        ShowAutoApprovalStatus = false; // Will be set to true when agent runs
+                        break;
+                        
+                    case 2: // Phase 3: Full Autonomy
+                        AgentPhaseInfo = "ℹ️ Phase 3: Fully Autonomous\n" +
+                            "• Continuous monitoring every 15 minutes\n" +
+                            "• Auto-enrolls devices when readiness improves\n" +
+                            "• No approval required for qualifying devices\n" +
+                            "• Real-time device status tracking";
+                        break;
+                }
+                
+                // Update agent if it exists
+                if (_enrollmentAgent != null)
+                {
+                    _enrollmentAgent.CurrentPhase = AgentPhaseIndex switch
+                    {
+                        0 => AgentPhase.Phase1_Supervised,
+                        1 => AgentPhase.Phase2_Conditional,
+                        2 => AgentPhase.Phase3_FullAutonomy,
+                        _ => AgentPhase.Phase1_Supervised
+                    };
+                }
+                
+                Instance.Info($"Agent phase changed to: {AgentPhaseIndex} ({_enrollmentAgent?.CurrentPhase})");
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "OnAgentPhaseChanged");
             }
         }
 

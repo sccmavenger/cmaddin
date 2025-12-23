@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:CloudJourneyAddin.Converters"
-        Title="Cloud Journey Progress Dashboard v3.2.2" 
+        Title="Cloud Journey Progress Dashboard v3.4.2" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         Background="#F5F5F5">
@@ -1784,8 +1784,6 @@
                                                        FontSize="11" Foreground="#666666" Margin="0,3,0,0"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                            <TextBlock Text="Phase 1: Supervised" FontSize="11" FontWeight="Bold" Foreground="#0078D4" 
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
                                             <ToggleButton x:Name="AgentModeToggle" 
                                                           Width="50" Height="26" 
                                                           Style="{StaticResource ToggleSwitchStyle}"
@@ -1825,15 +1823,50 @@
                                                                 FontSize="12" Width="200" HorizontalAlignment="Left"/>
                                                 </StackPanel>
 
-                                                <!-- Risk Tolerance -->
+                                                <!-- Agent Phase Selector -->
                                                 <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,10">
-                                                    <TextBlock Text="Risk Tolerance" FontSize="11" Foreground="#666666" Margin="0,0,0,3"/>
-                                                    <ComboBox x:Name="RiskToleranceCombo" Width="200" HorizontalAlignment="Left" FontSize="12"
-                                                              SelectedIndex="0"
-                                                              ToolTip="Conservative: Only devices with score ≥60, max 25/batch, pause at 15% failure&#x0a;Balanced: Devices with score ≥50, max 50/batch, pause at 20% failure&#x0a;Aggressive: AI decides eligibility, max 100/batch, pause at 30% failure">
-                                                        <ComboBoxItem Content="🛡️ Conservative (Recommended)" Tag="Conservative"/>
-                                                        <ComboBoxItem Content="⚖️ Balanced" Tag="Balanced" IsEnabled="False" ToolTip="Phase 2 feature"/>
-                                                        <ComboBoxItem Content="🚀 Aggressive" Tag="Aggressive" IsEnabled="False" ToolTip="Phase 3 feature"/>
+                                                    <TextBlock Text="Agent Phase (NEW)" FontSize="11" Foreground="#666666" Margin="0,0,0,3"/>
+                                                    <ComboBox x:Name="AgentPhaseCombo" Width="220" HorizontalAlignment="Left" FontSize="12"
+                                                              SelectedIndex="{Binding AgentPhaseIndex, Mode=TwoWay}">
+                                                        <ComboBoxItem Content="📋 Supervised" Tag="Phase1">
+                                                            <ComboBoxItem.ToolTip>
+                                                                <ToolTip MaxWidth="400">
+                                                                    <StackPanel>
+                                                                        <TextBlock Text="Supervised Agent" FontWeight="Bold" Margin="0,0,0,5"/>
+                                                                        <TextBlock Text="• All enrollments require your approval" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• Emergency stop available at all times" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• Agent pauses if failure rate exceeds 15%" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• Complete audit trail of all actions" TextWrapping="Wrap"/>
+                                                                    </StackPanel>
+                                                                </ToolTip>
+                                                            </ComboBoxItem.ToolTip>
+                                                        </ComboBoxItem>
+                                                        <ComboBoxItem Content="⚡ Conditional" Tag="Phase2">
+                                                            <ComboBoxItem.ToolTip>
+                                                                <ToolTip MaxWidth="400">
+                                                                    <StackPanel>
+                                                                        <TextBlock Text="Conditional Autonomy" FontWeight="Bold" Margin="0,0,0,5"/>
+                                                                        <TextBlock Text="• Low/Medium risk devices auto-approved" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• High/Critical risk requires approval" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• Self-adjusting batch sizes" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• Risk assessment for every device" TextWrapping="Wrap"/>
+                                                                    </StackPanel>
+                                                                </ToolTip>
+                                                            </ComboBoxItem.ToolTip>
+                                                        </ComboBoxItem>
+                                                        <ComboBoxItem Content="🚗 Autonomous" Tag="Phase3" IsSelected="True">
+                                                            <ComboBoxItem.ToolTip>
+                                                                <ToolTip MaxWidth="400">
+                                                                    <StackPanel>
+                                                                        <TextBlock Text="Fully Autonomous" FontWeight="Bold" Margin="0,0,0,5"/>
+                                                                        <TextBlock Text="• Continuous monitoring every 15 minutes" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• Auto-enrolls when devices improve" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• No approval required for qualifying devices" TextWrapping="Wrap"/>
+                                                                        <TextBlock Text="• Real-time device status tracking" TextWrapping="Wrap"/>
+                                                                    </StackPanel>
+                                                                </ToolTip>
+                                                            </ComboBoxItem.ToolTip>
+                                                        </ComboBoxItem>
                                                     </ComboBox>
                                                 </StackPanel>
 
@@ -1866,6 +1899,14 @@
                                                             Command="{Binding GenerateAgentPlanCommand}"
                                                             IsEnabled="{Binding IsAgentRunning, Converter={StaticResource InverseBoolConverter}}"
                                                             ToolTip="Start autonomous enrollment - agent will continuously monitor and enroll devices as they become ready"/>
+                                                    
+                                                    <Button Content="🔍 View Monitoring Stats" 
+                                                            Style="{StaticResource ActionButton}"
+                                                            Background="#107C10" Foreground="White"
+                                                            Width="180" Height="32" Margin="10,0,0,0"
+                                                            Command="{Binding ViewMonitoringStatsCommand}"
+                                                            Visibility="{Binding IsMonitoringActive, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                            ToolTip="View current monitoring statistics and tracked devices"/>
                                                 </StackPanel>
                                             </Grid>
                                         </StackPanel>
@@ -2066,23 +2107,60 @@
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- Info Footer -->
-                                    <Border Background="#FFF8E1" Padding="12" CornerRadius="4" Margin="0,15,0,0"
-                                            Visibility="{Binding IsChecked, ElementName=AgentModeToggle, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <!-- Phase 3: Active Monitoring Status -->
+                                    <Border Background="#FFF3CD" BorderBrush="#FFC107" BorderThickness="2" 
+                                            Padding="15" CornerRadius="6" Margin="0,0,0,15"
+                                            Visibility="{Binding IsMonitoringActive, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            
+                                            <StackPanel Grid.Row="0">
+                                                <TextBlock Text="🔍 Phase 3: Continuous Monitoring Active" FontSize="14" FontWeight="Bold" 
+                                                           Foreground="#856404" Margin="0,0,0,10"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="Devices Monitored" FontSize="11" Foreground="#666"/>
+                                                        <TextBlock Text="{Binding MonitoredDeviceCount}" FontSize="20" FontWeight="Bold" Foreground="#856404"/>
+                                                    </StackPanel>
+                                                    
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="Auto-Enrolled Today" FontSize="11" Foreground="#666"/>
+                                                        <TextBlock Text="{Binding AutoEnrolledToday}" FontSize="20" FontWeight="Bold" Foreground="#107C10"/>
+                                                    </StackPanel>
+                                                    
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Text="Next Check" FontSize="11" Foreground="#666"/>
+                                                        <TextBlock Text="{Binding NextMonitoringCheck}" FontSize="20" FontWeight="Bold" Foreground="#0078D4"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Phase 2: Auto-Approval Status -->
+                                    <Border Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="1" 
+                                            Padding="12" CornerRadius="4" Margin="0,0,0,15"
+                                            Visibility="{Binding ShowAutoApprovalStatus, Converter={StaticResource BoolToVisibilityConverter}}">
                                         <StackPanel>
-                                            <TextBlock FontSize="11" Foreground="#856404">
-                                                <Run Text="ℹ️ Phase 1: Supervised Agent"/>
-                                                <LineBreak/>
-                                                <Run Text="• Agent plans require your approval before execution"/>
-                                                <LineBreak/>
-                                                <Run Text="• Emergency stop available at all times"/>
-                                                <LineBreak/>
-                                                <Run Text="• Agent pauses if failure rate exceeds 15%"/>
-                                                <LineBreak/>
-                                                <Run Text="• Complete audit trail of all agent actions"/>
+                                            <TextBlock FontSize="12" Foreground="#1976D2" FontWeight="SemiBold" Margin="0,0,0,5">
+                                                <Run Text="⚡ Phase 2: Auto-Approval Active"/>
+                                            </TextBlock>
+                                            <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap">
+                                                <Run Text="{Binding AutoApprovalStatusMessage}"/>
                                             </TextBlock>
                                         </StackPanel>
                                     </Border>
+
+
                                 </StackPanel>
                             </Border>
 

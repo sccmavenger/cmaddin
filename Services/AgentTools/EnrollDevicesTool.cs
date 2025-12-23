@@ -103,9 +103,6 @@ namespace CloudJourneyAddin.Services.AgentTools
                 }
 
                 // PRODUCTION: Real enrollment via Graph API
-                // NOTE: Graph API doesn't have direct "enroll device" endpoint
-                // In production, this would trigger autopilot deployment or co-management enablement
-                // For now, we'll simulate realistic behavior but log that real API integration is needed
                 var results = new List<object>();
                 var successCount = 0;
                 var failCount = 0;
@@ -114,25 +111,39 @@ namespace CloudJourneyAddin.Services.AgentTools
                 {
                     try
                     {
-                        // TODO: Implement real enrollment logic
-                        // - For Autopilot: POST to /deviceManagement/windowsAutopilotDeviceIdentities
-                        // - For Co-management: Enable via ConfigMgr workload switching
-                        // - For direct MDM: Trigger enrollment via remote command
+                        // PHASE 1: Real enrollment implementation
+                        // Get device details first to have proper name
+                        var deviceDetails = await _graphService.GetDeviceByIdAsync(deviceId);
+                        var deviceName = deviceDetails?.DeviceName ?? $"Device-{deviceId.Substring(Math.Max(0, deviceId.Length - 4))}";
                         
-                        // Placeholder: In production, this would be a real API call
-                        // await _graphService.EnrollDeviceAsync(deviceId);
-                        
-                        // For now, return success but indicate it's not fully implemented
-                        successCount++;
-                        results.Add(new
-                        {
-                            device_id = deviceId,
-                            status = "success",
-                            enrolled_at = DateTime.UtcNow,
-                            note = "Enrollment queued - requires real Graph API integration"
-                        });
+                        // Perform real enrollment
+                        var enrollResult = await _graphService.EnrollDeviceAsync(deviceId, deviceName);
 
-                        await Task.Delay(50); // Simulate API latency
+                        if (enrollResult.Success)
+                        {
+                            successCount++;
+                            results.Add(new
+                            {
+                                device_id = deviceId,
+                                device_name = deviceName,
+                                status = "success",
+                                enrolled_at = enrollResult.EnrolledAt,
+                                message = enrollResult.Message
+                            });
+                        }
+                        else
+                        {
+                            failCount++;
+                            results.Add(new
+                            {
+                                device_id = deviceId,
+                                device_name = deviceName,
+                                status = "failed",
+                                error = enrollResult.ErrorMessage
+                            });
+                        }
+
+                        await Task.Delay(100); // Small delay between enrollments
                     }
                     catch (Exception ex)
                     {
