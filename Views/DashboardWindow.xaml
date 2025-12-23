@@ -993,53 +993,43 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- 6. ROI & Savings -->
+                        <!-- 6. Savings Unlock Insight - WHAT ACTIONS UNLOCK SAVINGS -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="💰 ROI &amp; Savings Projection" Style="{StaticResource SectionTitle}" Margin="0,0,10,0"/>
-                                    <Border Background="#FFA500" CornerRadius="4" Padding="6,2">
-                                        <TextBlock Text="⚠️ ESTIMATED DATA" FontSize="11" FontWeight="Bold" Foreground="White"
-                                                   ToolTip="These are industry average estimates, not your actual costs"/>
-                                    </Border>
-                                </StackPanel>
+                                <TextBlock Text="💰 Unlock Savings with Action" Style="{StaticResource SectionTitle}"/>
                                 
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,15">
-                                        <TextBlock Text="Estimated Annual Savings" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock Text="{Binding ROIData.EstimatedAnnualSavings, Converter={StaticResource CurrencyConverter}}" 
-                                                   Style="{StaticResource MetricValue}" Foreground="#107C10"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,15">
-                                        <TextBlock Text="Infrastructure Cost Reduction" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock Text="{Binding ROIData.InfrastructureCostReduction, Converter={StaticResource CurrencyConverter}}" 
-                                                   Style="{StaticResource MetricValue}" FontSize="20"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
-                                        <TextBlock Text="Patch Cycle Reduction" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock Style="{StaticResource MetricValue}" FontSize="20">
-                                            <Run Text="{Binding ROIData.PatchCycleDaysReduced, Mode=OneWay}"/>
-                                            <Run Text=" days" FontSize="14"/>
+                                <!-- Enrollment Action -->
+                                <Border Background="#E8F5E9" Padding="12" CornerRadius="4" Margin="0,10,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="📱 Enrollment Impact" FontWeight="Bold" FontSize="13" Margin="0,0,0,5"/>
+                                        <TextBlock FontSize="24" FontWeight="Bold" Foreground="#107C10" Margin="0,0,0,5">
+                                            <Run Text="{Binding SavingsUnlockInsight.SavingsLockedBehindEnrollment, Converter={StaticResource CurrencyConverter}}"/>
+                                            <Run Text="/year" FontSize="14"/>
+                                        </TextBlock>
+                                        <TextBlock Text="locked behind device enrollment" FontSize="12" Foreground="#666" Margin="0,0,0,8"/>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#333">
+                                            <Run Text="✅ ACTION: "/>
+                                            <Run Text="{Binding SavingsUnlockInsight.RecommendedAction}" FontWeight="Normal"/>
                                         </TextBlock>
                                     </StackPanel>
+                                </Border>
 
-                                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
-                                        <TextBlock Text="Admin Time Reduction" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock Text="{Binding ROIData.AdminTimeReduction, Converter={StaticResource PercentageConverter}}" 
-                                                   Style="{StaticResource MetricValue}" FontSize="20"/>
+                                <!-- Workload Transition Action -->
+                                <Border Background="#E3F2FD" Padding="12" CornerRadius="4">
+                                    <StackPanel>
+                                        <TextBlock Text="🔄 Workload Transition Impact" FontWeight="Bold" FontSize="13" Margin="0,0,0,5"/>
+                                        <TextBlock FontSize="24" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,5">
+                                            <Run Text="{Binding SavingsUnlockInsight.SavingsFromWorkloadTransition, Converter={StaticResource CurrencyConverter}}"/>
+                                            <Run Text="/year" FontSize="14"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="12" Foreground="#666" Margin="0,0,0,8">
+                                            <Run Text="unlocked by transitioning "/>
+                                            <Run Text="{Binding SavingsUnlockInsight.WorkloadToTransition}" FontWeight="Bold"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding SavingsUnlockInsight.NextSavingsMilestone}" 
+                                                   FontSize="11" FontStyle="Italic" Foreground="#555"/>
                                     </StackPanel>
-                                </Grid>
+                                </Border>
                             </StackPanel>
                         </Border>
 
@@ -1097,32 +1087,60 @@
 
                     <!-- Right Column -->
                     <StackPanel Grid.Column="2">
-                        <!-- 5. Peer Benchmarking -->
+                        <!-- 5. Enrollment Acceleration - MATCH PEER VELOCITY -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>
-                                <TextBlock Text="📈 Peer Benchmarking" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="🚀 Enrollment Acceleration" Style="{StaticResource SectionTitle}"/>
                                 
-                                <TextBlock Text="{Binding PeerBenchmark.OrganizationCategory}" 
+                                <TextBlock Text="{Binding EnrollmentAccelerationInsight.OrganizationCategory}" 
                                            FontSize="11" Foreground="#666666" Margin="0,0,0,10"/>
 
-                                <StackPanel Margin="0,0,0,15">
-                                    <TextBlock Text="Your Progress" Style="{StaticResource MetricLabel}"/>
-                                    <TextBlock Text="{Binding PeerBenchmark.YourProgress, Converter={StaticResource PercentageConverter}}" 
-                                               Style="{StaticResource MetricValue}" FontSize="20"/>
-                                </StackPanel>
+                                <Grid Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
 
-                                <TextBlock Text="You are ahead of" FontSize="12" Foreground="#666666"/>
-                                <TextBlock FontSize="32" FontWeight="Bold" Foreground="#107C10" HorizontalAlignment="Center" Margin="0,5">
-                                    <Run Text="{Binding PeerBenchmark.PercentileRank, Mode=OneWay}"/>
-                                    <Run Text="%" FontSize="24"/>
-                                </TextBlock>
-                                <TextBlock Text="of similar organizations" FontSize="12" Foreground="#666666" 
-                                           HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                        <TextBlock Text="Your Rate" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock FontSize="28" FontWeight="Bold" Foreground="#FFA500">
+                                            <Run Text="{Binding EnrollmentAccelerationInsight.YourWeeklyEnrollmentRate, Mode=OneWay}"/>
+                                            <Run Text="/wk" FontSize="14"/>
+                                        </TextBlock>
+                                    </StackPanel>
 
-                                <ProgressBar Height="15" 
-                                             Value="{Binding PeerBenchmark.PercentileRank}" 
-                                             Maximum="100"
-                                             Foreground="#107C10"/>
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <TextBlock Text="Peer Average" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock FontSize="28" FontWeight="Bold" Foreground="#107C10">
+                                            <Run Text="{Binding EnrollmentAccelerationInsight.PeerAverageRate, Mode=OneWay}"/>
+                                            <Run Text="/wk" FontSize="14"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Background="#FFF3CD" Padding="12" CornerRadius="4" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="Bold" Foreground="#856404" Margin="0,0,0,5">
+                                            <Run Text="🎯 Enroll "/>
+                                            <Run Text="{Binding EnrollmentAccelerationInsight.DevicesNeededToMatchPeers, Mode=OneWay}"/>
+                                            <Run Text=" more devices to match peers"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding EnrollmentAccelerationInsight.RecommendedAction}" 
+                                                   FontSize="12" Foreground="#856404" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="Specific Tactics:" FontSize="12" FontWeight="Bold" Margin="0,0,0,5"/>
+                                <ItemsControl ItemsSource="{Binding EnrollmentAccelerationInsight.SpecificTactics}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock FontSize="11" Foreground="#333" TextWrapping="Wrap" Margin="0,0,0,4">
+                                                <Run Text="• "/>
+                                                <Run Text="{Binding}"/>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </Border>
 
@@ -1287,33 +1305,52 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- 8. Milestones -->
+                        <!-- 8. Progress Targets - FORWARD-LOOKING ACTIONS -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>
-                                <TextBlock Text="🎯 Recent Milestones" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="🎯 Your Progress Targets" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="Specific actions to achieve your next milestones" 
+                                           FontSize="11" Foreground="#666" Margin="0,0,0,10"/>
                                 
-                                <!-- Empty state when authenticated -->
-                                <Border Background="#F0F9FF" CornerRadius="4" Padding="20" Margin="0,10,0,0"
-                                        Visibility="{Binding Milestones.Count, Converter={StaticResource CountToVisibilityConverter}}">
-                                    <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="🚧 No milestones yet" FontSize="14" FontWeight="SemiBold" Foreground="#666" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Milestones will appear as you progress" FontSize="11" Foreground="#999" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                                
-                                <ItemsControl ItemsSource="{Binding Milestones}">
+                                <ItemsControl ItemsSource="{Binding ProgressTargets}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#F0F9FF" CornerRadius="4" Padding="12" Margin="0,0,0,10">
+                                            <Border Background="#F0F9FF" BorderBrush="#0078D4" BorderThickness="1" 
+                                                    CornerRadius="4" Padding="12" Margin="0,0,0,10">
                                                 <StackPanel>
-                                                    <TextBlock FontSize="20" Text="{Binding Icon}" Margin="0,0,0,5"/>
-                                                    <TextBlock Text="{Binding Title}" 
-                                                               FontWeight="SemiBold" FontSize="13"/>
-                                                    <TextBlock Text="{Binding Description}" 
-                                                               FontSize="11" Foreground="#666666" 
-                                                               TextWrapping="Wrap" Margin="0,3,0,5"/>
-                                                    <TextBlock Text="{Binding AchievedDate, StringFormat='{}{0:MMM d, yyyy}'}" 
-                                                               FontSize="10" Foreground="#999999"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                                        <TextBlock FontSize="18" Text="{Binding Icon}" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding TargetDescription}" 
+                                                                   FontWeight="Bold" FontSize="13" Foreground="#0078D4"/>
+                                                    </StackPanel>
+                                                    <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
+                                                        <Run Text="📅 Target: "/>
+                                                        <Run Text="{Binding TargetDate, StringFormat='{}{0:MMM d, yyyy}'}" FontWeight="SemiBold"/>
+                                                    </TextBlock>
+                                                    <Border Background="#FFF3CD" Padding="8" CornerRadius="3" Margin="0,0,0,5">
+                                                        <TextBlock FontSize="11" Foreground="#856404" TextWrapping="Wrap">
+                                                            <Run Text="✅ "/>
+                                                            <Run Text="{Binding ActionToAchieve}" FontWeight="SemiBold"/>
+                                                        </TextBlock>
+                                                    </Border>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                        <Border Background="#E8F5E9" Padding="5,2" CornerRadius="3" Margin="0,0,5,0"
+                                                                Visibility="{Binding IsEnrollmentTarget, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                            <TextBlock FontSize="10" Foreground="#107C10">
+                                                                <Run Text="📱 "/>
+                                                                <Run Text="{Binding DevicesRequired, Mode=OneWay}"/>
+                                                                <Run Text=" devices"/>
+                                                            </TextBlock>
+                                                        </Border>
+                                                        <Border Background="#E3F2FD" Padding="5,2" CornerRadius="3"
+                                                                Visibility="{Binding IsWorkloadTarget, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                            <TextBlock FontSize="10" Foreground="#0078D4">
+                                                                <Run Text="🔄 "/>
+                                                                <Run Text="{Binding WorkloadsRequired, Mode=OneWay}"/>
+                                                                <Run Text=" workload"/>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </StackPanel>
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>
@@ -3023,8 +3060,8 @@
                     </ScrollViewer>
                 </TabItem>
 
-                <!-- EXECUTIVE DASHBOARD TAB -->
-                <TabItem Header="📊 Executive">
+                <!-- AI ACTION COMMAND CENTER TAB -->
+                <TabItem Header="🤖 AI Actions">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel>
                             <!-- AI Status Banner -->
@@ -3037,7 +3074,7 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="⚠️ AI INSIGHTS UNAVAILABLE" FontWeight="Bold" FontSize="14" Foreground="#856404"/>
-                                        <TextBlock Text="Azure OpenAI is not configured or unreachable. Showing rule-based recommendations instead." 
+                                        <TextBlock Text="Azure OpenAI is not configured. Configure AI to get actionable recommendations for enrollment and workload transition." 
                                                    FontSize="12" Foreground="#856404" TextWrapping="Wrap" Margin="0,5,0,0"/>
                                     </StackPanel>
                                     <Button Grid.Column="1" Content="🤖 Configure AI" 
@@ -3048,32 +3085,43 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Executive Summary Content -->
-                            <StackPanel Visibility="{Binding ExecutiveSummary, Converter={StaticResource NullToVisibilityConverter}}">
-                                <!-- Migration Health Score Card -->
-                                <Border Background="#E3F2FD" Padding="30" CornerRadius="4" Margin="0,0,0,15">
-                                    <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="MIGRATION HEALTH SCORE" 
-                                                   FontSize="14" FontWeight="Bold" Foreground="#666666" 
-                                                   HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBlock Text="{Binding ExecutiveSummary.MigrationHealthScore, StringFormat={}{0:F0}}" 
-                                                       FontSize="72" FontWeight="Bold" Foreground="#0078D4"/>
-                                            <TextBlock Text="/100" FontSize="36" FontWeight="Bold" Foreground="#666666" 
-                                                       VerticalAlignment="Bottom" Margin="5,0,0,10"/>
-                                        </StackPanel>
-                                        <TextBlock Text="{Binding ExecutiveSummary.OverallStatus}" 
-                                                   FontSize="13" FontStyle="Italic" Foreground="#666666" 
-                                                   HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            <!-- AI Action Summary Content -->
+                            <StackPanel Visibility="{Binding AIActionSummary, Converter={StaticResource NullToVisibilityConverter}}">
+                                
+                                <!-- Primary Enrollment Action -->
+                                <Border Background="#E8F5E9" BorderBrush="#107C10" BorderThickness="2" Padding="20" CornerRadius="4" Margin="0,0,0,15">
+                                    <StackPanel>
+                                        <TextBlock Text="📱 PRIMARY ENROLLMENT ACTION" 
+                                                   FontSize="14" FontWeight="Bold" Foreground="#107C10" 
+                                                   Margin="0,0,0,10"/>
+                                        <TextBlock Text="{Binding AIActionSummary.PrimaryEnrollmentAction}" 
+                                                   FontSize="16" FontWeight="SemiBold" Foreground="#333333" 
+                                                   TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                        <Border Background="#FFF" Padding="10" CornerRadius="3">
+                                            <TextBlock FontSize="13" Foreground="#666">
+                                                <Run Text="💥 Impact: " FontWeight="Bold"/>
+                                                <Run Text="{Binding AIActionSummary.EnrollmentActionImpact, Mode=OneWay}"/>
+                                                <Run Text=" devices affected"/>
+                                            </TextBlock>
+                                        </Border>
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Executive Brief -->
-                                <Border Style="{StaticResource SectionCard}" Margin="0,0,0,15">
+                                <!-- Primary Workload Action -->
+                                <Border Background="#E3F2FD" BorderBrush="#0078D4" BorderThickness="2" Padding="20" CornerRadius="4" Margin="0,0,0,15">
                                     <StackPanel>
-                                        <TextBlock Text="📝 EXECUTIVE BRIEF" Style="{StaticResource SectionTitle}" Margin="0,0,0,15"/>
-                                        <TextBlock Text="{Binding ExecutiveSummary.ExecutiveSummaryText}" 
-                                                   FontSize="14" Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
+                                        <TextBlock Text="🔄 PRIMARY WORKLOAD ACTION" 
+                                                   FontSize="14" FontWeight="Bold" Foreground="#0078D4" 
+                                                   Margin="0,0,0,10"/>
+                                        <TextBlock Text="{Binding AIActionSummary.PrimaryWorkloadAction}" 
+                                                   FontSize="16" FontWeight="SemiBold" Foreground="#333333" 
+                                                   TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                        <Border Background="#FFF" Padding="10" CornerRadius="3">
+                                            <TextBlock FontSize="13" Foreground="#666">
+                                                <Run Text="🎯 Impact: " FontWeight="Bold"/>
+                                                <Run Text="{Binding AIActionSummary.WorkloadActionImpact}"/>
+                                            </TextBlock>
+                                        </Border>
                                     </StackPanel>
                                 </Border>
 
@@ -3083,24 +3131,17 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Key Risks -->
+                                    <!-- Enrollment Blockers -->
                                     <Border Grid.Column="0" Style="{StaticResource SectionCard}" Margin="0,0,7,0">
                                         <StackPanel>
-                                            <TextBlock Text="⚠️ KEY RISKS" Style="{StaticResource SectionTitle}" Margin="0,0,0,15"/>
+                                            <TextBlock Text="⚠️ ENROLLMENT BLOCKERS" Style="{StaticResource SectionTitle}" Margin="0,0,0,15"/>
                                             
-                                            <ItemsControl ItemsSource="{Binding ExecutiveSummary.CriticalIssues}">
+                                            <ItemsControl ItemsSource="{Binding AIActionSummary.EnrollmentBlockers}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Background="#FFEBEE" Padding="12" CornerRadius="4" Margin="0,0,0,8">
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                </Grid.ColumnDefinitions>
-                                                                <TextBlock Grid.Column="0" Text="⚠️" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Top"/>
-                                                                <TextBlock Grid.Column="1" Text="{Binding}" 
-                                                                           FontSize="13" Foreground="#C62828" TextWrapping="Wrap"/>
-                                                            </Grid>
+                                                        <Border Background="#FFEBEE" Padding="10" CornerRadius="4" Margin="0,0,0,8">
+                                                            <TextBlock Text="{Binding}" 
+                                                                       FontSize="12" Foreground="#C62828" TextWrapping="Wrap"/>
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
@@ -3108,67 +3149,69 @@
 
                                             <!-- Empty State -->
                                             <Border Background="#E8F5E9" Padding="12" CornerRadius="4"
-                                                    Visibility="{Binding ExecutiveSummary.CriticalIssues, Converter={StaticResource CollectionToVisibilityConverter}, ConverterParameter=Inverse}">
+                                                    Visibility="{Binding AIActionSummary.EnrollmentBlockers, Converter={StaticResource CollectionToVisibilityConverter}, ConverterParameter=Inverse}">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="✓" FontSize="16" Foreground="#107C10" Margin="0,0,10,0"/>
-                                                    <TextBlock Text="No critical risks identified" 
-                                                               FontSize="13" Foreground="#107C10" FontWeight="Bold"/>
+                                                    <TextBlock Text="No enrollment blockers" 
+                                                               FontSize="12" Foreground="#107C10" FontWeight="Bold"/>
                                                 </StackPanel>
                                             </Border>
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- Strategic Recommendations -->
+                                    <!-- Workload Blockers -->
                                     <Border Grid.Column="1" Style="{StaticResource SectionCard}" Margin="7,0,0,0">
                                         <StackPanel>
-                                            <TextBlock Text="✨ STRATEGIC RECOMMENDATIONS" Style="{StaticResource SectionTitle}" Margin="0,0,0,15"/>
+                                            <TextBlock Text="⚠️ WORKLOAD BLOCKERS" Style="{StaticResource SectionTitle}" Margin="0,0,0,15"/>
                                             
-                                            <ItemsControl ItemsSource="{Binding ExecutiveSummary.KeyAchievements}">
+                                            <ItemsControl ItemsSource="{Binding AIActionSummary.WorkloadBlockers}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Grid Margin="0,0,0,12">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <TextBlock Grid.Column="0" Text="✓" FontSize="16" FontWeight="Bold" 
-                                                                       Foreground="#107C10" Margin="0,0,10,0" VerticalAlignment="Top"/>
-                                                            <TextBlock Grid.Column="1" Text="{Binding}" 
-                                                                       FontSize="13" Foreground="#333333" TextWrapping="Wrap"/>
-                                                        </Grid>
+                                                        <Border Background="#FFEBEE" Padding="10" CornerRadius="4" Margin="0,0,0,8">
+                                                            <TextBlock Text="{Binding}" 
+                                                                       FontSize="12" Foreground="#C62828" TextWrapping="Wrap"/>
+                                                        </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
 
                                             <!-- Empty State -->
-                                            <Border Background="#F3F3F3" Padding="12" CornerRadius="4"
-                                                    Visibility="{Binding ExecutiveSummary.KeyAchievements, Converter={StaticResource CollectionToVisibilityConverter}, ConverterParameter=Inverse}">
-                                                <TextBlock Text="No recommendations at this time" 
-                                                           FontSize="13" Foreground="#999999" FontStyle="Italic"/>
+                                            <Border Background="#E8F5E9" Padding="12" CornerRadius="4"
+                                                    Visibility="{Binding AIActionSummary.WorkloadBlockers, Converter={StaticResource CollectionToVisibilityConverter}, ConverterParameter=Inverse}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="✓" FontSize="16" Foreground="#107C10" Margin="0,0,10,0"/>
+                                                    <TextBlock Text="No workload blockers" 
+                                                               FontSize="12" Foreground="#107C10" FontWeight="Bold"/>
+                                                </StackPanel>
                                             </Border>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
 
-                                <!-- Next Critical Action -->
+                                <!-- AI Recommendation -->
                                 <Border Style="{StaticResource SectionCard}">
                                     <StackPanel>
-                                        <TextBlock Text="🎯 NEXT CRITICAL ACTION" 
+                                        <TextBlock Text="🤖 AI RECOMMENDATION" 
                                                    Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
-                                        <TextBlock Text="{Binding ExecutiveSummary.NextCriticalAction}" 
-                                                   FontSize="14" FontWeight="Bold" Foreground="#0078D4" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding AIActionSummary.AIRecommendation}" 
+                                                   FontSize="14" Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
+                                        <TextBlock FontSize="12" FontStyle="Italic" Foreground="#999" Margin="0,10,0,0">
+                                            <Run Text="Next milestone in "/>
+                                            <Run Text="{Binding AIActionSummary.WeeksToNextMilestone, Mode=OneWay}"/>
+                                            <Run Text=" weeks if you follow these actions"/>
+                                        </TextBlock>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
 
                             <!-- Loading State -->
                             <Border Style="{StaticResource SectionCard}"
-                                    Visibility="{Binding ExecutiveSummary, Converter={StaticResource NullToVisibilityConverter}, ConverterParameter=Inverse}">
+                                    Visibility="{Binding AIActionSummary, Converter={StaticResource NullToVisibilityConverter}, ConverterParameter=Inverse}">
                                 <StackPanel HorizontalAlignment="Center" Margin="40">
-                                    <TextBlock Text="🔄 Loading executive summary..." 
+                                    <TextBlock Text="🔄 Loading AI actions..." 
                                                FontSize="16" FontWeight="Bold" Foreground="#666666" 
                                                HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Analyzing migration status and generating insights..." 
+                                    <TextBlock Text="Analyzing your migration and generating actionable recommendations..." 
                                                FontSize="13" Foreground="#999999" 
                                                HorizontalAlignment="Center" Margin="0,10,0,0"/>
                                 </StackPanel>

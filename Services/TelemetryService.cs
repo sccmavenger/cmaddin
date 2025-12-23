@@ -79,29 +79,39 @@ namespace CloudJourneyAddin.Services
             };
         }
 
-        public async Task<PeerBenchmark> GetPeerBenchmarkAsync()
+        public async Task<EnrollmentAccelerationInsight> GetEnrollmentAccelerationInsightAsync()
         {
             await Task.Delay(100);
 
-            return new PeerBenchmark
+            return new EnrollmentAccelerationInsight
             {
-                YourProgress = 42.8,
-                AverageProgress = 35.2,
-                PercentileRank = 65,
-                OrganizationCategory = "Enterprise (5000-10000 devices)"
+                YourWeeklyEnrollmentRate = 45,
+                PeerAverageRate = 78,
+                DevicesNeededToMatchPeers = 132,
+                RecommendedAction = "Increase batch size to 100 devices/week to match peer velocity",
+                OrganizationCategory = "Enterprise (5000-10000 devices)",
+                SpecificTactics = new List<string>
+                {
+                    "Use Phase 3 Autonomous Agent to auto-enroll ready devices",
+                    "Target 'Good' readiness devices (60-79 score) for quick wins",
+                    "Schedule CMG capacity expansion for 200+ concurrent enrollments"
+                },
+                EstimatedWeeksToMatchPeers = 3
             };
         }
 
-        public async Task<ROIData> GetROIDataAsync()
+        public async Task<SavingsUnlockInsight> GetSavingsUnlockInsightAsync()
         {
             await Task.Delay(100);
 
-            return new ROIData
+            return new SavingsUnlockInsight
             {
-                EstimatedAnnualSavings = 285000m,
-                InfrastructureCostReduction = 180000m,
-                PatchCycleDaysReduced = 12,
-                AdminTimeReduction = 35.5
+                SavingsLockedBehindEnrollment = 180000m,
+                DevicesNeededToUnlock = 850,
+                NextSavingsMilestone = "$50,000 annual savings unlocked at 75% enrollment",
+                SavingsFromWorkloadTransition = 105000m,
+                WorkloadToTransition = "Conditional Access",
+                RecommendedAction = "Enroll 132 devices this week to unlock $8,500/month savings"
             };
         }
 
@@ -126,6 +136,48 @@ namespace CloudJourneyAddin.Services
                     Description = "Intune enrollment increased by 15% this month.",
                     ActionText = "View Details",
                     DetectedDate = DateTime.Now.AddDays(-1)
+                }
+            };
+        }
+
+        public async Task<List<ProgressTarget>> GetProgressTargetsAsync()
+        {
+            await Task.Delay(100);
+
+            return new List<ProgressTarget>
+            {
+                new ProgressTarget
+                {
+                    TargetDescription = "Reach 75% device enrollment",
+                    TargetDate = DateTime.Now.AddDays(21),
+                    DevicesRequired = 425,
+                    WorkloadsRequired = 0,
+                    ActionToAchieve = "Run Phase 3 agent with 100 device/week batch size",
+                    IsEnrollmentTarget = true,
+                    IsWorkloadTarget = false,
+                    Icon = "🎯"
+                },
+                new ProgressTarget
+                {
+                    TargetDescription = "Transition Conditional Access workload",
+                    TargetDate = DateTime.Now.AddDays(14),
+                    DevicesRequired = 0,
+                    WorkloadsRequired = 1,
+                    ActionToAchieve = "Validate 95%+ policy compliance, then shift slider to Intune",
+                    IsEnrollmentTarget = false,
+                    IsWorkloadTarget = true,
+                    Icon = "🔐"
+                },
+                new ProgressTarget
+                {
+                    TargetDescription = "Complete endpoint security migration",
+                    TargetDate = DateTime.Now.AddDays(35),
+                    DevicesRequired = 150,
+                    WorkloadsRequired = 2,
+                    ActionToAchieve = "Enroll remaining high-priority devices, transition Endpoint Protection + Windows Update",
+                    IsEnrollmentTarget = true,
+                    IsWorkloadTarget = true,
+                    Icon = "🛡️"
                 }
             };
         }

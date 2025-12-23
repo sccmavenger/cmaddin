@@ -28,8 +28,8 @@ namespace CloudJourneyAddin.ViewModels
         private MigrationStatus? _migrationStatus;
         private DeviceEnrollment? _deviceEnrollment;
         private ComplianceScore? _complianceScore;
-        private PeerBenchmark? _peerBenchmark;
-        private ROIData? _roiData;
+        private EnrollmentAccelerationInsight? _enrollmentAccelerationInsight;
+        private SavingsUnlockInsight? _savingsUnlockInsight;
         private bool _isLoading;
         private DateTime _lastRefreshTime;
         private bool _useRealData;
@@ -60,7 +60,8 @@ namespace CloudJourneyAddin.ViewModels
         private EnrollmentMomentumInsight? _enrollmentInsight;
         private bool _isLoadingEnrollmentInsight = false;
         private WorkloadMomentumInsight? _workloadMomentumInsight;
-        private ExecutiveSummary? _executiveSummary;
+        private AIActionSummary? _aiActionSummary;
+        private ExecutiveSummary? _executiveSummary; // Backward compatibility
         private bool _isAIAvailable = false;
         
         // v2.6.0 - Device Readiness & Enrollment Blockers
@@ -147,6 +148,7 @@ namespace CloudJourneyAddin.ViewModels
             Workloads = new ObservableCollection<Workload>();
             Alerts = new ObservableCollection<Alert>();
             Milestones = new ObservableCollection<Milestone>();
+            ProgressTargets = new ObservableCollection<ProgressTarget>();
             Blockers = new ObservableCollection<Blocker>();
             EngagementOptions = new ObservableCollection<EngagementOption>();
             AIRecommendations = new ObservableCollection<AIRecommendation>();
@@ -240,16 +242,16 @@ namespace CloudJourneyAddin.ViewModels
             set => SetProperty(ref _complianceScore, value);
         }
 
-        public PeerBenchmark? PeerBenchmark
+        public EnrollmentAccelerationInsight? EnrollmentAccelerationInsight
         {
-            get => _peerBenchmark;
-            set => SetProperty(ref _peerBenchmark, value);
+            get => _enrollmentAccelerationInsight;
+            set => SetProperty(ref _enrollmentAccelerationInsight, value);
         }
 
-        public ROIData? ROIData
+        public SavingsUnlockInsight? SavingsUnlockInsight
         {
-            get => _roiData;
-            set => SetProperty(ref _roiData, value);
+            get => _savingsUnlockInsight;
+            set => SetProperty(ref _savingsUnlockInsight, value);
         }
 
         public bool IsLoading
@@ -266,6 +268,7 @@ namespace CloudJourneyAddin.ViewModels
 
         public ObservableCollection<Workload> Workloads { get; }
         public ObservableCollection<Alert> Alerts { get; }
+        public ObservableCollection<ProgressTarget> ProgressTargets { get; }
         public ObservableCollection<Milestone> Milestones { get; }
         public ObservableCollection<Blocker> Blockers { get; }
         public ObservableCollection<EngagementOption> EngagementOptions { get; }
@@ -427,6 +430,12 @@ namespace CloudJourneyAddin.ViewModels
         {
             get => _workloadMomentumInsight;
             set => SetProperty(ref _workloadMomentumInsight, value);
+        }
+
+        public AIActionSummary? AIActionSummary
+        {
+            get => _aiActionSummary;
+            set => SetProperty(ref _aiActionSummary, value);
         }
 
         public ExecutiveSummary? ExecutiveSummary
@@ -1614,19 +1623,19 @@ namespace CloudJourneyAddin.ViewModels
                     Alerts.Add(alert);
             }
 
-            // NO MOCK DATA after authentication - only real data or N/A
-            // Peer Benchmark and ROI are industry estimates (clearly labeled in UI)
-            Instance.Info("Loading industry estimates (Peer Benchmark, ROI)...");
-            var peerBenchmarkTask = _telemetryService.GetPeerBenchmarkAsync();
-            var roiDataTask = _telemetryService.GetROIDataAsync();
+            // Industry insights focused on ACTIONS to accelerate enrollment (principle #1)
+            Instance.Info("Loading enrollment acceleration insights...");
+            var enrollmentInsightTask = _telemetryService.GetEnrollmentAccelerationInsightAsync();
+            var savingsInsightTask = _telemetryService.GetSavingsUnlockInsightAsync();
             var engagementOptionsTask = _telemetryService.GetEngagementOptionsAsync();
 
-            await Task.WhenAll(peerBenchmarkTask, roiDataTask, engagementOptionsTask);
+            await Task.WhenAll(enrollmentInsightTask, savingsInsightTask, engagementOptionsTask);
 
-            PeerBenchmark = await peerBenchmarkTask;
-            ROIData = await roiDataTask;
+            EnrollmentAccelerationInsight = await enrollmentInsightTask;
+            SavingsUnlockInsight = await savingsInsightTask;
 
-            // NO mock milestones after authentication (future enhancement)
+            // NO mock milestones - replaced with forward-looking ProgressTargets
+            ProgressTargets.Clear();
             Milestones.Clear();
 
             // REAL ENROLLMENT BLOCKER DETECTION (only true prerequisites)
@@ -1658,10 +1667,11 @@ namespace CloudJourneyAddin.ViewModels
             var deviceEnrollmentTask = _telemetryService.GetDeviceEnrollmentAsync();
             var workloadsTask = _telemetryService.GetWorkloadsAsync();
             var complianceScoreTask = _telemetryService.GetComplianceScoreAsync();
-            var peerBenchmarkTask = _telemetryService.GetPeerBenchmarkAsync();
-            var roiDataTask = _telemetryService.GetROIDataAsync();
+            var enrollmentInsightTask = _telemetryService.GetEnrollmentAccelerationInsightAsync();
+            var savingsInsightTask = _telemetryService.GetSavingsUnlockInsightAsync();
             var alertsTask = _telemetryService.GetAlertsAsync();
             var milestonesTask = _telemetryService.GetMilestonesAsync();
+            var progressTargetsTask = _telemetryService.GetProgressTargetsAsync();
             var blockersTask = _telemetryService.GetBlockersAsync();
             var engagementOptionsTask = _telemetryService.GetEngagementOptionsAsync();
 
@@ -1670,10 +1680,11 @@ namespace CloudJourneyAddin.ViewModels
                 deviceEnrollmentTask,
                 workloadsTask,
                 complianceScoreTask,
-                peerBenchmarkTask,
-                roiDataTask,
+                enrollmentInsightTask,
+                savingsInsightTask,
                 alertsTask,
                 milestonesTask,
+                progressTargetsTask,
                 blockersTask,
                 engagementOptionsTask
             );
@@ -1688,8 +1699,8 @@ namespace CloudJourneyAddin.ViewModels
                 Workloads.Add(workload);
 
             ComplianceScore = await complianceScoreTask;
-            PeerBenchmark = await peerBenchmarkTask;
-            ROIData = await roiDataTask;
+            EnrollmentAccelerationInsight = await enrollmentInsightTask;
+            SavingsUnlockInsight = await savingsInsightTask;
 
             var alerts = await alertsTask;
             Alerts.Clear();
@@ -1700,6 +1711,12 @@ namespace CloudJourneyAddin.ViewModels
             Milestones.Clear();
             foreach (var milestone in milestones.OrderByDescending(m => m.AchievedDate).Take(3))
                 Milestones.Add(milestone);
+            
+            // Also populate ProgressTargets with forward-looking goals
+            ProgressTargets.Clear();
+            var progressTargets = await progressTargetsTask;
+            foreach (var target in progressTargets)
+                ProgressTargets.Add(target);
 
             var blockers = await blockersTask;
             Blockers.Clear();
