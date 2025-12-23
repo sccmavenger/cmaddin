@@ -61,20 +61,29 @@ namespace CloudJourneyAddin.Models
         public int PolicyViolations { get; set; }
     }
 
-    public class PeerBenchmark
+    // Renamed from PeerBenchmark to EnrollmentAccelerationInsight
+    // Focus: AI insights to help customers match or exceed peer enrollment velocity
+    public class EnrollmentAccelerationInsight
     {
-        public double YourProgress { get; set; }
-        public double AverageProgress { get; set; }
-        public int PercentileRank { get; set; }
+        public double YourWeeklyEnrollmentRate { get; set; }
+        public double PeerAverageRate { get; set; }
+        public int DevicesNeededToMatchPeers { get; set; }
+        public string RecommendedAction { get; set; } = string.Empty;
         public string OrganizationCategory { get; set; } = string.Empty;
+        public List<string> SpecificTactics { get; set; } = new();
+        public int EstimatedWeeksToMatchPeers { get; set; }
     }
 
-    public class ROIData
+    // Renamed from ROIData to SavingsUnlockInsight
+    // Focus: Show what actions will unlock savings (entice enrollment/workload transition)
+    public class SavingsUnlockInsight
     {
-        public decimal EstimatedAnnualSavings { get; set; }
-        public decimal InfrastructureCostReduction { get; set; }
-        public int PatchCycleDaysReduced { get; set; }
-        public double AdminTimeReduction { get; set; }
+        public decimal SavingsLockedBehindEnrollment { get; set; }
+        public int DevicesNeededToUnlock { get; set; }
+        public string NextSavingsMilestone { get; set; } = string.Empty;
+        public decimal SavingsFromWorkloadTransition { get; set; }
+        public string WorkloadToTransition { get; set; } = string.Empty;
+        public string RecommendedAction { get; set; } = string.Empty;
     }
 
     public class Alert
@@ -93,11 +102,17 @@ namespace CloudJourneyAddin.Models
         Critical
     }
 
-    public class Milestone
+    // Renamed from Milestone to ProgressTarget
+    // Focus: Forward-looking targets with specific actions to achieve them
+    public class ProgressTarget
     {
-        public string Title { get; set; } = string.Empty;
-        public DateTime AchievedDate { get; set; }
-        public string Description { get; set; } = string.Empty;
+        public string TargetDescription { get; set; } = string.Empty;
+        public DateTime TargetDate { get; set; }
+        public int DevicesRequired { get; set; }
+        public int WorkloadsRequired { get; set; }
+        public string ActionToAchieve { get; set; } = string.Empty;
+        public bool IsEnrollmentTarget { get; set; }
+        public bool IsWorkloadTarget { get; set; }
         public string Icon { get; set; } = string.Empty;
     }
 
@@ -177,7 +192,23 @@ namespace CloudJourneyAddin.Models
         public string ValidationCriteria { get; set; } = string.Empty;
     }
 
-    // ===== EXECUTIVE SUMMARY MODELS =====
+    // ===== AI ACTION SUMMARY MODELS =====
+    // Renamed from ExecutiveSummary to AIActionSummary
+    // Focus: AI-powered actionable recommendations for enrollment and workload transition
+    public class AIActionSummary
+    {
+        public string PrimaryEnrollmentAction { get; set; } = string.Empty;
+        public int EnrollmentActionImpact { get; set; } // Devices affected
+        public string PrimaryWorkloadAction { get; set; } = string.Empty;
+        public string WorkloadActionImpact { get; set; } = string.Empty; // e.g., "Unlock Conditional Access"
+        public List<string> EnrollmentBlockers { get; set; } = new();
+        public List<string> WorkloadBlockers { get; set; } = new();
+        public string AIRecommendation { get; set; } = string.Empty;
+        public int WeeksToNextMilestone { get; set; }
+        public bool IsAIPowered { get; set; }
+    }
+
+    // BACKWARD COMPATIBILITY - Keep old ExecutiveSummary model for existing services
     public class ExecutiveSummary
     {
         public int MigrationHealthScore { get; set; } // 0-100
@@ -189,6 +220,15 @@ namespace CloudJourneyAddin.Models
         public double SuccessProbability { get; set; } // 0-100
         public string ExecutiveSummaryText { get; set; } = string.Empty;
         public bool IsAIPowered { get; set; }
+    }
+
+    // BACKWARD COMPATIBILITY - Keep old Milestone model for existing services
+    public class Milestone
+    {
+        public string Title { get; set; } = string.Empty;
+        public DateTime AchievedDate { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
     }
 
     // ===== CONFIGMGR DATA MODELS =====
