@@ -35,6 +35,27 @@ namespace CloudJourneyAddin.Models
         public WorkloadStatus Status { get; set; }
         public string LearnMoreUrl { get; set; } = string.Empty;
         public DateTime? TransitionDate { get; set; }
+        
+        // Enhanced properties for benefit cards
+        public List<string> Benefits { get; set; } = new();
+        public double ReadinessScore { get; set; }
+        public string EstimatedTime { get; set; } = string.Empty;
+        public string RiskLevel { get; set; } = string.Empty;
+        public List<string> DependsOn { get; set; } = new();
+        public bool IsBlocked { get; set; }
+        public string BlockReason { get; set; } = string.Empty;
+        public int Order { get; set; } // Microsoft recommended order
+        
+        // Computed properties for UI display
+        public string StatusIcon => Status switch
+        {
+            WorkloadStatus.Completed => "✅",
+            WorkloadStatus.InProgress => "🔵",
+            WorkloadStatus.NotStarted => IsBlocked ? "🔒" : "⏸️",
+            _ => "⏸️"
+        };
+        
+        public bool IsLastItem { get; set; } // For timeline visualization
     }
 
     public enum WorkloadStatus
@@ -182,6 +203,12 @@ namespace CloudJourneyAddin.Models
         public List<WorkloadTransitionStep> TransitionRoadmap { get; set; } = new();
         public int EstimatedWeeks { get; set; }
         public bool IsAIPowered { get; set; }
+        
+        // Safety and confidence properties
+        public int RollbackTimeMinutes { get; set; }
+        public string SafetyScore { get; set; } = string.Empty; // "High", "Medium", "Low"
+        public List<string> PolicyConflicts { get; set; } = new();
+        public bool ReadyToStart => PolicyConflicts.Count == 0 && Prerequisites.Count == 0;
     }
 
     public class WorkloadTransitionStep
@@ -461,5 +488,39 @@ namespace CloudJourneyAddin.Models
         public int DeviceCount { get; set; }
         public string Description { get; set; } = string.Empty;
         public List<string> AffectedDevices { get; set; } = new();
+    }
+
+    // AI-powered workload motivation insight
+    public class WorkloadMotivationInsight
+    {
+        public string WorkloadName { get; set; } = string.Empty;
+        public List<string> AIReasons { get; set; } = new(); // 3 personalized reasons to migrate
+        public List<RiskItem> Risks { get; set; } = new(); // Risk assessment items
+    }
+
+    public class RiskItem
+    {
+        public string Level { get; set; } = string.Empty; // "High", "Medium", "Low"
+        public string Title { get; set; } = string.Empty;
+        public string Impact { get; set; } = string.Empty;
+        public string Likelihood { get; set; } = string.Empty;
+        public string Fix { get; set; } = string.Empty;
+        
+        // UI color bindings
+        public string LevelColor => Level switch
+        {
+            "High" => "#D13438",
+            "Medium" => "#FFB900",
+            "Low" => "#107C10",
+            _ => "#666666"
+        };
+        
+        public string LevelIcon => Level switch
+        {
+            "High" => "🔴",
+            "Medium" => "🟡",
+            "Low" => "🟢",
+            _ => "⚪"
+        };
     }
 }
