@@ -292,4 +292,111 @@ namespace CloudJourneyAddin.Converters
             return false;
         }
     }
+
+    /// <summary>
+    /// Converts Risk Level string to color for Workloads tab
+    /// </summary>
+    public class RiskLevelToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string riskLevel)
+            {
+                return riskLevel.ToLower() switch
+                {
+                    "low" => new SolidColorBrush(Color.FromRgb(16, 124, 16)), // Green
+                    "medium" => new SolidColorBrush(Color.FromRgb(255, 185, 0)), // Yellow
+                    "high" => new SolidColorBrush(Color.FromRgb(255, 87, 34)), // Orange
+                    "critical" => new SolidColorBrush(Color.FromRgb(209, 52, 56)), // Red
+                    _ => new SolidColorBrush(Colors.Gray)
+                };
+            }
+            return Brushes.Gray;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts Risk Level to background color for badges
+    /// </summary>
+    public class RiskLevelToBgColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string riskLevel)
+            {
+                return riskLevel.ToLower() switch
+                {
+                    "low" => new SolidColorBrush(Color.FromRgb(232, 245, 233)), // Light Green
+                    "medium" => new SolidColorBrush(Color.FromRgb(255, 249, 230)), // Light Yellow
+                    "high" => new SolidColorBrush(Color.FromRgb(255, 243, 224)), // Light Orange
+                    "critical" => new SolidColorBrush(Color.FromRgb(255, 230, 230)), // Light Red
+                    _ => new SolidColorBrush(Colors.LightGray)
+                };
+            }
+            return Brushes.LightGray;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts readiness score (0-100) to color
+    /// </summary>
+    public class ReadinessScoreToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is double score)
+            {
+                if (score >= 80)
+                    return new SolidColorBrush(Color.FromRgb(76, 175, 80)); // Green
+                else if (score >= 60)
+                    return new SolidColorBrush(Color.FromRgb(255, 193, 7)); // Yellow
+                else if (score >= 40)
+                    return new SolidColorBrush(Color.FromRgb(255, 152, 0)); // Orange
+                else
+                    return new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
+            }
+            return Brushes.Gray;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts WorkloadStatus to color for dependency visualization
+    /// </summary>
+    public class WorkloadStatusToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is WorkloadStatus status)
+            {
+                return status switch
+                {
+                    WorkloadStatus.Completed => new SolidColorBrush(Color.FromRgb(76, 175, 80)), // Green
+                    WorkloadStatus.InProgress => new SolidColorBrush(Color.FromRgb(33, 150, 243)), // Blue
+                    WorkloadStatus.NotStarted => new SolidColorBrush(Color.FromRgb(224, 224, 224)), // Light Gray
+                    _ => Brushes.Gray
+                };
+            }
+            return Brushes.Gray;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

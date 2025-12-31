@@ -14,6 +14,21 @@
             <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+            <converters:InverseCountToVisibilityConverter x:Key="InverseCountToVisibilityConverter"/>
+            <converters:ObjectToVisibilityConverter x:Key="ObjectToVisibilityConverter"/>
+            <converters:CollectionToVisibilityConverter x:Key="CollectionToVisibilityConverter"/>
+            <converters:PercentageConverter x:Key="PercentageConverter"/>
+            <converters:CurrencyConverter x:Key="CurrencyConverter"/>
+            <converters:WorkloadStatusConverter x:Key="WorkloadStatusConverter"/>
+            <converters:AlertSeverityConverter x:Key="AlertSeverityConverter"/>
+            <converters:BlockerSeverityConverter x:Key="BlockerSeverityConverter"/>
+            <converters:RiskLevelToColorConverter x:Key="RiskLevelToColorConverter"/>
+            <converters:RiskLevelToBgColorConverter x:Key="RiskLevelToBgColorConverter"/>
+            <converters:ReadinessScoreToColorConverter x:Key="ReadinessScoreToColorConverter"/>
+            <converters:WorkloadStatusToColorConverter x:Key="WorkloadStatusToColorConverter"/>
+            <converters:RecommendationPriorityConverter x:Key="RecommendationPriorityConverter"/>
+            <converters:PercentageToStrokeDashConverter x:Key="PercentageToStrokeDashConverter"/>
+            <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
