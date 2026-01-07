@@ -77,11 +77,28 @@ namespace CloudJourneyAddin.ViewModels
         private EnrollmentGoals? _agentGoals;
         private string? _agentCompletionMessage;
 
-        public DashboardViewModel(TelemetryService telemetryService)
+        // Tab visibility options (controlled by command-line switches)
+        private Visibility _showEnrollmentTab = Visibility.Visible;
+        private Visibility _showWorkloadsTab = Visibility.Visible;
+        private Visibility _showWorkloadBrainstormTab = Visibility.Visible;
+        private Visibility _showApplicationsTab = Visibility.Visible;
+        private Visibility _showAIActionsTab = Visibility.Visible;
+
+        public DashboardViewModel(TelemetryService telemetryService, TabVisibilityOptions? tabVisibilityOptions = null)
         {
             _telemetryService = telemetryService;
             _graphDataService = new GraphDataService();
             _configMgrService = new ConfigMgrAdminService();
+            
+            // Apply tab visibility options from command-line arguments
+            if (tabVisibilityOptions != null)
+            {
+                _showEnrollmentTab = tabVisibilityOptions.ShowEnrollmentTab;
+                _showWorkloadsTab = tabVisibilityOptions.ShowWorkloadsTab;
+                _showWorkloadBrainstormTab = tabVisibilityOptions.ShowWorkloadBrainstormTab;
+                _showApplicationsTab = tabVisibilityOptions.ShowApplicationsTab;
+                _showAIActionsTab = tabVisibilityOptions.ShowAIActionsTab;
+            }
             
             // Initialize AI Recommendation Service - Azure OpenAI is now required
             try
@@ -139,7 +156,7 @@ namespace CloudJourneyAddin.ViewModels
             
             // Initialize file logger
             Instance.Info("======== CloudJourney Dashboard Starting ========");
-            Instance.Info($"Version: 3.4.2 - Enrollment Agent (Production Build)");
+            Instance.Info($"Version: 3.5.0 - Enrollment Agent (Production Build)");
             Instance.Info($"User: {Environment.UserName}");
             Instance.Info($"Machine: {Environment.MachineName}");
             Instance.CleanupOldLogs(7); // Keep last 7 days
@@ -344,6 +361,37 @@ namespace CloudJourneyAddin.ViewModels
         public ObservableCollection<AIRecommendation> AIRecommendations { get; }
 
         public bool HasNoRecommendations => AIRecommendations.Count == 0;
+
+        // Tab visibility properties (controlled by command-line switches)
+        public Visibility ShowEnrollmentTab
+        {
+            get => _showEnrollmentTab;
+            set => SetProperty(ref _showEnrollmentTab, value);
+        }
+
+        public Visibility ShowWorkloadsTab
+        {
+            get => _showWorkloadsTab;
+            set => SetProperty(ref _showWorkloadsTab, value);
+        }
+
+        public Visibility ShowWorkloadBrainstormTab
+        {
+            get => _showWorkloadBrainstormTab;
+            set => SetProperty(ref _showWorkloadBrainstormTab, value);
+        }
+
+        public Visibility ShowApplicationsTab
+        {
+            get => _showApplicationsTab;
+            set => SetProperty(ref _showApplicationsTab, value);
+        }
+
+        public Visibility ShowAIActionsTab
+        {
+            get => _showAIActionsTab;
+            set => SetProperty(ref _showAIActionsTab, value);
+        }
 
         // Phase 1 AI Enhancement Properties
         public CloudJourneyAddin.Services.MigrationPlan? MigrationPlan

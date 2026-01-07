@@ -3,12 +3,13 @@ using System.Windows;
 using System.Windows.Controls;
 using CloudJourneyAddin.ViewModels;
 using CloudJourneyAddin.Services;
+using CloudJourneyAddin.Models;
 
 namespace CloudJourneyAddin.Views
 {
     public partial class DashboardWindow : Window
     {
-        public DashboardWindow()
+        public DashboardWindow(TabVisibilityOptions? tabVisibilityOptions = null)
         {
             try
             {
@@ -18,7 +19,7 @@ namespace CloudJourneyAddin.Views
                 SetAdaptiveWindowSize();
                 
                 var telemetryService = new TelemetryService();
-                DataContext = new DashboardViewModel(telemetryService);
+                DataContext = new DashboardViewModel(telemetryService, tabVisibilityOptions);
             }
             catch (Exception ex)
             {
