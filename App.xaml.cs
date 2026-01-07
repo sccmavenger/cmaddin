@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Windows;
 using CloudJourneyAddin.Views;
+using CloudJourneyAddin.Models;
 using Microsoft.Win32;
 
 namespace CloudJourneyAddin
@@ -70,7 +71,10 @@ namespace CloudJourneyAddin
                 }
                 */
 
-                var dashboard = new DashboardWindow();
+                // Parse command-line arguments for tab visibility
+                var tabVisibilityOptions = TabVisibilityOptions.ParseArguments(e.Args);
+
+                var dashboard = new DashboardWindow(tabVisibilityOptions);
                 dashboard.Show();
             }
             catch (Exception ex)

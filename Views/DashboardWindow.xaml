@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:CloudJourneyAddin.Converters"
-        Title="Cloud Journey Progress Dashboard v3.4.2" 
+        Title="Cloud Journey Progress Dashboard v3.5.0" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         Background="#F5F5F5">
@@ -966,7 +966,7 @@
                         </Border>
 
                         <!-- 4. Security & Compliance Scorecard -->
-                        <Border Style="{StaticResource SectionCard}">
+                        <Border Style="{StaticResource SectionCard}" Visibility="Collapsed">
                             <StackPanel>
                                 <TextBlock Text="🔒 Security &amp; Compliance Scorecard" Style="{StaticResource SectionTitle}"/>
                                 
@@ -995,7 +995,7 @@
 
                         <!-- 6. Savings Unlock Insight - WHAT ACTIONS UNLOCK SAVINGS -->
                         <Border Style="{StaticResource SectionCard}"
-                                Visibility="{Binding SavingsUnlockInsight, Converter={StaticResource NullToVisibilityConverter}}">
+                                Visibility="Collapsed">
                             <StackPanel>
                                 <TextBlock Text="💰 Unlock Savings with Action" Style="{StaticResource SectionTitle}"/>
                                 
@@ -1400,7 +1400,7 @@
     </TabItem>
 
                 <!-- ENROLLMENT MOMENTUM TAB -->
-                <TabItem Header="📱 Enrollment">
+                <TabItem Header="📱 Enrollment" Visibility="{Binding ShowEnrollmentTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel>
                             <!-- Visual Aid: Progress Ring + Timeline -->
@@ -2454,7 +2454,7 @@
                 </TabItem>
 
                 <!-- WORKLOAD MOMENTUM TAB -->
-                <TabItem Header="🔄 Workloads">
+                <TabItem Header="🔄 Workloads" Visibility="{Binding ShowWorkloadsTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel>
                             
@@ -2705,7 +2705,7 @@
                     </ScrollViewer>
                 </TabItem>
                 
-                <TabItem Header="💡 Workload Brainstorm">
+                <TabItem Header="💡 Workload Brainstorm" Visibility="{Binding ShowWorkloadBrainstormTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="30">
                         <StackPanel MaxWidth="1400">
                             <!-- Page Header -->
@@ -4747,7 +4747,7 @@
                 </TabItem>
 
                 <!-- APPLICATIONS TAB -->
-                <TabItem Header="📦 Applications">
+                <TabItem Header="📦 Applications" Visibility="{Binding ShowApplicationsTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel>
                             <!-- Application Migration Analysis (Moved from Overview) -->
@@ -5120,7 +5120,7 @@
                 </TabItem>
 
                 <!-- AI ACTION COMMAND CENTER TAB -->
-                <TabItem Header="🤖 AI Actions">
+                <TabItem Header="🤖 AI Actions" Visibility="{Binding ShowAIActionsTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel>
                             <!-- AI Status Banner -->
