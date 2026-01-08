@@ -156,7 +156,7 @@ namespace CloudJourneyAddin.ViewModels
             
             // Initialize file logger
             Instance.Info("======== CloudJourney Dashboard Starting ========");
-            Instance.Info($"Version: 3.5.0 - Enrollment Agent (Production Build)");
+            Instance.Info($"Version: 3.7.0 - Enrollment Agent (Production Build)");
             Instance.Info($"User: {Environment.UserName}");
             Instance.Info($"Machine: {Environment.MachineName}");
             Instance.CleanupOldLogs(7); // Keep last 7 days

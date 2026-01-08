@@ -1,5 +1,14 @@
 # Cloud Journey Dashboard - Change Log
 
+## [3.7.0] - 2026-01-08 (Testing Build)
+
+### Changed
+- 🔧 **Test Build** - Build created for testing purposes
+  - No functional changes from 3.6.0
+  - **MINOR version bump** - Test build (3.6.0 → 3.7.0)
+
+---
+
 ## [3.4.0] - 2025-01-XX (Phase 2/3 UI Controls)
 
 ### Added
