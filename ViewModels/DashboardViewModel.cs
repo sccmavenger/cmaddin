@@ -19,7 +19,7 @@ namespace CloudJourneyAddin.ViewModels
         private readonly TelemetryService _telemetryService;
         private readonly GraphDataService _graphDataService;
         private readonly ConfigMgrAdminService _configMgrService;
-        private readonly AIRecommendationService _aiRecommendationService;
+        private AIRecommendationService? _aiRecommendationService;
         private readonly WorkloadMomentumService _workloadMomentumService;
         private readonly ExecutiveSummaryService _executiveSummaryService;
         private readonly AppMigrationService _appMigrationService;
@@ -156,7 +156,7 @@ namespace CloudJourneyAddin.ViewModels
             
             // Initialize file logger
             Instance.Info("======== CloudJourney Dashboard Starting ========");
-            Instance.Info($"Version: 3.7.0 - Enrollment Agent (Production Build)");
+            Instance.Info($"Version: 3.9.4 - Enrollment Agent (Production Build)");
             Instance.Info($"User: {Environment.UserName}");
             Instance.Info($"Machine: {Environment.MachineName}");
             Instance.CleanupOldLogs(7); // Keep last 7 days
@@ -287,16 +287,24 @@ namespace CloudJourneyAddin.ViewModels
             {
                 if (SetProperty(ref _isConfigMgrConnected, value))
                 {
+                    OnPropertyChanged(nameof(IsDataSourceConnected));
                     OnPropertyChanged(nameof(IsFullyAuthenticated));
                 }
             }
         }
 
         /// <summary>
-        /// True when ALL THREE required connections are established:
+        /// True when BOTH required data sources (Graph AND ConfigMgr) are connected.
+        /// AI is optional and not required for real data display.
+        /// </summary>
+        public bool IsDataSourceConnected =>
+            _graphDataService.IsAuthenticated && IsConfigMgrConnected;
+
+        /// <summary>
+        /// True when ALL THREE optional enhancements are established:
         /// 1. Microsoft Graph (Intune)
         /// 2. Configuration Manager (Admin Service)
-        /// 3. Azure OpenAI
+        /// 3. Azure OpenAI (optional for AI features)
         /// </summary>
         public bool IsFullyAuthenticated =>
             _graphDataService.IsAuthenticated &&
@@ -1115,28 +1123,29 @@ namespace CloudJourneyAddin.ViewModels
 
             // Overall authentication message
             diagWindow.SetOverallStatus(
-                fullyAuthenticated,
+                IsDataSourceConnected,
                 overallStatus,
-                fullyAuthenticated ?
-                    "All three required connections are established. Dashboard is showing real data from your environment." :
-                    "⚠️ IMPORTANT: All three connections (Graph + ConfigMgr + Azure OpenAI) must be established before real data is displayed.\n\n" +
+                IsDataSourceConnected ?
+                    "Data sources connected. Dashboard is showing real data from your environment." +
+                    (!aiConnected ? "\n\n⚠️ Azure OpenAI not configured - AI features limited." : "") :
+                    "⚠️ IMPORTANT: Both Microsoft Graph AND Configuration Manager must be connected to view real data.\n\n" +
                     $"Current state:\n" +
                     $"  • Microsoft Graph: {(graphConnected ? "✅ Connected" : "❌ Not connected")}\n" +
                     $"  • Configuration Manager: {(configMgrConnected ? "✅ Connected" : "❌ Not connected")}\n" +
-                    $"  • Azure OpenAI: {(aiConnected ? "✅ Configured" : "❌ Not configured")}\n\n" +
-                    "Mock data is being displayed until all connections are ready."
+                    $"  • Azure OpenAI: {(aiConnected ? "✅ Configured" : "⚠️ Not configured (optional)")}\n\n" +
+                    "Mock data is being displayed until both data sources are connected."
             );
 
             // Sections status
             var sectionsStatus = new System.Text.StringBuilder();
-            sectionsStatus.AppendLine($"1. Overall Migration Status: {(IsFullyAuthenticated ? "✅ REAL (from Intune workload policies)" : "❌ MOCK (placeholder)")}");
-            sectionsStatus.AppendLine($"2. Device Enrollment: {(IsFullyAuthenticated ? "✅ REAL (from Intune + ConfigMgr)" : "❌ MOCK")}");
-            sectionsStatus.AppendLine($"3. Workload Status: {(IsFullyAuthenticated ? "✅ REAL (detected from Intune policies)" : "❌ MOCK")}");
-            sectionsStatus.AppendLine($"4. Security & Compliance: {(IsFullyAuthenticated ? "✅ REAL (from Intune compliance policies)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"1. Overall Migration Status: {(IsDataSourceConnected ? "✅ REAL (from Intune workload policies)" : "❌ MOCK (placeholder)")}");
+            sectionsStatus.AppendLine($"2. Device Enrollment: {(IsDataSourceConnected ? "✅ REAL (from Intune + ConfigMgr)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"3. Workload Status: {(IsDataSourceConnected ? "✅ REAL (detected from Intune policies)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"4. Security & Compliance: {(IsDataSourceConnected ? "✅ REAL (from Intune compliance policies)" : "❌ MOCK")}");
             sectionsStatus.AppendLine($"5. ROI & Savings: ⚠️ ESTIMATED (industry averages, not real cost data)");
-            sectionsStatus.AppendLine($"6. Enrollment Readiness: {(IsFullyAuthenticated ? "✅ REAL (detected enrollment prerequisites)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"6. Enrollment Readiness: {(IsDataSourceConnected ? "✅ REAL (detected enrollment prerequisites)" : "❌ MOCK")}");
             sectionsStatus.AppendLine($"7. Peer Benchmarking: ⚠️ ESTIMATED (Microsoft published statistics, not live comparison)");
-            sectionsStatus.AppendLine($"8. Alerts & Recommendations: {(IsFullyAuthenticated ? "✅ REAL (AI-powered from GPT-4)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"8. Alerts & Recommendations: {(_aiRecommendationService != null ? "✅ AI-POWERED (GPT-4)" : "⚠️ BASIC (AI not configured)")}");
             sectionsStatus.AppendLine($"9. Recent Milestones: ⚠️ PREDEFINED (example milestones, not detected achievements)");
             sectionsStatus.AppendLine($"10. Support & Engagement: ✅ REAL (Microsoft resources links)");
             
@@ -1220,7 +1229,7 @@ namespace CloudJourneyAddin.ViewModels
             }
         }
 
-        private void OnSaveOpenAIConfig()
+        private async void OnSaveOpenAIConfig()
         {
             try
             {
@@ -1234,9 +1243,29 @@ namespace CloudJourneyAddin.ViewModels
                 
                 config.Save();
                 
+                // Re-initialize AI service if configuration is now valid
+                if (config.IsEnabled && !string.IsNullOrEmpty(config.Endpoint))
+                {
+                    try
+                    {
+                        _aiRecommendationService = new AIRecommendationService(_graphDataService);
+                        Instance.Info("AI Recommendation Service initialized after config save");
+                        
+                        // Trigger data refresh to leverage AI capabilities
+                        OnPropertyChanged(nameof(IsFullyAuthenticated));
+                        await LoadDataAsync();
+                        Instance.Info("Data refreshed after AI configuration");
+                    }
+                    catch (Exception ex)
+                    {
+                        Instance.Error($"Failed to initialize AI service after config save: {ex.Message}");
+                    }
+                }
+                
                 System.Windows.MessageBox.Show(
                     "Azure OpenAI configuration saved successfully!\n\n" +
-                    "Settings will be used for AI-enhanced recommendations.",
+                    "Settings will be used for AI-enhanced recommendations." +
+                    (config.IsEnabled ? "\n\nDashboard data has been refreshed to leverage AI capabilities." : ""),
                     "Settings Saved",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Information);
@@ -1660,16 +1689,16 @@ namespace CloudJourneyAddin.ViewModels
                 // Check ConfigMgr connection status
                 IsConfigMgrConnected = _graphDataService.ConfigMgrService.IsConfigured;
                 
-                // Only show real data when ALL THREE connections are established
-                if (IsFullyAuthenticated)
+                // Show real data when BOTH Graph AND ConfigMgr are connected (AI is optional)
+                if (IsDataSourceConnected)
                 {
-                    Instance.Info("All three connections authenticated - loading real data");
+                    Instance.Info($"Both data sources connected - loading real data. Graph: {_graphDataService.IsAuthenticated}, ConfigMgr: {IsConfigMgrConnected}, AI: {_aiRecommendationService != null}");
                     UseRealData = true;
                     await LoadRealDataAsync();
                 }
                 else
                 {
-                    Instance.Warning($"Not fully authenticated - showing mock data. Graph: {_graphDataService.IsAuthenticated}, ConfigMgr: {IsConfigMgrConnected}, AI: {_aiRecommendationService != null}");
+                    Instance.Warning($"Data sources not fully connected - showing mock data. Graph: {_graphDataService.IsAuthenticated}, ConfigMgr: {IsConfigMgrConnected}");
                     UseRealData = false;
                     await LoadMockDataAsync();
                 }
@@ -1704,21 +1733,8 @@ namespace CloudJourneyAddin.ViewModels
                 // Check if AI service is available (Azure OpenAI configured)
                 if (_aiRecommendationService == null)
                 {
+                    // AI is optional - just clear recommendations and return without showing error
                     AIRecommendations.Clear();
-                    AIRecommendations.Add(new AIRecommendation
-                    {
-                        Title = "⚠️ Azure OpenAI Required",
-                        Description = "AI-powered recommendations require Azure OpenAI to be configured. Click the 🤖 AI button in the toolbar to set up your Azure OpenAI credentials.",
-                        Priority = RecommendationPriority.Critical,
-                        Category = RecommendationCategory.StallPrevention,
-                        ActionSteps = new List<string>
-                        {
-                            "1. Click the 🤖 AI button in the toolbar",
-                            "2. Enter your Azure OpenAI endpoint, deployment name, and API key",
-                            "3. Save the configuration",
-                            "4. Restart the dashboard to enable AI recommendations"
-                        }
-                    });
                     OnPropertyChanged(nameof(HasNoRecommendations));
                     return;
                 }

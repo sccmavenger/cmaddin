@@ -1,6 +1,6 @@
 # ConfigMgr Cloud Journey Progress Add-in
 
-**Version 3.7.0** | December 22, 2025
+**Version 3.9.4** | December 22, 2025
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 

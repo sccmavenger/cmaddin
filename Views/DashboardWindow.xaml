@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:CloudJourneyAddin.Converters"
-        Title="Cloud Journey Progress Dashboard v3.7.0" 
+        Title="Cloud Journey Progress Dashboard v3.9.4" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         Background="#F5F5F5">
@@ -125,19 +125,19 @@
                     <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <!-- Connection Status Indicator -->
                         <Border Background="#F0F0F0" CornerRadius="4" Padding="8,4" Margin="0,0,10,0"
-                                ToolTip="Connection Status: All 3 required connections must be established to show real data">
+                                ToolTip="Connection Status: Both Graph and ConfigMgr must be connected to show real data">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="⚫" FontSize="12" Foreground="#107C10" 
-                                           Visibility="{Binding IsFullyAuthenticated, Converter={StaticResource BoolToVisibilityConverter}}"
-                                           ToolTip="Fully Authenticated - Showing Real Data"/>
+                                           Visibility="{Binding UseRealData, Converter={StaticResource BoolToVisibilityConverter}}"
+                                           ToolTip="Data Sources Connected - Showing Live Data"/>
                                 <TextBlock Text="⚫" FontSize="12" Foreground="#FF8C00" 
-                                           Visibility="{Binding IsFullyAuthenticated, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"
-                                           ToolTip="Not Fully Authenticated - Showing Mock Data"/>
+                                           Visibility="{Binding UseRealData, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"
+                                           ToolTip="Data Sources Not Connected - Showing Mock Data"/>
                                 <TextBlock Text=" " FontSize="10"/>
                                 <TextBlock Text="MOCK DATA" FontSize="10" FontWeight="Bold" Foreground="#FF8C00"
-                                           Visibility="{Binding IsFullyAuthenticated, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
-                                <TextBlock Text="REAL DATA" FontSize="10" FontWeight="Bold" Foreground="#107C10"
-                                           Visibility="{Binding IsFullyAuthenticated, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                           Visibility="{Binding UseRealData, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                                <TextBlock Text="LIVE DATA" FontSize="10" FontWeight="Bold" Foreground="#107C10"
+                                           Visibility="{Binding UseRealData, Converter={StaticResource BoolToVisibilityConverter}}"/>
                             </StackPanel>
                         </Border>
                         
