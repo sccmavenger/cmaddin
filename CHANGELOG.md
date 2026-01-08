@@ -1,5 +1,80 @@
 # Cloud Journey Dashboard - Change Log
 
+## [3.9.4] - 2026-01-08 (UI Improvements)
+
+### Fixed
+- 🐛 **Mock Data Button Now Shows LIVE DATA** - Status indicator now correctly shows "LIVE DATA" when real data is displayed
+  - Changed from using `IsFullyAuthenticated` to `UseRealData` binding
+  - Updates in real-time when data sources connect
+- 🐛 **Removed AI Required Popup** - Fixed unwanted popup stating "Azure OpenAI Required" when viewing recommendations
+  - Azure OpenAI is optional and not required for real data display
+  - AI recommendations section simply remains empty when AI not configured
+  - No intrusive popups about missing AI configuration
+
+### Changed
+- 🎨 **Updated Connection Tooltip** - Clarified that "Both Graph and ConfigMgr must be connected to show real data"
+- **PATCH version bump** - UI bug fixes (3.9.3 → 3.9.4)
+
+---
+
+## [3.9.3] - 2026-01-08 (Special Build: Overview + Enrollment Only)
+
+### Changed
+- 🔧 **Tab Visibility Defaults** - Special build with limited default tabs
+  - Only Overview and Enrollment tabs visible by default
+  - Workloads, Workload Brainstorm, Applications, and AI Actions tabs hidden by default
+  - All tabs can be enabled using command-line switches: `/showtabs:workloads,apps,ai,brainstorm`
+  - Designed for simplified user experience focused on enrollment tracking
+- **PATCH version bump** - Configuration change only (3.9.2 → 3.9.3)
+
+**Usage Examples:**
+```powershell
+# Default: Overview + Enrollment only
+CloudJourneyAddin.exe
+
+# Show specific additional tabs
+CloudJourneyAddin.exe /showtabs:workloads
+CloudJourneyAddin.exe /showtabs:workloads,apps
+CloudJourneyAddin.exe /showtabs:workloads,brainstorm,apps,ai
+```
+
+---
+
+## [3.9.2] - 2026-01-08 (Critical Fix: Data Source Requirements)
+
+### Fixed
+- 🐛 **Mock Data Showing Despite Connections** - Fixed critical issue where dashboard showed mock data even when Graph + ConfigMgr were connected
+  - Root cause: Dashboard required ALL THREE connections (Graph + ConfigMgr + Azure OpenAI) before showing real data
+  - Azure OpenAI is OPTIONAL but was incorrectly treated as required
+  - Users connecting Graph + ConfigMgr saw mock data until AI was also configured
+
+### Changed
+- ✅ **Real Data Now Shows Correctly** - Dashboard displays real data when BOTH Graph AND ConfigMgr are connected
+  - New `IsDataSourceConnected` property checks if both required data sources are available
+  - `IsFullyAuthenticated` still exists for backward compatibility
+  - AI features remain optional enhancement
+- 🔄 **Automatic Refresh on AI Configuration** - When Azure OpenAI settings are saved, dashboard automatically refreshes
+  - AI service reinitializes when valid config is saved
+  - No manual refresh needed to leverage new AI capabilities
+  - User sees immediate benefit of AI features
+- 📊 **Improved Diagnostics** - Updated diagnostics window to clarify data source requirements
+  - Shows that BOTH Graph AND ConfigMgr are required for real data
+  - Clearly labels Azure OpenAI as "optional"
+  - Distinguishes between "AI-POWERED" vs "BASIC" recommendations
+
+### Technical
+- Added `IsDataSourceConnected` property with AND logic (line 301)
+- Updated `LoadDataAsync()` to use `IsDataSourceConnected` instead of `IsFullyAuthenticated` (line 1690)
+- Made `OnSaveOpenAIConfig()` async and added automatic service reinitialization (line 1231)
+- Updated diagnostics messages to emphasize BOTH sources required (lines 1129, 1140)
+- Added `OnPropertyChanged(nameof(IsDataSourceConnected))` when ConfigMgr connection changes (line 290)
+- Made `_aiRecommendationService` non-readonly to allow reinitialization (line 20)
+- **MINOR version bump** - Bug fix that changes behavior (3.7.0 → 3.8.0)
+
+**Customer Impact:** Users must connect BOTH Graph AND ConfigMgr to see real data. Azure OpenAI is optional for AI-enhanced features.
+
+---
+
 ## [3.7.0] - 2026-01-08 (Testing Build)
 
 ### Changed

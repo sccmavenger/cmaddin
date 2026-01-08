@@ -5,6 +5,9 @@ namespace CloudJourneyAddin.Models
     /// <summary>
     /// Configuration options for tab visibility in the Dashboard Window.
     /// Allows selective display of tabs based on command-line arguments.
+    /// 
+    /// SPECIAL BUILD: Only Overview and Enrollment tabs visible by default.
+    /// All other tabs hidden unless explicitly enabled via command-line arguments.
     /// </summary>
     public class TabVisibilityOptions
     {
@@ -16,22 +19,22 @@ namespace CloudJourneyAddin.Models
         /// <summary>
         /// Shows or hides the Workloads tab
         /// </summary>
-        public Visibility ShowWorkloadsTab { get; set; } = Visibility.Visible;
+        public Visibility ShowWorkloadsTab { get; set; } = Visibility.Collapsed;
 
         /// <summary>
         /// Shows or hides the Workload Brainstorm tab
         /// </summary>
-        public Visibility ShowWorkloadBrainstormTab { get; set; } = Visibility.Visible;
+        public Visibility ShowWorkloadBrainstormTab { get; set; } = Visibility.Collapsed;
 
         /// <summary>
         /// Shows or hides the Applications tab
         /// </summary>
-        public Visibility ShowApplicationsTab { get; set; } = Visibility.Visible;
+        public Visibility ShowApplicationsTab { get; set; } = Visibility.Collapsed;
 
         /// <summary>
         /// Shows or hides the AI Actions tab
         /// </summary>
-        public Visibility ShowAIActionsTab { get; set; } = Visibility.Visible;
+        public Visibility ShowAIActionsTab { get; set; } = Visibility.Collapsed;
 
         /// <summary>
         /// Parse command-line arguments to determine tab visibility.
