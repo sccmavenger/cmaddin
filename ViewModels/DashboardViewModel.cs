@@ -369,6 +369,9 @@ namespace CloudJourneyAddin.ViewModels
         public ObservableCollection<AIRecommendation> AIRecommendations { get; }
 
         public bool HasNoRecommendations => AIRecommendations.Count == 0;
+        public bool IsAIConfigured => _aiRecommendationService != null && _aiRecommendationService.IsConfigured;
+        public bool IsAINotConfigured => !IsAIConfigured;
+        public bool HasNoRecommendationsAndConfigured => HasNoRecommendations && IsAIConfigured;
 
         // Tab visibility properties (controlled by command-line switches)
         public Visibility ShowEnrollmentTab
@@ -1799,34 +1802,13 @@ namespace CloudJourneyAddin.ViewModels
                 // Check if AI service is available
                 if (_aiRecommendationService == null || !_aiRecommendationService.IsConfigured)
                 {
-                    // Azure OpenAI not configured - show instructional message
+                    // Azure OpenAI not configured - DO NOT add any recommendations
+                    // The UI will show the "Configure Azure OpenAI" message via IsAINotConfigured binding
                     AIRecommendations.Clear();
-                    AIRecommendations.Add(new AIRecommendation
-                    {
-                        Title = "🤖 AI-Powered Recommendations Available",
-                        Description = "AI-powered recommendations will appear here once you configure Azure OpenAI. " +
-                                      "Get intelligent guidance on device enrollment and workload transitions powered by GPT-4.",
-                        Rationale = "Azure OpenAI provides context-aware recommendations based on YOUR specific migration state, " +
-                                   "helping you avoid stalls and accelerate success.",
-                        ActionSteps = new List<string>
-                        {
-                            "1. Click the 🤖 AI button in the toolbar",
-                            "2. Enter your Azure OpenAI endpoint URL",
-                            "3. Enter your deployment name (e.g., 'gpt-4')",
-                            "4. Enter your API key",
-                            "5. Click 'Save & Test Connection'",
-                            "6. Refresh the dashboard to see recommendations"
-                        },
-                        Priority = RecommendationPriority.Medium,
-                        Category = RecommendationCategory.General,
-                        ImpactScore = 0,
-                        EstimatedEffort = "5 minutes to configure",
-                        ResourceLinks = new List<string>
-                        {
-                            "https://learn.microsoft.com/azure/ai-services/openai/how-to/create-resource"
-                        }
-                    });
                     OnPropertyChanged(nameof(HasNoRecommendations));
+                    OnPropertyChanged(nameof(IsAIConfigured));
+                    OnPropertyChanged(nameof(IsAINotConfigured));
+                    OnPropertyChanged(nameof(HasNoRecommendationsAndConfigured));
                     return;
                 }
 
@@ -1849,19 +1831,11 @@ namespace CloudJourneyAddin.ViewModels
                             AIRecommendations.Add(recommendation);
                         }
                     }
-                    else
-                    {
-                        // GPT-4 returned no recommendations (shouldn't happen, but handle gracefully)
-                        AIRecommendations.Add(new AIRecommendation
-                        {
-                            Title = "🎉 No Critical Recommendations",
-                            Description = "Your migration is progressing well. Continue with current workload and enrollment activities.",
-                            Priority = RecommendationPriority.Low,
-                            Category = RecommendationCategory.General
-                        });
-                    }
                     
                     OnPropertyChanged(nameof(HasNoRecommendations));
+                    OnPropertyChanged(nameof(IsAIConfigured));
+                    OnPropertyChanged(nameof(IsAINotConfigured));
+                    OnPropertyChanged(nameof(HasNoRecommendationsAndConfigured));
                 }
             }
             catch (Exception ex)
@@ -1883,6 +1857,10 @@ namespace CloudJourneyAddin.ViewModels
                     }
                 });
                 Instance.Error($"Error loading AI recommendations: {ex.Message}");
+                OnPropertyChanged(nameof(HasNoRecommendations));
+                OnPropertyChanged(nameof(IsAIConfigured));
+                OnPropertyChanged(nameof(IsAINotConfigured));
+                OnPropertyChanged(nameof(HasNoRecommendationsAndConfigured));
             }
         }
 
