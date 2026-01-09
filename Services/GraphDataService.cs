@@ -480,39 +480,31 @@ namespace CloudJourneyAddin.Services
                 int totalDevices;
                 int configMgrOnlyCount;
 
-                // Use the LARGER count between ConfigMgr and Intune as the true total
-                // ConfigMgr query may be limited (only Windows 10/11 workstations)
-                // Intune has the complete picture of all Windows devices
+                // In co-management scenarios: Use ConfigMgr as source of truth (devices we're migrating)
+                // Only fall back to Intune if ConfigMgr is not configured
                 int configMgrCount = configMgrDevices != null ? totalConfigMgrDevices : 0;
                 int intuneWindowsCount = allIntuneDevices.Count(d => 
                     d.OperatingSystem != null && 
                     d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
                     !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase));
 
-                if (intuneWindowsCount > configMgrCount)
+                if (configMgrCount > 0)
                 {
-                    // Intune has more complete Windows device inventory
-                    totalDevices = intuneWindowsCount;
-                    configMgrOnlyCount = configMgrCount - coManagedCount; // ConfigMgr devices not yet co-managed
-                    Instance.Info($"✅ Using Intune as source: {totalDevices} total Windows devices");
-                    Instance.Info($"   ConfigMgr devices: {configMgrCount}, Co-managed: {coManagedCount}, Pure Intune: {intuneEnrolledCount - coManagedCount}");
-                    System.Diagnostics.Debug.WriteLine($"✅ Using Intune count ({intuneWindowsCount}) over ConfigMgr ({configMgrCount})");
-                }
-                else if (configMgrCount > 0)
-                {
-                    // Use ConfigMgr as source of truth (has both enrolled and not-yet-enrolled devices)
+                    // Co-management scenario: Use ConfigMgr as source (devices we're migrating from ConfigMgr to Intune)
                     totalDevices = configMgrCount;
-                    configMgrOnlyCount = configMgrCount - coManagedCount; // Devices not yet enrolled
-                    Instance.Info($"✅ Using ConfigMgr as source: {totalDevices} total devices");
-                    System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {configMgrOnlyCount} not yet enrolled");
+                    configMgrOnlyCount = configMgrCount - coManagedCount; // Devices not yet co-managed
+                    Instance.Info($"✅ Using ConfigMgr as source (co-management scenario): {totalDevices} total devices");
+                    Instance.Info($"   ConfigMgr devices: {configMgrCount}, Co-managed: {coManagedCount}, Not yet co-managed: {configMgrOnlyCount}");
+                    System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {coManagedCount} co-managed, {configMgrOnlyCount} not yet co-managed");
                 }
                 else
                 {
-                    // Fall back to Intune-only view
+                    // Intune-only scenario: No ConfigMgr, show all Intune Windows devices
                     totalDevices = intuneWindowsCount;
                     configMgrOnlyCount = 0;
-                    Instance.Info($"⚠️ Using Intune-only: {totalDevices} total Windows devices (ConfigMgr not available)");
-                    System.Diagnostics.Debug.WriteLine($"⚠️ Using Intune-only: {totalDevices} total");
+                    Instance.Info($"✅ Using Intune-only (no ConfigMgr): {totalDevices} total Windows devices");
+                    Instance.Info($"   All devices are Intune-managed, no ConfigMgr devices to migrate");
+                    System.Diagnostics.Debug.WriteLine($"✅ Intune-only scenario: {totalDevices} total");
                 }
 
                 // Generate trend data

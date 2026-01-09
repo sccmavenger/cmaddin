@@ -15,9 +15,6 @@ namespace CloudJourneyAddin.Views
             {
                 InitializeComponent();
                 
-                // Set window size based on screen resolution
-                SetAdaptiveWindowSize();
-                
                 var telemetryService = new TelemetryService();
                 DataContext = new DashboardViewModel(telemetryService, tabVisibilityOptions);
             }
@@ -34,6 +31,12 @@ namespace CloudJourneyAddin.Views
                     MessageBoxImage.Error);
                 throw;
             }
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Set window size proportional to screen resolution
+            SetAdaptiveWindowSize();
         }
 
         private void TargetDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
