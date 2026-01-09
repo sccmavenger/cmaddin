@@ -1,5 +1,317 @@
 # Cloud Journey Dashboard - Change Log
 
+## [3.14.1] - 2026-01-09
+
+### Enhanced
+- **Smart Enrollment: 4-Tier Device Bucketing** - Replaced estimated percentages with real device health analysis
+  - **Excellent** (≥85 score): 98% enrollment success rate
+  - **Good** (60-84 score): 85% enrollment success rate  
+  - **Fair** (40-59 score): 60% enrollment success rate, remediation recommended
+  - **Poor** (<40 score): 30% enrollment success rate, critical issues detected
+- **Health Score Algorithm** - 5-factor weighted scoring:
+  - Last Active Time (30%): Device communication recency
+  - Last Policy Request (20%): Policy compliance health
+  - Hardware Scan (20%): Inventory accuracy
+  - Software Scan (20%): Asset tracking health
+  - Client Active Status (10%): ConfigMgr client state
+- **Real-Time Integration** - Smart Enrollment UI now displays actual device analysis from ConfigMgr Admin Service instead of fixed estimates
+- **Mock Fallback** - Demo mode continues to work with estimates when ConfigMgr/Graph not connected
+
+### Technical
+- Expanded `DeviceReadinessBreakdown` model from 3 to 4 tiers with backward compatibility
+- Updated `DeviceReadinessService` categorization thresholds: Excellent (≥85), Good (60-84), Fair (40-59), Poor (<40)
+- Wired `DashboardViewModel.LoadDeviceSelectionDataAsync()` to use real `DeviceReadiness` data
+- Added detailed health score documentation in service layer
+
+### Removed
+- **Build-Standalone.ps1** - Consolidated to single build script (Build-And-Distribute.ps1)
+
+---
+
+## [3.14.0] - 2026-01-09 (GPT-4 Exclusive AI Recommendations)
+
+### Changed
+- 🤖 **AI Recommendations Now GPT-4 Exclusive**
+  - Removed all rule-based recommendation logic (~284 lines, 43% code reduction)
+  - AI Recommendations now require Azure OpenAI (GPT-4) to be configured
+  - Without Azure OpenAI: Shows friendly setup instructions instead of recommendations
+  - Pure GPT-4 intelligence provides superior context-aware guidance
+  
+- 🎯 **Focused on Core Success Factors**
+  - AI exclusively focuses on 2 critical areas: **Device Enrollment** & **Workload Transitions**
+  - Removed standalone compliance recommendations (can be added back later)
+  - Stall detection now focuses on enrollment/workload blockers
+  - Cleaner, more actionable recommendations
+
+- 🧠 **Single Comprehensive GPT-4 Analysis**
+  - One comprehensive GPT-4 call analyzes complete migration state
+  - Incorporates velocity trends, phased plan status, stall detection
+  - More cost-efficient (~$0.03-0.05 per recommendation vs ~$0.15-0.20 for multiple calls)
+  - Better prioritization with full context awareness
+
+- 💬 **Improved "Not Configured" Experience**
+  - Shows instructional recommendation card with 6-step setup guide
+  - Includes link to Azure OpenAI setup documentation
+  - No errors, no confusion - clear path to enable feature
+  - Constructor no longer throws exception if not configured
+
+### Removed
+- ❌ **Rule-Based Recommendation Methods** (replaced by GPT-4)
+  - `GenerateEnrollmentRecommendationsAsync()` (90 lines)
+  - `GenerateWorkloadRecommendations()` (90 lines)
+  - `GenerateComplianceRecommendations()` (30 lines)
+  - All enrollment threshold checking logic (25%, 50%, 75%)
+  - All workload helper methods
+  
+### Technical Details
+- New comprehensive method: `GenerateGPT4RecommendationsAsync()`
+- Enhanced GPT-4 prompt with migration state, workload status, velocity trends, phase context
+- Returns 2-4 prioritized recommendations with emojis, rationale, action steps, impact scores
+- Graceful error handling - returns empty list on GPT-4 failure
+
+## [3.13.3] - 2025-01-10 (Critical Enrollment & AI Diagnostics Fixes)
+
+### Fixed
+- 🐛 **CRITICAL: Fixed enrollment percentage calculation** - Was showing 4200% instead of 100%
+  - Root cause: Using ConfigMgr device count (2 devices) as TotalDevices instead of Intune count (84 devices)
+  - Now uses the LARGER count between ConfigMgr and Intune as the true total
+  - Prioritizes Intune's complete Windows device inventory over ConfigMgr's limited query
+  - Correctly calculates enrollment percentage as (enrolled/total) not (enrolled/2)
+  - Added detailed logging showing which source (ConfigMgr vs Intune) is being used
+  
+- 🔧 **Fixed AI diagnostics showing incorrect status**
+  - AI diagnostics now immediately updates after saving Azure OpenAI configuration
+  - Shows "✅ AI-POWERED (GPT-4)" after configuration instead of "⚠️ BASIC (AI not configured)"
+  - Properly triggers `IsAIAvailable` property refresh after config save
+  - Added logging to track AI service initialization
+
+### Changed
+- 📊 **Improved device count accuracy** - Now considers both ConfigMgr and Intune inventories
+  - ConfigMgr query may be limited to specific OS versions (Windows 10/11)
+  - Intune provides complete picture of all Windows devices in organization
+  - Uses intelligent logic to determine most accurate total device count
+  - Logs which source is used for transparency
+
+## [3.13.0] - 2026-01-09 (Enhanced Azure OpenAI Diagnostics)
+
+### Added
+- 🔍 **Comprehensive Azure OpenAI Test Connection Diagnostics**
+  - Pre-validation of all fields before testing (endpoint, deployment, API key)
+  - Detailed error messages with specific troubleshooting steps
+  - HTTP status code interpretation (401, 404, 429, 500+)
+  - Network and DNS error detection
+  - SSL/Certificate error guidance
+  - Response time and token usage display on success
+
+### Changed
+- 🎯 **Test Connection now validates UI fields** - No longer requires saving config first
+  - Tests with current values in the UI
+  - Provides immediate feedback
+  - Shows validation errors before attempting connection
+- 📊 **Enhanced Error Messages**:
+  - 401 Unauthorized → API Key guidance with Azure Portal steps
+  - 404 Not Found → Deployment name verification steps
+  - 429 Rate Limit → Quota guidance
+  - 500+ Server Error → Azure service status suggestion
+  - Network errors → DNS/firewall troubleshooting
+  - SSL errors → Certificate update guidance
+- ✅ **Success Message Details**:
+  - Shows actual GPT response
+  - Displays tokens used
+  - Shows response time
+  - Confirms deployment name
+
+### Fixed
+- 🐛 Test Connection button now works BEFORE saving configuration
+- 🐛 Better handling of invalid endpoint URLs
+- 🐛 Clear feedback when fields are empty or invalid
+
+### Technical Details
+- New overload: `TestConnectionAsync(endpoint, deploymentName, apiKey)`
+- Separated validation logic from connection testing
+- Added detailed logging at each step
+- Improved exception handling with InnerException details
+
+---
+
+## [3.12.0] - 2026-01-09 (Real Enrollment Acceleration Insights)
+
+### Added
+- 🎯 **Real Enrollment Acceleration Insights** - Calculated from actual Intune enrollment data
+  - Weekly enrollment rate based on devices enrolled in last 7 days
+  - Peer benchmarks based on organization size (Small/Mid/Enterprise/Large)
+  - Velocity trend analysis (comparing last week vs previous week)
+  - Actionable recommendations based on current pace
+  - Automatic device caching (5 minute TTL) for performance
+
+- 🚨 **Real Alert System** - Intelligent alerts based on actual conditions
+  - Co-management status alerts (not enabled, expansion opportunities)
+  - Enrollment velocity alerts (declining, accelerating)
+  - Critical blocker detection
+  - Migration stall detection (14+ days without enrollments)
+  - Positive status alerts when everything is working
+
+### Changed
+- 📊 **Enrollment Acceleration** section now shows real data from your environment
+- 🎨 **Alerts & Recommendations** section now shows intelligent, condition-based alerts
+- 🔄 **Data Loading** - Eliminated duplicate alert loading for better performance
+- 📈 **Organization Categorization** - Automatic sizing based on device count:
+  - Small Business: < 500 devices (target 25/week)
+  - Mid-Market: 500-2,000 devices (target 50/week)
+  - Enterprise: 2,000-5,000 devices (target 100/week)
+  - Large Enterprise: 5,000+ devices (target 200/week)
+
+### Technical Details
+- New extension methods in `GraphDataService`:
+  - `GetEnrollmentAccelerationInsightAsync()` - Real velocity calculations
+  - `GetRealAlertsAsync()` - Intelligent alert generation
+  - `GetCachedManagedDevicesAsync()` - Device caching with 5-minute TTL
+- Alerts ordered by severity (Critical → Warning → Info)
+- Velocity analysis compares last 7 days vs previous 7 days
+- Real-time blocker detection integration
+
+---
+
+## [3.9.9] - 2026-01-09 (Co-Management Blocker Detection Fix)
+
+### Fixed
+- 🐛 **Fixed False "Co-Management Not Enabled" Blocker**
+  - Enrollment blocker detection was still using old cross-reference logic
+  - Now uses ManagementAgent-based detection (same as v3.9.8)
+  - Eliminates false positive when co-management IS actually enabled
+  - Consistent detection across entire application
+
+### Changed
+- 🎯 **DetectCoManagementNotEnabledAsync**: Updated to use `ManagementAgent = ConfigurationManagerClientMdm`
+- 📊 **Enhanced Logging**: "✅ Co-management enabled - X devices already co-managed (via ManagementAgent)"
+
+---
+
+## [3.9.8] - 2026-01-09 (Co-Management Detection - Final Fix)
+
+### Fixed
+- 🐛 **CRITICAL: Co-Management Detection Actually Works Now!**
+  - Previous version (3.9.6/3.9.7) failed due to OS string filtering issue
+  - **Now uses ManagementAgent = ConfigurationManagerClientMdm** (Option A)
+  - This is Microsoft's official co-management indicator
+  - No device name matching needed (100% reliable)
+  - Fixed: Intune returns generic "Windows" not "Windows 10"/"Windows 11"
+
+### Changed
+- 🎯 **Detection Method: ManagementAgent-Based (Most Reliable)**
+  - `ConfigurationManagerClientMdm` = Co-managed (ConfigMgr + Intune)
+  - `Mdm` = Pure Intune only (not co-managed)
+  - `ConfigurationManagerClient` = ConfigMgr only (not co-managed)
+- 📊 **Enhanced Logging**: Shows all ManagementAgent types with counts
+- 🔧 **Broadened Windows Filter**: `Contains("Windows")` instead of "Windows 10"/"Windows 11"
+
+### Technical Details
+**Why Option A (ManagementAgent) vs Option B (Name Matching):**
+- ✅ ManagementAgentType.ConfigurationManagerClientMdm is THE definition of co-managed
+- ✅ No string parsing or name matching needed
+- ✅ Works even if device names differ between systems
+- ✅ Future-proof - enum values won't change
+- ✅ One-line detection: `d.ManagementAgent == ConfigurationManagerClientMdm`
+
+**ManagementAgent Values:**
+- `Mdm` - Pure Intune (not co-managed)
+- `ConfigurationManagerClient` - ConfigMgr only (not co-managed)  
+- `ConfigurationManagerClientMdm` - **CO-MANAGED** ✅
+- `GoogleCloudDevicePolicyController` - ChromeOS
+- `Unknown` - Error/unclear state
+
+---
+
+## [3.9.6] - 2026-01-09 (Fixed Co-Management Detection - Attempt 1)
+
+### Fixed
+- 🐛 **CRITICAL: Co-Management Detection Now Works Correctly**
+  - Previous version was checking `CoManagementFlags` in `SMS_R_System` (doesn't exist!)
+  - Now uses **Option 1 (Cross-Reference)**: Matches device names between ConfigMgr and Intune
+  - A device is co-managed if it exists in BOTH ConfigMgr AND Intune
+  - Added detailed logging showing which devices are co-managed
+  
+### Added
+- 📊 **Option 2 Support**: `GetCoManagementDetailsAsync()` method
+  - Queries `SMS_Client` WMI class for co-management workload assignments
+  - Returns workload flags (Compliance, Device Config, Windows Update, etc.)
+  - Available for future workload transition tracking
+  - Includes helper properties: `HasCompliancePolicies`, `HasWindowsUpdate`, etc.
+- 📊 **Co-Management Cross-Reference Logging**
+  - Shows ConfigMgr device count
+  - Shows Intune device count  
+  - Lists devices found in both systems
+  - Warns if devices exist in ConfigMgr but not Intune
+
+### Changed
+- 🔧 **Removed Invalid CoManagementFlags** from `SMS_R_System` queries
+- 🎯 **Two-Phase Detection**: Cross-reference for accuracy, SMS_Client for workload details
+
+### Technical Details
+**Co-Management Detection Logic:**
+1. Query ConfigMgr for all Windows 10/11 devices
+2. Query Intune for all managed devices
+3. Cross-reference by device name (case-insensitive)
+4. Device is co-managed = exists in both systems
+5. Optionally query SMS_Client for workload assignments (future use)
+
+**Why This Approach:**
+- More accurate than trusting ConfigMgr flags alone
+- Handles cases where co-management enabled but enrollment failed
+- Version-independent (works with any ConfigMgr version)
+- Ground truth: Does device actually exist in both systems?
+
+---
+
+## [3.9.5] - 2026-01-09 (Enhanced Logging & Graph Authentication)
+
+### Added
+- 📊 **Comprehensive Tenant & Environment Logging**
+  - Graph authentication now logs: User UPN, tenant ID, tenant name, tenant domain
+  - Scopes requested and granted displayed in logs
+  - ConfigMgr environment details: Server, site code, version, build number, connection method
+  - Current user and domain information logged
+- 📊 **Detailed Device Query Logging**
+  - Intune API responses now show: Total devices, OS breakdown, management agent distribution
+  - Sample device details logged (OS, enrollment date, sync time, compliance state)
+  - ConfigMgr query results show: Total devices, co-managed count, co-management flags analysis
+  - Warning messages for empty responses with troubleshooting hints
+- 📊 **Co-Management Analysis**
+  - Detailed breakdown of co-management flag distribution
+  - Identifies devices not yet co-managed with specific recommendations
+  - REST API query logging shows full request/response details
+
+### Changed
+- 🔐 **Graph Authentication Scopes** - **BREAKING CHANGE**
+  - Changed from `.default` scope to explicit delegated permissions:
+    - `DeviceManagementManagedDevices.Read.All`
+    - `DeviceManagementConfiguration.Read.All`
+    - `DeviceManagementApps.Read.All`
+    - `Directory.Read.All`
+    - `User.Read`
+  - Users will now see explicit permission consent prompts during sign-in
+  - This ensures proper permission delegation without requiring Intune Administrator role assignment
+  - **Benefit**: Works for users without specific Entra ID role assignments if admin pre-consents
+
+### Fixed
+- 🐛 **Permission Error Detection** - Enhanced error messages now detect permission-specific failures with actionable guidance
+
+### Technical Notes
+- All query operations now log comprehensive diagnostic information
+- Logs include HTTP status codes, response headers, and detailed error analysis
+- ConfigMgr Admin Service queries include OData filter details
+- Empty result sets trigger specific troubleshooting recommendations
+
+**Troubleshooting with Enhanced Logs:**
+When admin reports "no devices showing" - check logs for:
+- Tenant ID verification
+- Scopes actually granted vs requested
+- API response counts (0 vs null vs error)
+- Co-management flag analysis
+- ConfigMgr version and connection method
+
+---
+
 ## [3.9.4] - 2026-01-08 (UI Improvements)
 
 ### Fixed

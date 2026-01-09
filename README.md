@@ -1,6 +1,6 @@
 # ConfigMgr Cloud Journey Progress Add-in
 
-**Version 3.9.4** | December 22, 2025
+**Version 3.14.0** | January 9, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -18,7 +18,7 @@
 - [First Time Setup](#-first-time-setup)
 - [ConfigMgr Admin Service Setup](#-configmgr-admin-service-setup)
 - [Understanding the Dashboard](#-understanding-your-dashboard)
-- [Azure OpenAI Setup (Optional)](#-azure-openai-setup-optional)
+- [Azure OpenAI Setup (Required for AI Recommendations)](#-azure-openai-setup-required-for-ai-recommendations)
 - [Troubleshooting](#-troubleshooting)
 
 ### Installation & Deployment
@@ -36,6 +36,7 @@
 - [Testing Guide](#-testing-guide)
 
 ### Reference
+- [Data Privacy & Security](PRIVACY.md)
 - [Data Sources](#-data-sources-reference)
 - [Changelog](#-changelog-highlights)
 - [License](#license)
@@ -88,6 +89,66 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ---
 
 ## 🆕 What's New
+
+### Version 3.13.4 (January 10, 2026) - Critical Enrollment & AI Diagnostics Fixes
+
+#### 🐛 Critical Bug Fixes
+
+**Fixed Enrollment Percentage Calculation (Was Showing 4200%)**
+- **Issue:** Enrollment Progress showed incorrect percentages like 4200% (e.g., "84 of 2 devices")
+- **Root Cause:** Code was using ConfigMgr's limited device query (only Windows 10/11 workstations) as TotalDevices, while Intune had the complete Windows device inventory
+- **Solution:** Now intelligently selects the LARGER count between ConfigMgr and Intune as the true total
+  - Prioritizes Intune's complete Windows device inventory when available
+  - Uses detailed logging to show which data source is being used (ConfigMgr vs Intune)
+  - Correctly calculates enrollment percentage as (enrolled devices / total eligible devices)
+- **Impact:** Enrollment Progress now shows accurate percentages (e.g., 100% instead of 4200%)
+
+**Fixed AI Diagnostics Status Display**
+- **Issue:** AI diagnostics continued showing "⚠️ BASIC (AI not configured)" even after successfully configuring Azure OpenAI
+- **Root Cause:** Diagnostics display wasn't refreshing after saving configuration
+- **Solution:** Added immediate property refresh after Azure OpenAI configuration
+  - Diagnostics now update in real-time when AI is configured
+  - Shows "✅ AI-POWERED (GPT-4)" immediately after successful configuration
+  - Added logging to track AI service initialization status
+- **Impact:** Users now get immediate visual confirmation that AI features are active
+
+#### 📊 Improved Device Count Accuracy
+
+**Intelligent Dual-Source Logic**
+- ConfigMgr queries may be limited to specific OS versions (Windows 10/11)
+- Intune provides complete picture of all Windows devices in the organization
+- Dashboard now uses the most accurate count from available sources
+- Logs which source is used for transparency and troubleshooting
+
+**What You'll See:**
+```
+✅ Using Intune as source: 84 total Windows devices
+   ConfigMgr devices: 2, Co-managed: 2, Pure Intune: 82
+```
+
+Or:
+```
+✅ Using ConfigMgr as source: 1234 total devices
+   ConfigMgr devices: 1234, Co-managed: 456, Pure Intune: 0
+```
+
+### Version 3.13.0 (January 9, 2026) - Enhanced Azure OpenAI Diagnostics
+
+#### 🔍 Comprehensive Test Connection Diagnostics
+- Pre-validation of all fields before testing (endpoint, deployment, API key)
+- Detailed error messages with specific troubleshooting steps
+- HTTP status code interpretation (401, 404, 429, 500+)
+- Network and DNS error detection
+- SSL/Certificate error guidance
+- Response time and token usage display on success
+
+### Version 3.12.0 (January 8, 2026) - Real Enrollment Acceleration Insights
+
+#### 📈 Live Data Integration
+- Real enrollment velocity calculations based on device enrollment dates
+- Peer benchmarks based on actual organization size
+- Intelligent alerts based on real conditions (stalls, blockers, velocity trends)
+- 7-day rolling velocity calculations
 
 ### Version 2.5.0 (December 21, 2025) - ConfigMgr Admin Service Integration
 
@@ -187,7 +248,7 @@ The Cloud Journey Progress Dashboard is your intelligent command center for migr
 
 - **Dual-Source Data** from ConfigMgr Admin Service AND Microsoft Graph (Intune)
 - **Complete Visibility** - See total eligible devices, not just enrolled ones
-- **AI-Powered Insights** that prevent stalls and accelerate progress (optional Azure OpenAI)
+- **AI-Powered Recommendations** that prevent stalls and accelerate progress (requires Azure OpenAI GPT-4)
 - **Autonomous Enrollment Agent** - AI plans and executes device enrollments with human oversight
 - **5 Specialized Tabs** - Overview, Enrollment, Workloads, Applications, Executive
 - **Actionable Guidance** with buttons to take immediate action
@@ -273,9 +334,39 @@ The Cloud Journey Progress Dashboard is your intelligent command center for migr
 
 ### What If Something Doesn't Work?
 
-**"Connection failed" error:**
+**"Permission Error" or "Authorization_RequestDenied":**
+This means your account doesn't have the required Intune permissions.
+
+**REQUIRED ROLE (one of these):**
+- **Intune Administrator** ✅ (Recommended - full Intune access)
+- **Global Reader** (Read-only access to all Microsoft 365 services)
+- **Global Administrator** (Full access to everything)
+
+**REQUIRED API PERMISSIONS:**
+- `DeviceManagementManagedDevices.Read.All` - Read Intune device data
+- `DeviceManagementConfiguration.Read.All` - Read Intune configurations
+- `DeviceManagementApps.Read.All` - Read app deployment data
+- `Directory.Read.All` - Read user/directory information
+
+**HOW TO FIX:**
+1. Ask your **Global Administrator** to assign you the **Intune Administrator** role:
+   - Go to Entra ID (Azure AD) → Users → [Your Account]
+   - Click "Assigned roles" → "Add assignments"
+   - Select "Intune Administrator" → Assign
+2. Sign out and sign back in to the dashboard
+3. The permissions will take effect immediately
+
+**Alternative - Admin Consent (for entire organization):**
+A Global Administrator can pre-consent to these permissions for all users:
+```
+https://login.microsoftonline.com/{tenant-id}/adminconsent?client_id=14d82eec-204b-4c2f-b7e8-296a70dab67e
+```
+Replace `{tenant-id}` with your actual tenant ID.
+
+**"Connection failed" error (other reasons):**
 - Click **🔍 Diagnostics** button (orange) to see what's wrong
-- Most common: Your account needs permissions (talk to your admin)
+- Network connectivity issues
+- Azure AD authentication problems
 
 **"No data showing" error:**
 - Click **🔄 Refresh** button (blue) to reload
@@ -387,19 +478,64 @@ If you see site information, the Admin Service is working!
 
 ---
 
-## 🤖 Azure OpenAI Setup (Optional)
+## 🤖 Azure OpenAI Setup (Required for AI Recommendations)
 
-### AI-Enhanced Features
+### GPT-4 Powered Recommendations
 
-Enable Azure OpenAI for advanced migration insights - completely optional feature.
+Azure OpenAI (GPT-4) provides intelligent, context-aware recommendations focused on the two most critical success factors for migration:
 
-**AI-Powered Features:**
-- 🧠 **GPT-4 Stall Analysis** - Root cause detection when migrations stall >30 days
-- 📋 **Personalized Recovery Plans** - 4-5 actionable steps based on YOUR situation
-- 🚀 **Enrollment Momentum** - Velocity analysis and batch recommendations
-- 🤖 **Enrollment Agent Planning** - AI generates optimal enrollment plans
-- ⚡ **Smart Caching** - 30-minute response caching reduces costs by 65%
-- 🔄 **Graceful Fallback** - Automatically uses rule-based logic if GPT-4 unavailable
+**What GPT-4 Analyzes:**
+- 🎯 **Device Enrollment Progress** - Velocity trends, acceleration strategies, batch planning
+- 📋 **Workload Transition Planning** - Optimal sequencing, completion guidance, risk assessment
+- 🧠 **Stall Detection & Recovery** - Root cause analysis when progress stops >30 days
+- 📊 **Contextual Intelligence** - Incorporates your phased plan, velocity data, Microsoft FastTrack best practices
+
+**Technical Features:**
+- 🤖 **Single Comprehensive Analysis** - One GPT-4 call analyzes complete migration state
+- ⚡ **Smart Caching** - 30-minute response caching reduces costs by ~65%
+- 💰 **Cost Efficient** - ~$0.03-0.05 per recommendation vs multiple separate calls
+- 🎨 **No Rule-Based Fallback** - Pure GPT-4 intelligence (shows setup instructions if not configured)
+
+### 🔒 Data Privacy & What's Sent to Azure OpenAI
+
+**Complete Transparency:** We believe you should know exactly what data is shared with AI services.
+
+**Data Sent to Azure OpenAI (Aggregated Metrics Only):**
+```
+MIGRATION STATE:
+- Total Devices: 500
+- Intune Enrolled: 120 (24%)
+- ConfigMgr Only: 380
+- Days Since Last Progress: 45
+- Stalled: YES
+
+WORKLOAD STATUS:
+- Completed: 2/7 (Compliance Policies, Endpoint Protection)
+- In Progress: 1 (Device Configuration)
+- Not Started: 4
+
+VELOCITY & TRENDS:
+- Enrollment velocity has slowed in past 30 days
+
+MIGRATION PLAN:
+- Phase 2: Pilot Expansion (25-50% enrollment target)
+```
+
+**What is NOT Sent (Privacy Protected):**
+- ❌ Device names, hostnames, computer names
+- ❌ User names, email addresses, identities
+- ❌ IP addresses or network information
+- ❌ Serial numbers or hardware IDs
+- ❌ Organization/tenant names
+- ❌ Configuration details or policies
+- ❌ Any personally identifiable information (PII)
+
+**Privacy Safeguards:**
+1. **Aggregated Only** - Only statistical summaries (counts, percentages, generic names)
+2. **Your Azure Instance** - Data goes to YOUR Azure OpenAI (not shared with others)
+3. **No Training** - Azure OpenAI doesn't use your data to train models ([Microsoft Data Privacy](https://learn.microsoft.com/legal/cognitive-services/openai/data-privacy))
+4. **Local Caching** - Responses cached locally (30 min) to minimize calls
+5. **Audit Logging** - All API calls logged to `%APPDATA%\CloudJourneyAddin\logs`
 
 ### Azure Setup Required
 
@@ -463,13 +599,13 @@ $env:AZURE_OPENAI_KEY = "your-api-key-here"
 - Agent plan generation: ~$50/month
 - **Total:** ~$80-150/month
 
-### Testing Without Azure OpenAI
+### Using Without Azure OpenAI
 
 The dashboard works fully without Azure OpenAI:
-- Uses rule-based recommendations instead of GPT-4
-- Shows mock enrollment insights for demo purposes
-- All core features remain functional
-- Configure Azure OpenAI anytime to enable AI features
+- AI Recommendations section shows setup instructions (not recommendations)
+- All other features remain functional (enrollment data, workloads, compliance, alerts)
+- Configure Azure OpenAI anytime to enable GPT-4 powered recommendations
+- Estimated setup time: 5-10 minutes
 
 ---
 
@@ -701,8 +837,11 @@ If something shows "⚠️ ESTIMATED DATA" badge, it's a calculation based on ty
 
 ## ❓ Quick Questions Answered
 
-**Q: Do I need Azure OpenAI for this to work?**  
-A: Nope! The AI features are optional. Everything works without it. You get rule-based recommendations instead of GPT-4 recommendations. Both are good.
+**Q: Do I need Azure OpenAI for AI recommendations?**  
+A: Yes - AI-Powered Recommendations require Azure OpenAI (GPT-4) to be configured. Without it, the dashboard will show setup instructions. All other features (device enrollment data, workload status, compliance, alerts) work without Azure OpenAI. The AI recommendations are a premium feature that provides context-aware guidance.
+
+**Q: What data is sent to Azure OpenAI? Is it private?**  
+A: Only aggregated migration metrics (device counts, percentages, workload names, days since progress). NO device names, user names, IP addresses, or any personally identifiable information (PII) is sent. Data goes to YOUR Azure OpenAI instance only. Microsoft doesn't use your data to train models. All API calls are logged locally for audit.
 
 **Q: Will the Agent break my environment?**  
 A: No - it has multiple safety checks. It only enrolls "ready" devices, does small batches, requires your approval, pauses on failures, and you can stop it anytime.
@@ -1162,10 +1301,10 @@ cd "C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin"
 
 **1. Create deployment package:**
 ```powershell
-.\Build-Standalone.ps1 -CreateZip
+.\Build-And-Distribute.ps1
 ```
 
-Creates: `bin\CloudJourneyAddin-Standalone.zip` (~233MB)
+Creates: `UpdatePackage\CloudJourney-v*.zip` with installer and documentation
 
 **2. Copy to target machine:**
 - Extract ZIP
@@ -1177,7 +1316,7 @@ Test UI without ConfigMgr integration:
 
 ```powershell
 # Build
-.\Build-Standalone.ps1
+.\Build-And-Distribute.ps1
 
 # Run directly
 .\bin\Release\net8.0-windows\win-x64\publish\CloudJourneyAddin.exe
@@ -1189,7 +1328,7 @@ Shows dashboard with placeholder data.
 
 ```powershell
 # Step 1: Build
-.\Build-Standalone.ps1
+.\Build-And-Distribute.ps1
 
 # Step 2: Find ConfigMgr Console path
 Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\ConfigMgr10\Setup" -Name "UI Installation Directory"

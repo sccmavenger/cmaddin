@@ -14,8 +14,17 @@ namespace CloudJourneyAddin.Services
         private GraphServiceClient? _graphClient;
         private readonly ConfigMgrAdminService _configMgrService;
         private readonly string[] _scopes = new[] { 
-            "https://graph.microsoft.com/.default"
+            "DeviceManagementManagedDevices.Read.All",
+            "DeviceManagementConfiguration.Read.All",
+            "DeviceManagementApps.Read.All",
+            "Directory.Read.All",
+            "User.Read"
         };
+        
+        // Cache for managed devices to avoid repeated API calls
+        private List<Microsoft.Graph.Models.ManagedDevice>? _cachedManagedDevices;
+        private DateTime _cacheExpiration = DateTime.MinValue;
+        private readonly TimeSpan _cacheLifetime = TimeSpan.FromMinutes(5);
 
         public GraphDataService()
         {
@@ -87,18 +96,154 @@ namespace CloudJourneyAddin.Services
                 var credential = new DeviceCodeCredential(options);
                 _graphClient = new GraphServiceClient(credential, _scopes);
 
-                // Test the connection
+                // Test the connection and log tenant information
                 var me = await _graphClient.Me.GetAsync();
+                
+                if (me != null)
+                {
+                    Instance.Info("=== MICROSOFT GRAPH CONNECTION SUCCESS ===");
+                    Instance.Info($"✅ User: {me.UserPrincipalName ?? me.DisplayName ?? "Unknown"}");
+                    Instance.Info($"   User ID: {me.Id}");
+                    Instance.Info($"   Mail: {me.Mail ?? "(none)"}");
+                    Instance.Info($"   Job Title: {me.JobTitle ?? "(none)"}");
+                    
+                    // Get tenant/organization information
+                    try
+                    {
+                        var org = await _graphClient.Organization.GetAsync();
+                        if (org?.Value != null && org.Value.Count > 0)
+                        {
+                            var tenantInfo = org.Value[0];
+                            Instance.Info($"   Tenant ID: {tenantInfo.Id}");
+                            Instance.Info($"   Tenant Name: {tenantInfo.DisplayName}");
+                            Instance.Info($"   Tenant Domain: {string.Join(", ", tenantInfo.VerifiedDomains?.Where(d => d.IsDefault == true).Select(d => d.Name) ?? new[] { "Unknown" })}");
+                        }
+                    }
+                    catch (Exception orgEx)
+                    {
+                        Instance.Warning($"Could not retrieve tenant info: {orgEx.Message}");
+                    }
+                    
+                    Instance.Info($"   Scopes Requested: {string.Join(", ", _scopes)}");
+                    Instance.Info($"   Client ID: 14d82eec-204b-4c2f-b7e8-296a70dab67e (Microsoft Graph Command Line Tools)");
+                    Instance.Info("===========================================");
+                }
+                
                 return me != null;
             }
-            catch (Exception ex)
+            catch (Azure.Identity.AuthenticationFailedException authEx)
             {
                 System.Windows.MessageBox.Show(
-                    $"Authentication failed: {ex.Message}",
+                    $"Authentication failed: {authEx.Message}\n\n" +
+                    "Please ensure you are signing in with an account that has administrator privileges.",
                     "Authentication Error",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);
                 return false;
+            }
+            catch (Microsoft.Graph.Models.ODataErrors.ODataError odataEx) when (odataEx.Error?.Code == "Authorization_RequestDenied")
+            {
+                // Permission error - user doesn't have required Intune permissions
+                System.Windows.MessageBox.Show(
+                    "❌ PERMISSION ERROR\n\n" +
+                    "Your account does not have the required Intune permissions to access device data.\n\n" +
+                    "REQUIRED PERMISSIONS:\n" +
+                    "  • Intune Administrator (recommended)\n" +
+                    "  • Global Reader (read-only access)\n" +
+                    "  • Global Administrator (full access)\n\n" +
+                    "REQUIRED API PERMISSIONS:\n" +
+                    "  • DeviceManagementManagedDevices.Read.All\n" +
+                    "  • DeviceManagementConfiguration.Read.All\n" +
+                    "  • DeviceManagementApps.Read.All\n" +
+                    "  • Directory.Read.All\n\n" +
+                    "SOLUTION:\n" +
+                    "Ask your Global Administrator to assign you the 'Intune Administrator' role in Entra ID (Azure AD).\n\n" +
+                    "See README.md for detailed troubleshooting steps.",
+                    "Missing Intune Permissions",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                // Check if message contains permission-related keywords
+                if (ex.Message.Contains("DeviceManagementManagedDevices") || 
+                    ex.Message.Contains("Authorization_RequestDenied") ||
+                    ex.Message.Contains("Insufficient privileges"))
+                {
+                    System.Windows.MessageBox.Show(
+                        "❌ PERMISSION ERROR\n\n" +
+                        "Your account does not have the required Intune permissions to access device data.\n\n" +
+                        "REQUIRED ROLE:\n" +
+                        "  • Intune Administrator (recommended)\n" +
+                        "  • Global Reader (read-only)\n" +
+                        "  • Global Administrator (full access)\n\n" +
+                        "SOLUTION:\n" +
+                        "Ask your Global Administrator to assign you the appropriate role in Entra ID.\n\n" +
+                        $"Technical Details:\n{ex.Message}",
+                        "Missing Intune Permissions",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show(
+                        $"Authentication failed: {ex.Message}\n\n" +
+                        "If this is a permission error, ensure your account has the Intune Administrator role.",
+                        "Authentication Error",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Error);
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Get all managed devices from Intune with caching (5 minute TTL)
+        /// </summary>
+        public async Task<List<Microsoft.Graph.Models.ManagedDevice>> GetCachedManagedDevicesAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            // Return cached devices if still valid
+            if (_cachedManagedDevices != null && DateTime.Now < _cacheExpiration)
+            {
+                return _cachedManagedDevices;
+            }
+
+            // Refresh cache
+            try
+            {
+                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                    config => config.QueryParameters.Select = new[] { 
+                        "id", 
+                        "deviceName", 
+                        "operatingSystem", 
+                        "managementAgent",
+                        "enrolledDateTime",
+                        "lastSyncDateTime",
+                        "complianceState",
+                        "azureADDeviceId"
+                    }
+                );
+
+                if (devices?.Value != null)
+                {
+                    _cachedManagedDevices = devices.Value.ToList();
+                    _cacheExpiration = DateTime.Now.Add(_cacheLifetime);
+                    return _cachedManagedDevices;
+                }
+                
+                return new List<Microsoft.Graph.Models.ManagedDevice>();
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetCachedManagedDevicesAsync");
+                // Return empty list on error but don't throw
+                return new List<Microsoft.Graph.Models.ManagedDevice>();
             }
         }
 
@@ -126,16 +271,33 @@ namespace CloudJourneyAddin.Services
                 {
                     try
                     {
+                        Instance.Info("=== CONFIGMGR DEVICE QUERY START ===");
                         Instance.Info("Querying ConfigMgr for Windows 10/11 devices...");
                         System.Diagnostics.Debug.WriteLine("Querying ConfigMgr for Windows 10/11 devices...");
                         configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
                         totalConfigMgrDevices = configMgrDevices.Count;
-                        coManagedCount = configMgrDevices.Count(d => d.IsCoManaged);
-                        Instance.Info($"✅ ConfigMgr returned {totalConfigMgrDevices} devices, {coManagedCount} co-managed");
-                        System.Diagnostics.Debug.WriteLine($"✅ ConfigMgr returned {totalConfigMgrDevices} devices, {coManagedCount} co-managed");
+                        
+                        Instance.Info($"✅ ConfigMgr Query Results:");
+                        Instance.Info($"   Total Windows 10/11 devices: {totalConfigMgrDevices}");
+                        
+                        if (configMgrDevices.Any())
+                        {
+                            var sampleDevice = configMgrDevices.First();
+                            Instance.Info($"   Sample Device: {sampleDevice.Name}");
+                            Instance.Info($"      Resource ID: {sampleDevice.ResourceId}");
+                            Instance.Info($"      OS: {sampleDevice.OperatingSystem}");
+                            Instance.Info($"      Client Version: {sampleDevice.ClientVersion}");
+                        }
+                        Instance.Info("   Note: Co-management will be determined by cross-referencing with Intune");
+                        Instance.Info("======================================");
+                        
+                        System.Diagnostics.Debug.WriteLine($"✅ ConfigMgr returned {totalConfigMgrDevices} devices");
                     }
                     catch (Exception ex)
                     {
+                        Instance.Error($"❌ ConfigMgr query FAILED: {ex.GetType().Name}");
+                        Instance.Error($"   Message: {ex.Message}");
+                        Instance.Error($"   Stack: {ex.StackTrace}");
                         Instance.LogException(ex, "ConfigMgr GetWindows1011DevicesAsync");
                         System.Diagnostics.Debug.WriteLine($"❌ ConfigMgr query failed: {ex.Message}");
                         System.Diagnostics.Debug.WriteLine($"   Stack trace: {ex.StackTrace}");
@@ -149,37 +311,165 @@ namespace CloudJourneyAddin.Services
                 }
 
                 // STEP 2: Get enrollment status from Intune (what IS enrolled)
-                Instance.Info("Querying Intune for managed devices...");
+                Instance.Info("=== INTUNE DEVICE QUERY START ===");
+                Instance.Info("Querying Microsoft Graph API: /deviceManagement/managedDevices");
                 System.Diagnostics.Debug.WriteLine("Querying Intune for managed devices...");
-                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
-                    config => config.QueryParameters.Select = new[] { 
-                        "id", 
-                        "deviceName", 
-                        "operatingSystem", 
-                        "managementAgent" 
-                    }
-                );
                 
                 var allIntuneDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
-                if (devices?.Value != null)
+                
+                try
                 {
-                    allIntuneDevices.AddRange(devices.Value);
-                    System.Diagnostics.Debug.WriteLine($"✅ Intune returned {allIntuneDevices.Count} total devices");
+                    var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                        config => config.QueryParameters.Select = new[] { 
+                            "id", 
+                            "deviceName", 
+                            "operatingSystem", 
+                            "managementAgent",
+                            "enrolledDateTime",
+                            "lastSyncDateTime",
+                            "complianceState",
+                            "azureADDeviceId"
+                        }
+                    );
+                    
+                    if (devices?.Value != null)
+                    {
+                        allIntuneDevices.AddRange(devices.Value);
+                        
+                        // Cache the managed devices for other methods to use
+                        _cachedManagedDevices = allIntuneDevices;
+                        _cacheExpiration = DateTime.Now.Add(_cacheLifetime);
+                        
+                        Instance.Info($"✅ Intune API Response:");
+                        Instance.Info($"   Total devices returned: {allIntuneDevices.Count}");
+                        Instance.Info($"   OS breakdown:");
+                        
+                        var osCounts = allIntuneDevices.GroupBy(d => d.OperatingSystem ?? "Unknown")
+                            .Select(g => new { OS = g.Key, Count = g.Count() })
+                            .OrderByDescending(x => x.Count);
+                        
+                        foreach (var osGroup in osCounts)
+                        {
+                            Instance.Info($"      {osGroup.OS}: {osGroup.Count} devices");
+                        }
+                        
+                        var managementAgentCounts = allIntuneDevices.GroupBy(d => d.ManagementAgent?.ToString() ?? "Unknown")
+                            .Select(g => new { Agent = g.Key, Count = g.Count() });
+                        
+                        Instance.Info($"   Management Agent breakdown:");
+                        foreach (var agentGroup in managementAgentCounts)
+                        {
+                            Instance.Info($"      {agentGroup.Agent}: {agentGroup.Count} devices");
+                        }
+                        
+                        if (allIntuneDevices.Any())
+                        {
+                            var sampleIntune = allIntuneDevices.First();
+                            Instance.Info($"   Sample Device: {sampleIntune.DeviceName}");
+                            Instance.Info($"      OS: {sampleIntune.OperatingSystem}");
+                            Instance.Info($"      Management Agent: {sampleIntune.ManagementAgent}");
+                            Instance.Info($"      Enrolled: {sampleIntune.EnrolledDateTime}");
+                            Instance.Info($"      Last Sync: {sampleIntune.LastSyncDateTime}");
+                            Instance.Info($"      Compliance: {sampleIntune.ComplianceState}");
+                            Instance.Info($"      Azure AD Device ID: {sampleIntune.AzureADDeviceId}");
+                        }
+                        
+                        System.Diagnostics.Debug.WriteLine($"✅ Intune returned {allIntuneDevices.Count} total devices");
+                    }
+                    else
+                    {
+                        Instance.Warning("⚠️ Intune API returned NULL or empty response");
+                        Instance.Warning("   This could indicate:");
+                        Instance.Warning("   1. No devices enrolled in Intune");
+                        Instance.Warning("   2. Missing DeviceManagementManagedDevices.Read.All permission");
+                        Instance.Warning("   3. User doesn't have Intune Administrator role");
+                        System.Diagnostics.Debug.WriteLine("⚠️ Intune returned null or empty device list");
+                    }
+                    
+                    Instance.Info("======================================");
+                }
+                catch (Exception intuneEx)
+                {
+                    Instance.Error($"❌ Intune query FAILED: {intuneEx.GetType().Name}");
+                    Instance.Error($"   Message: {intuneEx.Message}");
+                    Instance.Error($"   InnerException: {intuneEx.InnerException?.Message ?? "(none)"}");
+                    Instance.LogException(intuneEx, "Intune ManagedDevices.GetAsync");
+                    throw; // Re-throw to handle at higher level
+                }
+
+                // Filter to Windows workstations only (not servers)
+                var intuneEligibleDevices = allIntuneDevices.Where(d => 
+                    d.OperatingSystem != null && 
+                    d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+
+                // STEP 2.5: Detect co-management via ManagementAgent (OPTION A - Most Reliable)
+                Instance.Info("=== CO-MANAGEMENT DETECTION (via ManagementAgent) ===");
+                Instance.Info($"   Total Intune Windows devices: {intuneEligibleDevices.Count}");
+                
+                // Co-managed devices have ManagementAgent = ConfigurationManagerClientMdm
+                var coManagedIntuneDevices = allIntuneDevices.Where(d => 
+                    d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm
+                ).ToList();
+                
+                coManagedCount = coManagedIntuneDevices.Count;
+                
+                Instance.Info($"   Management Agent Breakdown:");
+                var mgmtAgentGroups = allIntuneDevices
+                    .GroupBy(d => d.ManagementAgent?.ToString() ?? "Unknown")
+                    .OrderByDescending(g => g.Count());
+                
+                foreach (var group in mgmtAgentGroups)
+                {
+                    var emoji = group.Key == "ConfigurationManagerClientMdm" ? "✅" : "  ";
+                    Instance.Info($"      {emoji} {group.Key}: {group.Count()} devices");
+                }
+                
+                Instance.Info($"   ✅ Co-managed devices (ConfigurationManagerClientMdm): {coManagedCount}");
+                
+                if (coManagedIntuneDevices.Any())
+                {
+                    Instance.Info($"   Co-managed device list:");
+                    foreach (var device in coManagedIntuneDevices.Take(5))
+                    {
+                        Instance.Info($"      • {device.DeviceName} (Enrolled: {device.EnrolledDateTime?.ToString("yyyy-MM-dd") ?? "unknown"})");
+                    }
+                    if (coManagedIntuneDevices.Count > 5)
+                    {
+                        Instance.Info($"      ... and {coManagedIntuneDevices.Count - 5} more");
+                    }
+                    
+                    // Mark ConfigMgr devices as co-managed if we can match by name
+                    if (configMgrDevices != null && configMgrDevices.Any())
+                    {
+                        var coManagedNames = new HashSet<string>(
+                            coManagedIntuneDevices
+                                .Where(d => !string.IsNullOrEmpty(d.DeviceName))
+                                .Select(d => d.DeviceName!.ToLowerInvariant()),
+                            StringComparer.OrdinalIgnoreCase);
+                        
+                        foreach (var cmDevice in configMgrDevices)
+                        {
+                            if (coManagedNames.Contains(cmDevice.Name.ToLowerInvariant()))
+                            {
+                                cmDevice.IsCoManaged = true;
+                            }
+                        }
+                    }
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("⚠️ Intune returned null or empty device list");
+                    Instance.Warning($"   ⚠️ NO CO-MANAGED DEVICES FOUND");
+                    Instance.Warning($"      No devices with ManagementAgent = ConfigurationManagerClientMdm");
+                    Instance.Warning($"      This means:");
+                    Instance.Warning($"         • Co-management not enabled in ConfigMgr, OR");
+                    Instance.Warning($"         • Devices not enrolled in Intune yet, OR");
+                    Instance.Warning($"         • Co-management workloads not configured");
                 }
-
-                // Filter to Windows 10/11 workstations only
-                var intuneEligibleDevices = allIntuneDevices.Where(d => 
-                    d.OperatingSystem != null && 
-                    (
-                        d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
-                        d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
-                    ) &&
-                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
-                ).ToList();
+                
+                Instance.Info($"   📘 Note: ConfigurationManagerClientMdm = ConfigMgr Client + Intune MDM");
+                Instance.Info("==============================================");
 
                 // STEP 3: Calculate enrollment metrics
                 int intuneEnrolledCount = intuneEligibleDevices.Count(d => 
@@ -190,20 +480,39 @@ namespace CloudJourneyAddin.Services
                 int totalDevices;
                 int configMgrOnlyCount;
 
-                if (configMgrDevices != null && totalConfigMgrDevices > 0)
+                // Use the LARGER count between ConfigMgr and Intune as the true total
+                // ConfigMgr query may be limited (only Windows 10/11 workstations)
+                // Intune has the complete picture of all Windows devices
+                int configMgrCount = configMgrDevices != null ? totalConfigMgrDevices : 0;
+                int intuneWindowsCount = allIntuneDevices.Count(d => 
+                    d.OperatingSystem != null && 
+                    d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase));
+
+                if (intuneWindowsCount > configMgrCount)
+                {
+                    // Intune has more complete Windows device inventory
+                    totalDevices = intuneWindowsCount;
+                    configMgrOnlyCount = configMgrCount - coManagedCount; // ConfigMgr devices not yet co-managed
+                    Instance.Info($"✅ Using Intune as source: {totalDevices} total Windows devices");
+                    Instance.Info($"   ConfigMgr devices: {configMgrCount}, Co-managed: {coManagedCount}, Pure Intune: {intuneEnrolledCount - coManagedCount}");
+                    System.Diagnostics.Debug.WriteLine($"✅ Using Intune count ({intuneWindowsCount}) over ConfigMgr ({configMgrCount})");
+                }
+                else if (configMgrCount > 0)
                 {
                     // Use ConfigMgr as source of truth (has both enrolled and not-yet-enrolled devices)
-                    totalDevices = totalConfigMgrDevices;
-                    configMgrOnlyCount = totalConfigMgrDevices - coManagedCount; // Devices not yet enrolled
+                    totalDevices = configMgrCount;
+                    configMgrOnlyCount = configMgrCount - coManagedCount; // Devices not yet enrolled
+                    Instance.Info($"✅ Using ConfigMgr as source: {totalDevices} total devices");
                     System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {configMgrOnlyCount} not yet enrolled");
                 }
                 else
                 {
-                    // Fall back to Intune-only view (incomplete - only shows enrolled devices)
-                    totalDevices = intuneEligibleDevices.Count;
-                    configMgrOnlyCount = intuneEligibleDevices.Count(d => 
-                        d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClient);
-                    System.Diagnostics.Debug.WriteLine($"⚠️ Using Intune-only: {totalDevices} total, {configMgrOnlyCount} ConfigMgr-managed");
+                    // Fall back to Intune-only view
+                    totalDevices = intuneWindowsCount;
+                    configMgrOnlyCount = 0;
+                    Instance.Info($"⚠️ Using Intune-only: {totalDevices} total Windows devices (ConfigMgr not available)");
+                    System.Diagnostics.Debug.WriteLine($"⚠️ Using Intune-only: {totalDevices} total");
                 }
 
                 // Generate trend data
@@ -717,14 +1026,32 @@ namespace CloudJourneyAddin.Services
                     return;
                 }
 
-                // Check if ANY devices are co-managed (indicates co-management is enabled)
-                var coMgmtStatus = await _configMgrService.GetCoManagementStatusAsync();
-                int coManagedCount = coMgmtStatus["CoManaged"];
+                // Check if ANY devices are co-managed using ManagementAgent-based detection
+                // This is the most reliable method - same approach as GetDeviceEnrollmentAsync
+                var allIntuneDevices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
+                {
+                    config.QueryParameters.Select = new[] { "deviceName", "operatingSystem", "managementAgent", "enrolledDateTime" };
+                    config.QueryParameters.Top = 999;
+                });
+
+                if (allIntuneDevices?.Value == null)
+                {
+                    Instance.Info("No Intune devices found - skipping co-management check");
+                    return;
+                }
+
+                // Co-managed devices have ManagementAgent = ConfigurationManagerClientMdm
+                var coManagedDevices = allIntuneDevices.Value
+                    .Where(d => d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm)
+                    .ToList();
+
+                int coManagedCount = coManagedDevices.Count;
 
                 if (coManagedCount == 0)
                 {
-                    // Check if we have ConfigMgr-only devices that COULD be co-managed
-                    int configMgrOnlyCount = coMgmtStatus["ConfigMgrOnly"];
+                    // Check if we have ConfigMgr devices that COULD be co-managed
+                    var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                    int configMgrOnlyCount = configMgrDevices.Count;
 
                     if (configMgrOnlyCount > 0)
                     {
@@ -736,12 +1063,12 @@ namespace CloudJourneyAddin.Services
                             Severity = BlockerSeverity.Critical,
                             RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-enable"
                         });
-                        Instance.Info($"🚨 Co-management not enabled - {configMgrOnlyCount} devices waiting");
+                        Instance.Info($"🚨 Co-management not enabled - {configMgrOnlyCount} ConfigMgr devices waiting");
                     }
                 }
                 else
                 {
-                    Instance.Info($"✅ Co-management enabled - {coManagedCount} devices already co-managed");
+                    Instance.Info($"✅ Co-management enabled - {coManagedCount} devices already co-managed (via ManagementAgent)");
                 }
             }
             catch (Exception ex)
@@ -1428,6 +1755,289 @@ namespace CloudJourneyAddin.Services
         public string Manufacturer { get; set; } = string.Empty;
         public string Model { get; set; } = string.Empty;
         public string OSVersion { get; set; } = string.Empty;
+    }
+
+    // Extension methods for GraphDataService - Real data calculations
+    public static class GraphDataServiceExtensions
+    {
+        /// <summary>
+        /// Calculate enrollment acceleration insights from real Intune data
+        /// </summary>
+        public static async Task<EnrollmentAccelerationInsight> GetEnrollmentAccelerationInsightAsync(this GraphDataService service)
+        {
+            if (service == null) throw new ArgumentNullException(nameof(service));
+
+            try
+            {
+                var enrollment = await service.GetDeviceEnrollmentAsync();
+            
+            // Calculate weekly enrollment rate based on recent enrollments
+            // Look at devices enrolled in last 7 days vs previous 7 days
+            var devices = await service.GetAllManagedDevicesAsync();
+            
+            if (devices == null || !devices.Any())
+            {
+                return GetDefaultInsight();
+            }
+
+            var now = DateTime.UtcNow;
+            var last7Days = devices.Where(d => d.EnrolledDateTime.HasValue && 
+                                               (now - d.EnrolledDateTime.Value).TotalDays <= 7).Count();
+            var previous7Days = devices.Where(d => d.EnrolledDateTime.HasValue && 
+                                                   (now - d.EnrolledDateTime.Value).TotalDays > 7 &&
+                                                   (now - d.EnrolledDateTime.Value).TotalDays <= 14).Count();
+
+            double weeklyRate = last7Days;
+            double previousWeekRate = previous7Days;
+            
+            // Determine organization size category
+            int totalDevices = enrollment?.TotalDevices ?? devices.Count;
+            string orgCategory = totalDevices switch
+            {
+                < 500 => "Small Business (< 500 devices)",
+                < 2000 => "Mid-Market (500-2,000 devices)",
+                < 5000 => "Enterprise (2,000-5,000 devices)",
+                _ => "Large Enterprise (5,000+ devices)"
+            };
+
+            // Calculate peer benchmarks based on org size
+            double peerAverage = totalDevices switch
+            {
+                < 500 => 25,      // Small: ~25/week
+                < 2000 => 50,     // Mid: ~50/week
+                < 5000 => 100,    // Enterprise: ~100/week
+                _ => 200          // Large: ~200/week
+            };
+
+            int coManagedDevices = enrollment?.CoManagedDevices ?? 0;
+            int configMgrDevices = enrollment?.ConfigMgrOnlyDevices ?? 0;
+            int devicesNeeded = Math.Max(0, configMgrDevices - coManagedDevices);
+
+            int weeksToMatch = weeklyRate > 0 ? (int)Math.Ceiling((peerAverage - weeklyRate) / weeklyRate) : 0;
+            weeksToMatch = Math.Max(0, Math.Min(weeksToMatch, 52)); // Cap at 1 year
+
+            // Generate actionable recommendations
+            var tactics = new List<string>();
+            
+            if (weeklyRate < peerAverage * 0.5)
+            {
+                tactics.Add("⚠️ Enrollment velocity is below peer average - consider accelerating");
+            }
+            else if (weeklyRate >= peerAverage)
+            {
+                tactics.Add("✅ You're meeting or exceeding peer enrollment velocity!");
+            }
+
+            if (configMgrDevices > 0)
+            {
+                tactics.Add($"💡 {configMgrDevices} ConfigMgr devices available for co-management");
+            }
+
+            // Add specific tactics based on current state
+            if (weeklyRate < 10)
+            {
+                tactics.Add("🎯 Start small: Target 10-20 pilot devices this week");
+            }
+            else if (weeklyRate < 50)
+            {
+                tactics.Add("📈 Scale up: Increase weekly enrollment batches by 25%");
+            }
+            else
+            {
+                tactics.Add("🚀 Maintain momentum: Continue current velocity");
+            }
+
+            string recommendedAction = weeklyRate < peerAverage
+                ? $"Increase enrollment to {(int)peerAverage} devices/week to match peer velocity"
+                : $"Maintain current velocity of {(int)weeklyRate} devices/week";
+
+            return new EnrollmentAccelerationInsight
+            {
+                YourWeeklyEnrollmentRate = weeklyRate,
+                PeerAverageRate = peerAverage,
+                DevicesNeededToMatchPeers = devicesNeeded,
+                RecommendedAction = recommendedAction,
+                OrganizationCategory = orgCategory,
+                SpecificTactics = tactics,
+                EstimatedWeeksToMatchPeers = weeksToMatch
+            };
+        }
+        catch (Exception ex)
+        {
+            FileLogger.Instance.LogException(ex, "GetEnrollmentAccelerationInsightAsync");
+            return GetDefaultInsight();
+        }
+    }
+
+    /// <summary>
+    /// Generate real alerts based on actual device and enrollment data
+    /// </summary>
+    public static async Task<List<Alert>> GetRealAlertsAsync(this GraphDataService service)
+    {
+        if (service == null) throw new ArgumentNullException(nameof(service));
+
+        var alerts = new List<Alert>();
+
+        try
+        {
+            var enrollment = await service.GetDeviceEnrollmentAsync();
+            var blockers = await service.GetEnrollmentBlockersAsync();
+            var devices = await service.GetAllManagedDevicesAsync();
+
+            // Alert 1: Co-management status
+            if (enrollment != null)
+            {
+                if (enrollment.CoManagedDevices == 0 && enrollment.ConfigMgrOnlyDevices > 0)
+                {
+                    alerts.Add(new Alert
+                    {
+                        Severity = AlertSeverity.Critical,
+                        Title = "Co-Management Not Enabled",
+                        Description = $"{enrollment.ConfigMgrOnlyDevices} ConfigMgr devices waiting to be co-managed",
+                        ActionText = "Enable Co-Management",
+                        DetectedDate = DateTime.Now
+                    });
+                }
+                else if (enrollment.CoManagedDevices > 0 && enrollment.ConfigMgrOnlyDevices > enrollment.CoManagedDevices)
+                {
+                    alerts.Add(new Alert
+                    {
+                        Severity = AlertSeverity.Info,
+                        Title = "Co-Management Expansion Opportunity",
+                        Description = $"{enrollment.ConfigMgrOnlyDevices - enrollment.CoManagedDevices} more devices can be co-managed",
+                        ActionText = "View Devices",
+                        DetectedDate = DateTime.Now
+                    });
+                }
+            }
+
+            // Alert 2: Enrollment velocity
+            if (devices != null && devices.Any())
+            {
+                var now = DateTime.UtcNow;
+                var last7Days = devices.Count(d => d.EnrolledDateTime.HasValue && 
+                                                   (now - d.EnrolledDateTime.Value).TotalDays <= 7);
+                var previous7Days = devices.Count(d => d.EnrolledDateTime.HasValue && 
+                                                       (now - d.EnrolledDateTime.Value).TotalDays > 7 &&
+                                                       (now - d.EnrolledDateTime.Value).TotalDays <= 14);
+
+                if (last7Days < previous7Days * 0.5 && previous7Days > 5)
+                {
+                    alerts.Add(new Alert
+                    {
+                        Severity = AlertSeverity.Warning,
+                        Title = "Enrollment Velocity Declining",
+                        Description = $"Weekly enrollments dropped from {previous7Days} to {last7Days} devices",
+                        ActionText = "Investigate",
+                        DetectedDate = DateTime.Now
+                    });
+                }
+                else if (last7Days > previous7Days * 1.5 && last7Days > 10)
+                {
+                    alerts.Add(new Alert
+                    {
+                        Severity = AlertSeverity.Info,
+                        Title = "📈 Enrollment Accelerating",
+                        Description = $"Weekly enrollments increased from {previous7Days} to {last7Days} devices",
+                        ActionText = "View Progress",
+                        DetectedDate = DateTime.Now
+                    });
+                }
+            }
+
+            // Alert 3: Critical blockers
+            if (blockers != null && blockers.Any())
+            {
+                var criticalBlockers = blockers.Where(b => b.Severity == BlockerSeverity.Critical).ToList();
+                if (criticalBlockers.Any())
+                {
+                    var totalAffected = criticalBlockers.Sum(b => b.AffectedDevices);
+                    alerts.Add(new Alert
+                    {
+                        Severity = AlertSeverity.Critical,
+                        Title = "Critical Enrollment Blockers Detected",
+                        Description = $"{totalAffected} devices blocked by {criticalBlockers.Count} critical issues",
+                        ActionText = "View Blockers",
+                        DetectedDate = DateTime.Now
+                    });
+                }
+            }
+
+            // Alert 4: Stagnant migration (no enrollments in 14+ days)
+            if (devices != null && devices.Any())
+            {
+                var mostRecentEnrollment = devices
+                    .Where(d => d.EnrolledDateTime.HasValue)
+                    .Max(d => d.EnrolledDateTime);
+
+                if (mostRecentEnrollment.HasValue)
+                {
+                    var daysSinceLastEnrollment = (DateTime.UtcNow - mostRecentEnrollment.Value).TotalDays;
+                    if (daysSinceLastEnrollment > 14)
+                    {
+                        alerts.Add(new Alert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Title = "⚠️ Migration Stalled",
+                            Description = $"No new enrollments in {(int)daysSinceLastEnrollment} days",
+                            ActionText = "Resume Enrollment",
+                            DetectedDate = DateTime.Now
+                        });
+                    }
+                }
+            }
+
+            // If no alerts, add positive status
+            if (!alerts.Any())
+            {
+                alerts.Add(new Alert
+                {
+                    Severity = AlertSeverity.Info,
+                    Title = "✅ All Systems Operating Normally",
+                    Description = "No enrollment issues detected. Keep up the good work!",
+                    ActionText = "View Dashboard",
+                    DetectedDate = DateTime.Now
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            FileLogger.Instance.LogException(ex, "GetRealAlertsAsync");
+            alerts.Add(new Alert
+            {
+                Severity = AlertSeverity.Warning,
+                Title = "Alert System Error",
+                Description = "Unable to analyze enrollment status. Check connectivity.",
+                ActionText = "Retry",
+                DetectedDate = DateTime.Now
+            });
+        }
+
+        return alerts.OrderByDescending(a => a.Severity).ToList();
+    }
+
+    private static EnrollmentAccelerationInsight GetDefaultInsight()
+    {
+        return new EnrollmentAccelerationInsight
+        {
+            YourWeeklyEnrollmentRate = 0,
+            PeerAverageRate = 50,
+            DevicesNeededToMatchPeers = 0,
+            RecommendedAction = "Connect to Intune to analyze enrollment velocity",
+            OrganizationCategory = "Unknown",
+            SpecificTactics = new List<string>
+            {
+                "📊 Authenticate with Microsoft Graph to see real enrollment data",
+                "🔍 Connect ConfigMgr Admin Service for device inventory"
+            },
+            EstimatedWeeksToMatchPeers = 0
+        };
+    }
+
+    private static async Task<List<Microsoft.Graph.Models.ManagedDevice>> GetAllManagedDevicesAsync(this GraphDataService service)
+    {
+        return await service.GetCachedManagedDevicesAsync();
+    }
     }
 }
 

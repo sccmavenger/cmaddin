@@ -156,7 +156,7 @@ namespace CloudJourneyAddin.ViewModels
             
             // Initialize file logger
             Instance.Info("======== CloudJourney Dashboard Starting ========");
-            Instance.Info($"Version: 3.9.4 - Enrollment Agent (Production Build)");
+            Instance.Info($"Version: 3.13.0 - Enrollment Agent (Production Build)");
             Instance.Info($"User: {Environment.UserName}");
             Instance.Info($"Machine: {Environment.MachineName}");
             Instance.CleanupOldLogs(7); // Keep last 7 days
@@ -1209,23 +1209,85 @@ namespace CloudJourneyAddin.ViewModels
         {
             try
             {
+                Instance.Info("=== AZURE OPENAI CONNECTION TEST START ===");
+                
                 HasOpenAIStatus = false;
-                OpenAIStatus = "Testing connection...";
+                OpenAIStatus = "⏳ Testing connection...";
                 HasOpenAIStatus = true;
                 
+                // Validate inputs before testing
+                var validationErrors = new List<string>();
+                
+                if (string.IsNullOrWhiteSpace(OpenAIEndpoint))
+                    validationErrors.Add("• Endpoint URL is required");
+                else if (!Uri.TryCreate(OpenAIEndpoint?.Trim(), UriKind.Absolute, out var uri) || 
+                         (uri.Scheme != "https" && uri.Scheme != "http"))
+                    validationErrors.Add("• Endpoint URL must be valid (e.g., https://contoso.openai.azure.com)");
+                
+                if (string.IsNullOrWhiteSpace(OpenAIDeploymentName))
+                    validationErrors.Add("• Deployment Name is required");
+                
+                if (string.IsNullOrWhiteSpace(OpenAIApiKey))
+                    validationErrors.Add("• API Key is required");
+                else if (OpenAIApiKey?.Length < 20)
+                    validationErrors.Add("• API Key appears invalid (too short)");
+                
+                if (validationErrors.Any())
+                {
+                    var errorMessage = "❌ Validation Failed:\n\n" + string.Join("\n", validationErrors) + 
+                                     "\n\n💡 Fill in all required fields before testing.";
+                    OpenAIStatus = errorMessage;
+                    HasOpenAIStatus = true;
+                    Instance.Warning($"OpenAI connection test validation failed: {string.Join(", ", validationErrors)}");
+                    return;
+                }
+                
+                Instance.Info($"Testing connection to: {OpenAIEndpoint}");
+                Instance.Info($"Deployment: {OpenAIDeploymentName}");
+                Instance.Info($"API Key length: {OpenAIApiKey?.Length ?? 0} characters");
+                
+                // Test with current UI values (not saved config)
                 var service = new Services.AzureOpenAIService();
-                var (success, message) = await service.TestConnectionAsync();
+                var (success, message) = await service.TestConnectionAsync(
+                    OpenAIEndpoint?.Trim() ?? "",
+                    OpenAIDeploymentName?.Trim() ?? "",
+                    OpenAIApiKey?.Trim() ?? ""
+                );
                 
                 OpenAIStatus = message;
                 HasOpenAIStatus = true;
                 
-                Instance.Info($"OpenAI connection test: {message}");
+                if (success)
+                {
+                    Instance.Info($"✅ OpenAI connection test SUCCEEDED: {message}");
+                }
+                else
+                {
+                    Instance.Error($"❌ OpenAI connection test FAILED: {message}");
+                }
+                
+                Instance.Info("=== AZURE OPENAI CONNECTION TEST END ===");
             }
             catch (Exception ex)
             {
-                OpenAIStatus = $"❌ Test failed: {ex.Message}";
+                var detailedMessage = $"❌ Test Failed: {ex.Message}";
+                
+                if (ex.InnerException != null)
+                {
+                    detailedMessage += $"\n\n📋 Details: {ex.InnerException.Message}";
+                }
+                
+                detailedMessage += "\n\n🔍 Troubleshooting:\n" +
+                                  "• Verify endpoint URL is correct\n" +
+                                  "• Check API key from Azure Portal\n" +
+                                  "• Ensure deployment name matches Azure\n" +
+                                  "• Check network/firewall settings";
+                
+                OpenAIStatus = detailedMessage;
                 HasOpenAIStatus = true;
-                Instance.Error($"OpenAI connection test failed: {ex.Message}");
+                Instance.Error($"OpenAI connection test exception: {ex.Message}");
+                if (ex.InnerException != null)
+                    Instance.Error($"Inner exception: {ex.InnerException.Message}");
             }
         }
 
@@ -1255,6 +1317,10 @@ namespace CloudJourneyAddin.ViewModels
                         OnPropertyChanged(nameof(IsFullyAuthenticated));
                         await LoadDataAsync();
                         Instance.Info("Data refreshed after AI configuration");
+                        
+                        // Update diagnostics to reflect AI is now connected
+                        OnPropertyChanged(nameof(IsAIAvailable));
+                        Instance.Info($"AI service initialized and diagnostics updated: {_aiRecommendationService != null}");
                     }
                     catch (Exception ex)
                     {
@@ -1730,11 +1796,36 @@ namespace CloudJourneyAddin.ViewModels
         {
             try
             {
-                // Check if AI service is available (Azure OpenAI configured)
-                if (_aiRecommendationService == null)
+                // Check if AI service is available
+                if (_aiRecommendationService == null || !_aiRecommendationService.IsConfigured)
                 {
-                    // AI is optional - just clear recommendations and return without showing error
+                    // Azure OpenAI not configured - show instructional message
                     AIRecommendations.Clear();
+                    AIRecommendations.Add(new AIRecommendation
+                    {
+                        Title = "🤖 AI-Powered Recommendations Available",
+                        Description = "AI-powered recommendations will appear here once you configure Azure OpenAI. " +
+                                      "Get intelligent guidance on device enrollment and workload transitions powered by GPT-4.",
+                        Rationale = "Azure OpenAI provides context-aware recommendations based on YOUR specific migration state, " +
+                                   "helping you avoid stalls and accelerate success.",
+                        ActionSteps = new List<string>
+                        {
+                            "1. Click the 🤖 AI button in the toolbar",
+                            "2. Enter your Azure OpenAI endpoint URL",
+                            "3. Enter your deployment name (e.g., 'gpt-4')",
+                            "4. Enter your API key",
+                            "5. Click 'Save & Test Connection'",
+                            "6. Refresh the dashboard to see recommendations"
+                        },
+                        Priority = RecommendationPriority.Medium,
+                        Category = RecommendationCategory.General,
+                        ImpactScore = 0,
+                        EstimatedEffort = "5 minutes to configure",
+                        ResourceLinks = new List<string>
+                        {
+                            "https://learn.microsoft.com/azure/ai-services/openai/how-to/create-resource"
+                        }
+                    });
                     OnPropertyChanged(nameof(HasNoRecommendations));
                     return;
                 }
@@ -1750,9 +1841,24 @@ namespace CloudJourneyAddin.ViewModels
                     );
 
                     AIRecommendations.Clear();
-                    foreach (var recommendation in recommendations.Take(5)) // Show top 5 recommendations
+                    
+                    if (recommendations.Any())
                     {
-                        AIRecommendations.Add(recommendation);
+                        foreach (var recommendation in recommendations.Take(5)) // Show top 5 recommendations
+                        {
+                            AIRecommendations.Add(recommendation);
+                        }
+                    }
+                    else
+                    {
+                        // GPT-4 returned no recommendations (shouldn't happen, but handle gracefully)
+                        AIRecommendations.Add(new AIRecommendation
+                        {
+                            Title = "🎉 No Critical Recommendations",
+                            Description = "Your migration is progressing well. Continue with current workload and enrollment activities.",
+                            Priority = RecommendationPriority.Low,
+                            Category = RecommendationCategory.General
+                        });
                     }
                     
                     OnPropertyChanged(nameof(HasNoRecommendations));
@@ -1767,7 +1873,7 @@ namespace CloudJourneyAddin.ViewModels
                     Title = "❌ AI Recommendations Error",
                     Description = $"Failed to generate AI recommendations: {ex.Message}",
                     Priority = RecommendationPriority.Critical,
-                    Category = RecommendationCategory.StallPrevention,
+                    Category = RecommendationCategory.General,
                     ActionSteps = new List<string>
                     {
                         "1. Check Azure OpenAI configuration (🤖 AI button)",
@@ -1870,41 +1976,68 @@ namespace CloudJourneyAddin.ViewModels
                     Workloads.Add(workload);
                 Instance.Info($"Loaded {Workloads.Count} workloads from Graph");
 
-                // Get alerts from Graph
-                Instance.Info("Loading alerts from Graph API...");
-                var alerts = await _graphDataService.GetAlertsAsync();
-                Alerts.Clear();
-                foreach (var alert in alerts)
-                    Alerts.Add(alert);
-                Instance.Info($"Loaded {Alerts.Count} alerts from Graph");
+                // NOTE: Alerts are now loaded below with real enrollment acceleration data
+                // This avoids duplicate loading
             }
             catch (Exception ex)
             {
                 Instance.LogException(ex, "LoadMockDataPartialAsync - Graph API calls");
-                Instance.Warning("Falling back to mock data for workloads and alerts");
+                Instance.Warning("Falling back to mock data for workloads");
                 
-                // Fall back to mock data for workloads and alerts
+                // Fall back to mock data for workloads
                 var workloads = await _telemetryService.GetWorkloadsAsync();
                 Workloads.Clear();
                 foreach (var workload in workloads)
                     Workloads.Add(workload);
-
-                var alerts = await _telemetryService.GetAlertsAsync();
-                Alerts.Clear();
-                foreach (var alert in alerts)
-                    Alerts.Add(alert);
             }
 
             // Industry insights focused on ACTIONS to accelerate enrollment (principle #1)
             Instance.Info("Loading enrollment acceleration insights...");
-            var enrollmentInsightTask = _telemetryService.GetEnrollmentAccelerationInsightAsync();
-            var savingsInsightTask = _telemetryService.GetSavingsUnlockInsightAsync();
-            var engagementOptionsTask = _telemetryService.GetEngagementOptionsAsync();
+            
+            // Use REAL data from GraphDataService when available
+            try
+            {
+                var enrollmentInsightTask = _graphDataService.GetEnrollmentAccelerationInsightAsync();
+                var alertsTask = _graphDataService.GetRealAlertsAsync();
+                var savingsInsightTask = _telemetryService.GetSavingsUnlockInsightAsync();
+                var engagementOptionsTask = _telemetryService.GetEngagementOptionsAsync();
 
-            await Task.WhenAll(enrollmentInsightTask, savingsInsightTask, engagementOptionsTask);
+                await Task.WhenAll(enrollmentInsightTask, alertsTask, savingsInsightTask, engagementOptionsTask);
 
-            EnrollmentAccelerationInsight = await enrollmentInsightTask;
-            SavingsUnlockInsight = await savingsInsightTask;
+                EnrollmentAccelerationInsight = await enrollmentInsightTask;
+                SavingsUnlockInsight = await savingsInsightTask;
+                
+                // Replace mock alerts with real alerts
+                var realAlerts = await alertsTask;
+                foreach (var alert in realAlerts.Take(5)) // Top 5 alerts
+                {
+                    Alerts.Add(alert);
+                }
+                
+                Instance.Info($"✅ Loaded REAL enrollment acceleration data:");
+                Instance.Info($"   Your velocity: {EnrollmentAccelerationInsight.YourWeeklyEnrollmentRate:F1} devices/week");
+                Instance.Info($"   Peer average: {EnrollmentAccelerationInsight.PeerAverageRate:F1} devices/week");
+                Instance.Info($"   Loaded {realAlerts.Count} real alerts");
+                
+                EngagementOptions.Clear();
+                foreach (var option in await engagementOptionsTask)
+                    EngagementOptions.Add(option);
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "Loading real enrollment insights");
+                Instance.Warning("Falling back to mock enrollment insights");
+                
+                // Fall back to mock data on error
+                var enrollmentInsightTask = _telemetryService.GetEnrollmentAccelerationInsightAsync();
+                var savingsInsightTask = _telemetryService.GetSavingsUnlockInsightAsync();
+                var engagementOptionsTask = _telemetryService.GetEngagementOptionsAsync();
+
+                await Task.WhenAll(enrollmentInsightTask, savingsInsightTask, engagementOptionsTask);
+
+                EnrollmentAccelerationInsight = await enrollmentInsightTask;
+                SavingsUnlockInsight = await savingsInsightTask;
+            }
 
             // NO mock milestones - replaced with forward-looking ProgressTargets
             ProgressTargets.Clear();
@@ -1949,10 +2082,6 @@ namespace CloudJourneyAddin.ViewModels
                 Instance.LogException(ex, "Failed to load enrollment blockers");
                 Blockers.Clear(); // Show empty state on error
             }
-
-            EngagementOptions.Clear();
-            foreach (var option in await engagementOptionsTask)
-                EngagementOptions.Add(option);
         }
 
         private async Task LoadMockDataAsync()
@@ -2391,11 +2520,26 @@ namespace CloudJourneyAddin.ViewModels
                     var guidance = await _aiRecommendationService.GetDeviceSelectionGuidanceAsync(unenrolledCount, 50);
                 }
 
-                // Calculate readiness counts (works with or without AI)
-                ExcellentReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.35)); // ~35% excellent
-                GoodReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.30)); // ~30% good
-                FairReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.25)); // ~25% fair
-                PoorReadinessCount = unenrolledCount - ExcellentReadinessCount - GoodReadinessCount - FairReadinessCount;
+                // Calculate readiness counts using real device health analysis
+                // If DeviceReadiness data is available (from LoadRealDataAsync), use it
+                // Otherwise fall back to estimates for demo/mock mode
+                if (DeviceReadiness != null)
+                {
+                    ExcellentReadinessCount = DeviceReadiness.ExcellentDevices;
+                    GoodReadinessCount = DeviceReadiness.GoodDevices;
+                    FairReadinessCount = DeviceReadiness.FairDevices;
+                    PoorReadinessCount = DeviceReadiness.PoorDevices;
+                    Instance.Info($"✅ Using real device readiness: {ExcellentReadinessCount} Excellent, {GoodReadinessCount} Good, {FairReadinessCount} Fair, {PoorReadinessCount} Poor");
+                }
+                else
+                {
+                    // Fallback estimates for mock/demo mode
+                    ExcellentReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.35)); // ~35% excellent
+                    GoodReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.30)); // ~30% good
+                    FairReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.25)); // ~25% fair
+                    PoorReadinessCount = unenrolledCount - ExcellentReadinessCount - GoodReadinessCount - FairReadinessCount;
+                    Instance.Info($"ℹ️ Using estimated readiness (real data not available)");
+                }
 
                 DevicesNeedingPreparation = FairReadinessCount;
                 HighRiskDeviceCount = Math.Max(0, (int)(unenrolledCount * 0.10)); // ~10% high risk

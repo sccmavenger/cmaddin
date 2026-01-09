@@ -72,43 +72,11 @@ if (-not $Version) {
     $minor = [int]$versionParts[1]
     $patch = [int]$versionParts[2]
     
-    # Display semantic versioning guidance
+    # Automatically use the BumpVersion parameter (defaults to Patch)
     Write-Host "" 
-    Write-Host "📚 SEMANTIC VERSIONING RULES (per VERSIONING.md):" -ForegroundColor Cyan
-    Write-Host "   PATCH:  Bug fixes only, no new features" -ForegroundColor Gray
-    Write-Host "   MINOR:  New features, backward compatible" -ForegroundColor Gray  
-    Write-Host "   MAJOR:  Breaking changes, major rewrites" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "❓ What type of changes are in this build?" -ForegroundColor Yellow
+    Write-Host "🔄 AUTO VERSION BUMP (No prompt - using -BumpVersion parameter)" -ForegroundColor Cyan
     Write-Host "   Current version: $currentVersion" -ForegroundColor White
-    Write-Host ""
-    Write-Host "   [P] PATCH   - Bug fixes only (→ $major.$minor.$($patch + 1))" -ForegroundColor Green
-    Write-Host "   [M] MINOR   - New features added (→ $major.$($minor + 1).0)" -ForegroundColor Cyan
-    Write-Host "   [J] MAJOR   - Breaking changes (→ $($major + 1).0.0)" -ForegroundColor Magenta
-    Write-Host "   [C] Cancel  - Exit without building" -ForegroundColor Red
-    Write-Host ""
-    
-    # If BumpVersion parameter was provided, use it; otherwise prompt
-    if ($PSBoundParameters.ContainsKey('BumpVersion')) {
-        Write-Host "✅ Using -BumpVersion parameter: $BumpVersion" -ForegroundColor Green
-    } else {
-        $choice = Read-Host "Select version bump type [P/M/J/C]"
-        switch ($choice.ToUpper()) {
-            'P' { $BumpVersion = 'Patch' }
-            'M' { $BumpVersion = 'Minor' }
-            'J' { $BumpVersion = 'Major' }
-            'C' { 
-                Write-Host ""
-                Write-Host "❌ Build cancelled by user" -ForegroundColor Red
-                exit 0
-            }
-            default { 
-                Write-Host ""
-                Write-Host "❌ Invalid choice. Defaulting to PATCH" -ForegroundColor Yellow
-                $BumpVersion = 'Patch'
-            }
-        }
-    }
+    Write-Host "   Bump type: $BumpVersion" -ForegroundColor Green
     Write-Host ""
     
     switch ($BumpVersion) {
@@ -119,29 +87,7 @@ if (-not $Version) {
     
     $newVersion = "$major.$minor.$patch"
     
-    # Validation: Provide guidance on proper semantic versioning
-    Write-Host "" 
-    Write-Host "🔄 AUTO VERSION BUMP" -ForegroundColor Magenta
-    Write-Host "   Current: $currentVersion" -ForegroundColor Gray
-    Write-Host "   New:     $newVersion (Bump: $BumpVersion)" -ForegroundColor Green
-    Write-Host "" 
-    Write-Host "⚠️  REMINDER: Verify this matches your changes:" -ForegroundColor Yellow
-    switch ($BumpVersion) {
-        'Patch' { 
-            Write-Host "   ✅ PATCH: Bug fixes, performance, docs only" -ForegroundColor Green
-            Write-Host "   ❌ If adding new features, should be MINOR" -ForegroundColor Red
-        }
-        'Minor' { 
-            Write-Host "   ✅ MINOR: New features, backward compatible" -ForegroundColor Green  
-            Write-Host "   ❌ If only bug fixes, should be PATCH" -ForegroundColor Red
-            Write-Host "   ❌ If breaking changes, should be MAJOR" -ForegroundColor Red
-        }
-        'Major' { 
-            Write-Host "   ✅ MAJOR: Breaking changes, major rewrites" -ForegroundColor Green
-            Write-Host "   ❌ If backward compatible, should be MINOR" -ForegroundColor Red
-        }
-    }
-    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "   New version: $newVersion" -ForegroundColor Green
     Write-Host ""
     
     # Update all 6 locations automatically
@@ -522,40 +468,121 @@ Write-Host ""
 # POST-BUILD DOCUMENTATION CHECKLIST
 # ============================================
 Write-Host "========================================" -ForegroundColor Magenta
-Write-Host "📝 POST-BUILD DOCUMENTATION CHECKLIST" -ForegroundColor Magenta
+Write-Host "📝 POST-BUILD DOCUMENTATION UPDATE REQUIRED" -ForegroundColor Magenta
 Write-Host "========================================" -ForegroundColor Magenta
 Write-Host ""
-Write-Host "✅ COMPLETED (verified during pre-flight):" -ForegroundColor Green
-Write-Host "   [✓] Version updated in .csproj" -ForegroundColor Gray
-Write-Host "   [✓] README.md updated with v$Version features" -ForegroundColor Gray
-Write-Host "   [✓] USER_GUIDE.md updated with v$Version" -ForegroundColor Gray
+Write-Host "⚠️  IMPORTANT: Update existing documentation before distribution!" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "📋 RECOMMENDED NEXT STEPS:" -ForegroundColor Yellow
+
+# Core Documentation Files to Update
+Write-Host "📄 REQUIRED UPDATES TO EXISTING FILES:" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "1. Create RELEASE_NOTES_v$Version.md (if not already created)" -ForegroundColor White
-Write-Host "   - Summary of changes" -ForegroundColor Gray
-Write-Host "   - What's new section" -ForegroundColor Gray
-Write-Host "   - Installation instructions" -ForegroundColor Gray
-Write-Host "   - Known issues" -ForegroundColor Gray
-Write-Host "   - Testing checklist" -ForegroundColor Gray
+
+Write-Host "1. README.md" -ForegroundColor White
+Write-Host "   Location: ./README.md" -ForegroundColor Gray
+Write-Host "   Update:" -ForegroundColor Yellow
+Write-Host "   • Version number references (currently v$Version)" -ForegroundColor Gray
+Write-Host "   • Feature list with any new capabilities" -ForegroundColor Gray
+Write-Host "   • Installation/upgrade instructions if changed" -ForegroundColor Gray
+Write-Host "   • Screenshots if UI changed significantly" -ForegroundColor Gray
 Write-Host ""
-Write-Host "2. Update CHANGELOG.md" -ForegroundColor White
-Write-Host "   - Add v$Version entry with date" -ForegroundColor Gray
-Write-Host "   - List all Added/Changed/Fixed items" -ForegroundColor Gray
+
+Write-Host "2. CHANGELOG.md" -ForegroundColor White
+Write-Host "   Location: ./CHANGELOG.md" -ForegroundColor Gray
+Write-Host "   Update:" -ForegroundColor Yellow
+Write-Host "   • Add [[$Version]] - $(Get-Date -Format 'yyyy-MM-dd') section at top" -ForegroundColor Gray
+Write-Host "   • List all changes under ### Added, ### Changed, ### Fixed" -ForegroundColor Gray
+Write-Host "   • Reference any breaking changes or migration steps" -ForegroundColor Gray
 Write-Host ""
-Write-Host "3. Test the package" -ForegroundColor White
-Write-Host "   - Install on clean PC" -ForegroundColor Gray
-Write-Host "   - Verify all new features work" -ForegroundColor Gray
-Write-Host "   - Check logs for errors" -ForegroundColor Gray
+
+Write-Host "3. AdminUserGuide.html" -ForegroundColor White
+Write-Host "   Location: ./AdminUserGuide.html" -ForegroundColor Gray
+Write-Host "   Update:" -ForegroundColor Yellow
+Write-Host "   • Version number in title/header" -ForegroundColor Gray
+Write-Host "   • New features with step-by-step instructions" -ForegroundColor Gray
+Write-Host "   • Updated screenshots for changed UI elements" -ForegroundColor Gray
+Write-Host "   • Troubleshooting section with new known issues" -ForegroundColor Gray
 Write-Host ""
-Write-Host "4. Git commit and tag" -ForegroundColor White
+
+Write-Host "4. VERSIONING.md" -ForegroundColor White
+Write-Host "   Location: ./VERSIONING.md" -ForegroundColor Gray
+Write-Host "   Update:" -ForegroundColor Yellow
+Write-Host "   • Version history table with v$Version" -ForegroundColor Gray
+Write-Host "   • Update 'Current Version' reference" -ForegroundColor Gray
+Write-Host ""
+
+Write-Host "5. TAB_VISIBILITY_GUIDE.md (if UI tabs changed)" -ForegroundColor White
+Write-Host "   Location: ./TAB_VISIBILITY_GUIDE.md" -ForegroundColor Gray
+Write-Host "   Update:" -ForegroundColor Yellow
+Write-Host "   • Tab visibility rules if modified" -ForegroundColor Gray
+Write-Host "   • Configuration examples with new features" -ForegroundColor Gray
+Write-Host ""
+
+Write-Host "6. PRIVACY.md (if data handling changed)" -ForegroundColor White
+Write-Host "   Location: ./PRIVACY.md" -ForegroundColor Gray
+Write-Host "   Update:" -ForegroundColor Yellow
+Write-Host "   • Data collection/transmission changes" -ForegroundColor Gray
+Write-Host "   • Azure OpenAI prompt changes" -ForegroundColor Gray
+Write-Host "   • New telemetry or logging additions" -ForegroundColor Gray
+Write-Host ""
+
+# Optional Documentation
+Write-Host "📋 OPTIONAL (Create if major release):" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "7. RELEASE_NOTES_v$Version.md (for major versions)" -ForegroundColor White
+Write-Host "   Location: ./RELEASE_NOTES_v$Version.md" -ForegroundColor Gray
+Write-Host "   Contents:" -ForegroundColor Yellow
+Write-Host "   • High-level summary for end users" -ForegroundColor Gray
+Write-Host "   • Installation/upgrade guide" -ForegroundColor Gray
+Write-Host "   • Breaking changes and migration steps" -ForegroundColor Gray
+Write-Host "   • Known issues and workarounds" -ForegroundColor Gray
+Write-Host "   • Testing checklist" -ForegroundColor Gray
+Write-Host ""
+
+# Internal Documentation
+Write-Host "🔧 INTERNAL DOCUMENTATION:" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "8. AUTO_REMEDIATION_ROADMAP.md (if remediation features added)" -ForegroundColor White
+Write-Host "   Location: ./AUTO_REMEDIATION_ROADMAP.md" -ForegroundColor Gray
+Write-Host "   Update implementation progress and timeline" -ForegroundColor Gray
+Write-Host ""
+
+Write-Host "9. WORKLOAD_BRAINSTORM_IDEAS.md (if workload features added)" -ForegroundColor White
+Write-Host "   Location: ./WORKLOAD_BRAINSTORM_IDEAS.md" -ForegroundColor Gray
+Write-Host "   Mark completed features and add new ideas" -ForegroundColor Gray
+Write-Host ""
+
+# Testing Checklist
+Write-Host "========================================" -ForegroundColor Magenta
+Write-Host "✅ PRE-DISTRIBUTION TESTING CHECKLIST" -ForegroundColor Magenta
+Write-Host "========================================" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "Before distributing v$Version, test:" -ForegroundColor Yellow
+Write-Host "   [ ] Install on clean PC without ConfigMgr" -ForegroundColor White
+Write-Host "   [ ] Verify add-in ribbon appears in ConfigMgr console" -ForegroundColor White
+Write-Host "   [ ] Test Azure OpenAI configuration (if AI features)" -ForegroundColor White
+Write-Host "   [ ] Verify Graph API connection" -ForegroundColor White
+Write-Host "   [ ] Test ConfigMgr Admin Service connection" -ForegroundColor White
+Write-Host "   [ ] Validate all new features work as expected" -ForegroundColor White
+Write-Host "   [ ] Check FileLogger.Instance logs for errors" -ForegroundColor White
+Write-Host "   [ ] Test update process from previous version" -ForegroundColor White
+Write-Host "   [ ] Verify uninstall process works cleanly" -ForegroundColor White
+Write-Host ""
+
+# Git Workflow
+Write-Host "========================================" -ForegroundColor Magenta
+Write-Host "📦 GIT COMMIT & TAG WORKFLOW" -ForegroundColor Magenta
+Write-Host "========================================" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "After updating all documentation:" -ForegroundColor Yellow
+Write-Host ""
 Write-Host "   git add ." -ForegroundColor Gray
-Write-Host "   git commit -m 'Release v$Version'" -ForegroundColor Gray
+Write-Host "   git commit -m 'Release v$Version - [brief summary]'" -ForegroundColor Gray
 Write-Host "   git tag -a v$Version -m 'Version $Version'" -ForegroundColor Gray
 Write-Host "   git push origin main --tags" -ForegroundColor Gray
 Write-Host ""
 
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "✅ Package ready for deployment to remote PCs" -ForegroundColor Green
+Write-Host "✅ Package ready for deployment after documentation updates" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
