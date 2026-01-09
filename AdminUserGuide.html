@@ -453,6 +453,15 @@
                     <strong>📘 About This Guide:</strong> This comprehensive guide explains every section of the dashboard, what each metric means, and how to take action on insights.
                 </div>
 
+                <div class="alert alert-success">
+                    <strong>🎉 Version 3.13.3 - Critical Bug Fixes (January 10, 2026)</strong>
+                    <ul>
+                        <li><strong>✅ Fixed Enrollment Calculation:</strong> Enrollment percentage now shows correct values (was incorrectly showing 4200% due to using ConfigMgr's limited device query instead of Intune's complete inventory)</li>
+                        <li><strong>✅ Fixed AI Diagnostics:</strong> AI status now updates immediately after configuration (was showing "not configured" even after successful setup)</li>
+                        <li><strong>📊 Improved Accuracy:</strong> Dashboard now intelligently selects between ConfigMgr and Intune device counts to show most accurate total</li>
+                    </ul>
+                </div>
+
                 <h3>Dashboard Overview</h3>
                 <p>The Cloud Journey Progress Dashboard is your command center for migrating from ConfigMgr to Microsoft Intune. It provides real-time insights, tracks progress, and helps you make data-driven decisions throughout your cloud migration journey.</p>
 
@@ -512,7 +521,20 @@
                 <h2>2. <span class="emoji">💻</span> Device Enrollment & Trends</h2>
                 
                 <h3>What Am I Looking At?</h3>
-                <p>Real device counts showing how your fleet is split between ConfigMgr (old) and Intune (new).</p>
+                <p>Real device counts showing how your fleet is split between ConfigMgr (old) and Intune (new). The dashboard intelligently combines data from both ConfigMgr Admin Service and Microsoft Graph (Intune) to provide the most accurate device inventory.</p>
+
+                <div class="alert alert-success">
+                    <strong>✅ Enhanced in v3.13.3:</strong> Dashboard now uses intelligent dual-source logic to determine total device count:
+                    <ul>
+                        <li><strong>Prioritizes Accuracy:</strong> Automatically selects the larger count between ConfigMgr and Intune</li>
+                        <li><strong>Accounts for Limitations:</strong> ConfigMgr queries may be limited to Windows 10/11 workstations</li>
+                        <li><strong>Uses Complete Inventory:</strong> Intune often has the full picture of all Windows devices</li>
+                        <li><strong>Shows Source:</strong> Check logs to see which source is being used and why</li>
+                    </ul>
+                    <p><strong>Example Log Output:</strong></p>
+                    <pre><code>✅ Using Intune as source: 84 total Windows devices
+   ConfigMgr devices: 2, Co-managed: 2, Pure Intune: 82</code></pre>
+                </div>
 
                 <h3>Key Metrics Explained</h3>
                 
@@ -527,7 +549,7 @@
                     <tbody>
                         <tr>
                             <td><strong>Total Devices</strong></td>
-                            <td>Every device in your environment (desktops, laptops, tablets)</td>
+                            <td>Every Windows device in your environment (desktops, laptops, tablets). Automatically uses the most accurate count from available data sources.</td>
                             <td>Should remain stable</td>
                         </tr>
                         <tr>
@@ -547,6 +569,14 @@
                         </tr>
                     </tbody>
                 </table>
+
+                <h4>Understanding Enrollment Percentage</h4>
+                <p><strong>Formula:</strong> (Intune-Enrolled Devices ÷ Total Devices) × 100</p>
+                <ul>
+                    <li><strong>Correct calculation (v3.13.3+):</strong> Uses the larger of ConfigMgr or Intune total counts</li>
+                    <li><strong>Example:</strong> 84 enrolled devices ÷ 84 total devices = 100% (not 4200%!)</li>
+                    <li><strong>Why It Matters:</strong> Accurate enrollment percentages help you track true migration progress</li>
+                </ul>
 
                 <h3>The Enrollment Trend Graph</h3>
                 <p><strong>What It Shows:</strong></p>
@@ -1343,19 +1373,87 @@ $incompatibleApps | Format-Table -AutoSize</code></pre>
 
             <!-- Section 8a: AI-Powered Recommendations (NEW in v1.2.0) -->
             <section id="section8a" class="content-section">
-                <h2>8a. <span class="emoji">🤖</span> AI-Powered Recommendations <span class="badge badge-info">NEW v1.2.0</span></h2>
+                <h2>8a. <span class="emoji">🤖</span> AI-Powered Recommendations <span class="badge badge-info">GPT-4 Powered</span></h2>
                 
                 <h3>What Am I Looking At?</h3>
-                <p>Intelligent, contextual guidance based on YOUR migration state. The AI analyzes your progress and provides specific recommendations to prevent stalls and accelerate success.</p>
+                <p>Intelligent, contextual guidance powered by <strong>Azure OpenAI GPT-4</strong>. The AI analyzes your specific migration state and provides personalized recommendations to prevent stalls and accelerate success.</p>
 
-                <h3>How AI Helps You Succeed</h3>
+                <div class="alert alert-warning">
+                    <strong>⚠️ Requires Configuration:</strong> AI recommendations require Azure OpenAI to be configured. Click the <strong>🤖 AI button</strong> in the toolbar to set up your Azure OpenAI credentials. Without configuration, you'll see setup instructions instead of recommendations.
+                </div>
+
+                <h3>🔒 Data Privacy & Transparency</h3>
+                <p><strong>What data is sent to Azure OpenAI?</strong> We believe in complete transparency about what information is shared with AI services.</p>
+                
+                <div class="info-box">
+                    <h4>📊 Data Sent to Azure OpenAI GPT-4</h4>
+                    <p><strong>Aggregated Migration Metrics Only - No Personal or Device Identifiers</strong></p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data Type</th>
+                                <th>What's Sent</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Device Counts</strong></td>
+                                <td>Total devices, enrolled count, percentage</td>
+                                <td>"Total: 500, Enrolled: 120 (24%)"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Progress Timing</strong></td>
+                                <td>Days since last progress milestone</td>
+                                <td>"45 days since last progress"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Workload Status</strong></td>
+                                <td>Count and names of completed/in-progress workloads</td>
+                                <td>"Completed: 2/7 (Compliance, Endpoint Protection)"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Velocity Trends</strong></td>
+                                <td>Enrollment pace descriptions (if slow/normal/fast)</td>
+                                <td>"Enrollment velocity has slowed"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Phase Status</strong></td>
+                                <td>Current migration plan phase (if plan exists)</td>
+                                <td>"Phase 2: Pilot Expansion"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4 style="color: #28a745; margin-top: 15px;">✅ What is NOT Sent</h4>
+                    <ul>
+                        <li>❌ Device names, hostnames, or computer names</li>
+                        <li>❌ User names, email addresses, or user identities</li>
+                        <li>❌ IP addresses or network information</li>
+                        <li>❌ Serial numbers or hardware identifiers</li>
+                        <li>❌ Your organization name or tenant name</li>
+                        <li>❌ Configuration details or policy settings</li>
+                        <li>❌ Any personally identifiable information (PII)</li>
+                    </ul>
+                    
+                    <h4 style="margin-top: 15px;">🛡️ Privacy Safeguards</h4>
+                    <ul>
+                        <li><strong>Aggregated Data Only:</strong> Only statistical summaries are sent (counts, percentages, generic workload names)</li>
+                        <li><strong>Your Azure OpenAI:</strong> Data is sent to YOUR Azure OpenAI instance (not shared with other customers)</li>
+                        <li><strong>Microsoft Privacy:</strong> Azure OpenAI doesn't use your data to train models (<a href="https://learn.microsoft.com/legal/cognitive-services/openai/data-privacy" target="_blank">Data Privacy Policy</a>)</li>
+                        <li><strong>Smart Caching:</strong> Responses cached locally for 30 minutes to minimize API calls</li>
+                        <li><strong>Logged Locally:</strong> All API interactions logged to %APPDATA%\CloudJourneyAddin\logs for audit</li>
+                    </ul>
+                </div>
+
+                <h3>How GPT-4 AI Helps You Succeed</h3>
                 <div class="alert alert-info">
-                    <strong>🎯 Priority-Based Guidance:</strong> AI focuses on what matters most RIGHT NOW
+                    <strong>🎯 Focused on What Matters Most:</strong> GPT-4 provides targeted guidance on the 2 critical success factors:
                     <ul style="margin-top: 10px;">
-                        <li><strong>Priority 1:</strong> Device Enrollment (foundation for everything else)</li>
-                        <li><strong>Priority 2:</strong> Workload Transitions (in optimal sequence)</li>
-                        <li><strong>Stall Prevention:</strong> Detects when progress stops (>30 days)</li>
-                        <li><strong>Risk Mitigation:</strong> Warns about compliance and security issues</li>
+                        <li><strong>Focus #1: Device Enrollment</strong> - Enrollment progress, velocity analysis, and acceleration strategies</li>
+                        <li><strong>Focus #2: Workload Transitions</strong> - Optimal workload sequencing and migration planning</li>
+                        <li><strong>Stall Prevention:</strong> Detects when progress stops (>30 days) and analyzes enrollment/workload blockers</li>
+                        <li><strong>Context-Aware:</strong> Incorporates velocity trends, phased plan status, and Microsoft FastTrack best practices</li>
                     </ul>
                 </div>
 

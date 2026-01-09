@@ -287,37 +287,220 @@ namespace CloudJourneyAddin.Services
         /// <summary>
         /// Tests the Azure OpenAI connection and returns diagnostic info.
         /// </summary>
+        /// <summary>
+        /// Test connection with current saved configuration
+        /// </summary>
         public async Task<(bool success, string message)> TestConnectionAsync()
         {
             if (!_isConfigured || _client == null)
             {
-                return (false, "Azure OpenAI not configured. Please provide Endpoint, Deployment Name, and API Key.");
+                return (false, "❌ Azure OpenAI not configured.\n\nPlease provide:\n• Endpoint URL\n• Deployment Name\n• API Key");
             }
 
+            return await TestConnectionInternalAsync(_client, _deploymentName!);
+        }
+
+        /// <summary>
+        /// Test connection with provided credentials (without saving)
+        /// Used by Test Connection button before saving configuration
+        /// </summary>
+        public async Task<(bool success, string message)> TestConnectionAsync(string endpoint, string deploymentName, string apiKey)
+        {
             try
             {
-                var options = new ChatCompletionsOptions
+                Instance.Info("Testing Azure OpenAI connection with provided credentials...");
+                Instance.Info($"   Endpoint: {endpoint}");
+                Instance.Info($"   Deployment: {deploymentName}");
+                Instance.Info($"   API Key: {(string.IsNullOrEmpty(apiKey) ? "(empty)" : $"{apiKey.Length} chars")}");
+                
+                // Validate inputs
+                if (string.IsNullOrWhiteSpace(endpoint))
+                    return (false, "❌ Endpoint URL is required");
+                
+                if (string.IsNullOrWhiteSpace(deploymentName))
+                    return (false, "❌ Deployment Name is required");
+                
+                if (string.IsNullOrWhiteSpace(apiKey))
+                    return (false, "❌ API Key is required");
+                
+                // Create temporary client for testing
+                Uri endpointUri;
+                try
                 {
-                    DeploymentName = _deploymentName,
-                    Messages = { new ChatRequestUserMessage("Hello, this is a test.") },
-                    MaxTokens = 10
-                };
-
-                var response = await _client.GetChatCompletionsAsync(options);
-                var content = response.Value.Choices[0].Message.Content;
-
-                Instance.Info($"OpenAI connection test successful: {content}");
-                return (true, $"✅ Connection successful!\nResponse: {content}\nDeployment: {_deploymentName}");
-            }
-            catch (RequestFailedException ex)
-            {
-                Instance.Error($"OpenAI connection test failed: {ex.Status} - {ex.Message}");
-                return (false, $"❌ Connection failed: {ex.Status} - {ex.Message}");
+                    endpointUri = new Uri(endpoint);
+                    Instance.Info($"   Parsed endpoint URI: {endpointUri}");
+                }
+                catch (Exception ex)
+                {
+                    Instance.Error($"Invalid endpoint URL: {ex.Message}");
+                    return (false, $"❌ Invalid Endpoint URL\n\nThe endpoint must be a valid URL like:\nhttps://contoso.openai.azure.com\n\nError: {ex.Message}");
+                }
+                
+                OpenAIClient testClient;
+                try
+                {
+                    testClient = new OpenAIClient(endpointUri, new AzureKeyCredential(apiKey));
+                    Instance.Info("   OpenAI client created successfully");
+                }
+                catch (Exception ex)
+                {
+                    Instance.Error($"Failed to create OpenAI client: {ex.Message}");
+                    return (false, $"❌ Failed to create Azure OpenAI client\n\nError: {ex.Message}");
+                }
+                
+                return await TestConnectionInternalAsync(testClient, deploymentName);
             }
             catch (Exception ex)
             {
-                Instance.Error($"OpenAI connection test failed: {ex.Message}");
-                return (false, $"❌ Connection failed: {ex.Message}");
+                Instance.Error($"Test connection setup failed: {ex.Message}");
+                return (false, $"❌ Setup Error: {ex.Message}\n\nCheck your credentials and try again.");
+            }
+        }
+
+        /// <summary>
+        /// Internal method to perform actual connection test
+        /// </summary>
+        private async Task<(bool success, string message)> TestConnectionInternalAsync(OpenAIClient client, string deploymentName)
+        {
+            try
+            {
+                Instance.Info($"Sending test request to deployment '{deploymentName}'...");
+                
+                var options = new ChatCompletionsOptions
+                {
+                    DeploymentName = deploymentName,
+                    Messages = { new ChatRequestUserMessage("Hello, respond with 'OK' if you receive this.") },
+                    MaxTokens = 20,
+                    Temperature = 0.1f
+                };
+
+                var startTime = DateTime.Now;
+                var response = await client.GetChatCompletionsAsync(options);
+                var elapsed = (DateTime.Now - startTime).TotalSeconds;
+                
+                var content = response.Value.Choices[0].Message.Content;
+                var tokensUsed = response.Value.Usage.TotalTokens;
+                
+                Instance.Info($"✅ OpenAI responded successfully!");
+                Instance.Info($"   Response: {content}");
+                Instance.Info($"   Tokens used: {tokensUsed}");
+                Instance.Info($"   Response time: {elapsed:F2}s");
+                
+                var successMessage = $"✅ Connection Successful!\n\n" +
+                                   $"📡 Deployment: {deploymentName}\n" +
+                                   $"💬 Response: {content}\n" +
+                                   $"⚡ Tokens Used: {tokensUsed}\n" +
+                                   $"⏱️ Response Time: {elapsed:F2}s\n\n" +
+                                   $"✔️ Your Azure OpenAI is configured correctly!";
+                
+                return (true, successMessage);
+            }
+            catch (RequestFailedException ex)
+            {
+                Instance.Error($"❌ Azure OpenAI API request failed: {ex.Status} - {ex.Message}");
+                Instance.Error($"   Error Code: {ex.ErrorCode}");
+                
+                var errorMessage = $"❌ Connection Failed (HTTP {ex.Status})\n\n";
+                
+                // Provide specific guidance based on error code
+                if (ex.Status == 401)
+                {
+                    errorMessage += "🔑 Authentication Error\n\n" +
+                                  "Your API Key is invalid or expired.\n\n" +
+                                  "✅ Solution:\n" +
+                                  "1. Go to Azure Portal\n" +
+                                  "2. Navigate to your Azure OpenAI resource\n" +
+                                  "3. Click 'Keys and Endpoint'\n" +
+                                  "4. Copy KEY 1 or KEY 2\n" +
+                                  "5. Paste it into the API Key field";
+                }
+                else if (ex.Status == 404)
+                {
+                    errorMessage += "🔍 Deployment Not Found\n\n" +
+                                  $"The deployment '{deploymentName}' doesn't exist.\n\n" +
+                                  "✅ Solution:\n" +
+                                  "1. Go to Azure OpenAI Studio\n" +
+                                  "2. Click 'Deployments'\n" +
+                                  "3. Copy your deployment name EXACTLY\n" +
+                                  "4. Paste it into Deployment Name field\n\n" +
+                                  "💡 Deployment name is case-sensitive!";
+                }
+                else if (ex.Status == 429)
+                {
+                    errorMessage += "⚠️ Rate Limit Exceeded\n\n" +
+                                  "Too many requests to Azure OpenAI.\n\n" +
+                                  "✅ Solution:\n" +
+                                  "• Wait a few moments and try again\n" +
+                                  "• Check your quota in Azure Portal";
+                }
+                else if (ex.Status >= 500)
+                {
+                    errorMessage += "🔧 Azure OpenAI Service Error\n\n" +
+                                  "Azure OpenAI service is experiencing issues.\n\n" +
+                                  "✅ Solution:\n" +
+                                  "• Wait a few moments and try again\n" +
+                                  "• Check Azure Status page";
+                }
+                else
+                {
+                    errorMessage += $"Error Details:\n{ex.Message}\n\n" +
+                                  "✅ Double-check:\n" +
+                                  "• Endpoint URL is correct\n" +
+                                  "• Deployment name matches Azure\n" +
+                                  "• API Key is valid";
+                }
+                
+                return (false, errorMessage);
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"❌ OpenAI connection test failed: {ex.GetType().Name} - {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Instance.Error($"   Inner exception: {ex.InnerException.Message}");
+                }
+                
+                var errorMessage = $"❌ Connection Failed\n\n" +
+                                 $"Error Type: {ex.GetType().Name}\n" +
+                                 $"Message: {ex.Message}\n\n";
+                
+                // Check for common network errors
+                if (ex.Message.Contains("Could not resolve host") || 
+                    ex.Message.Contains("No such host is known") ||
+                    ex.Message.Contains("Name or service not known"))
+                {
+                    errorMessage += "🌐 Network/DNS Error\n\n" +
+                                  "Cannot reach the Azure OpenAI endpoint.\n\n" +
+                                  "✅ Solution:\n" +
+                                  "• Check your internet connection\n" +
+                                  "• Verify endpoint URL is correct\n" +
+                                  "• Check firewall/proxy settings";
+                }
+                else if (ex.Message.Contains("SSL") || ex.Message.Contains("certificate"))
+                {
+                    errorMessage += "🔒 SSL/Certificate Error\n\n" +
+                                  "Cannot validate SSL certificate.\n\n" +
+                                  "✅ Solution:\n" +
+                                  "• Check system date/time\n" +
+                                  "• Update Windows certificates\n" +
+                                  "• Check corporate proxy settings";
+                }
+                else
+                {
+                    errorMessage += "🔍 Troubleshooting Steps:\n" +
+                                  "1. Verify all credentials in Azure Portal\n" +
+                                  "2. Check endpoint URL format\n" +
+                                  "3. Ensure deployment is active\n" +
+                                  "4. Check network connectivity\n" +
+                                  "5. Review Azure OpenAI quotas";
+                    
+                    if (ex.InnerException != null)
+                    {
+                        errorMessage += $"\n\n📋 Technical Details:\n{ex.InnerException.Message}";
+                    }
+                }
+                
+                return (false, errorMessage);
             }
         }
 

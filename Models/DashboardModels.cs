@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CloudJourneyAddin.Models
 {
@@ -17,6 +18,7 @@ namespace CloudJourneyAddin.Models
         public int TotalDevices { get; set; }
         public int IntuneEnrolledDevices { get; set; }
         public int ConfigMgrOnlyDevices { get; set; }
+        public int CoManagedDevices { get; set; }
         public double IntuneEnrollmentPercentage => TotalDevices > 0 ? (double)IntuneEnrolledDevices / TotalDevices * 100 : 0;
         public EnrollmentTrend[] TrendData { get; set; } = Array.Empty<EnrollmentTrend>();
     }
@@ -442,26 +444,47 @@ namespace CloudJourneyAddin.Models
     }
 
     // Device Readiness Models (v2.6.0 - Enrollment Tab Enhancements)
+    /// <summary>
+    /// Device readiness breakdown with 4-tier health categorization.
+    /// Thresholds: Excellent (≥85), Good (60-84), Fair (40-59), Poor (<40)
+    /// </summary>
     public class DeviceReadinessBreakdown
     {
-        public int HighSuccessDevices { get; set; }
-        public double HighSuccessHealthAvg { get; set; }
-        public double HighSuccessPredictedRate { get; set; }
-        public int HighSuccessRecommendedVelocity { get; set; }
+        // Excellent: Health Score ≥85 (98% enrollment success rate)
+        public int ExcellentDevices { get; set; }
+        public double ExcellentHealthAvg { get; set; }
+        public double ExcellentPredictedRate { get; set; }
+        public int ExcellentRecommendedVelocity { get; set; }
+        public List<DeviceReadinessDetail> ExcellentDeviceList { get; set; } = new();
 
-        public int ModerateSuccessDevices { get; set; }
-        public double ModerateSuccessHealthAvg { get; set; }
-        public double ModerateSuccessPredictedRate { get; set; }
-        public int ModerateSuccessRecommendedVelocity { get; set; }
+        // Good: Health Score 60-84 (85% enrollment success rate)
+        public int GoodDevices { get; set; }
+        public double GoodHealthAvg { get; set; }
+        public double GoodPredictedRate { get; set; }
+        public int GoodRecommendedVelocity { get; set; }
+        public List<DeviceReadinessDetail> GoodDeviceList { get; set; } = new();
 
-        public int HighRiskDevices { get; set; }
-        public double HighRiskHealthAvg { get; set; }
-        public double HighRiskPredictedRate { get; set; }
-        public string HighRiskRecommendation { get; set; } = string.Empty;
+        // Fair: Health Score 40-59 (60% enrollment success rate, needs remediation)
+        public int FairDevices { get; set; }
+        public double FairHealthAvg { get; set; }
+        public double FairPredictedRate { get; set; }
+        public string FairRecommendation { get; set; } = string.Empty;
+        public List<DeviceReadinessDetail> FairDeviceList { get; set; } = new();
 
-        public List<DeviceReadinessDetail> HighSuccessDeviceList { get; set; } = new();
-        public List<DeviceReadinessDetail> ModerateSuccessDeviceList { get; set; } = new();
-        public List<DeviceReadinessDetail> HighRiskDeviceList { get; set; } = new();
+        // Poor: Health Score <40 (30% enrollment success rate, critical issues)
+        public int PoorDevices { get; set; }
+        public double PoorHealthAvg { get; set; }
+        public double PoorPredictedRate { get; set; }
+        public string PoorRecommendation { get; set; } = string.Empty;
+        public List<DeviceReadinessDetail> PoorDeviceList { get; set; } = new();
+
+        // Legacy properties for backward compatibility
+        public int HighSuccessDevices => ExcellentDevices;
+        public int ModerateSuccessDevices => GoodDevices;
+        public int HighRiskDevices => FairDevices + PoorDevices;
+        public List<DeviceReadinessDetail> HighSuccessDeviceList => ExcellentDeviceList;
+        public List<DeviceReadinessDetail> ModerateSuccessDeviceList => GoodDeviceList;
+        public List<DeviceReadinessDetail> HighRiskDeviceList => FairDeviceList.Concat(PoorDeviceList).ToList();
     }
 
     public class DeviceReadinessDetail

@@ -7,7 +7,8 @@ using CloudJourneyAddin.Models;
 namespace CloudJourneyAddin.Services
 {
     /// <summary>
-    /// AI-powered recommendation engine to guide migration and prevent stalls.
+    /// AI-powered recommendation engine using GPT-4 to guide migration.
+    /// Focuses on: 1. Device Enrollment  2. Workload Transitions
     /// REQUIRES Azure OpenAI to be configured - no rule-based fallback.
     /// Enhanced with Phase 1: Phased Planning, Device Selection, and Trend Analysis.
     /// </summary>
@@ -17,7 +18,9 @@ namespace CloudJourneyAddin.Services
         private readonly PhasedMigrationService _phasedMigrationService;
         private readonly DeviceSelectionService _deviceSelectionService;
         private readonly WorkloadTrendService _workloadTrendService;
-        private readonly AzureOpenAIService _openAIService;
+        private readonly AzureOpenAIService? _openAIService;
+        
+        public bool IsConfigured => _openAIService?.IsConfigured ?? false;
         
         public AIRecommendationService(GraphDataService graphService)
         {
@@ -26,22 +29,30 @@ namespace CloudJourneyAddin.Services
             _deviceSelectionService = new DeviceSelectionService(graphService);
             _workloadTrendService = new WorkloadTrendService();
             
-            // Initialize Azure OpenAI - REQUIRED
-            _openAIService = new AzureOpenAIService();
-            if (!_openAIService.IsConfigured)
+            // Initialize Azure OpenAI - Optional (gracefully handle if not configured)
+            try
             {
-                var errorMsg = "Azure OpenAI is required but not configured. Please configure Azure OpenAI using the 🤖 AI button in the toolbar.";
-                FileLogger.Instance.Error(errorMsg);
-                throw new InvalidOperationException(errorMsg);
+                _openAIService = new AzureOpenAIService();
+                if (_openAIService.IsConfigured)
+                {
+                    FileLogger.Instance.Info("Azure OpenAI service initialized and configured successfully");
+                }
+                else
+                {
+                    FileLogger.Instance.Warning("Azure OpenAI not configured - recommendations will not be available until configured");
+                }
             }
-            
-            FileLogger.Instance.Info("Azure OpenAI service initialized and configured successfully");
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"Azure OpenAI initialization failed: {ex.Message}");
+                _openAIService = null;
+            }
         }
 
         /// <summary>
-        /// Analyzes current migration state and generates prioritized recommendations
-        /// Focus: 1. Device Enrollment  2. Workload Transitions
-        /// ENHANCED: Now includes phased planning, device selection, and velocity tracking
+        /// Analyzes current migration state and generates GPT-4 powered recommendations.
+        /// Focuses exclusively on: 1. Device Enrollment  2. Workload Transitions
+        /// ENHANCED: Incorporates phased planning, device selection, velocity tracking, and stall detection
         /// </summary>
         public async Task<List<AIRecommendation>> GetRecommendationsAsync(
             DeviceEnrollment deviceEnrollment,
@@ -50,7 +61,11 @@ namespace CloudJourneyAddin.Services
             DateTime lastProgressDate,
             MigrationPlan? activePlan = null)
         {
-            var recommendations = new List<AIRecommendation>();
+            // If Azure OpenAI not configured, return empty list (UI will show config message)
+            if (!IsConfigured)
+            {
+                return new List<AIRecommendation>();
+            }
 
             // PHASE 1 ENHANCEMENT: Record workload progress for trend analysis
             await _workloadTrendService.RecordWorkloadProgressAsync(
@@ -58,48 +73,33 @@ namespace CloudJourneyAddin.Services
                 deviceEnrollment.TotalDevices, 
                 deviceEnrollment.IntuneEnrolledDevices);
 
-            // PHASE 1 ENHANCEMENT: Phased Migration Plan Guidance
+            // Get velocity trends for GPT-4 context
+            var velocityData = await _workloadTrendService.GetWorkloadTrendsAsync(90);
+            var velocityInsight = await _workloadTrendService.AnalyzeWorkloadVelocityAsync(workloads);
+
+            // Get phase guidance if migration plan exists
+            string? phaseContext = null;
             if (activePlan != null)
             {
-                var phaseGuidance = _phasedMigrationService.GetCurrentPhaseGuidance(
-                    activePlan, 
-                    (int)deviceEnrollment.IntuneEnrollmentPercentage);
-                recommendations.AddRange(phaseGuidance);
+                var currentPhaseNum = activePlan.Phases
+                    .FirstOrDefault(p => p.PhaseNumber > 0)?.PhaseNumber ?? 1;
+                phaseContext = $"Active Migration Plan - Phase {currentPhaseNum}: {activePlan.Phases.FirstOrDefault(p => p.PhaseNumber == currentPhaseNum)?.Name ?? "N/A"}";
             }
 
-            // PHASE 1 ENHANCEMENT: Workload Velocity Trend Analysis
-            var velocityRecommendations = await _workloadTrendService.AnalyzeWorkloadVelocityAsync(workloads);
-            recommendations.AddRange(velocityRecommendations);
-
-            // Priority 1: Device Enrollment (if < 75%)
-            if (deviceEnrollment.IntuneEnrollmentPercentage < 75)
-            {
-                recommendations.AddRange(await GenerateEnrollmentRecommendationsAsync(deviceEnrollment));
-            }
-
-            // Priority 2: Detect and Prevent Stalls
+            // Detect stalls
             var daysSinceProgress = (DateTime.Now - lastProgressDate).Days;
-            if (daysSinceProgress > 30)
-            {
-                recommendations.AddRange(await GenerateStallPreventionRecommendationsAsync(
-                    deviceEnrollment, workloads, daysSinceProgress));
-            }
+            var isStalled = daysSinceProgress > 30;
 
-            // Priority 3: Workload Transition Guidance
-            recommendations.AddRange(GenerateWorkloadRecommendations(
-                workloads, deviceEnrollment, compliance));
+            // Single comprehensive GPT-4 call for enrollment and workload recommendations
+            var recommendations = await GenerateGPT4RecommendationsAsync(
+                deviceEnrollment,
+                workloads,
+                daysSinceProgress,
+                isStalled,
+                phaseContext,
+                velocityInsight);
 
-            // Priority 4: Compliance & Security
-            if (compliance.IntuneScore < 80)
-            {
-                recommendations.AddRange(GenerateComplianceRecommendations(compliance));
-            }
-
-            // Sort by priority and impact
-            return recommendations
-                .OrderByDescending(r => r.Priority)
-                .ThenByDescending(r => r.ImpactScore)
-                .ToList();
+            return recommendations;
         }
 
         /// <summary>
@@ -172,442 +172,181 @@ namespace CloudJourneyAddin.Services
             return await _workloadTrendService.GetWorkloadTrendsAsync(days);
         }
 
-        #region Device Enrollment Recommendations
-
-        private async Task<List<AIRecommendation>> GenerateEnrollmentRecommendationsAsync(
-            DeviceEnrollment enrollment)
-        {
-            var recommendations = new List<AIRecommendation>();
-            var enrollmentPercent = enrollment.IntuneEnrollmentPercentage;
-            var remainingDevices = enrollment.ConfigMgrOnlyDevices;
-
-            // Critical: Very low enrollment (< 25%)
-            if (enrollmentPercent < 25)
-            {
-                recommendations.Add(new AIRecommendation
-                {
-                    Title = "🚨 Critical: Begin Device Enrollment Immediately",
-                    Description = $"Only {enrollmentPercent:F0}% of devices enrolled. {remainingDevices} devices remaining. " +
-                                  "Enrollment is the foundation - workloads cannot be migrated until devices are in Intune.",
-                    Rationale = "Based on Microsoft FastTrack data, organizations with < 25% enrollment after 90 days have a 65% risk of migration failure. " +
-                               "Early enrollment momentum is critical for success.",
-                    ActionSteps = new List<string>
-                    {
-                        "1. Start with pilot group (10-20 devices) - test enrollment process",
-                        "2. Choose enrollment method: AutoPilot (new devices) or Co-management (existing)",
-                        "3. Set up Cloud Management Gateway (CMG) if not already configured",
-                        "4. Create device groups in Azure AD for staged rollout",
-                        "5. Target: Enroll 50-100 devices per week"
-                    },
-                    Priority = RecommendationPriority.Critical,
-                    Category = RecommendationCategory.DeviceEnrollment,
-                    ImpactScore = 100,
-                    EstimatedEffort = "2-3 weeks for pilot, ongoing for full rollout",
-                    ResourceLinks = new List<string>
-                    {
-                        "https://learn.microsoft.com/mem/intune/enrollment/windows-enrollment-methods",
-                        "https://learn.microsoft.com/mem/configmgr/comanage/how-to-prepare-win10"
-                    }
-                });
-            }
-            // High: Moderate enrollment (25-50%)
-            else if (enrollmentPercent < 50)
-            {
-                recommendations.Add(new AIRecommendation
-                {
-                    Title = "⚡ High Priority: Accelerate Enrollment Velocity",
-                    Description = $"Good start at {enrollmentPercent:F0}% enrolled, but need momentum. {remainingDevices} devices still pending. " +
-                                  "Target: 50% enrollment is the tipping point for successful migration.",
-                    Rationale = "Industry data shows 50% enrollment is a critical threshold. Organizations reaching 50% within 4 months have 85% on-time completion rate.",
-                    ActionSteps = new List<string>
-                    {
-                        $"1. Analyze pilot success - enrollment time, issues encountered",
-                        "2. Expand to next wave: target departmental rollout (HR, Finance, etc.)",
-                        "3. Automate enrollment for new devices with AutoPilot",
-                        "4. Use ConfigMgr client settings to auto-enroll existing devices",
-                        $"5. Goal: Enroll remaining {remainingDevices} devices over next 6-8 weeks"
-                    },
-                    Priority = RecommendationPriority.High,
-                    Category = RecommendationCategory.DeviceEnrollment,
-                    ImpactScore = 85,
-                    EstimatedEffort = "6-8 weeks",
-                    ResourceLinks = new List<string>
-                    {
-                        "https://learn.microsoft.com/mem/intune/enrollment/windows-bulk-enroll",
-                        "https://learn.microsoft.com/mem/autopilot/windows-autopilot"
-                    }
-                });
-            }
-            // Medium: Good progress (50-75%)
-            else if (enrollmentPercent < 75)
-            {
-                recommendations.Add(new AIRecommendation
-                {
-                    Title = "✅ On Track: Complete Remaining Enrollment",
-                    Description = $"Excellent progress at {enrollmentPercent:F0}% enrolled. {remainingDevices} devices remain. " +
-                                  "Focus: Identify stragglers and edge cases.",
-                    Rationale = "You've passed the critical threshold. Final devices are typically edge cases (remote workers, legacy hardware, special configurations).",
-                    ActionSteps = new List<string>
-                    {
-                        "1. Identify remaining devices - why aren't they enrolled?",
-                        "2. Common issues: Offline devices, network restrictions, OS versions",
-                        "3. Reach out to device owners directly for holdouts",
-                        "4. Consider: Is device eligible? (Windows 10 1809+ required)",
-                        $"5. Target completion: {remainingDevices} devices within 4 weeks"
-                    },
-                    Priority = RecommendationPriority.Medium,
-                    Category = RecommendationCategory.DeviceEnrollment,
-                    ImpactScore = 65,
-                    EstimatedEffort = "3-4 weeks",
-                    ResourceLinks = new List<string>
-                    {
-                        "https://learn.microsoft.com/mem/intune/enrollment/troubleshoot-windows-enrollment-errors"
-                    }
-                });
-            }
-
-            return await Task.FromResult(recommendations);
-        }
-
-        #endregion
-
-        #region Stall Prevention Recommendations
-
-        private async Task<List<AIRecommendation>> GenerateStallPreventionRecommendationsAsync(
-            DeviceEnrollment enrollment,
-            List<Workload> workloads,
-            int daysSinceProgress)
-        {
-            var recommendations = new List<AIRecommendation>();
-
-            // Use GPT-4 enhanced analysis (required, no fallback)
-            var gpt4Recommendation = await AnalyzeStallWithGPT4Async(
-                enrollment, workloads, daysSinceProgress);
-            
-            if (gpt4Recommendation != null)
-            {
-                recommendations.Add(gpt4Recommendation);
-            }
-
-            return recommendations;
-        }
-
         /// <summary>
-        /// GPT-4 Enhanced Stall Analysis - Provides intelligent root cause analysis and recovery guidance
+        /// Comprehensive GPT-4 analysis focusing on Enrollment and Workload Transitions.
+        /// Incorporates velocity trends, phased plan status, and stall detection.
+        /// 
+        /// DATA PRIVACY: Only sends aggregated metrics to Azure OpenAI:
+        /// - Device counts (total, enrolled, percentages)
+        /// - Workload status (counts and generic names like "Compliance Policies")
+        /// - Progress timing (days since last progress)
+        /// - Velocity trends (descriptive summaries)
+        /// - Phase status (if migration plan active)
+        /// 
+        /// DOES NOT SEND:
+        /// - Device names, hostnames, or computer names
+        /// - User names, emails, or identities
+        /// - IP addresses, network info, or hardware IDs
+        /// - Organization/tenant names
+        /// - Configuration details or policy settings
+        /// - Any personally identifiable information (PII)
         /// </summary>
-        private async Task<AIRecommendation?> AnalyzeStallWithGPT4Async(
+        private async Task<List<AIRecommendation>> GenerateGPT4RecommendationsAsync(
             DeviceEnrollment enrollment,
             List<Workload> workloads,
-            int daysSinceProgress)
+            int daysSinceProgress,
+            bool isStalled,
+            string? phaseContext,
+            List<AIRecommendation> velocityInsights)
         {
-            var completedWorkloads = workloads.Count(w => w.Status == WorkloadStatus.Completed);
-            var inProgressWorkloads = workloads.Where(w => w.Status == WorkloadStatus.InProgress).Select(w => w.Name).ToList();
-            var totalWorkloads = workloads.Count;
-
-            var systemPrompt = "You are an expert Microsoft Intune migration consultant with 15+ years of experience. " +
-                "Analyze the customer's migration state and identify root causes for stalls. Be specific, actionable, and empathetic.";
-
-            var userPrompt = $"MIGRATION STATE:\n" +
-                $"- Days since last progress: {daysSinceProgress}\n" +
-                $"- Enrollment: {enrollment.IntuneEnrollmentPercentage:F0}% ({enrollment.IntuneEnrolledDevices}/{enrollment.TotalDevices} devices)\n" +
-                $"- ConfigMgr-only devices remaining: {enrollment.ConfigMgrOnlyDevices}\n" +
-                $"- Workloads completed: {completedWorkloads}/{totalWorkloads}\n" +
-                $"- Workloads in progress: {string.Join(", ", inProgressWorkloads)}\n\n" +
-                $"CONTEXT:\n" +
-                $"- Organization size: {enrollment.TotalDevices} devices\n" +
-                $"- Enrollment percentage category: {GetEnrollmentCategory(enrollment.IntuneEnrollmentPercentage)}\n" +
-                $"- Stall duration category: {GetStallCategory(daysSinceProgress)}\n\n" +
-                "TASK:\n" +
-                "1. Identify the 2-3 most likely root causes for this specific stall\n" +
-                "2. Provide 4-5 concrete, actionable recovery steps (not generic advice)\n" +
-                "3. Estimate realistic recovery timeline\n" +
-                "4. Determine if external help (Microsoft FastTrack) is recommended\n\n" +
-                "FORMAT YOUR RESPONSE AS VALID JSON (no markdown, just raw JSON):\n" +
-                "{\n" +
-                "  \"rootCauses\": [\"cause 1 with specifics\", \"cause 2 with context\"],\n" +
-                "  \"recoverySteps\": [\"Step 1: specific action\", \"Step 2: ...\", \"Step 3: ...\"],\n" +
-                "  \"estimatedRecoveryTime\": \"X weeks\",\n" +
-                "  \"recommendFastTrack\": true or false,\n" +
-                "  \"rationale\": \"1-2 sentences explaining why this analysis matters\"\n" +
-                "}";
-
-            try
-            {
-                var analysis = await _openAIService!.GetStructuredResponseAsync<StallAnalysisResponse>(
-                    systemPrompt, userPrompt, maxTokens: 800, temperature: 0.7f);
-
-                if (analysis == null)
-                    return null;
-
-                return new AIRecommendation
-                {
-                    Title = $"🤖 GPT-4 Stall Analysis: {daysSinceProgress} Days No Progress",
-                    Description = "AI-Enhanced Root Cause Analysis:\n" + string.Join("\n", analysis.RootCauses.Select((c, i) => $"  {i + 1}. {c}")),
-                    Rationale = analysis.Rationale + (analysis.RecommendFastTrack ? "\n\n⚠️ Microsoft FastTrack assistance recommended." : ""),
-                    ActionSteps = analysis.RecoverySteps,
-                    Priority = RecommendationPriority.Critical,
-                    Category = RecommendationCategory.StallPrevention,
-                    ImpactScore = 100,
-                    EstimatedEffort = analysis.EstimatedRecoveryTime,
-                    ResourceLinks = new List<string>
-                    {
-                        "https://aka.ms/FastTrack",
-                        "https://learn.microsoft.com/mem/intune/fundamentals/migration-guide"
-                    }
-                };
-            }
-            catch (Exception ex)
-            {
-                FileLogger.Instance.Error($"GPT-4 stall analysis failed: {ex.Message}");
-                return null;
-            }
-        }
-
-        private string GetEnrollmentCategory(double percentage)
-        {
-            if (percentage < 25) return "Very Low (Critical)";
-            if (percentage < 50) return "Low (High Priority)";
-            if (percentage < 75) return "Moderate (On Track)";
-            return "High (Near Completion)";
-        }
-
-        private string GetStallCategory(int days)
-        {
-            if (days < 30) return "Short stall";
-            if (days < 60) return "Medium stall (concerning)";
-            return "Long stall (critical intervention needed)";
-        }
-
-        #endregion
-
-        #region Workload Transition Recommendations
-
-        private List<AIRecommendation> GenerateWorkloadRecommendations(
-            List<Workload> workloads,
-            DeviceEnrollment enrollment,
-            ComplianceScore compliance)
-        {
-            var recommendations = new List<AIRecommendation>();
-
-            // Don't recommend workload migration if enrollment is too low
-            if (enrollment.IntuneEnrollmentPercentage < 50)
-            {
-                recommendations.Add(new AIRecommendation
-                {
-                    Title = "📋 Workload Migration: Not Ready Yet",
-                    Description = $"Current enrollment: {enrollment.IntuneEnrollmentPercentage:F0}%. Workload migration should wait until ≥50% of devices are enrolled.",
-                    Rationale = "Migrating workloads before device enrollment creates management gaps. Policies won't apply to unenrolled devices, creating security and compliance risks.",
-                    ActionSteps = new List<string>
-                    {
-                        "1. Focus on device enrollment first (see enrollment recommendations)",
-                        "2. Once enrollment reaches 50%, begin workload planning",
-                        "3. Start with Compliance Policies (lowest risk workload)"
-                    },
-                    Priority = RecommendationPriority.Low,
-                    Category = RecommendationCategory.WorkloadTransition,
-                    ImpactScore = 40,
-                    EstimatedEffort = "N/A - waiting on enrollment",
-                    ResourceLinks = new List<string>()
-                });
-
-                return recommendations;
-            }
-
-            // Recommend next workload based on current state
             var completedWorkloads = workloads.Where(w => w.Status == WorkloadStatus.Completed).ToList();
             var inProgressWorkloads = workloads.Where(w => w.Status == WorkloadStatus.InProgress).ToList();
             var notStartedWorkloads = workloads.Where(w => w.Status == WorkloadStatus.NotStarted).ToList();
 
-            // If workload is in progress, help complete it
-            if (inProgressWorkloads.Any())
-            {
-                var workload = inProgressWorkloads.First();
-                recommendations.Add(new AIRecommendation
-                {
-                    Title = $"🎯 Complete In-Progress Workload: {workload.Name}",
-                    Description = $"You have '{workload.Name}' in progress. Completing this workload builds momentum and prevents stall.",
-                    Rationale = "Completing started workloads before starting new ones maintains focus and demonstrates progress to stakeholders.",
-                    ActionSteps = GetWorkloadCompletionSteps(workload.Name),
-                    Priority = RecommendationPriority.High,
-                    Category = RecommendationCategory.WorkloadTransition,
-                    ImpactScore = 80,
-                    EstimatedEffort = "1-2 weeks",
-                    ResourceLinks = new List<string> { workload.LearnMoreUrl }
-                });
-            }
-            // Recommend next workload to start
-            else if (notStartedWorkloads.Any())
-            {
-                var nextWorkload = GetRecommendedNextWorkload(completedWorkloads, notStartedWorkloads);
-                recommendations.Add(new AIRecommendation
-                {
-                    Title = $"🚀 Ready for Next Workload: {nextWorkload.Name}",
-                    Description = $"Recommended next step: Migrate '{nextWorkload.Name}' workload. " +
-                                  $"With {enrollment.IntuneEnrollmentPercentage:F0}% enrollment, you're ready for this transition.",
-                    Rationale = GetWorkloadRationale(nextWorkload.Name, completedWorkloads.Count),
-                    ActionSteps = GetWorkloadMigrationSteps(nextWorkload.Name),
-                    Priority = RecommendationPriority.High,
-                    Category = RecommendationCategory.WorkloadTransition,
-                    ImpactScore = 75,
-                    EstimatedEffort = GetWorkloadEffort(nextWorkload.Name),
-                    ResourceLinks = new List<string> { nextWorkload.LearnMoreUrl }
-                });
-            }
-            // All workloads complete!
-            else
-            {
-                recommendations.Add(new AIRecommendation
-                {
-                    Title = "🎉 All Workloads Complete!",
-                    Description = "Congratulations! All 7 workloads have been migrated to Intune. You're ready for final steps.",
-                    Rationale = "Complete workload migration means you can now decommission ConfigMgr infrastructure and realize full ROI.",
-                    ActionSteps = new List<string>
-                    {
-                        "1. Verify all devices receiving policies from Intune",
-                        "2. Monitor for 2 weeks - ensure stability",
-                        "3. Plan ConfigMgr decommissioning (keep 3-month rollback capability)",
-                        "4. Document lessons learned for other teams",
-                        "5. Celebrate with your team! 🎉"
-                    },
-                    Priority = RecommendationPriority.Medium,
-                    Category = RecommendationCategory.WorkloadTransition,
-                    ImpactScore = 60,
-                    EstimatedEffort = "4 weeks (stabilization + decommission)",
-                    ResourceLinks = new List<string>
-                    {
-                        "https://learn.microsoft.com/mem/configmgr/core/plan-design/changes/removed-and-deprecated"
-                    }
-                });
-            }
+            // Build velocity context from insights
+            var velocityContext = velocityInsights.Any() 
+                ? string.Join("\n", velocityInsights.Select(v => $"  - {v.Title}: {v.Description}"))
+                : "No significant velocity issues detected";
 
-            return recommendations;
+            var systemPrompt = @"You are an expert Microsoft Intune migration consultant with 15+ years of experience helping organizations migrate from ConfigMgr to Intune.
+
+Your role is to provide specific, actionable recommendations focused EXCLUSIVELY on:
+1. Device Enrollment progress and acceleration
+2. Workload Transition planning and execution
+
+Be specific, actionable, and empathetic. Use Microsoft FastTrack best practices.";
+
+            var userPrompt = $@"MIGRATION STATE:
+- Total Devices: {enrollment.TotalDevices}
+- Intune Enrolled: {enrollment.IntuneEnrolledDevices} ({enrollment.IntuneEnrollmentPercentage:F1}%)
+- ConfigMgr Only: {enrollment.ConfigMgrOnlyDevices}
+- Days Since Last Progress: {daysSinceProgress}
+- Stalled: {(isStalled ? "YES - CRITICAL" : "No")}
+
+WORKLOAD STATUS:
+- Completed: {completedWorkloads.Count}/{workloads.Count} ({string.Join(", ", completedWorkloads.Select(w => w.Name))})
+- In Progress: {inProgressWorkloads.Count} ({string.Join(", ", inProgressWorkloads.Select(w => w.Name))})
+- Not Started: {notStartedWorkloads.Count}
+
+VELOCITY & TRENDS:
+{velocityContext}
+
+{(phaseContext != null ? $"MIGRATION PLAN:\n{phaseContext}\n" : "")}
+CONTEXT & BEST PRACTICES:
+- 50% enrollment is the critical tipping point (85% on-time completion rate)
+- <25% enrollment after 90 days = 65% failure risk
+- Recommended workload order: Compliance→Endpoint Protection→Device Config→Resource Access→Updates→Office→Apps
+- Don't start workloads until ≥50% enrollment
+- Stalls >45 days rarely recover without intervention
+
+TASK:
+Generate 2-4 prioritized recommendations focused on ENROLLMENT and WORKLOAD TRANSITIONS.
+{(isStalled ? "\n⚠️ CRITICAL: Address the stall first - identify root causes related to enrollment or workload blockers.\n" : "")}
+For each recommendation:
+1. Clear title with priority indicator (🚨 Critical, ⚡ High, ✅ Medium)
+2. Specific description of current state and why it matters
+3. Rationale backed by FastTrack data
+4. 4-6 concrete, numbered action steps
+5. Realistic effort estimate
+6. Impact score (0-100)
+7. Priority level (Critical, High, Medium, Low)
+8. Category (DeviceEnrollment or WorkloadTransition)
+
+FORMAT AS VALID JSON (no markdown):
+{{
+  ""recommendations"": [
+    {{
+      ""title"": ""string"",
+      ""description"": ""string"",
+      ""rationale"": ""string"",
+      ""actionSteps"": [""step 1"", ""step 2"", ...],
+      ""estimatedEffort"": ""string"",
+      ""impactScore"": number,
+      ""priority"": ""Critical|High|Medium|Low"",
+      ""category"": ""DeviceEnrollment|WorkloadTransition"",
+      ""resourceLinks"": [""url1"", ""url2""]
+    }}
+  ]
+}}";
+
+            try
+            {
+                var response = await _openAIService!.GetStructuredResponseAsync<GPT4RecommendationResponse>(
+                    systemPrompt, userPrompt, maxTokens: 1500, temperature: 0.7f);
+
+                if (response == null || response.Recommendations == null || !response.Recommendations.Any())
+                {
+                    FileLogger.Instance.Warning("GPT-4 returned no recommendations");
+                    return new List<AIRecommendation>();
+                }
+
+                // Convert GPT-4 response to AIRecommendation objects
+                return response.Recommendations.Select(r => new AIRecommendation
+                {
+                    Title = r.Title,
+                    Description = r.Description,
+                    Rationale = r.Rationale,
+                    ActionSteps = r.ActionSteps,
+                    EstimatedEffort = r.EstimatedEffort,
+                    ImpactScore = r.ImpactScore,
+                    Priority = ParsePriority(r.Priority),
+                    Category = ParseCategory(r.Category),
+                    ResourceLinks = r.ResourceLinks ?? new List<string>()
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Error($"GPT-4 recommendation generation failed: {ex.Message}");
+                return new List<AIRecommendation>();
+            }
         }
 
-        private Workload GetRecommendedNextWorkload(List<Workload> completed, List<Workload> notStarted)
+        private RecommendationPriority ParsePriority(string priority)
         {
-            // Recommended order based on Microsoft best practices and complexity
-            var recommendedOrder = new List<string>
+            return priority?.ToLower() switch
             {
-                "Compliance Policies",        // 1st - Foundation, low risk
-                "Endpoint Protection",        // 2nd - Security, low risk
-                "Device Configuration",       // 3rd - Medium complexity
-                "Resource Access",           // 4th - User productivity
-                "Windows Update for Business", // 5th - Medium-high complexity
-                "Office Click-to-Run",       // 6th - App delivery
-                "Client Apps"                // 7th - Most complex
-            };
-
-            foreach (var workloadName in recommendedOrder)
-            {
-                var workload = notStarted.FirstOrDefault(w => w.Name.Contains(workloadName));
-                if (workload != null)
-                    return workload;
-            }
-
-            return notStarted.First(); // Fallback
-        }
-
-        private string GetWorkloadRationale(string workloadName, int completedCount)
-        {
-            if (workloadName.Contains("Compliance")) return "This is the recommended first workload. It's low-risk (policies are evaluative, not enforcing) and establishes your device health baseline.";
-            if (workloadName.Contains("Endpoint Protection")) return "Security is critical and should be migrated early. Windows Defender, firewall, and BitLocker policies are largely compatible and low-risk.";
-            if (workloadName.Contains("Device Configuration")) return "With compliance and security established, you're ready for configuration profiles. This includes settings, WiFi, VPN.";
-            if (workloadName.Contains("Resource Access")) return "User productivity depends on access to resources. WiFi, VPN, and certificate profiles are straightforward migrations.";
-            if (workloadName.Contains("Windows Update")) return "Patch management is complex but critical. With previous workloads complete, you have the foundation to handle update rings.";
-            if (workloadName.Contains("Office")) return "Office 365 Apps deployment through Intune is more efficient than ConfigMgr.";
-            if (workloadName.Contains("Client Apps")) return "This is the final and most complex workload. Win32 app deployment requires packaging, testing, and validation.";
-            
-            return $"Recommended based on your {completedCount} completed workloads.";
-        }
-
-        private List<string> GetWorkloadMigrationSteps(string workloadName)
-        {
-            if (workloadName.Contains("Compliance"))
-            {
-                return new List<string>
-                {
-                    "1. Review existing ConfigMgr compliance baselines",
-                    "2. Create equivalent compliance policies in Intune",
-                    "3. Start with pilot group (10-20 devices)",
-                    "4. Assign policies and monitor for 1 week",
-                    "5. Expand to full fleet once validated"
-                };
-            }
-
-            return new List<string>
-            {
-                "1. Review current ConfigMgr configuration",
-                "2. Create equivalent policies in Intune",
-                "3. Test on pilot group",
-                "4. Monitor and validate",
-                "5. Roll out to production"
+                "critical" => RecommendationPriority.Critical,
+                "high" => RecommendationPriority.High,
+                "medium" => RecommendationPriority.Medium,
+                "low" => RecommendationPriority.Low,
+                _ => RecommendationPriority.Medium
             };
         }
 
-        private List<string> GetWorkloadCompletionSteps(string workloadName)
+        private RecommendationCategory ParseCategory(string category)
         {
-            return new List<string>
+            return category?.ToLower() switch
             {
-                "1. Review what's completed vs what remains",
-                "2. Check for policy conflicts (ConfigMgr vs Intune)",
-                "3. Expand assignment from pilot to broader groups",
-                "4. Monitor for 1 week before marking complete",
-                "5. Move co-management slider fully to Intune"
+                "deviceenrollment" => RecommendationCategory.DeviceEnrollment,
+                "workloadtransition" => RecommendationCategory.WorkloadTransition,
+                "stallprevention" => RecommendationCategory.StallPrevention,
+                _ => RecommendationCategory.General
             };
         }
-
-        private string GetWorkloadEffort(string workloadName)
-        {
-            if (workloadName.Contains("Compliance") || workloadName.Contains("Endpoint")) return "1-2 weeks";
-            if (workloadName.Contains("Device Configuration") || workloadName.Contains("Resource")) return "2-3 weeks";
-            if (workloadName.Contains("Windows Update") || workloadName.Contains("Office")) return "3-4 weeks";
-            if (workloadName.Contains("Client Apps")) return "8-12 weeks";
-            
-            return "2-4 weeks";
-        }
-
-        #endregion
-
-        #region Compliance Recommendations
-
-        private List<AIRecommendation> GenerateComplianceRecommendations(ComplianceScore compliance)
-        {
-            var recommendations = new List<AIRecommendation>();
-
-            if (compliance.IntuneScore < 80)
-            {
-                recommendations.Add(new AIRecommendation
-                {
-                    Title = $"⚠️ Compliance Score Below Target: {compliance.IntuneScore:F0}%",
-                    Description = $"Current compliance: {compliance.IntuneScore:F0}%. Target: 95%+. " +
-                                  $"Risk areas identified in your environment.",
-                    Rationale = "Low compliance indicates security gaps. Intune provides better compliance enforcement than ConfigMgr, but policies must be configured.",
-                    ActionSteps = new List<string>
-                    {
-                        "1. Review non-compliant devices in Intune",
-                        "2. Identify most common compliance failures",
-                        "3. Create remediation plan for each risk area",
-                        "4. Give users 7 days notice before enforcement",
-                        "5. Enable Conditional Access for non-compliant devices"
-                    },
-                    Priority = RecommendationPriority.High,
-                    Category = RecommendationCategory.Compliance,
-                    ImpactScore = 75,
-                    EstimatedEffort = "2-3 weeks",
-                    ResourceLinks = new List<string>
-                    {
-                        "https://learn.microsoft.com/mem/intune/protect/device-compliance-get-started"
-                    }
-                });
-            }
-
-            return recommendations;
-        }
-
-        #endregion
-    }
+    } // End AIRecommendationService class
 
     #region AI Recommendation Models
+
+    /// <summary>
+    /// Response model for GPT-4 comprehensive recommendations
+    /// </summary>
+    public class GPT4RecommendationResponse
+    {
+        public List<GPT4Recommendation> Recommendations { get; set; } = new();
+    }
+
+    public class GPT4Recommendation
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Rationale { get; set; } = string.Empty;
+        public List<string> ActionSteps { get; set; } = new();
+        public string EstimatedEffort { get; set; } = string.Empty;
+        public int ImpactScore { get; set; }
+        public string Priority { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public List<string>? ResourceLinks { get; set; }
+    }
 
     public class AIRecommendation
     {
@@ -639,18 +378,6 @@ namespace CloudJourneyAddin.Services
         Compliance,
         Performance,
         General
-    }
-
-    /// <summary>
-    /// Response model for GPT-4 stall analysis
-    /// </summary>
-    public class StallAnalysisResponse
-    {
-        public List<string> RootCauses { get; set; } = new();
-        public List<string> RecoverySteps { get; set; } = new();
-        public string EstimatedRecoveryTime { get; set; } = string.Empty;
-        public bool RecommendFastTrack { get; set; }
-        public string Rationale { get; set; } = string.Empty;
     }
 
     #endregion

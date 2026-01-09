@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:CloudJourneyAddin.Converters"
-        Title="Cloud Journey Progress Dashboard v3.9.4" 
+        Title="Cloud Journey Progress Dashboard v3.14.6" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         Background="#F5F5F5">
@@ -1088,64 +1088,6 @@
 
                     <!-- Right Column -->
                     <StackPanel Grid.Column="2">
-                        <!-- 5. Enrollment Acceleration - MATCH PEER VELOCITY -->
-                        <Border Style="{StaticResource SectionCard}"
-                                Visibility="{Binding EnrollmentAccelerationInsight, Converter={StaticResource NullToVisibilityConverter}}">
-                            <StackPanel>
-                                <TextBlock Text="🚀 Enrollment Acceleration" Style="{StaticResource SectionTitle}"/>
-                                
-                                <TextBlock Text="{Binding EnrollmentAccelerationInsight.OrganizationCategory}" 
-                                           FontSize="11" Foreground="#666666" Margin="0,0,0,10"/>
-
-                                <Grid Margin="0,0,0,15">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                        <TextBlock Text="Your Rate" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock FontSize="28" FontWeight="Bold" Foreground="#FFA500">
-                                            <Run Text="{Binding EnrollmentAccelerationInsight.YourWeeklyEnrollmentRate, Mode=OneWay}"/>
-                                            <Run Text="/wk" FontSize="14"/>
-                                        </TextBlock>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                        <TextBlock Text="Peer Average" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock FontSize="28" FontWeight="Bold" Foreground="#107C10">
-                                            <Run Text="{Binding EnrollmentAccelerationInsight.PeerAverageRate, Mode=OneWay}"/>
-                                            <Run Text="/wk" FontSize="14"/>
-                                        </TextBlock>
-                                    </StackPanel>
-                                </Grid>
-
-                                <Border Background="#FFF3CD" Padding="12" CornerRadius="4" Margin="0,0,0,10">
-                                    <StackPanel>
-                                        <TextBlock FontSize="13" FontWeight="Bold" Foreground="#856404" Margin="0,0,0,5">
-                                            <Run Text="🎯 Enroll "/>
-                                            <Run Text="{Binding EnrollmentAccelerationInsight.DevicesNeededToMatchPeers, Mode=OneWay}"/>
-                                            <Run Text=" more devices to match peers"/>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding EnrollmentAccelerationInsight.RecommendedAction}" 
-                                                   FontSize="12" Foreground="#856404" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <TextBlock Text="Specific Tactics:" FontSize="12" FontWeight="Bold" Margin="0,0,0,5"/>
-                                <ItemsControl ItemsSource="{Binding EnrollmentAccelerationInsight.SpecificTactics}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock FontSize="11" Foreground="#333" TextWrapping="Wrap" Margin="0,0,0,4">
-                                                <Run Text="• "/>
-                                                <Run Text="{Binding Mode=OneWay}"/>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </Border>
-
                         <!-- 7. Alerts & Nudges -->
                         <Border Style="{StaticResource SectionCard}">
                             <StackPanel>

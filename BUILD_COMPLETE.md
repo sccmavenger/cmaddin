@@ -2,20 +2,69 @@
 
 ## Build Information
 
-**Date:** January 7, 2026
-**Version:** 3.4.2 (with Tab Visibility enhancements)
+**Date:** January 10, 2026
+**Version:** 3.13.3 (Critical Bug Fixes)
 **Build Type:** Release (Self-contained, win-x64)
 
-## Changes Implemented
+## Critical Fixes Implemented
 
-### 1. Hidden Overview Tab Sections ✓
-- **Security & Compliance Scorecard** - Now hidden
-- **Unlock Savings with Action** - Now hidden
+### 1. Fixed Enrollment Percentage Calculation ✓ (CRITICAL)
+**Problem:** Enrollment showed 4200% (84 of 2 devices) - impossible values
+**Root Cause:** Using ConfigMgr's limited device count (2) instead of Intune's complete inventory (84)
+**Solution Implemented:**
+- Intelligent dual-source logic that uses LARGER count between ConfigMgr and Intune
+- Prioritizes Intune's complete Windows device inventory when available
+- Added detailed logging showing which data source is being used
+- Correctly calculates: (enrolled / total eligible) not (enrolled / ConfigMgr subset)
 
-### 2. Tab Visibility Command-Line Support ✓
-- All tabs (except Overview) can be shown/hidden via command-line arguments
-- Supports `/hidetabs:` and `/showtabs:` parameters
-- Full documentation in [TAB_VISIBILITY_GUIDE.md](TAB_VISIBILITY_GUIDE.md)
+**Code Changes:**
+- Modified `GraphDataService.cs` lines 485-525
+- Added logic to compare ConfigMgr count vs Intune Windows device count
+- Uses `Math.Max()` equivalent to select most accurate total
+- Logs decision reasoning for troubleshooting
+
+**Expected Results:**
+- ✅ Enrollment Progress shows realistic percentages (0-100%)
+- ✅ TotalDevices reflects complete Windows inventory
+- ✅ Log clearly shows which count source is used and why
+
+### 2. Fixed AI Diagnostics Status Display ✓
+**Problem:** Diagnostics showed "AI not configured" even after successful Azure OpenAI setup
+**Root Cause:** Diagnostics display not refreshing after configuration save
+**Solution Implemented:**
+- Added `OnPropertyChanged(nameof(IsAIAvailable))` after config save
+- Triggers immediate diagnostics refresh when AI service initializes
+- Added logging to track AI service initialization status
+
+**Code Changes:**
+- Modified `DashboardViewModel.cs` OnSaveOpenAIConfig method (line ~1322)
+- Property change notification triggers UI update
+- Diagnostics section immediately reflects AI status
+
+**Expected Results:**
+- ✅ Diagnostics show "✅ AI-POWERED (GPT-4)" immediately after configuration
+- ✅ No need to restart application to see AI status
+- ✅ Clear logging confirms AI service initialization
+
+### 3. Enhanced Device Count Accuracy ✓
+**Improvement:** Smarter source selection for total device count
+**Logic Implemented:**
+```
+IF (Intune Windows devices > ConfigMgr devices)
+  USE Intune count (more complete inventory)
+  LOG: "Using Intune as source: X total Windows devices"
+ELSE IF (ConfigMgr devices > 0)
+  USE ConfigMgr count (has unenrolled devices)
+  LOG: "Using ConfigMgr as source: X total devices"
+ELSE
+  USE Intune count (fallback)
+  LOG: "Using Intune-only: X total Windows devices"
+```
+
+**Benefits:**
+- Accounts for ConfigMgr query limitations (Windows 10/11 only)
+- Uses Intune's complete Windows device inventory when more comprehensive
+- Provides transparency through detailed logging
 
 ## Build Output Location
 

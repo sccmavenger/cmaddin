@@ -147,6 +147,127 @@ namespace CloudJourneyAddin.Services
         /// Configure the Admin Service connection with WMI fallback
         /// </summary>
         /// <param name="adminServiceUrl">Admin Service URL (e.g., https://CM01.contoso.com/AdminService)</param>
+        /// <summary>
+        /// Log ConfigMgr environment details for troubleshooting
+        /// </summary>
+        private void LogEnvironmentInfo()
+        {
+            try
+            {
+                FileLogger.Instance.Info("=== CONFIGMGR ENVIRONMENT INFO ===");
+                FileLogger.Instance.Info($"   Server: {_siteServer ?? "(not set)"}");
+                FileLogger.Instance.Info($"   Site Code: {_siteCode ?? "(not set)"}");
+                FileLogger.Instance.Info($"   Admin Service URL: {_adminServiceUrl ?? "(not set)"}");
+                FileLogger.Instance.Info($"   Connection Method: {_connectionMethod}");
+                FileLogger.Instance.Info($"   Using WMI Fallback: {_useWmiFallback}");
+                FileLogger.Instance.Info($"   Current User: {Environment.UserName}");
+                FileLogger.Instance.Info($"   Domain: {Environment.UserDomainName}");
+                FileLogger.Instance.Info($"   Machine: {Environment.MachineName}");
+                
+                // Try to get ConfigMgr build version from registry
+                try
+                {
+                    using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\SMS\Setup"))
+                    {
+                        if (key != null)
+                        {
+                            var version = key.GetValue("Full Version") as string;
+                            var buildNumber = key.GetValue("Build") as string;
+                            FileLogger.Instance.Info($"   ConfigMgr Version: {version ?? "Unknown"}");
+                            FileLogger.Instance.Info($"   ConfigMgr Build: {buildNumber ?? "Unknown"}");
+                        }
+                    }
+                }
+                catch { /* Ignore registry errors */ }
+                
+                FileLogger.Instance.Info("======================================");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"Failed to log environment info: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Get ConfigMgr site code from Admin Service
+        /// </summary>
+        private async Task<string?> GetSiteCodeAsync()
+        {
+            try
+            {
+                if (_useWmiFallback || string.IsNullOrEmpty(_adminServiceUrl))
+                    return null;
+                    
+                var response = await _httpClient.GetAsync($"{_adminServiceUrl}/wmi/SMS_Site");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<ConfigMgrSiteResponse>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    
+                    return result?.Value?.FirstOrDefault()?.SiteCode;
+                }
+            }
+            catch { /* Ignore errors */ }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Get co-management details for a device from SMS_Client (Option 2)
+        /// This provides workload assignments and co-management flags
+        /// </summary>
+        public async Task<CoManagementDetails?> GetCoManagementDetailsAsync(int resourceId)
+        {
+            if (!_isAuthenticated)
+            {
+                throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
+            }
+
+            try
+            {
+                var query = $"{_adminServiceUrl}/wmi/SMS_Client?$filter=ResourceID eq {resourceId}";
+                var response = await _httpClient.GetAsync(query);
+                
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<ConfigMgrClientResponse>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (result?.Value != null && result.Value.Any())
+                {
+                    var client = result.Value.First();
+                    return new CoManagementDetails
+                    {
+                        ResourceId = resourceId,
+                        IsCoManaged = client.CoManagementFlags > 0,
+                        CoManagementFlags = client.CoManagementFlags,
+                        // Workload flags (bitfield):
+                        // 1 = Compliance Policies
+                        // 2 = Resource Access
+                        // 4 = Device Configuration
+                        // 8 = Windows Update
+                        // 16 = Endpoint Protection
+                        // 32 = Client Apps
+                        // 64 = Office Click-to-Run
+                        WorkloadFlags = client.CoManagementFlags
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"Failed to get co-management details for ResourceId {resourceId}: {ex.Message}");
+            }
+
+            return null;
+        }
+        
         public async Task<bool> ConfigureAsync(string adminServiceUrl)
         {
             try
@@ -195,6 +316,13 @@ namespace CloudJourneyAddin.Services
                     _useWmiFallback = false;
                     _connectionMethod = "Admin Service (REST API)";
                     _lastConnectionError = string.Empty;
+                    
+                    // Get site code
+                    _siteCode = await GetSiteCodeAsync();
+                    
+                    // Log environment details
+                    LogEnvironmentInfo();
+                    
                     return true;
                 }
                 else
@@ -390,10 +518,21 @@ namespace CloudJourneyAddin.Services
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')";
 
+                FileLogger.Instance.Info("=== ConfigMgr Admin Service REST API Query ===");
+                FileLogger.Instance.Info($"   Query URL: {query}");
+                FileLogger.Instance.Info($"   Method: GET");
+                FileLogger.Instance.Info($"   Authentication: Windows Integrated (UseDefaultCredentials)");
+                
                 var response = await _httpClient.GetAsync(query);
+                
+                FileLogger.Instance.Info($"   Response Status: {(int)response.StatusCode} {response.StatusCode}");
+                FileLogger.Instance.Info($"   Response Headers: {response.Headers}");
+                
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
+                FileLogger.Instance.Info($"   Response Length: {content.Length} bytes");
+                
                 var result = JsonSerializer.Deserialize<ConfigMgrResponse>(content, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -403,6 +542,9 @@ namespace CloudJourneyAddin.Services
 
                 if (result?.Value != null)
                 {
+                    FileLogger.Instance.Info($"   Devices returned: {result.Value.Count}");
+                    
+                    // Create device list - co-management will be determined by cross-referencing with Intune
                     foreach (var device in result.Value)
                     {
                         devices.Add(new ConfigMgrDevice
@@ -412,11 +554,21 @@ namespace CloudJourneyAddin.Services
                             OperatingSystem = device.OperatingSystemNameandVersion ?? "Unknown",
                             LastActiveTime = device.LastActiveTime,
                             ClientVersion = device.ClientVersion,
-                            IsCoManaged = device.CoManagementFlags > 0, // Non-zero means co-managed
-                            CoManagementFlags = device.CoManagementFlags
+                            IsCoManaged = false, // Will be set by cross-referencing with Intune
+                            CoManagementFlags = 0 // Will be populated from SMS_Client if needed
                         });
                     }
+                    
+                    FileLogger.Instance.Info($"   📋 Note: Co-management status will be determined by cross-checking with Intune");
+                    FileLogger.Instance.Info($"      SMS_R_System doesn't contain co-management data");
+                    FileLogger.Instance.Info($"      Use GetCoManagementDetailsAsync() for workload assignments");
                 }
+                else
+                {
+                    FileLogger.Instance.Warning("   ⚠️ Response contained no devices (Value was null)");
+                }
+                
+                FileLogger.Instance.Info("=============================================");
 
                 return devices;
             }
@@ -995,6 +1147,28 @@ namespace CloudJourneyAddin.Services
     {
         public List<ConfigMgrSystemResource> Value { get; set; } = new List<ConfigMgrSystemResource>();
     }
+    
+    public class ConfigMgrSiteResponse
+    {
+        public List<ConfigMgrSiteResource> Value { get; set; } = new List<ConfigMgrSiteResource>();
+    }
+    
+    public class ConfigMgrSiteResource
+    {
+        public string? SiteCode { get; set; }
+        public string? SiteName { get; set; }
+    }
+    
+    public class ConfigMgrClientResponse
+    {
+        public List<ConfigMgrClientResource> Value { get; set; } = new List<ConfigMgrClientResource>();
+    }
+    
+    public class ConfigMgrClientResource
+    {
+        public int ResourceID { get; set; }
+        public int CoManagementFlags { get; set; }
+    }
 
     public class ConfigMgrApplicationResponse
     {
@@ -1028,7 +1202,8 @@ namespace CloudJourneyAddin.Services
         public string? OperatingSystemNameandVersion { get; set; }
         public DateTime? LastActiveTime { get; set; }
         public string? ClientVersion { get; set; }
-        public int CoManagementFlags { get; set; } // 0 = not co-managed, >0 = co-managed
+        // Note: SMS_R_System doesn't have CoManagementFlags
+        // Use SMS_Client for co-management details
     }
 
     public class ConfigMgrApplicationResource
@@ -1114,6 +1289,22 @@ namespace CloudJourneyAddin.Services
     {
         public int ResourceId { get; set; }
         public string CollectionId { get; set; } = string.Empty;
+    }
+    
+    public class CoManagementDetails
+    {
+        public int ResourceId { get; set; }
+        public bool IsCoManaged { get; set; }
+        public int CoManagementFlags { get; set; }
+        public int WorkloadFlags { get; set; }
+        
+        public bool HasCompliancePolicies => (WorkloadFlags & 1) != 0;
+        public bool HasResourceAccess => (WorkloadFlags & 2) != 0;
+        public bool HasDeviceConfiguration => (WorkloadFlags & 4) != 0;
+        public bool HasWindowsUpdate => (WorkloadFlags & 8) != 0;
+        public bool HasEndpointProtection => (WorkloadFlags & 16) != 0;
+        public bool HasClientApps => (WorkloadFlags & 32) != 0;
+        public bool HasOfficeClickToRun => (WorkloadFlags & 64) != 0;
     }
 
     public class ConfigMgrClientHealth

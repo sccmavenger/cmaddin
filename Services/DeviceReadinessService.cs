@@ -24,7 +24,8 @@ namespace CloudJourneyAddin.Services
 
         /// <summary>
         /// Analyzes device readiness and categorizes by health score.
-        /// High Success (>85%), Moderate (60-85%), High Risk (<60%)
+        /// 4-tier system: Excellent (≥85), Good (60-84), Fair (40-59), Poor (<40)
+        /// Health score algorithm: LastActive(30%), PolicyRequest(20%), HWScan(20%), SWScan(20%), ClientActive(10%)
         /// </summary>
         public async Task<DeviceReadinessBreakdown> GetDeviceReadinessBreakdownAsync()
         {
@@ -66,32 +67,50 @@ namespace CloudJourneyAddin.Services
                     });
                 }
 
-                // Categorize devices by health score
-                var highSuccess = deviceReadinessList.Where(d => d.HealthScore >= 85).OrderByDescending(d => d.HealthScore).ToList();
-                var moderateSuccess = deviceReadinessList.Where(d => d.HealthScore >= 60 && d.HealthScore < 85).OrderByDescending(d => d.HealthScore).ToList();
-                var highRisk = deviceReadinessList.Where(d => d.HealthScore < 60).OrderBy(d => d.HealthScore).ToList();
+                // Categorize devices by health score (4-tier system)
+                // Excellent: ≥85 (strong health, minimal issues)
+                var excellent = deviceReadinessList.Where(d => d.HealthScore >= 85).OrderByDescending(d => d.HealthScore).ToList();
+                
+                // Good: 60-84 (acceptable health, minor issues)
+                var good = deviceReadinessList.Where(d => d.HealthScore >= 60 && d.HealthScore < 85).OrderByDescending(d => d.HealthScore).ToList();
+                
+                // Fair: 40-59 (marginal health, needs remediation)
+                var fair = deviceReadinessList.Where(d => d.HealthScore >= 40 && d.HealthScore < 60).OrderBy(d => d.HealthScore).ToList();
+                
+                // Poor: <40 (critical issues, high enrollment failure risk)
+                var poor = deviceReadinessList.Where(d => d.HealthScore < 40).OrderBy(d => d.HealthScore).ToList();
 
-                FileLogger.Instance.Info($"Categorized: {highSuccess.Count} High Success, {moderateSuccess.Count} Moderate, {highRisk.Count} High Risk");
+                FileLogger.Instance.Info($"Categorized: {excellent.Count} Excellent, {good.Count} Good, {fair.Count} Fair, {poor.Count} Poor");
 
                 return new DeviceReadinessBreakdown
                 {
-                    HighSuccessDevices = highSuccess.Count,
-                    HighSuccessHealthAvg = highSuccess.Any() ? highSuccess.Average(d => d.HealthScore) : 0,
-                    HighSuccessPredictedRate = 98.0, // Empirical: devices >85% health have 98% enrollment success
-                    HighSuccessRecommendedVelocity = CalculateRecommendedVelocity(highSuccess.Count, highRisk: false),
-                    HighSuccessDeviceList = highSuccess,
+                    // Excellent: ≥85 health score
+                    ExcellentDevices = excellent.Count,
+                    ExcellentHealthAvg = excellent.Any() ? excellent.Average(d => d.HealthScore) : 0,
+                    ExcellentPredictedRate = 98.0, // 98% enrollment success
+                    ExcellentRecommendedVelocity = CalculateRecommendedVelocity(excellent.Count, highRisk: false),
+                    ExcellentDeviceList = excellent,
 
-                    ModerateSuccessDevices = moderateSuccess.Count,
-                    ModerateSuccessHealthAvg = moderateSuccess.Any() ? moderateSuccess.Average(d => d.HealthScore) : 0,
-                    ModerateSuccessPredictedRate = 85.0, // Empirical: 60-85% health have 85% success
-                    ModerateSuccessRecommendedVelocity = CalculateRecommendedVelocity(moderateSuccess.Count, highRisk: false),
-                    ModerateSuccessDeviceList = moderateSuccess,
+                    // Good: 60-84 health score
+                    GoodDevices = good.Count,
+                    GoodHealthAvg = good.Any() ? good.Average(d => d.HealthScore) : 0,
+                    GoodPredictedRate = 85.0, // 85% enrollment success
+                    GoodRecommendedVelocity = CalculateRecommendedVelocity(good.Count, highRisk: false),
+                    GoodDeviceList = good,
 
-                    HighRiskDevices = highRisk.Count,
-                    HighRiskHealthAvg = highRisk.Any() ? highRisk.Average(d => d.HealthScore) : 0,
-                    HighRiskPredictedRate = 45.0, // Empirical: <60% health have 45% success (high failure)
-                    HighRiskRecommendation = "Fix ConfigMgr client issues before enrolling to avoid wasted time",
-                    HighRiskDeviceList = highRisk
+                    // Fair: 40-59 health score
+                    FairDevices = fair.Count,
+                    FairHealthAvg = fair.Any() ? fair.Average(d => d.HealthScore) : 0,
+                    FairPredictedRate = 60.0, // 60% enrollment success (remediation recommended)
+                    FairRecommendation = "Remediate client health issues before enrollment to improve success rate",
+                    FairDeviceList = fair,
+
+                    // Poor: <40 health score
+                    PoorDevices = poor.Count,
+                    PoorHealthAvg = poor.Any() ? poor.Average(d => d.HealthScore) : 0,
+                    PoorPredictedRate = 30.0, // 30% enrollment success (critical issues)
+                    PoorRecommendation = "Fix critical ConfigMgr client issues before attempting enrollment",
+                    PoorDeviceList = poor
                 };
             }
             catch (Exception ex)
