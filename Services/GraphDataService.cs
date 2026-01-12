@@ -472,13 +472,18 @@ namespace CloudJourneyAddin.Services
                 Instance.Info("==============================================");
 
                 // STEP 3: Calculate enrollment metrics
-                int intuneEnrolledCount = intuneEligibleDevices.Count(d => 
-                    d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.Mdm ||
-                    d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm);
+                // Count ONLY Windows 10/11 devices that are Intune-enrolled or co-managed
+                int intuneWindowsEnrolledCount = intuneEligibleDevices.Count(d => 
+                    (d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.Mdm ||
+                     d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm) &&
+                    d.OperatingSystem != null && 
+                    d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase));
 
                 // Determine the authoritative device count
                 int totalDevices;
                 int configMgrOnlyCount;
+                int cloudManagedCount; // Co-managed or Intune-only
 
                 // In co-management scenarios: Use ConfigMgr as source of truth (devices we're migrating)
                 // Only fall back to Intune if ConfigMgr is not configured
@@ -493,29 +498,31 @@ namespace CloudJourneyAddin.Services
                     // Co-management scenario: Use ConfigMgr as source (devices we're migrating from ConfigMgr to Intune)
                     totalDevices = configMgrCount;
                     configMgrOnlyCount = configMgrCount - coManagedCount; // Devices not yet co-managed
+                    cloudManagedCount = coManagedCount; // Co-managed devices (the progress metric)
                     Instance.Info($"✅ Using ConfigMgr as source (co-management scenario): {totalDevices} total devices");
-                    Instance.Info($"   ConfigMgr devices: {configMgrCount}, Co-managed: {coManagedCount}, Not yet co-managed: {configMgrOnlyCount}");
-                    System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {coManagedCount} co-managed, {configMgrOnlyCount} not yet co-managed");
+                    Instance.Info($"   ConfigMgr devices: {configMgrCount}, Co-managed (cloud progress): {cloudManagedCount}, ConfigMgr-only: {configMgrOnlyCount}");
+                    System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {cloudManagedCount} co-managed, {configMgrOnlyCount} not yet co-managed");
                 }
                 else
                 {
                     // Intune-only scenario: No ConfigMgr, show all Intune Windows devices
                     totalDevices = intuneWindowsCount;
                     configMgrOnlyCount = 0;
+                    cloudManagedCount = intuneWindowsEnrolledCount; // All Windows devices managed by Intune
                     Instance.Info($"✅ Using Intune-only (no ConfigMgr): {totalDevices} total Windows devices");
-                    Instance.Info($"   All devices are Intune-managed, no ConfigMgr devices to migrate");
-                    System.Diagnostics.Debug.WriteLine($"✅ Intune-only scenario: {totalDevices} total");
+                    Instance.Info($"   All devices are Intune-managed (cloud progress): {cloudManagedCount}");
+                    System.Diagnostics.Debug.WriteLine($"✅ Intune-only scenario: {totalDevices} total, {cloudManagedCount} cloud-managed");
                 }
 
-                // Generate trend data
-                var trendData = GenerateTrendData(totalDevices, intuneEnrolledCount);
+                // Generate trend data showing migration from ConfigMgr to cloud (co-managed/Intune)
+                var trendData = GenerateTrendData(totalDevices, cloudManagedCount, configMgrOnlyCount);
 
-                System.Diagnostics.Debug.WriteLine($"=== FINAL RESULT: Total={totalDevices}, IntuneEnrolled={intuneEnrolledCount}, ConfigMgrOnly={configMgrOnlyCount} ===");
+                System.Diagnostics.Debug.WriteLine($"=== FINAL RESULT: Total={totalDevices}, CloudManaged={cloudManagedCount}, ConfigMgrOnly={configMgrOnlyCount} ===");
 
                 return new DeviceEnrollment
                 {
                     TotalDevices = totalDevices,
-                    IntuneEnrolledDevices = intuneEnrolledCount,
+                    IntuneEnrolledDevices = cloudManagedCount, // Co-managed or Intune-managed Windows devices
                     ConfigMgrOnlyDevices = configMgrOnlyCount,
                     TrendData = trendData
                 };
@@ -608,20 +615,31 @@ namespace CloudJourneyAddin.Services
             }
         }
 
-        private EnrollmentTrend[] GenerateTrendData(int currentTotal, int currentIntune)
+        private EnrollmentTrend[] GenerateTrendData(int currentTotal, int currentCloudManaged, int currentConfigMgrOnly)
         {
-            // Generate 6 months of trend data (simplified estimation)
+            // Generate 6 months of trend data showing co-management journey
+            // Cloud-managed = co-managed or Intune-only Windows devices (the progress metric)
+            // ConfigMgr-only = devices not yet moved to cloud
             var trends = new List<EnrollmentTrend>();
             var baseDate = DateTime.Now.AddMonths(-6);
 
             for (int i = 0; i <= 6; i++)
             {
                 double progress = i / 6.0;
+                
+                // Cloud-managed devices grow over time (co-management progress)
+                int cloudManagedAtMonth = (int)(currentCloudManaged * progress);
+                
+                // ConfigMgr-only decreases as devices become co-managed
+                // Start from total devices (all were ConfigMgr-only) and decrease to current
+                int configMgrAtMonth = currentTotal - cloudManagedAtMonth;
+                configMgrAtMonth = Math.Max(0, configMgrAtMonth); // Ensure non-negative
+                
                 trends.Add(new EnrollmentTrend
                 {
                     Month = baseDate.AddMonths(i),
-                    IntuneDevices = (int)(currentIntune * progress * 0.7), // Estimate growth
-                    ConfigMgrDevices = currentTotal - (int)(currentIntune * progress * 0.7)
+                    IntuneDevices = cloudManagedAtMonth, // Co-managed/cloud-managed (progress)
+                    ConfigMgrDevices = configMgrAtMonth  // Not yet co-managed
                 });
             }
 

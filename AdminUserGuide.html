@@ -423,6 +423,7 @@
             <h1>📊 Admin Guide</h1>
             <div class="nav-section">
                 <a href="#overview" class="nav-link">Dashboard Overview</a>
+                <a href="#access-requirements" class="nav-link">⚙️ Access Requirements</a>
                 <a href="#section1" class="nav-link">1. Overall Migration Status</a>
                 <a href="#section2" class="nav-link">2. Device Enrollment</a>
                 <a href="#section3" class="nav-link">3. Workload Status</a>
@@ -472,6 +473,316 @@
                     <li><strong>Actionable Insights</strong> with buttons to take immediate action</li>
                     <li><strong>Visual Trends</strong> showing progress over time</li>
                 </ul>
+            </section>
+
+            <!-- Access Requirements Section -->
+            <section id="access-requirements" class="content-section">
+                <h2><span class="emoji">⚙️</span> Access Requirements - What You Need to Run This Tool</h2>
+                
+                <div class="alert alert-info">
+                    <strong>📘 Quick Answer:</strong> You need access to <strong>Microsoft Intune</strong> (Azure AD admin roles) and optionally <strong>ConfigMgr Admin Service</strong> (for co-management scenarios). The tool authenticates using your account credentials.
+                </div>
+
+                <h3>Required Access & Permissions</h3>
+                
+                <h4>1. Microsoft Intune / Microsoft Graph Access</h4>
+                <p>The dashboard requires one of these <strong>Azure AD admin roles</strong>:</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Level</th>
+                            <th>What You Can Do</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Global Administrator</strong></td>
+                            <td>Full Access</td>
+                            <td>View all data, make changes, configure everything</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Intune Administrator</strong></td>
+                            <td>Full Access</td>
+                            <td>View all Intune data, manage devices and policies (Recommended)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Global Reader</strong></td>
+                            <td>Read-Only</td>
+                            <td>View dashboard data, cannot make changes</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cloud Device Administrator</strong></td>
+                            <td>Limited</td>
+                            <td>View device enrollment and basic metrics</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Security Reader</strong></td>
+                            <td>Limited</td>
+                            <td>View compliance and security data only</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-success">
+                    <strong>✅ Recommended for Most Users:</strong> <code>Intune Administrator</code> role provides the right balance of access without giving unnecessary Global Admin permissions.
+                </div>
+
+                <h4>2. Microsoft Graph API Permissions</h4>
+                <p>The dashboard uses these <strong>delegated permissions</strong> (authenticated as you):</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Permission</th>
+                            <th>What It Does</th>
+                            <th>Required For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>DeviceManagementManagedDevices.Read.All</code></td>
+                            <td>Read device enrollment, compliance, and inventory data</td>
+                            <td>Device Enrollment section, compliance metrics</td>
+                        </tr>
+                        <tr>
+                            <td><code>DeviceManagementConfiguration.Read.All</code></td>
+                            <td>Read device configuration policies and profiles</td>
+                            <td>Workload status, policy assignments</td>
+                        </tr>
+                        <tr>
+                            <td><code>DeviceManagementApps.Read.All</code></td>
+                            <td>Read app deployment status and assignments</td>
+                            <td>Application deployment metrics</td>
+                        </tr>
+                        <tr>
+                            <td><code>Directory.Read.All</code></td>
+                            <td>Read Azure AD directory information</td>
+                            <td>User and group data (optional)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-warning">
+                    <strong>⚠️ Note:</strong> These permissions are requested automatically when you first sign in. You may see a consent prompt asking you to approve these permissions. Click <strong>"Accept"</strong> to allow the dashboard to read your Intune data.
+                </div>
+
+                <h4>3. ConfigMgr Admin Service Access (Optional - For Co-Management)</h4>
+                <p>If you're using <strong>co-management</strong> (devices managed by both ConfigMgr and Intune), you also need:</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Requirement</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ConfigMgr Admin Service URL</strong></td>
+                            <td>
+                                <code>https://&lt;SMSProviderServer&gt;/AdminService/wmi</code><br>
+                                Example: <code>https://cm01.contoso.com/AdminService/wmi</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>ConfigMgr Access Level</strong></td>
+                            <td>
+                                <strong>Read-Only Analyst</strong> or higher<br>
+                                Specifically: Read permission on Device Collections
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Network Access</strong></td>
+                            <td>
+                                HTTPS access to ConfigMgr Admin Service (port 443)<br>
+                                Must be on corporate network or VPN
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Authentication</strong></td>
+                            <td>Uses your Windows credentials (Integrated Windows Authentication)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-info">
+                    <strong>💡 When Do I Need ConfigMgr Access?</strong>
+                    <ul>
+                        <li><strong>Co-Management Scenarios:</strong> If you have devices managed by both ConfigMgr and Intune</li>
+                        <li><strong>On-Premises Devices:</strong> To see devices that aren't yet enrolled in Intune</li>
+                        <li><strong>Migration Tracking:</strong> To track how many devices are moving from ConfigMgr-only to co-managed</li>
+                    </ul>
+                    <p><strong>If you're Intune-only (no ConfigMgr):</strong> You don't need ConfigMgr access. The dashboard works perfectly with just Intune data.</p>
+                </div>
+
+                <h3>First-Time Setup: Authentication Flow</h3>
+                
+                <h4>Step 1: Launch the Dashboard</h4>
+                <p>When you first open the dashboard, you'll see a <strong>"Connect to Microsoft Graph"</strong> button.</p>
+                
+                <h4>Step 2: Device Code Authentication</h4>
+                <p>The dashboard uses <strong>Device Code Flow</strong> for secure authentication:</p>
+                <ol>
+                    <li>Click <strong>"Connect to Microsoft Graph"</strong></li>
+                    <li>A dialog appears with a <strong>device code</strong> (e.g., <code>ABC-XYZ-123</code>)</li>
+                    <li>The code is automatically copied to your clipboard</li>
+                    <li>Click <strong>"Open Browser"</strong> or go to <code>https://microsoft.com/devicelogin</code></li>
+                    <li>Paste the code and click <strong>"Next"</strong></li>
+                    <li>Sign in with your <strong>work account</strong> (the one with Intune admin permissions)</li>
+                    <li>Review the requested permissions and click <strong>"Accept"</strong></li>
+                    <li>Return to the dashboard - it will automatically connect</li>
+                </ol>
+
+                <div class="alert alert-success">
+                    <strong>✅ Pro Tip:</strong> You only need to authenticate once per session. The dashboard remembers your credentials until you close it.
+                </div>
+
+                <h4>Step 3: ConfigMgr Connection (Optional)</h4>
+                <p>If you have ConfigMgr and want to see co-management data:</p>
+                <ol>
+                    <li>Click <strong>"⚙️ Settings"</strong> in the toolbar</li>
+                    <li>Enter your <strong>ConfigMgr Admin Service URL</strong></li>
+                    <li>Click <strong>"Test Connection"</strong></li>
+                    <li>If successful, click <strong>"Save"</strong></li>
+                    <li>Refresh the dashboard to load ConfigMgr data</li>
+                </ol>
+
+                <h3>Common Access Issues & Solutions</h3>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Error Message</th>
+                            <th>Cause</th>
+                            <th>Solution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>"Access Denied" or "Forbidden"</td>
+                            <td>You don't have the required Azure AD role</td>
+                            <td>Ask your Global Administrator to assign you the <strong>Intune Administrator</strong> role</td>
+                        </tr>
+                        <tr>
+                            <td>"Insufficient privileges"</td>
+                            <td>Your role doesn't have Graph API permissions</td>
+                            <td>Your admin needs to grant consent for the app in Azure AD portal</td>
+                        </tr>
+                        <tr>
+                            <td>"ConfigMgr connection failed"</td>
+                            <td>Can't reach Admin Service or wrong URL</td>
+                            <td>Verify the URL, check you're on corporate network, and you have ConfigMgr Read-Only Analyst rights</td>
+                        </tr>
+                        <tr>
+                            <td>"User canceled authentication"</td>
+                            <td>Device code expired (10 minutes)</td>
+                            <td>Click <strong>"Connect"</strong> again to get a new code</td>
+                        </tr>
+                        <tr>
+                            <td>"No data available"</td>
+                            <td>You have access but no devices in Intune yet</td>
+                            <td>This is normal if you're just starting your migration. Dashboard will populate as you enroll devices.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>How to Check Your Current Access</h3>
+                
+                <h4>Check Your Azure AD Roles</h4>
+                <ol>
+                    <li>Go to <a href="https://portal.azure.com" target="_blank">Azure Portal</a></li>
+                    <li>Navigate to <strong>Azure Active Directory</strong> → <strong>Users</strong></li>
+                    <li>Search for your name and click on your account</li>
+                    <li>Click <strong>"Assigned roles"</strong> in the left menu</li>
+                    <li>Look for <strong>Intune Administrator</strong> or <strong>Global Administrator</strong></li>
+                </ol>
+
+                <h4>Check Your ConfigMgr Access</h4>
+                <ol>
+                    <li>Open <strong>ConfigMgr Console</strong></li>
+                    <li>Right-click on <strong>Device Collections</strong></li>
+                    <li>If you can see device lists → You have Read access ✅</li>
+                    <li>Ask your ConfigMgr admin to verify your <strong>Security Role</strong> if unsure</li>
+                </ol>
+
+                <h3>Security & Compliance Notes</h3>
+                
+                <div class="alert alert-warning">
+                    <strong>🔒 Data Privacy:</strong>
+                    <ul>
+                        <li><strong>No data leaves your environment:</strong> All API calls go directly from your PC to Microsoft Graph and ConfigMgr</li>
+                        <li><strong>No cloud storage:</strong> Dashboard data is not stored anywhere, only displayed in memory</li>
+                        <li><strong>Credentials not stored:</strong> Authentication tokens are temporary and never saved to disk</li>
+                        <li><strong>Read-only operations:</strong> Dashboard only reads data, never makes changes to your devices or policies</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>✅ Best Practices:</strong>
+                    <ul>
+                        <li><strong>Use least-privilege access:</strong> Request only the permissions you need (Intune Admin, not Global Admin)</li>
+                        <li><strong>Close dashboard when done:</strong> Clears authentication tokens from memory</li>
+                        <li><strong>Review permissions regularly:</strong> Ensure your team members have appropriate access levels</li>
+                        <li><strong>Enable MFA:</strong> Use Multi-Factor Authentication for all admin accounts</li>
+                    </ul>
+                </div>
+
+                <h3>Quick Reference: Access Checklist</h3>
+                
+                <p>Use this checklist to verify you have everything needed:</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Requirement</th>
+                            <th>Status</th>
+                            <th>How to Verify</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>✅ Azure AD account with Intune Admin role</td>
+                            <td>□</td>
+                            <td>Check Azure Portal → Your User → Assigned Roles</td>
+                        </tr>
+                        <tr>
+                            <td>✅ Access to https://portal.azure.com</td>
+                            <td>□</td>
+                            <td>Try logging into Azure Portal</td>
+                        </tr>
+                        <tr>
+                            <td>✅ Microsoft Graph API permissions</td>
+                            <td>□</td>
+                            <td>Will be granted on first sign-in to dashboard</td>
+                        </tr>
+                        <tr>
+                            <td>✅ ConfigMgr Admin Service URL (if using co-management)</td>
+                            <td>□</td>
+                            <td>Ask your ConfigMgr admin or check SMS Provider server name</td>
+                        </tr>
+                        <tr>
+                            <td>✅ ConfigMgr Read-Only Analyst role (if using co-management)</td>
+                            <td>□</td>
+                            <td>Verify you can view Device Collections in ConfigMgr Console</td>
+                        </tr>
+                        <tr>
+                            <td>✅ Network access to ConfigMgr (if using co-management)</td>
+                            <td>□</td>
+                            <td>Ping ConfigMgr server or connect via VPN</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-info">
+                    <strong>💡 Still Having Issues?</strong>
+                    <ul>
+                        <li><strong>Contact your IT admin:</strong> They can verify and grant the necessary permissions</li>
+                        <li><strong>Check the Troubleshooting section:</strong> Scroll down to <a href="#troubleshooting">Troubleshooting</a> for detailed solutions</li>
+                        <li><strong>Review Azure AD audit logs:</strong> See if there are any sign-in or permission errors</li>
+                    </ul>
+                </div>
             </section>
 
             <!-- Section 1: Overall Migration Status -->
@@ -2048,7 +2359,7 @@ $incompatibleApps | Format-Table -AutoSize</code></pre>
                 <p>A: Check the badges in each section: <span class="badge badge-success">✅ REAL DATA</span> vs <span class="badge badge-warning">⏳ ESTIMATED</span></p>
 
                 <h3>Q: What permissions do I need to view the dashboard?</h3>
-                <p>A: Intune Administrator, Global Administrator, or Intune Read-Only Operator role.</p>
+                <p>A: You need an Azure AD role with Intune access (Intune Administrator, Global Administrator, or Global Reader). See the <a href="#access-requirements">Access Requirements section</a> for complete details on required permissions, Graph API access, and ConfigMgr setup.</p>
 
                 <h3>Q: Can I share this dashboard with non-technical stakeholders?</h3>
                 <p>A: Yes! Dashboard is designed for technical and business audiences. Focus their attention on sections 1, 5, 7, 9.</p>
