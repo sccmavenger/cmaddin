@@ -263,6 +263,14 @@ if (-not $SkipBuild) {
         Write-Host "   ❌ Clean failed!" -ForegroundColor Red
         exit 1
     }
+    
+    # Clean Azure OpenAI configuration for fresh testing
+    $configPath = Join-Path $env:APPDATA "CloudJourneyAddin\openai-config.json"
+    if (Test-Path $configPath) {
+        Remove-Item $configPath -Force -ErrorAction SilentlyContinue
+        Write-Host "   🧹 Cleaned Azure OpenAI configuration" -ForegroundColor Green
+    }
+    
     Write-Host "   ✅ Clean complete" -ForegroundColor Green
 } else {
     Write-Host ""

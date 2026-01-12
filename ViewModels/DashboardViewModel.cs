@@ -1164,36 +1164,20 @@ namespace CloudJourneyAddin.ViewModels
         {
             try
             {
-                // Load existing config
-                var config = Services.AzureOpenAIConfig.Load();
+                // DO NOT load existing config - always start with blank fields
+                // This ensures clean testing and explicit configuration
                 
                 var aiWindow = new Views.AISettingsWindow();
-                var aiViewModel = new
-                {
-                    IsOpenAIEnabled = config?.IsEnabled ?? false,
-                    OpenAIEndpoint = config?.Endpoint ?? string.Empty,
-                    OpenAIDeploymentName = config?.DeploymentName ?? string.Empty,
-                    OpenAIApiKey = config?.ApiKey ?? string.Empty,
-                    OpenAIStatus = _openAIStatus,
-                    HasOpenAIStatus = _hasOpenAIStatus,
-                    TestOpenAIConnectionCommand = TestOpenAIConnectionCommand,
-                    SaveOpenAIConfigCommand = SaveOpenAIConfigCommand,
-                    OpenSetupGuideCommand = OpenSetupGuideCommand
-                };
-                
                 aiWindow.DataContext = this; // Use DashboardViewModel as DataContext
                 
-                // Set API key separately (PasswordBox doesn't support binding)
-                if (!string.IsNullOrEmpty(config?.ApiKey))
-                {
-                    aiWindow.SetApiKey(config.ApiKey);
-                }
+                // Set all fields to blank/default state
+                IsOpenAIEnabled = false;
+                OpenAIEndpoint = string.Empty;
+                OpenAIDeploymentName = string.Empty;
+                OpenAIApiKey = string.Empty;
                 
-                // Update properties for binding
-                IsOpenAIEnabled = config?.IsEnabled ?? false;
-                OpenAIEndpoint = config?.Endpoint ?? string.Empty;
-                OpenAIDeploymentName = config?.DeploymentName ?? string.Empty;
-                OpenAIApiKey = config?.ApiKey ?? string.Empty;
+                // Clear password box (it doesn't support binding)
+                aiWindow.SetApiKey(string.Empty);
                 
                 aiWindow.ShowDialog();
             }
@@ -1316,14 +1300,17 @@ namespace CloudJourneyAddin.ViewModels
                         _aiRecommendationService = new AIRecommendationService(_graphDataService);
                         Instance.Info("AI Recommendation Service initialized after config save");
                         
-                        // Trigger data refresh to leverage AI capabilities
-                        OnPropertyChanged(nameof(IsFullyAuthenticated));
-                        await LoadDataAsync();
-                        Instance.Info("Data refreshed after AI configuration");
-                        
                         // Update diagnostics to reflect AI is now connected
                         OnPropertyChanged(nameof(IsAIAvailable));
+                        OnPropertyChanged(nameof(IsAIConfigured));
+                        OnPropertyChanged(nameof(IsAINotConfigured));
+                        OnPropertyChanged(nameof(HasNoRecommendationsAndConfigured));
                         Instance.Info($"AI service initialized and diagnostics updated: {_aiRecommendationService != null}");
+                        
+                        // Trigger data refresh to load AI recommendations
+                        OnPropertyChanged(nameof(IsFullyAuthenticated));
+                        await LoadDataAsync();
+                        Instance.Info("Data refreshed and AI recommendations loaded after AI configuration");
                     }
                     catch (Exception ex)
                     {
