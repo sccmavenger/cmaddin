@@ -1,0 +1,208 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                CLOUD JOURNEY BUILD SCRIPT - QUICK REFERENCE               ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  COMMON COMMANDS:                                                         ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  Basic patch build (3.14.31 → 3.14.32):                                  ║
+║    .\Build-And-Distribute.ps1                                            ║
+║                                                                           ║
+║  Minor version release (3.14.31 → 3.15.0):                               ║
+║    .\Build-And-Distribute.ps1 -BumpVersion Minor                         ║
+║                                                                           ║
+║  Major version release (3.14.31 → 4.0.0):                                ║
+║    .\Build-And-Distribute.ps1 -BumpVersion Major                         ║
+║                                                                           ║
+║  Build + Publish to GitHub (automatic release):                          ║
+║    .\Build-And-Distribute.ps1 -PublishToGitHub                           ║
+║                                                                           ║
+║  Test build (no file changes):                                           ║
+║    .\Build-And-Distribute.ps1 -DryRun                                    ║
+║                                                                           ║
+║  Force build (ignore uncommitted changes):                               ║
+║    .\Build-And-Distribute.ps1 -Force                                     ║
+║                                                                           ║
+║  Explicit version:                                                        ║
+║    .\Build-And-Distribute.ps1 -Version "3.14.35"                         ║
+║                                                                           ║
+║  Complete release with custom notes:                                     ║
+║    .\Build-And-Distribute.ps1 -BumpVersion Minor -PublishToGitHub `     ║
+║        -ReleaseNotes "Major new features and fixes"                      ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  PARAMETERS:                                                              ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  -Version "X.Y.Z"          Use explicit version number                   ║
+║  -BumpVersion Major|Minor  Which version component to increment          ║
+║  -PublishToGitHub          Create GitHub Release automatically           ║
+║  -ReleaseNotes "..."       Custom release notes (else auto-generated)    ║
+║  -DryRun                   Test mode - no file changes                   ║
+║  -Force                    Build even with uncommitted git changes       ║
+║  -SkipBuild                Just package, don't rebuild                   ║
+║  -SkipTests                Skip post-build smoke tests                   ║
+║  -ArchiveOldBuilds         Move previous builds to archive (default: on) ║
+║  -DistributionPath "..."   Where to copy final package                   ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  WHAT THE SCRIPT DOES:                                                    ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  ✅ Pre-flight checks (tools, git status, disk space)                    ║
+║  ✅ Updates version in 6 locations (csproj, README, etc.)                ║
+║  ✅ Auto-inserts CHANGELOG.md entry template                             ║
+║  ✅ Builds, publishes, packages application                              ║
+║  ✅ Generates manifest.json with SHA256 hashes                           ║
+║  ✅ Shows delta size preview (vs previous version)                       ║
+║  ✅ Runs post-build smoke test (EXE launches)                            ║
+║  ✅ Copies package to distribution folder                                ║
+║  ✅ Archives previous build                                              ║
+║  ✅ Shows package size comparison                                        ║
+║  ✅ (Optional) Creates GitHub Release + uploads assets                   ║
+║  ✅ Full transcript logging                                              ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  OUTPUTS:                                                                 ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  CloudJourneyAddin-vX.X.X-COMPLETE.zip     Main package (~88 MB)         ║
+║  manifest.json                              Update manifest (~200 KB)    ║
+║  builds/logs/build-YYYYMMDD-HHMMSS.log     Full build log               ║
+║  builds/manifests/manifest-vX.X.X.json     Archived manifest             ║
+║  builds/archive/CloudJourneyAddin-*.zip    Previous builds               ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  VERSION LOCATIONS (6 files updated):                                     ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  1. CloudJourneyAddin.csproj         (Version, AssemblyVersion, etc.)    ║
+║  2. README.md                         (All version references)           ║
+║  3. USER_GUIDE.md                     (Header version)                   ║
+║  4. Views/DashboardWindow.xaml        (UI version display)               ║
+║  5. ViewModels/DashboardViewModel.cs  (About dialog constant)            ║
+║  6. CHANGELOG.md                      (Auto-insert new entry)            ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  REQUIREMENTS:                                                            ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  ✅ PowerShell 5.1 or higher                                             ║
+║  ✅ .NET 8.0 SDK                                                         ║
+║  ✅ Git                                                                  ║
+║  ✅ gh CLI (only for -PublishToGitHub)                                   ║
+║                                                                           ║
+║  Install gh CLI:                                                         ║
+║    winget install GitHub.cli                                             ║
+║    gh auth login                                                         ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  TROUBLESHOOTING:                                                         ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  ❌ "Uncommitted changes detected"                                       ║
+║     → Commit your changes OR use -Force                                  ║
+║                                                                           ║
+║  ❌ "Missing required tools (gh) not found"                              ║
+║     → Install GitHub CLI: winget install GitHub.cli                      ║
+║                                                                           ║
+║  ❌ "Version update failed"                                              ║
+║     → Script auto-rolls back. Check builds/logs/ for details            ║
+║                                                                           ║
+║  ❌ "GitHub Release creation failed"                                     ║
+║     → Package still created locally. Create release manually:           ║
+║       gh release create vX.X.X CloudJourneyAddin-*.zip manifest.json    ║
+║                                                                           ║
+║  ⚠️  Build takes too long                                                ║
+║     → Normal! First build: ~5 min. Subsequent: ~3 min                   ║
+║                                                                           ║
+║  View detailed logs:                                                     ║
+║    Get-Content builds\logs\build-*.log -Tail 100                         ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  WORKFLOW EXAMPLE:                                                        ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  1. Make code changes and test                                           ║
+║  2. Commit your changes: git commit -am "Your message"                   ║
+║  3. Run build: .\Build-And-Distribute.ps1 -PublishToGitHub              ║
+║  4. Script automatically:                                                ║
+║     • Increments version (3.14.31 → 3.14.32)                            ║
+║     • Updates 6 files                                                    ║
+║     • Builds and packages                                                ║
+║     • Tests the build                                                    ║
+║     • Creates GitHub Release                                             ║
+║     • Uploads ZIP + manifest.json                                        ║
+║  5. Update CHANGELOG.md entry with actual changes                        ║
+║  6. Test auto-update from previous version                               ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  BUILD SUMMARY EXAMPLE:                                                   ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  Version:        3.14.31 → 3.14.32                                       ║
+║  Package:        CloudJourneyAddin-v3.14.32-COMPLETE.zip                 ║
+║  Size:           87.89 MB                                                ║
+║  Files:          283                                                     ║
+║  Build Time:     3.2 minutes                                             ║
+║                                                                           ║
+║  Delta Analysis (vs v3.14.31):                                           ║
+║    Changed files: 12                                                     ║
+║    Delta download: ~15.2 MB (vs full 87.89 MB)                          ║
+║    Bandwidth savings: 82.7%                                              ║
+║                                                                           ║
+║  GitHub Release:                                                         ║
+║    https://github.com/sccmavenger/cmaddin/releases/tag/v3.14.32         ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  DOCUMENTATION:                                                           ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  📖 Complete Guide:  BUILD_SCRIPT_GUIDE.md (1000+ lines)                 ║
+║  📋 This Reference:  BUILD_QUICK_REFERENCE.txt                           ║
+║  📝 Change Summary:  BUILD_ENHANCEMENT_SUMMARY.md                        ║
+║                                                                           ║
+║  PowerShell help:                                                        ║
+║    Get-Help .\Build-And-Distribute.ps1 -Full                             ║
+║    Get-Help .\Build-And-Distribute.ps1 -Examples                         ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  IMPORTANT NOTES:                                                         ║
+║  ════════════════════════════════════════════════════════════════════     ║
+║                                                                           ║
+║  ⚠️  ALWAYS commit your code changes BEFORE running build script         ║
+║      (or use -Force to bypass check)                                     ║
+║                                                                           ║
+║  ⚠️  ALWAYS update CHANGELOG.md after build (script inserts template)    ║
+║                                                                           ║
+║  ⚠️  TEST auto-update from previous version before announcing release    ║
+║                                                                           ║
+║  ⚠️  GitHub Release REQUIRES both ZIP and manifest.json as assets        ║
+║      (script handles this automatically with -PublishToGitHub)           ║
+║                                                                           ║
+║  ✅  Build logs saved to builds/logs/ for troubleshooting                ║
+║                                                                           ║
+║  ✅  Previous builds archived to builds/archive/ automatically           ║
+║                                                                           ║
+║  ✅  Use -DryRun to test build process without making changes            ║
+║                                                                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  SCRIPT VERSION: 2.0.0                                                    ║
+║  LAST UPDATED: 2024-01-15                                                 ║
+║  STATUS: Production Ready                                                 ║
+║                                                                           ║
+║  This is THE canonical build script for all Cloud Journey releases.      ║
+║  No other build process should be used.                                   ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
