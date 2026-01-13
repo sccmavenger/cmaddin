@@ -1,6 +1,6 @@
 # ConfigMgr Cloud Journey Progress Add-in
 
-**Version 3.15.0** | January 13, 2026
+**Version 3.16.0** | January 13, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -90,7 +90,7 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ## 🆕 What's New
 
-### Version 3.15.0 (January 13, 2026) - Automatic Updates
+### Version 3.16.0 (January 13, 2026) - Automatic Updates
 
 #### 🚀 Zero-Touch Automatic Updates
 
