@@ -1,6 +1,8 @@
 # Version Management Strategy
 
-**Current Version:** 1.7.0 (as of December 18, 2025)
+**Current Version:** 3.14.31 (as of January 13, 2026)
+
+**Latest Feature:** Automatic update system with GitHub Releases integration
 
 ## Versioning Scheme
 

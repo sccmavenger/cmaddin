@@ -1,5 +1,47 @@
 # Cloud Journey Dashboard - Change Log
 
+## [3.14.31] - 2026-01-13
+
+### Added
+- **🚀 Automatic Update System** - Zero-touch updates with GitHub Releases integration
+  - Checks for updates on every application launch (2-4 second check)
+  - Automatic download and installation without user interaction
+  - Delta updates: Only changed files downloaded (80-90% bandwidth savings)
+  - SHA256 manifest comparison ensures file integrity
+  - PowerShell-based updater for safe file replacement
+  - Automatic application restart after update
+  - Progress window shows download percentage and status
+  - Update logs in `%LocalAppData%\CloudJourneyAddin\Logs`
+
+### Technical Components Added
+- **Models/UpdateManifest.cs** - Data structures for update manifest, file entries, settings, and check results
+- **Services/GitHubUpdateService.cs** - GitHub Releases API integration using Octokit v13.0.1
+- **Services/DeltaUpdateService.cs** - Manifest comparison and delta file downloads with SHA256 verification
+- **Services/UpdateApplier.cs** - PowerShell script generation for file replacement and app restart
+- **Views/UpdateProgressWindow.xaml** - Borderless progress window for automatic updates
+- **App.xaml.cs** - Integrated update check on application startup
+- **Build-And-Distribute.ps1** - Enhanced with Step 5a: manifest.json generation with SHA256 hashes
+
+### Changed
+- Update check frequency: Now checks every launch (removed 24-hour cooldown)
+- User interaction: Fully automatic updates (no user confirmation dialogs)
+- Package distribution: GitHub Releases instead of manual ZIP sharing
+- Build process: Automatically generates manifest.json with file hashes
+
+### Performance
+- Full package: 87.89 MB (286 files)
+- Typical delta update: 10-20 MB (80-90% savings)
+- Update check time: 2-4 seconds
+- Total update time: 30-45 seconds (vs 2-3 minutes manual)
+
+### Documentation Added
+- **AUTO_UPDATE_GUIDE.md** - Comprehensive architecture and implementation guide
+- **AUTO_UPDATE_QUICKSTART.md** - Quick reference for developers
+- **AUTO_UPDATE_TESTING_GUIDE.md** - Detailed testing procedures and troubleshooting
+- **QUICK_TEST_INSTRUCTIONS.md** - 5-minute quick start for testing
+
+---
+
 ## [3.14.1] - 2026-01-09
 
 ### Enhanced
