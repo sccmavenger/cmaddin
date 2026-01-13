@@ -147,16 +147,16 @@ $toolsValid = $true
 foreach ($tool in $requiredTools.Keys) {
     $command = Get-Command $tool -ErrorAction SilentlyContinue
     if ($command) {
-        $version = ""
+        $toolVersion = ""
         try {
             switch ($tool) {
-                'dotnet' { $version = (& dotnet --version 2>$null) }
-                'git' { $version = (& git --version 2>$null) -replace 'git version ' }
-                'gh' { $version = (& gh --version 2>$null | Select-Object -First 1) -replace 'gh version ' }
+                'dotnet' { $toolVersion = (& dotnet --version 2>$null) }
+                'git' { $toolVersion = (& git --version 2>$null) -replace 'git version ' }
+                'gh' { $toolVersion = (& gh --version 2>$null | Select-Object -First 1) -replace 'gh version ' }
             }
         } catch {}
         
-        Write-Host "   ✅ $($requiredTools[$tool]): $version" -ForegroundColor Green
+        Write-Host "   ✅ $($requiredTools[$tool]): $toolVersion" -ForegroundColor Green
     } else {
         Write-Host "   ❌ $($requiredTools[$tool]) ($tool) not found!" -ForegroundColor Red
         $toolsValid = $false
