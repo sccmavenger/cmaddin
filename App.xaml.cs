@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using CloudJourneyAddin.Views;
 using CloudJourneyAddin.Models;
@@ -48,6 +49,9 @@ namespace CloudJourneyAddin
         {
             try
             {
+                // Check for updates on startup (once per day)
+                _ = CheckForUpdatesAsync();
+
                 // Temporarily disable ConfigMgr Console check to diagnose startup issues
                 // (Console detection can be re-enabled after verifying the app launches)
                 
@@ -89,6 +93,109 @@ namespace CloudJourneyAddin
                     MessageBoxButton.OK, 
                     MessageBoxImage.Error);
                 Shutdown();
+            }
+        }
+
+        /// <summary>
+        /// Checks for updates from GitHub Releases on every startup.
+        /// Automatically downloads and applies updates without user confirmation.
+        /// Runs asynchronously and doesn't block application startup.
+        /// </summary>
+        private async System.Threading.Tasks.Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                var updateService = new Services.GitHubUpdateService();
+                
+                // Check if we should perform an update check
+                if (!updateService.ShouldCheckForUpdates())
+                {
+                    return;
+                }
+
+                Services.FileLogger.Instance.Info("Checking for updates from GitHub Releases...");
+                
+                var updateResult = await updateService.CheckForUpdatesAsync();
+                
+                if (!updateResult.IsUpdateAvailable)
+                {
+                    Services.FileLogger.Instance.Info($"No updates available (current version: {updateResult.CurrentVersion})");
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(updateResult.ManifestUrl))
+                {
+                    Services.FileLogger.Instance.Warning("Update available but no manifest URL found");
+                    return;
+                }
+
+                // Download manifest to calculate delta
+                var deltaService = new Services.DeltaUpdateService();
+                var remoteManifest = await deltaService.DownloadRemoteManifestAsync(updateResult.ManifestUrl);
+                
+                if (remoteManifest != null)
+                {
+                    var changedFiles = deltaService.GetChangedFiles(remoteManifest);
+                    updateResult.ChangedFiles = changedFiles;
+                    updateResult.DeltaSize = changedFiles.Sum(f => f.FileSize);
+                    
+                    Services.FileLogger.Instance.Info($"Update available: {updateResult.CurrentVersion} → {updateResult.LatestVersion}");
+                    Services.FileLogger.Instance.Info($"Delta: {changedFiles.Count} files, {updateResult.DeltaSize:N0} bytes");
+                    Services.FileLogger.Instance.Info("Automatic update starting...");
+                    
+                    // Show progress notification on UI thread
+                    await Dispatcher.InvokeAsync(async () =>
+                    {
+                        var progressWindow = new Views.UpdateProgressWindow(updateResult);
+                        progressWindow.Show();
+                        
+                        // Download and apply update automatically
+                        var progress = new Progress<int>(percent =>
+                        {
+                            progressWindow.UpdateProgress(percent, $"Downloading update... {percent}%");
+                        });
+
+                        var success = await deltaService.DownloadDeltaFilesAsync(
+                            updateResult.DownloadUrl!,
+                            changedFiles,
+                            progress);
+
+                        if (success)
+                        {
+                            progressWindow.UpdateProgress(100, "Applying update...");
+                            
+                            var applier = new Services.UpdateApplier();
+                            success = await applier.ApplyUpdateAsync(
+                                deltaService.GetTempDownloadPath(),
+                                changedFiles,
+                                remoteManifest);
+
+                            if (success)
+                            {
+                                progressWindow.UpdateProgress(100, "Update complete! Restarting...");
+                                await System.Threading.Tasks.Task.Delay(2000);
+                                // App will restart via PowerShell script
+                            }
+                            else
+                            {
+                                progressWindow.UpdateProgress(0, "Update failed. Please try again.");
+                                await System.Threading.Tasks.Task.Delay(3000);
+                                progressWindow.Close();
+                            }
+                        }
+                        else
+                        {
+                            progressWindow.UpdateProgress(0, "Download failed. Please check your connection.");
+                            await System.Threading.Tasks.Task.Delay(3000);
+                            progressWindow.Close();
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Don't crash the app if update check fails
+                Services.FileLogger.Instance.Warning($"Update check failed: {ex.Message}");
             }
         }
 

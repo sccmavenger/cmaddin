@@ -512,20 +512,48 @@ namespace CloudJourneyAddin.Services
         {
             try
             {
-                // Query for Windows 10/11 workstations only (not servers)
-                // OData v4 syntax: use contains() function instead of SQL 'like' operator
-                var query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
+                string query;
+                HttpResponseMessage response;
+                
+                // Try query with $select first (preferred - less data transfer)
+                query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
-                    "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')";
+                    "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')" +
+                    "&$select=ResourceId,Name,OperatingSystemNameandVersion,LastActiveTime,ClientVersion,ResourceDomainORWorkgroup";
 
                 FileLogger.Instance.Info("=== ConfigMgr Admin Service REST API Query ===");
                 FileLogger.Instance.Info($"   Query URL: {query}");
                 FileLogger.Instance.Info($"   Method: GET");
                 FileLogger.Instance.Info($"   Authentication: Windows Integrated (UseDefaultCredentials)");
                 
-                var response = await _httpClient.GetAsync(query);
+                response = await _httpClient.GetAsync(query);
                 
                 FileLogger.Instance.Info($"   Response Status: {(int)response.StatusCode} {response.StatusCode}");
+                
+                // If 404, try without $select (field might not exist)
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    FileLogger.Instance.Warning("   ⚠️ Query with $select failed (404), trying without $select parameter...");
+                    query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
+                        "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
+                        "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')";
+                    
+                    FileLogger.Instance.Info($"   Retry Query URL: {query}");
+                    response = await _httpClient.GetAsync(query);
+                    FileLogger.Instance.Info($"   Retry Response Status: {(int)response.StatusCode} {response.StatusCode}");
+                }
+                
+                // If still 404, try simple query without filter (get all devices, filter client-side)
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    FileLogger.Instance.Warning("   ⚠️ Query with contains() failed (404), trying simple query with $top limit...");
+                    query = $"{_adminServiceUrl}/wmi/SMS_R_System?$top=5000";
+                    
+                    FileLogger.Instance.Info($"   Fallback Query URL: {query}");
+                    response = await _httpClient.GetAsync(query);
+                    FileLogger.Instance.Info($"   Fallback Response Status: {(int)response.StatusCode} {response.StatusCode}");
+                }
+                
                 FileLogger.Instance.Info($"   Response Headers: {response.Headers}");
                 
                 response.EnsureSuccessStatusCode();
@@ -542,10 +570,18 @@ namespace CloudJourneyAddin.Services
 
                 if (result?.Value != null)
                 {
-                    FileLogger.Instance.Info($"   Devices returned: {result.Value.Count}");
+                    FileLogger.Instance.Info($"   Total devices returned: {result.Value.Count}");
+                    
+                    // Filter for Windows 10/11 if we got all devices (fallback query)
+                    var filteredDevices = result.Value.Where(d => 
+                        d.OperatingSystemNameandVersion != null && 
+                        (d.OperatingSystemNameandVersion.Contains("Workstation 10") || 
+                         d.OperatingSystemNameandVersion.Contains("Workstation 11"))).ToList();
+                    
+                    FileLogger.Instance.Info($"   Windows 10/11 workstations: {filteredDevices.Count}");
                     
                     // Create device list - co-management will be determined by cross-referencing with Intune
-                    foreach (var device in result.Value)
+                    foreach (var device in filteredDevices)
                     {
                         devices.Add(new ConfigMgrDevice
                         {
@@ -555,7 +591,8 @@ namespace CloudJourneyAddin.Services
                             LastActiveTime = device.LastActiveTime,
                             ClientVersion = device.ClientVersion,
                             IsCoManaged = false, // Will be set by cross-referencing with Intune
-                            CoManagementFlags = 0 // Will be populated from SMS_Client if needed
+                            CoManagementFlags = 0, // Will be populated from SMS_Client if needed
+                            DomainOrWorkgroup = device.ResourceDomainORWorkgroup
                         });
                     }
                     
@@ -1202,6 +1239,7 @@ namespace CloudJourneyAddin.Services
         public string? OperatingSystemNameandVersion { get; set; }
         public DateTime? LastActiveTime { get; set; }
         public string? ClientVersion { get; set; }
+        public string? ResourceDomainORWorkgroup { get; set; }
         // Note: SMS_R_System doesn't have CoManagementFlags
         // Use SMS_Client for co-management details
     }
@@ -1257,6 +1295,7 @@ namespace CloudJourneyAddin.Services
         public string? ClientVersion { get; set; }
         public bool IsCoManaged { get; set; }
         public int CoManagementFlags { get; set; }
+        public string? DomainOrWorkgroup { get; set; }
     }
 
     public class ConfigMgrApplication

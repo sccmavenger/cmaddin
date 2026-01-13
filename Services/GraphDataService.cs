@@ -514,6 +514,132 @@ namespace CloudJourneyAddin.Services
                     System.Diagnostics.Debug.WriteLine($"✅ Intune-only scenario: {totalDevices} total, {cloudManagedCount} cloud-managed");
                 }
 
+                // STEP 4: DETECT DEVICE JOIN TYPES for enrollment readiness
+                Instance.Info("=== DEVICE JOIN TYPE DETECTION ===");
+                int hybridJoinedCount = 0;
+                int azureADOnlyCount = 0;
+                int onPremDomainOnlyCount = 0;
+                int workgroupCount = 0;
+                int unknownJoinTypeCount = 0;
+
+                try
+                {
+                    // Create lookup dictionaries for efficient matching
+                    // Use GroupBy to handle duplicate Azure AD Device IDs (e.g., multiple devices with 00000000-0000-0000-0000-000000000000)
+                    var intuneDevicesByAzureId = allIntuneDevices
+                        .Where(d => !string.IsNullOrEmpty(d.AzureADDeviceId) && 
+                                    d.AzureADDeviceId != "00000000-0000-0000-0000-000000000000")
+                        .GroupBy(d => d.AzureADDeviceId!, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+                    var intuneDevicesByName = allIntuneDevices
+                        .Where(d => !string.IsNullOrEmpty(d.DeviceName))
+                        .GroupBy(d => d.DeviceName!.ToLowerInvariant())
+                        .ToDictionary(g => g.Key, g => g.First());
+
+                    if (configMgrDevices != null && configMgrDevices.Any())
+                    {
+                        // Co-management scenario: Categorize ConfigMgr devices by join type
+                        Instance.Info($"   Processing {configMgrDevices.Count} ConfigMgr devices for join type...");
+                        
+                        foreach (var cmDevice in configMgrDevices)
+                        {
+                            try
+                            {
+                                // Try to find matching Intune device by name
+                                Microsoft.Graph.Models.ManagedDevice? intuneDevice = null;
+                                if (!string.IsNullOrEmpty(cmDevice.Name))
+                                {
+                                    intuneDevicesByName.TryGetValue(cmDevice.Name.ToLowerInvariant(), out intuneDevice);
+                                }
+
+                                var joinType = DetectJoinType(
+                                    cmDevice.DomainOrWorkgroup,
+                                    intuneDevice?.AzureADDeviceId
+                                );
+
+                                switch (joinType)
+                                {
+                                    case Models.DeviceJoinType.HybridAzureADJoined:
+                                        hybridJoinedCount++;
+                                        break;
+                                    case Models.DeviceJoinType.AzureADOnly:
+                                        azureADOnlyCount++;
+                                        break;
+                                    case Models.DeviceJoinType.OnPremDomainOnly:
+                                        onPremDomainOnlyCount++;
+                                        break;
+                                    case Models.DeviceJoinType.WorkgroupOnly:
+                                        workgroupCount++;
+                                        break;
+                                    default:
+                                        unknownJoinTypeCount++;
+                                        break;
+                                }
+                            }
+                            catch (Exception deviceEx)
+                            {
+                                Instance.Warning($"   ⚠️ Failed to detect join type for device {cmDevice.Name}: {deviceEx.Message}");
+                                unknownJoinTypeCount++;
+                            }
+                        }
+                    }
+                    else if (allIntuneDevices.Any())
+                    {
+                        // Intune-only scenario: Categorize Intune devices
+                        Instance.Info($"   Processing {intuneWindowsCount} Intune devices (no ConfigMgr)...");
+                        
+                        foreach (var intuneDevice in intuneEligibleDevices)
+                        {
+                            try
+                            {
+                                var joinType = DetectJoinType(
+                                    null, // No ConfigMgr domain data
+                                    intuneDevice.AzureADDeviceId
+                                );
+
+                                switch (joinType)
+                                {
+                                    case Models.DeviceJoinType.HybridAzureADJoined:
+                                    case Models.DeviceJoinType.AzureADOnly:
+                                        // In Intune-only, can't distinguish Hybrid vs Pure AAD without domain data
+                                        // Assume AzureADOnly for cloud-native scenarios
+                                        azureADOnlyCount++;
+                                        break;
+                                    default:
+                                        unknownJoinTypeCount++;
+                                        break;
+                                }
+                            }
+                            catch (Exception deviceEx)
+                            {
+                                Instance.Warning($"   ⚠️ Failed to detect join type for device {intuneDevice.DeviceName}: {deviceEx.Message}");
+                                unknownJoinTypeCount++;
+                            }
+                        }
+                    }
+
+                    Instance.Info($"   Join Type Breakdown:");
+                    Instance.Info($"      ✅ Hybrid Azure AD Joined: {hybridJoinedCount} (Ready for co-management)");
+                    Instance.Info($"      ☁️ Azure AD Only: {azureADOnlyCount} (Ready for Intune-only)");
+                    Instance.Info($"      ⚠️ On-Prem Domain Only: {onPremDomainOnlyCount} (Needs Hybrid AAD Join)");
+                    Instance.Info($"      ❌ Workgroup: {workgroupCount} (Needs domain join)");
+                    Instance.Info($"      ❓ Unknown: {unknownJoinTypeCount} (Missing data)");
+                }
+                catch (Exception joinTypeEx)
+                {
+                    Instance.Error($"❌ Device join type detection failed: {joinTypeEx.Message}");
+                    Instance.Warning($"   Continuing without join type categorization...");
+                    // Set all to unknown if detection fails completely
+                    unknownJoinTypeCount = totalDevices;
+                    hybridJoinedCount = 0;
+                    azureADOnlyCount = 0;
+                    onPremDomainOnlyCount = 0;
+                    workgroupCount = 0;
+                }
+                
+                Instance.Info("=================================================");
+
                 // Generate trend data showing migration from ConfigMgr to cloud (co-managed/Intune)
                 var trendData = GenerateTrendData(totalDevices, cloudManagedCount, configMgrOnlyCount);
 
@@ -524,7 +650,13 @@ namespace CloudJourneyAddin.Services
                     TotalDevices = totalDevices,
                     IntuneEnrolledDevices = cloudManagedCount, // Co-managed or Intune-managed Windows devices
                     ConfigMgrOnlyDevices = configMgrOnlyCount,
-                    TrendData = trendData
+                    TrendData = trendData,
+                    // Device join type categorization
+                    HybridJoinedDevices = hybridJoinedCount,
+                    AzureADOnlyDevices = azureADOnlyCount,
+                    OnPremDomainOnlyDevices = onPremDomainOnlyCount,
+                    WorkgroupDevices = workgroupCount,
+                    UnknownJoinTypeDevices = unknownJoinTypeCount
                 };
             }
             catch (Exception ex)
@@ -612,6 +744,42 @@ namespace CloudJourneyAddin.Services
                     NonCompliantDevices = 0,
                     PolicyViolations = 0
                 };
+            }
+        }
+
+        /// <summary>
+        /// Detect device join type based on domain and Azure AD presence
+        /// </summary>
+        private Models.DeviceJoinType DetectJoinType(string? domainOrWorkgroup, string? azureADDeviceId)
+        {
+            bool hasAzureAD = !string.IsNullOrEmpty(azureADDeviceId);
+            bool hasOnPremDomain = !string.IsNullOrEmpty(domainOrWorkgroup) && 
+                                   !domainOrWorkgroup.Equals("WORKGROUP", StringComparison.OrdinalIgnoreCase);
+
+            if (hasAzureAD && hasOnPremDomain)
+            {
+                // Both AD and Azure AD = Hybrid Azure AD Joined (best for co-management)
+                return Models.DeviceJoinType.HybridAzureADJoined;
+            }
+            else if (hasAzureAD && !hasOnPremDomain)
+            {
+                // Azure AD only, no domain = Pure cloud Azure AD Joined
+                return Models.DeviceJoinType.AzureADOnly;
+            }
+            else if (!hasAzureAD && hasOnPremDomain)
+            {
+                // Domain joined but no Azure AD = On-Prem Domain Only (BLOCKER)
+                return Models.DeviceJoinType.OnPremDomainOnly;
+            }
+            else if (!hasAzureAD && !hasOnPremDomain)
+            {
+                // No domain, no Azure AD = Workgroup device (BLOCKER)
+                return Models.DeviceJoinType.WorkgroupOnly;
+            }
+            else
+            {
+                // Missing data
+                return Models.DeviceJoinType.Unknown;
             }
         }
 
