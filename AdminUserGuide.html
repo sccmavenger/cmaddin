@@ -424,6 +424,7 @@
             <div class="nav-section">
                 <a href="#overview" class="nav-link">Dashboard Overview</a>
                 <a href="#access-requirements" class="nav-link">⚙️ Access Requirements</a>
+                <a href="#auto-updates" class="nav-link">🚀 Automatic Updates <span style="color: #28a745; font-weight: bold;">(NEW)</span></a>
                 <a href="#section1" class="nav-link">1. Overall Migration Status</a>
                 <a href="#section2" class="nav-link">2. Device Enrollment</a>
                 <a href="#section3" class="nav-link">3. Workload Status</a>
@@ -432,7 +433,7 @@
                 <a href="#section6" class="nav-link">6. Blockers & Health</a>
                 <a href="#section7" class="nav-link">7. Peer Benchmarking</a>
                 <a href="#section8" class="nav-link">8. Alerts & Recommendations</a>
-                <a href="#section8a" class="nav-link">8a. 🤖 AI-Powered Recommendations <span style="color: #28a745; font-weight: bold;">(NEW)</span></a>
+                <a href="#section8a" class="nav-link">8a. 🤖 AI-Powered Recommendations</a>
                 <a href="#section9" class="nav-link">9. Recent Milestones</a>
                 <a href="#section10" class="nav-link">10. Support & Engagement</a>
                 <a href="#datasources" class="nav-link">📊 Data Sources Reference</a>
@@ -452,6 +453,16 @@
                 
                 <div class="alert alert-info">
                     <strong>📘 About This Guide:</strong> This comprehensive guide explains every section of the dashboard, what each metric means, and how to take action on insights.
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>🎉 Version 3.14.31 - Automatic Updates (January 13, 2026)</strong>
+                    <ul>
+                        <li><strong>✅ Zero-Touch Updates:</strong> Application now checks for updates on every launch and installs them automatically</li>
+                        <li><strong>✅ Delta Downloads:</strong> Only changed files are downloaded (80-90% bandwidth savings, ~15 MB vs 87 MB)</li>
+                        <li><strong>✅ No Manual Downloads:</strong> Updates are distributed via GitHub Releases - no more manual ZIP files</li>
+                        <li><strong>✅ Seamless Experience:</strong> Update happens in 30-45 seconds with automatic restart</li>
+                    </ul>
                 </div>
 
                 <div class="alert alert-success">
@@ -781,6 +792,122 @@
                         <li><strong>Contact your IT admin:</strong> They can verify and grant the necessary permissions</li>
                         <li><strong>Check the Troubleshooting section:</strong> Scroll down to <a href="#troubleshooting">Troubleshooting</a> for detailed solutions</li>
                         <li><strong>Review Azure AD audit logs:</strong> See if there are any sign-in or permission errors</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Automatic Updates Section -->
+            <section id="auto-updates" class="content-section">
+                <h2><span class="emoji">🚀</span> Automatic Updates - Always Stay Current</h2>
+                
+                <div class="alert alert-success">
+                    <strong>✨ New in v3.14.31:</strong> The Cloud Journey Dashboard now updates itself automatically! No more manual downloads, no more outdated versions.
+                </div>
+
+                <h3>How It Works</h3>
+                
+                <p>The automatic update system runs seamlessly in the background, ensuring you always have the latest features and bug fixes:</p>
+
+                <h4>1. Update Check on Launch</h4>
+                <p>Every time you launch the application:</p>
+                <ul>
+                    <li>✅ Checks GitHub Releases for newer versions (2-4 seconds)</li>
+                    <li>✅ Compares your current version with the latest release</li>
+                    <li>✅ No interruption to your work if no update is found</li>
+                </ul>
+
+                <h4>2. Smart Delta Downloads</h4>
+                <p>When an update is available:</p>
+                <ul>
+                    <li>✅ Compares file hashes to identify only changed files</li>
+                    <li>✅ Downloads only what's needed (~10-20 MB instead of 87 MB)</li>
+                    <li>✅ Saves 80-90% bandwidth compared to full package</li>
+                    <li>✅ Faster downloads = less waiting time</li>
+                </ul>
+
+                <h4>3. Automatic Installation</h4>
+                <p>No user interaction required:</p>
+                <ul>
+                    <li>✅ Progress window shows download percentage</li>
+                    <li>✅ Application closes automatically when download completes</li>
+                    <li>✅ PowerShell updater replaces files safely in the background</li>
+                    <li>✅ Application restarts automatically with the new version</li>
+                    <li>✅ Total time: 30-45 seconds from launch to updated version</li>
+                </ul>
+
+                <h3>What You'll See</h3>
+
+                <p>When an update is available, you'll see a borderless progress window:</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Stage</th>
+                            <th>What's Happening</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Checking for updates...</strong></td>
+                            <td>Querying GitHub Releases API for latest version</td>
+                            <td>2-4 seconds</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Downloading... 0-100%</strong></td>
+                            <td>Downloading only changed files (delta update)</td>
+                            <td>20-30 seconds</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Applying update...</strong></td>
+                            <td>Preparing PowerShell updater script</td>
+                            <td>2-3 seconds</td>
+                        </tr>
+                        <tr>
+                            <td><strong>App closes</strong></td>
+                            <td>PowerShell replaces files and restarts app</td>
+                            <td>5-10 seconds</td>
+                        </tr>
+                        <tr>
+                            <td><strong>App restarts</strong></td>
+                            <td>New version launches automatically</td>
+                            <td>Immediate</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Common Questions</h3>
+
+                <h4>Q: Can I disable automatic updates?</h4>
+                <p><strong>A:</strong> Automatic updates are always enabled to ensure you have the latest security fixes and features. The update process is fast (30-45 seconds) and happens only when you launch the app.</p>
+
+                <h4>Q: What if I'm offline when I launch the app?</h4>
+                <p><strong>A:</strong> The update check will fail silently (timeout after 10 seconds) and the app will continue to load with your current version. No error messages or delays.</p>
+
+                <h4>Q: What if the update fails?</h4>
+                <p><strong>A:</strong> If an update fails:</p>
+                <ul>
+                    <li>The app continues to run your current version</li>
+                    <li>The error is logged in the update log files</li>
+                    <li>The update will be retried the next time you launch the app</li>
+                    <li>Your installation is never left in a broken state</li>
+                </ul>
+
+                <h4>Q: How do I know what changed in an update?</h4>
+                <p><strong>A:</strong> Visit the GitHub Releases page to see detailed release notes:</p>
+                <pre><code>https://github.com/sccmavenger/cmaddin/releases</code></pre>
+
+                <h4>Q: Does this work through a proxy or firewall?</h4>
+                <p><strong>A:</strong> Yes, as long as your system can reach <code>https://github.com</code> and <code>https://api.github.com</code> (standard HTTPS on port 443).</p>
+
+                <div class="alert alert-info">
+                    <strong>💡 Benefits for IT Teams:</strong>
+                    <ul>
+                        <li><strong>Zero Deployment Effort:</strong> Users always get the latest version automatically</li>
+                        <li><strong>No SCCM/Intune Packaging:</strong> No need to create and deploy update packages</li>
+                        <li><strong>Bandwidth Efficient:</strong> Delta updates save 80-90% bandwidth vs full packages</li>
+                        <li><strong>Self-Healing:</strong> If files get corrupted, next update will fix them</li>
+                        <li><strong>Audit Trail:</strong> All updates logged in <code>%LocalAppData%\CloudJourneyAddin\Logs</code></li>
                     </ul>
                 </div>
             </section>
