@@ -1,5 +1,5 @@
 {
-  "TotalSize": 239760903,
+  "TotalSize": 239795119,
   "Files": [
     {
       "LastModified": "2025-10-28T09:24:06.0000000Z",
@@ -16,56 +16,56 @@
       "RelativePath": "AdminUserGuide.html"
     },
     {
-      "LastModified": "2026-01-13T14:48:24.8371273Z",
+      "LastModified": "2026-01-13T18:43:16.3382555Z",
       "SHA256Hash": "9ae9e70f236aa78015004ba83249192f739a7607cbec01eda09ae3582852398a",
       "FileSize": 1814528,
       "IsCritical": false,
       "RelativePath": "Azure.AI.OpenAI.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:25.6098080Z",
+      "LastModified": "2026-01-13T18:43:17.0037105Z",
       "SHA256Hash": "b11440821c6a9812aa92c728892511f16699a3d3ce9c26ee3e840a8db3d9728a",
       "FileSize": 1196032,
       "IsCritical": false,
       "RelativePath": "Azure.Core.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:26.2078890Z",
+      "LastModified": "2026-01-13T18:43:17.6177935Z",
       "SHA256Hash": "98090ce86f36ef686202c1d0b7b91e25c25db896a0ccf406cd5fadb600387c98",
       "FileSize": 897024,
       "IsCritical": true,
       "RelativePath": "Azure.Identity.dll"
     },
     {
-      "LastModified": "2026-01-13T16:05:22.2238052Z",
-      "SHA256Hash": "6bc193fca96d0e92e96502c56de31f9e9caf17a26c4f199af2c76486932054ea",
-      "FileSize": 75882,
+      "LastModified": "2026-01-13T18:43:11.9266728Z",
+      "SHA256Hash": "e59e7735294d49d3af8fc2dbe4a46b662bd6dc07a4f99ab5c30141cd460efba2",
+      "FileSize": 75880,
       "IsCritical": false,
       "RelativePath": "CloudJourneyAddin.deps.json"
     },
     {
-      "LastModified": "2026-01-13T16:05:27.3610362Z",
-      "SHA256Hash": "1c2058a27cf40ed90b4ebe98e04f345b61ec6bd087fdd120cc75c04ce9c9499d",
-      "FileSize": 1806336,
+      "LastModified": "2026-01-13T18:43:49.4367226Z",
+      "SHA256Hash": "9c3ab38169e89ec30b946ed305813b32f4febb17b541a45f133d460dcd8a8370",
+      "FileSize": 1835008,
       "IsCritical": true,
       "RelativePath": "CloudJourneyAddin.dll"
     },
     {
-      "LastModified": "2026-01-13T16:05:21.1638431Z",
-      "SHA256Hash": "2a762dd0f21cf3de985e56a0b9a22d55aba60069c83af18170bf85cb1432d7af",
+      "LastModified": "2026-01-13T18:43:11.1790729Z",
+      "SHA256Hash": "3f6a27da39d1f011b92f8fe94a6bc3356d8efdfaec4a6dc9120cd42cd4cdc7fb",
       "FileSize": 152064,
       "IsCritical": true,
       "RelativePath": "CloudJourneyAddin.exe"
     },
     {
-      "LastModified": "2026-01-13T16:05:20.9497640Z",
-      "SHA256Hash": "ef9ed00cf69a457131786b638299c86839cddfbf04687d945d6727bd374dab36",
-      "FileSize": 207976,
+      "LastModified": "2026-01-13T18:43:11.1065207Z",
+      "SHA256Hash": "a2acdcd6e541d580a5583cb8ed4c3bfd09d2ca4a990fcf0eb77927f1362a111a",
+      "FileSize": 213524,
       "IsCritical": false,
       "RelativePath": "CloudJourneyAddin.pdb"
     },
     {
-      "LastModified": "2026-01-13T16:05:25.0755483Z",
+      "LastModified": "2026-01-13T18:43:14.3446330Z",
       "SHA256Hash": "35be036df53a45ab23455e856266911356051bbd0614c45c9b179bdec3b39bb9",
       "FileSize": 525,
       "IsCritical": false,
@@ -135,21 +135,21 @@
       "RelativePath": "hostpolicy.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:26.6912566Z",
+      "LastModified": "2026-01-13T18:43:18.0250574Z",
       "SHA256Hash": "a7f13186a6bdeb3bc48791e3a133eee25f26d3dadb513aaec6fc8f5c54e2beee",
       "FileSize": 376832,
       "IsCritical": false,
       "RelativePath": "LiveCharts.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:27.4727980Z",
+      "LastModified": "2026-01-13T18:43:18.7536511Z",
       "SHA256Hash": "9283553c76f76fcf8fd8b15279b0e7c93fe03b14c5c7153e023ccfcd38103a33",
       "FileSize": 573440,
       "IsCritical": false,
       "RelativePath": "LiveCharts.Wpf.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:27.8086946Z",
+      "LastModified": "2026-01-13T18:43:19.0818871Z",
       "SHA256Hash": "f6c72482f39af605cf0519228b369e2b3fc88760e03e34333ea6dd539d6c5260",
       "FileSize": 20480,
       "IsCritical": false,
@@ -170,140 +170,140 @@
       "RelativePath": "Microsoft.DiaSymReader.Native.amd64.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:28.5660488Z",
+      "LastModified": "2026-01-13T18:43:19.8280133Z",
       "SHA256Hash": "779df580526de73e7360c167257e31d18341167b4b43f09129b024c06adff570",
       "FileSize": 131072,
       "IsCritical": false,
       "RelativePath": "Microsoft.Extensions.DependencyInjection.Abstractions.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:28.2102074Z",
+      "LastModified": "2026-01-13T18:43:19.4892567Z",
       "SHA256Hash": "0346b67660e834d2b18f3252332aec9f79d27547879df6ed89d4697875910fcd",
       "FileSize": 200704,
       "IsCritical": false,
       "RelativePath": "Microsoft.Extensions.DependencyInjection.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:28.9530230Z",
+      "LastModified": "2026-01-13T18:43:20.1917667Z",
       "SHA256Hash": "fe59c426f8b730ba6ed1ec6afc7e6a0b13d0fafbb15e4995def973dfec7e0c19",
       "FileSize": 135168,
       "IsCritical": false,
       "RelativePath": "Microsoft.Extensions.Logging.Abstractions.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:46.5011864Z",
+      "LastModified": "2026-01-13T18:43:38.6534583Z",
       "SHA256Hash": "5eeea24278312d6384c8e61cb70fea10a98039e74409cc8dbedc35ffc6184266",
       "FileSize": 323584,
       "IsCritical": true,
       "RelativePath": "Microsoft.Graph.Core.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:45.9125228Z",
+      "LastModified": "2026-01-13T18:43:37.9368812Z",
       "SHA256Hash": "9df169f729b4e8ef73b8e113d8bfb12b7a86bb4f50ed487eff2a8e52b718fb6c",
       "FileSize": 69861376,
       "IsCritical": true,
       "RelativePath": "Microsoft.Graph.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:47.2845790Z",
+      "LastModified": "2026-01-13T18:43:39.4991606Z",
       "SHA256Hash": "086cc65efe8ed6844b32b22165b4a6b7058186dfadb7bdb869846809103c9ce0",
       "FileSize": 2215936,
       "IsCritical": false,
       "RelativePath": "Microsoft.Identity.Client.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:47.6442677Z",
+      "LastModified": "2026-01-13T18:43:39.8543749Z",
       "SHA256Hash": "5ba545a995482fa370370ca805e88458c701eda362656aa7d9eab2da3df8a6e6",
       "FileSize": 131072,
       "IsCritical": false,
       "RelativePath": "Microsoft.Identity.Client.Extensions.Msal.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:47.9412911Z",
+      "LastModified": "2026-01-13T18:43:40.2196094Z",
       "SHA256Hash": "7c28e3940fb4b84312f5646ae3b198246e7d02fff36628688ce7a095dc27d5fe",
       "FileSize": 24576,
       "IsCritical": false,
       "RelativePath": "Microsoft.IdentityModel.Abstractions.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:48.2414482Z",
+      "LastModified": "2026-01-13T18:43:40.6194230Z",
       "SHA256Hash": "1800cda6964d10ae26ddf6a97633c4bfd7a1c79ff7686e186775acf4c44e3a95",
       "FileSize": 253952,
       "IsCritical": false,
       "RelativePath": "Microsoft.IdentityModel.JsonWebTokens.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:48.4548319Z",
+      "LastModified": "2026-01-13T18:43:40.9752014Z",
       "SHA256Hash": "afe95fb6e60305bbb27768c13e1c5e13f6b90386394375d34ba10b3172731136",
       "FileSize": 61440,
       "IsCritical": false,
       "RelativePath": "Microsoft.IdentityModel.Logging.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:48.7545085Z",
+      "LastModified": "2026-01-13T18:43:41.3279812Z",
       "SHA256Hash": "533629b2c71c629bc8bd9368b5055656c5013bfd3b41dd9fdc954c4a0acd2ccc",
       "FileSize": 69632,
       "IsCritical": false,
       "RelativePath": "Microsoft.IdentityModel.Protocols.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:49.0868692Z",
+      "LastModified": "2026-01-13T18:43:41.7458359Z",
       "SHA256Hash": "2ec38efee054c3b256ddd75743d3a5be6ad87c58c0b90983ef06386e7f9bc8e3",
       "FileSize": 200704,
       "IsCritical": false,
       "RelativePath": "Microsoft.IdentityModel.Protocols.OpenIdConnect.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:49.4727121Z",
+      "LastModified": "2026-01-13T18:43:42.1446029Z",
       "SHA256Hash": "fb854b6ae17d92e59e23088a46538802eb34943218affef3b0c3738cb229acc4",
       "FileSize": 565248,
       "IsCritical": false,
       "RelativePath": "Microsoft.IdentityModel.Tokens.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:49.8556018Z",
+      "LastModified": "2026-01-13T18:43:42.5819526Z",
       "SHA256Hash": "379eaebd3cf950ae55dc6dea3cd9d06671f38ec4e9673072820f7c39795f1725",
       "FileSize": 155648,
       "IsCritical": false,
       "RelativePath": "Microsoft.Kiota.Abstractions.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:50.2348791Z",
+      "LastModified": "2026-01-13T18:43:42.9321803Z",
       "SHA256Hash": "79de4236a04d640bb0a94d081b5e6fd12f1f64949cf3e72389ea42259c68dfa3",
       "FileSize": 28672,
       "IsCritical": false,
       "RelativePath": "Microsoft.Kiota.Authentication.Azure.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:50.6333780Z",
+      "LastModified": "2026-01-13T18:43:43.3265092Z",
       "SHA256Hash": "e55387dd162afa4efbd5457962cd5dd807ac46d40f199c797927354120ab0dde",
       "FileSize": 217088,
       "IsCritical": false,
       "RelativePath": "Microsoft.Kiota.Http.HttpClientLibrary.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:50.9439357Z",
+      "LastModified": "2026-01-13T18:43:43.6902683Z",
       "SHA256Hash": "5cd2bb36a8537ca0fad2523c1341e9b23de48fa694187fb2b84f232a6335d767",
       "FileSize": 65536,
       "IsCritical": false,
       "RelativePath": "Microsoft.Kiota.Serialization.Form.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:51.2480944Z",
+      "LastModified": "2026-01-13T18:43:44.0300422Z",
       "SHA256Hash": "b941f211f016d6b8ec9b282c35ff29186259fc6c5ee232f6dba72a3f4fd75eea",
       "FileSize": 69632,
       "IsCritical": false,
       "RelativePath": "Microsoft.Kiota.Serialization.Json.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:51.5376618Z",
+      "LastModified": "2026-01-13T18:43:44.3467884Z",
       "SHA256Hash": "203b07deb7e2e4a62b20669964b32a5de42f051d84a773ed07bebb4cff861f8a",
       "FileSize": 28672,
       "IsCritical": false,
       "RelativePath": "Microsoft.Kiota.Serialization.Multipart.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:51.8494753Z",
+      "LastModified": "2026-01-13T18:43:44.7190200Z",
       "SHA256Hash": "be69fc36cf92c9ce986ae7249d82fef00d85cfdf8b7d080284335b52dd8b2507",
       "FileSize": 36864,
       "IsCritical": false,
@@ -408,14 +408,14 @@
       "RelativePath": "netstandard.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:52.5697024Z",
+      "LastModified": "2026-01-13T18:43:45.5026362Z",
       "SHA256Hash": "da2e16de576b3974f84c28e050520a5531cdf16bbade71f617faec5267ef3094",
       "FileSize": 1847296,
       "IsCritical": true,
       "RelativePath": "Newtonsoft.Json.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:53.5768353Z",
+      "LastModified": "2026-01-13T18:43:46.4869174Z",
       "SHA256Hash": "0626fdc3d307eb9fde76b05bc5b373d55d4332463d9ba58606d9fdb2cd15b5c7",
       "FileSize": 2822144,
       "IsCritical": false,
@@ -541,14 +541,14 @@
       "RelativePath": "ReachFramework.dll"
     },
     {
-      "LastModified": "2026-01-13T15:48:52.2767481Z",
-      "SHA256Hash": "070b110137828015306efde27b6b4b475a1c1b79f9a94a6a9b562f8b3acbdc4e",
-      "FileSize": 58352,
+      "LastModified": "2026-01-13T18:43:04.3416842Z",
+      "SHA256Hash": "e75e6aac3af1800ce0b31ed8694c9db6fdca5c8281dfd7749bdfbbf58eb17bb0",
+      "FileSize": 58350,
       "IsCritical": false,
       "RelativePath": "README.md"
     },
     {
-      "LastModified": "2026-01-13T14:48:53.8995591Z",
+      "LastModified": "2026-01-13T18:43:46.8417087Z",
       "SHA256Hash": "c238def563045f03acef0aa931e545ba3632e9910f02449fb4145b3cb5723939",
       "FileSize": 32768,
       "IsCritical": false,
@@ -569,7 +569,7 @@
       "RelativePath": "System.Buffers.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:54.3448630Z",
+      "LastModified": "2026-01-13T18:43:47.2995679Z",
       "SHA256Hash": "58575b66d1091c7e7a50ce31f6c41d400a019691d9b7407bc0728c56f8fadbb4",
       "FileSize": 585728,
       "IsCritical": false,
@@ -891,7 +891,7 @@
       "RelativePath": "System.Globalization.Extensions.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:54.6931834Z",
+      "LastModified": "2026-01-13T18:43:47.6623203Z",
       "SHA256Hash": "3e7a44d1f7dd2998b4b7b53ca95409adfd5c708022d9d585e24f5f88831c0b70",
       "FileSize": 172032,
       "IsCritical": false,
@@ -1045,14 +1045,14 @@
       "RelativePath": "System.Linq.Queryable.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:55.1342316Z",
+      "LastModified": "2026-01-13T18:43:48.1602297Z",
       "SHA256Hash": "39b91131b5fcefda072befc80faef6c72f6366a0c64aea8414341aa5a7ae6b9e",
       "FileSize": 831488,
       "IsCritical": false,
       "RelativePath": "System.Management.dll"
     },
     {
-      "LastModified": "2026-01-13T14:48:55.4781528Z",
+      "LastModified": "2026-01-13T18:43:48.5410454Z",
       "SHA256Hash": "f15205d156153a83510688308474fdb7ddf6a4d0a91a35ee0cd30e3b2bfaaae7",
       "FileSize": 45056,
       "IsCritical": false,
@@ -1948,6 +1948,6 @@
       "RelativePath": "wpfgfx_cor3.dll"
     }
   ],
-  "Version": "3.14.32",
-  "BuildDate": "2026-01-13T16:05:41.6991516Z"
+  "Version": "3.15.0",
+  "BuildDate": "2026-01-13T18:44:03.5883234Z"
 }
