@@ -18,6 +18,7 @@ This document describes the GitHub Releases-based auto-update system implemented
    - Queries GitHub Releases API using Octokit library
    - Compares current version with latest release
    - Supports authenticated (PAT) and anonymous access
+   - **CRITICAL for PRIVATE repos:** Authentication required to access private releases
    - Rate limits: 60 req/hr anonymous, 5,000 req/hr with token
    - Checks for updates once per 24 hours
 
@@ -52,6 +53,10 @@ This document describes the GitHub Releases-based auto-update system implemented
    - Step 5a: Generates `manifest.json` with SHA256 hashes for all files
    - Identifies critical files (exe, core DLLs)
    - Includes manifest in build output
+   - **FIXED (Jan 2026):** Variable collision bug - `$version` renamed to `$toolVersion`
+     * PowerShell is case-insensitive: `$version` (dotnet SDK) was overwriting `$Version` parameter
+     * Caused builds to use .NET SDK version (9.0.308) instead of specified version
+     * Now uses `$toolVersion` internally to avoid collision
 
 ## How It Works
 
@@ -215,12 +220,91 @@ Save to `%LocalAppData%\CloudJourneyAddin\update-settings.json`
 - 5,000 requests/hour vs. 60 anonymous
 - Required permissions: `public_repo` (read-only)
 
+### Authentication for Private Repositories
+
+**⚠️ CRITICAL:** If your repository is PRIVATE, authentication is **REQUIRED**. Anonymous access cannot see private releases.
+
+#### Symptoms of Missing Authentication
+- Log shows: `"No releases found in repository sccmavenger/cmaddin"`
+- Log shows: `"WARNING: No releases found"`
+- Update check fails silently
+- Even though releases exist on GitHub
+
+#### Solution: Configure GitHub Token
+
+**Method 1: Using GitHub CLI (Recommended)**
+
+If you have GitHub CLI installed and authenticated:
+
+```powershell
+# Get your token from GitHub CLI
+$ghToken = gh auth token
+
+# Create update-settings.json with authentication
+$settingsPath = "$env:LOCALAPPDATA\CloudJourneyAddin\update-settings.json"
+$settings = @{
+    RepositoryOwner = "sccmavenger"
+    RepositoryName = "cmaddin"
+    CheckOnLaunch = $true
+    GitHubToken = $ghToken
+}
+$settings | ConvertTo-Json | Out-File $settingsPath -Encoding UTF8
+
+Write-Host "✅ GitHub token configured for private repository access"
+```
+
+**Method 2: Create Personal Access Token**
+
+1. Go to GitHub Settings → Developer settings → Personal access tokens
+2. Click "Generate new token (classic)"
+3. Select scopes:
+   - `repo` (full access) for private repos
+   - OR `public_repo` for public repos only
+4. Copy the token (starts with `ghp_`)
+5. Add to `update-settings.json`:
+
+```json
+{
+  "RepositoryOwner": "sccmavenger",
+  "RepositoryName": "cmaddin",
+  "GitHubToken": "ghp_YourActualTokenHere",
+  "CheckOnLaunch": true
+}
+```
+
+#### Verification
+
+After configuring authentication, check logs for:
+
+```
+[INFO] 🔍 [DEBUG] Authentication: Authenticated
+[INFO] 🔍 [DEBUG] Total releases found: 3
+[INFO] ✅ [DEBUG] GetLatest() SUCCESS: v3.15.0
+```
+
+If you see `"Authentication: Unauthenticated"` or `"using anonymous access"`, the token was not loaded correctly.
+
+#### Security Notes
+
+- Store token securely in local user directory only
+- Never commit tokens to source control
+- Tokens grant access to your GitHub account - treat like passwords
+- Use tokens with minimal required permissions
+- Rotate tokens periodically
+
 ## TrouProgress Window Appears
 
 **Cause:** Already on latest version or update check disabled  
 **Solution:** Check logs for update check messages
 **Cause:** Last check was < 24 hours ago  
 **Solution:** Delete `%LocalAppData%\CloudJourneyAddin\update-settings.json`
+
+### "No releases found in repository"
+
+**Cause:** Repository is PRIVATE and app is using anonymous GitHub API access  
+**Solution:** Configure GitHub Personal Access Token (see Authentication section above)  
+**Verification:** Check logs for `"Authentication: Authenticated"` instead of `"using anonymous access"`  
+**Details:** Anonymous API cannot access private repos (returns empty list). With authentication, private releases become visible.
 
 ### "No ZIP package found in release assets"
 
@@ -285,6 +369,12 @@ var result = await applier.ApplyUpdateAsync(
 
 ## Future Enhancements
 
+### Completed (January 2026)
+- ✅ **Build Script Fix:** Resolved version parameter collision bug
+- ✅ **Private Repository Support:** Added GitHub authentication support
+- ✅ **Debug Logging:** Enhanced logging for troubleshooting
+- ✅ **Authentication Documentation:** Comprehensive guide for private repos
+
 ### Potential Improvements
 
 1. **Individual File Hosting:** Host changed files separately (avoid full ZIP download)
@@ -294,6 +384,7 @@ var result = await applier.ApplyUpdateAsync(
 5. **Background Downloads:** Download in background, apply on next restart
 6. **Update Schedule:** Let users choose check frequency
 7. **Bandwidth Throttling:** Limit download speed for large organizations
+8. **Token Management UI:** In-app configuration for GitHub authentication
 
 ### Not Implemented (By Design)
 
@@ -328,6 +419,40 @@ var result = await applier.ApplyUpdateAsync(
 5. **Remind Later:** User clicks "Remind" → Dialog reappears on next launch
 6. **Network Error:** Disconnect during download → Shows error, allows retry
 7. **Rate Limit:** Make 61 requests → Should show rate limit error
+8. **Private Repository:** Access without token → Should show "No releases found" error
+9. **Authentication:** Configure token → Should show "Authentication: Authenticated" in logs
+
+### Verified Test Results (v3.15.0 - January 13, 2026)
+
+✅ **Authentication Test:**
+- Repository: sccmavenger/cmaddin (PRIVATE)
+- Without token: "No releases found in repository"
+- With GitHub CLI token: "Authentication: Authenticated"
+- Result: **PASS** - Successfully detected 3 releases
+
+✅ **Release Detection:**
+- Found v3.15.0, v3.14.32, v3.14.31
+- Each release has 2 assets (ZIP + manifest.json)
+- GetLatest() returned v3.15.0 correctly
+- Result: **PASS**
+
+✅ **Version Comparison:**
+- Current version: 3.15.0
+- Latest version: 3.15.0
+- Message: "No update available - current version is up to date"
+- Result: **PASS**
+
+✅ **Build Script Fix:**
+- Issue: PowerShell case-insensitive variable collision
+- Built v3.15.0 successfully (not 9.0.308)
+- Version correctly applied to all 6 locations
+- Result: **PASS**
+
+**Key Learnings:**
+- Private repositories MUST have authentication configured
+- GitHub CLI (`gh auth token`) provides quick token access
+- PowerShell variable names must be unique regardless of case
+- Debug logging is essential for diagnosing update issues
 
 ## File Locations Reference
 
