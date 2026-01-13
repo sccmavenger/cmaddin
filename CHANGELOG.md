@@ -1,5 +1,17 @@
 # Cloud Journey Dashboard - Change Log
 
+## [3.15.0] - 2026-01-13
+
+### Added
+- [Add new features here]
+
+### Changed
+- [Add changes here]
+
+### Fixed
+- [Add bug fixes here]
+
+
 ## [3.14.31] - 2026-01-13
 
 ### Added
