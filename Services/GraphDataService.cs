@@ -247,6 +247,35 @@ namespace CloudJourneyAddin.Services
             }
         }
 
+        /// <summary>
+        /// Get devices filtered by join type for drill-through functionality
+        /// </summary>
+        public async Task<List<Microsoft.Graph.Models.ManagedDevice>> GetDevicesByJoinType(Models.DeviceJoinType joinType)
+        {
+            try
+            {
+                var allDevices = await GetCachedManagedDevicesAsync();
+                
+                // Filter devices based on detected join type
+                var filteredDevices = allDevices.Where(device =>
+                {
+                    // Detect join type for this device
+                    // Note: ManagedDevice doesn't have DomainName, so we use AzureActiveDirectoryDeviceId
+                    // For full detection, we'd need additional API calls
+                    var detectedType = DetectJoinType(null, device.AzureADDeviceId);
+                    return detectedType == joinType;
+                }).ToList();
+
+                Instance.Info($"Filtered {filteredDevices.Count} devices for join type: {joinType}");
+                return filteredDevices;
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GetDevicesByJoinType");
+                return new List<Microsoft.Graph.Models.ManagedDevice>();
+            }
+        }
+
         public async Task<DeviceEnrollment> GetDeviceEnrollmentAsync()
         {
             if (_graphClient == null)

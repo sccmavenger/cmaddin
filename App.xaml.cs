@@ -141,6 +141,17 @@ namespace CloudJourneyAddin
                     
                     Services.FileLogger.Instance.Info($"Update available: {updateResult.CurrentVersion} → {updateResult.LatestVersion}");
                     Services.FileLogger.Instance.Info($"Delta: {changedFiles.Count} files, {updateResult.DeltaSize:N0} bytes");
+                    
+                    // Skip update if no files changed (already on latest version)
+                    if (changedFiles.Count == 0)
+                    {
+                        Services.FileLogger.Instance.Info("No file changes detected - skipping update");
+                        // Save manifest so future checks work correctly
+                        deltaService.SaveManifest(remoteManifest);
+                        Services.FileLogger.Instance.Info("✅ Manifest saved for future update checks");
+                        return;
+                    }
+                    
                     Services.FileLogger.Instance.Info("Automatic update starting...");
                     
                     // Show progress notification on UI thread

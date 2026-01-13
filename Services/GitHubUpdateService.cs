@@ -253,13 +253,20 @@ namespace CloudJourneyAddin.Services
                 {
                     if (asset.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                     {
-                        result.DownloadUrl = asset.BrowserDownloadUrl;
+                        // Use API URL for private repos (requires authentication), BrowserDownloadUrl for public
+                        result.DownloadUrl = !string.IsNullOrEmpty(_settings?.GitHubToken) 
+                            ? asset.Url  // API endpoint (authenticated)
+                            : asset.BrowserDownloadUrl;  // Direct download (public repos)
                         Instance.Info($"Found ZIP asset: {asset.Name} ({asset.Size:N0} bytes)");
                     }
                     else if (asset.Name.Equals("manifest.json", StringComparison.OrdinalIgnoreCase))
                     {
-                        result.ManifestUrl = asset.BrowserDownloadUrl;
+                        // Use API URL for private repos (requires authentication), BrowserDownloadUrl for public
+                        result.ManifestUrl = !string.IsNullOrEmpty(_settings?.GitHubToken) 
+                            ? asset.Url  // API endpoint (authenticated)
+                            : asset.BrowserDownloadUrl;  // Direct download (public repos)
                         Instance.Info($"Found manifest asset: {asset.Name}");
+                        Instance.Info($"🔍 [DEBUG] Manifest URL: {result.ManifestUrl}");
                     }
                 }
 
