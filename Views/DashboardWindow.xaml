@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:CloudJourneyAddin.Converters"
-        Title="Cloud Journey Progress Dashboard v3.15.0" 
+        Title="Cloud Journey Progress Dashboard v3.16.0" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         SizeToContent="Manual"
