@@ -200,7 +200,7 @@ namespace CloudJourneyAddin.Services
                       "(device.deviceOSType -eq \"Windows\") and (device.deviceOSVersion -startsWith \"10.0\")" },
                     { "Netbios_Name0 like 'DESKTOP-%'", 
                       "device.displayName -startsWith \"DESKTOP-\"" },
-                    { "ResourceDomainORWorkgroup0 = 'CONTOSO'", 
+                    { "ResourceDomainORWorkgroup = 'CONTOSO'", 
                       "device.companyName -eq \"CONTOSO\"" },
                     { "Department0 = 'IT'", 
                       "user.department -eq \"IT\"" },

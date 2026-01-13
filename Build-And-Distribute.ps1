@@ -393,6 +393,69 @@ $packageSize = [math]::Round((Get-Item $packagePath).Length / 1MB, 2)
 Write-Host "   ✅ Package created: $packageName ($packageSize MB)" -ForegroundColor Green
 Write-Host "   ✅ Contains $packageFileCount files" -ForegroundColor Green
 
+# Step 5a: Generate manifest for delta updates
+Write-Host ""
+Write-Host "[5a/7] Generating update manifest..." -ForegroundColor Yellow
+
+$manifestPath = Join-Path $scriptDir "manifest.json"
+$manifest = @{
+    Version = $Version
+    BuildDate = (Get-Date).ToUniversalTime().ToString("o")
+    Files = @()
+    TotalSize = 0
+}
+
+# Calculate SHA256 hash for all files in publish folder
+$publishFiles = Get-ChildItem "$publishPath" -File
+$manifestFileCount = 0
+
+Write-Host "   ⏳ Calculating file hashes..." -ForegroundColor Gray
+
+foreach ($file in $publishFiles) {
+    $manifestFileCount++
+    
+    # Show progress every 50 files
+    if ($manifestFileCount % 50 -eq 0) {
+        Write-Host "      Processed $manifestFileCount/$($publishFiles.Count) files..." -ForegroundColor DarkGray
+    }
+    
+    $hash = (Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLower()
+    
+    # Determine if file is critical
+    $isCritical = $false
+    $criticalFiles = @(
+        "CloudJourneyAddin.exe",
+        "CloudJourneyAddin.dll",
+        "Azure.Identity.dll",
+        "Microsoft.Graph.dll",
+        "Microsoft.Graph.Core.dll",
+        "Newtonsoft.Json.dll"
+    )
+    if ($criticalFiles -contains $file.Name) {
+        $isCritical = $true
+    }
+    
+    $fileEntry = @{
+        RelativePath = $file.Name
+        SHA256Hash = $hash
+        FileSize = $file.Length
+        LastModified = $file.LastWriteTimeUtc.ToString("o")
+        IsCritical = $isCritical
+    }
+    
+    $manifest.Files += $fileEntry
+    $manifest.TotalSize += $file.Length
+}
+
+# Save manifest as JSON
+$manifestJson = $manifest | ConvertTo-Json -Depth 10
+[System.IO.File]::WriteAllText($manifestPath, $manifestJson)
+
+$manifestSizeKB = [math]::Round((Get-Item $manifestPath).Length / 1KB, 2)
+Write-Host "   ✅ Manifest generated: manifest.json ($manifestSizeKB KB)" -ForegroundColor Green
+Write-Host "   ✅ Contains $($manifest.Files.Count) file entries" -ForegroundColor Green
+Write-Host "   ✅ Total package size: $([math]::Round($manifest.TotalSize / 1MB, 2)) MB" -ForegroundColor Green
+
 # Step 6: Verify package
 Write-Host ""
 Write-Host "[6/7] Verifying package integrity..." -ForegroundColor Yellow

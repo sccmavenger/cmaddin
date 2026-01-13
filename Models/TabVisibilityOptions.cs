@@ -124,4 +124,16 @@ namespace CloudJourneyAddin.Models
             return options;
         }
     }
+
+    /// <summary>
+    /// Device identity join type - determines enrollment eligibility
+    /// </summary>
+    public enum DeviceJoinType
+    {
+        Unknown,              // Cannot determine (missing data)
+        WorkgroupOnly,        // Not domain or AAD joined (BLOCKER)
+        OnPremDomainOnly,     // AD joined, not AAD joined (BLOCKER - needs Hybrid AAD Join)
+        HybridAzureADJoined,  // Both AD + AAD joined (READY for co-management)
+        AzureADOnly           // Pure cloud AAD joined (READY for Intune-only)
+    }
 }

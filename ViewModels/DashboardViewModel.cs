@@ -1720,6 +1720,7 @@ namespace CloudJourneyAddin.ViewModels
                     PointGeometrySize = 8
                 }
             };
+            OnPropertyChanged(nameof(EnrollmentTrendSeries));
 
             ComplianceComparisonSeries = new SeriesCollection
             {
@@ -1734,6 +1735,7 @@ namespace CloudJourneyAddin.ViewModels
                     Values = new ChartValues<double>()
                 }
             };
+            OnPropertyChanged(nameof(ComplianceComparisonSeries));
         }
 
         private async Task LoadDataAsync()

@@ -46,7 +46,13 @@ namespace CloudJourneyAddin.Services
                 TotalDevices = 115000,
                 IntuneEnrolledDevices = 64400,
                 ConfigMgrOnlyDevices = 50600,
-                TrendData = trendData.ToArray()
+                TrendData = trendData.ToArray(),
+                // Mock join type data for visualization
+                HybridJoinedDevices = 78000,  // 68% - Most enterprise devices
+                AzureADOnlyDevices = 22000,   // 19% - Cloud-native devices
+                OnPremDomainOnlyDevices = 12000,  // 10% - Need Hybrid AAD Join
+                WorkgroupDevices = 3000,      // 3% - Need domain join
+                UnknownJoinTypeDevices = 0
             };
         }
 

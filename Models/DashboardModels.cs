@@ -21,6 +21,21 @@ namespace CloudJourneyAddin.Models
         public int CoManagedDevices { get; set; }
         public double IntuneEnrollmentPercentage => TotalDevices > 0 ? (double)IntuneEnrolledDevices / TotalDevices * 100 : 0;
         public EnrollmentTrend[] TrendData { get; set; } = Array.Empty<EnrollmentTrend>();
+        
+        // Device Join Type Properties
+        public int HybridJoinedDevices { get; set; }
+        public int AzureADOnlyDevices { get; set; }
+        public int OnPremDomainOnlyDevices { get; set; }
+        public int WorkgroupDevices { get; set; }
+        public int UnknownJoinTypeDevices { get; set; }
+        
+        // Computed properties for join type visualization
+        public int ReadyForEnrollmentCount => HybridJoinedDevices + AzureADOnlyDevices;
+        public double ReadyPercentage => TotalDevices > 0 ? (double)ReadyForEnrollmentCount / TotalDevices * 100 : 0;
+        public double HybridJoinedPercentage => TotalDevices > 0 ? (double)HybridJoinedDevices / TotalDevices * 100 : 0;
+        public double AzureADOnlyPercentage => TotalDevices > 0 ? (double)AzureADOnlyDevices / TotalDevices * 100 : 0;
+        public double OnPremOnlyPercentage => TotalDevices > 0 ? (double)OnPremDomainOnlyDevices / TotalDevices * 100 : 0;
+        public double WorkgroupPercentage => TotalDevices > 0 ? (double)WorkgroupDevices / TotalDevices * 100 : 0;
     }
 
     public class EnrollmentTrend
