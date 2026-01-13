@@ -110,23 +110,54 @@ namespace CloudJourneyAddin.Services
         {
             try
             {
-                Instance.Info($"Checking GitHub for latest release: {RepoOwner}/{RepoName}");
+                Instance.Info($"🔍 [DEBUG] Checking GitHub for latest release: {RepoOwner}/{RepoName}");
+                Instance.Info($"🔍 [DEBUG] API Endpoint: https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest");
+                Instance.Info($"🔍 [DEBUG] Authentication: {(_client.Credentials == Credentials.Anonymous ? "Anonymous (60/hr)" : "Authenticated")}");
+                
+                // Try to get all releases first to debug
+                Instance.Info($"🔍 [DEBUG] Fetching ALL releases to diagnose issue...");
+                var allReleases = await _client.Repository.Release.GetAll(RepoOwner, RepoName);
+                Instance.Info($"🔍 [DEBUG] Total releases found: {allReleases.Count}");
+                
+                foreach (var r in allReleases.Take(5))
+                {
+                    Instance.Info($"🔍 [DEBUG]   - {r.TagName} | Draft={r.Draft} | Prerelease={r.Prerelease} | Assets={r.Assets.Count} | Published={r.PublishedAt}");
+                }
+                
+                // Now try GetLatest
+                Instance.Info($"🔍 [DEBUG] Now calling GetLatest()...");
                 var release = await _client.Repository.Release.GetLatest(RepoOwner, RepoName);
-                Instance.Info($"Latest release found: {release.TagName} (Published: {release.PublishedAt})");
+                Instance.Info($"✅ [DEBUG] GetLatest() SUCCESS: {release.TagName} (Published: {release.PublishedAt})");
+                Instance.Info($"🔍 [DEBUG] Release has {release.Assets.Count} assets");
+                
+                foreach (var asset in release.Assets)
+                {
+                    Instance.Info($"🔍 [DEBUG]   - Asset: {asset.Name} ({asset.Size:N0} bytes)");
+                }
+                
                 return release;
             }
-            catch (NotFoundException)
+            catch (NotFoundException ex)
             {
+                Instance.Warning($"❌ [DEBUG] NotFoundException caught!");
+                Instance.Warning($"🔍 [DEBUG] Exception message: {ex.Message}");
+                Instance.Warning($"🔍 [DEBUG] Status code: {ex.StatusCode}");
                 Instance.Warning($"No releases found in repository {RepoOwner}/{RepoName}");
                 return null;
             }
             catch (RateLimitExceededException ex)
             {
+                Instance.Error($"❌ [DEBUG] Rate limit exceeded!");
                 Instance.Error($"GitHub API rate limit exceeded. Resets at: {ex.Reset}");
+                Instance.Error($"🔍 [DEBUG] Limit: {ex.Limit}, Remaining: {ex.Remaining}");
                 return null;
             }
             catch (Exception ex)
             {
+                Instance.Error($"❌ [DEBUG] Unexpected error in GetLatestReleaseAsync()");
+                Instance.Error($"🔍 [DEBUG] Exception type: {ex.GetType().Name}");
+                Instance.Error($"🔍 [DEBUG] Message: {ex.Message}");
+                Instance.Error($"🔍 [DEBUG] Stack trace: {ex.StackTrace}");
                 Instance.Error($"Failed to get latest release: {ex.Message}");
                 return null;
             }
