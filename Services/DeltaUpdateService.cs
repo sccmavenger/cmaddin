@@ -43,6 +43,35 @@ namespace CloudJourneyAddin.Services
                 Timeout = TimeSpan.FromMinutes(10)
             };
 
+            // Add GitHub authentication if token exists (for private repos)
+            var settingsPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "CloudJourneyAddin",
+                "update-settings.json");
+
+            if (File.Exists(settingsPath))
+            {
+                try
+                {
+                    var json = File.ReadAllText(settingsPath);
+                    var settings = JsonConvert.DeserializeObject<dynamic>(json);
+                    string? token = settings?.GitHubToken;
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        // GitHub API asset downloads require token in header + specific Accept header
+                        _httpClient.DefaultRequestHeaders.Add("Authorization", $"token {token}");
+                        _httpClient.DefaultRequestHeaders.Add("Accept", "application/octet-stream");
+                        _httpClient.DefaultRequestHeaders.Add("User-Agent", "CloudJourneyAddin");
+                        Instance.Info("🔑 GitHub authentication configured for asset downloads");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Instance.Warning($"Could not load GitHub token for downloads: {ex.Message}");
+                }
+            }
+
             Instance.Info($"DeltaUpdateService initialized:");
             Instance.Info($"  Install path: {_installPath}");
             Instance.Info($"  Local manifest: {_localManifestPath}");
@@ -69,14 +98,42 @@ namespace CloudJourneyAddin.Services
                 if (manifest != null)
                 {
                     Instance.Info($"Local manifest loaded: v{manifest.Version}, {manifest.Files.Count} files");
+                    return manifest;
                 }
-                
-                return manifest;
+
+                Instance.Warning("Failed to deserialize local manifest");
+                return null;
             }
             catch (Exception ex)
             {
-                Instance.Error($"Failed to load local manifest: {ex.Message}");
+                Instance.Warning($"Could not load local manifest: {ex.Message}");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Saves the manifest to local storage.
+        /// Used after successful updates or to establish baseline for future updates.
+        /// </summary>
+        public void SaveManifest(UpdateManifest manifest)
+        {
+            try
+            {
+                // Ensure directory exists
+                var directory = Path.GetDirectoryName(_localManifestPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                var json = JsonConvert.SerializeObject(manifest, Formatting.Indented);
+                File.WriteAllText(_localManifestPath, json);
+                
+                Instance.Info($"Manifest saved: v{manifest.Version}, {manifest.Files.Count} files");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Failed to save manifest: {ex.Message}");
             }
         }
 
