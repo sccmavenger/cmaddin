@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using ZeroTrustMigrationAddin.ViewModels;
@@ -21,6 +22,9 @@ namespace ZeroTrustMigrationAddin.Views
                 
                 var telemetryService = new TelemetryService();
                 DataContext = new DashboardViewModel(telemetryService, tabVisibilityOptions);
+                
+                // Initialize Enrollment Analytics ViewModels
+                InitializeEnrollmentAnalytics();
             }
             catch (Exception ex)
             {
@@ -35,6 +39,266 @@ namespace ZeroTrustMigrationAddin.Views
                     MessageBoxImage.Error);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Initialize the Enrollment Analytics components with their ViewModels
+        /// </summary>
+        private void InitializeEnrollmentAnalytics()
+        {
+            try
+            {
+                // Create shared GraphDataService
+                var graphDataService = new GraphDataService();
+                
+                // Initialize Momentum View with mock data
+                if (EnrollmentMomentumView != null)
+                {
+                    var momentumVM = new EnrollmentMomentumViewModel(graphDataService);
+                    LoadMockMomentumData(momentumVM);
+                    EnrollmentMomentumView.DataContext = momentumVM;
+                }
+                
+                // Initialize Confidence Card with mock data
+                if (EnrollmentConfidenceCard != null)
+                {
+                    var confidenceVM = new EnrollmentConfidenceViewModel();
+                    LoadMockConfidenceData(confidenceVM);
+                    EnrollmentConfidenceCard.DataContext = confidenceVM;
+                }
+                
+                // Initialize Playbooks View with mock data
+                if (EnrollmentPlaybooksView != null)
+                {
+                    var playbooksVM = new EnrollmentPlaybooksViewModel();
+                    LoadMockPlaybooksData(playbooksVM);
+                    EnrollmentPlaybooksView.DataContext = playbooksVM;
+                }
+                
+                System.Diagnostics.Debug.WriteLine("Enrollment Analytics components initialized with mock data");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error initializing Enrollment Analytics: {ex.Message}");
+                // Don't throw - analytics features are supplementary
+            }
+        }
+
+        /// <summary>
+        /// Load mock data into the Momentum ViewModel for UI preview
+        /// </summary>
+        private void LoadMockMomentumData(EnrollmentMomentumViewModel vm)
+        {
+            // Set core metrics
+            vm.TotalConfigMgrDevices = 2500;
+            vm.TotalIntuneDevices = 1847;
+            vm.Gap = 653;
+            vm.EnrolledPct = 73.88;
+            vm.EnrolledPctDisplay = "73.9%";
+
+            // Set velocity metrics
+            vm.Velocity7Day = 18.5;
+            vm.Velocity30 = 15.2;
+            vm.DevicesPerWeek = 129.5;
+            vm.TrendDescription = "📈 Accelerating";
+            vm.TrendState = "Accelerating";
+            vm.WeekOverWeekChange = 12.3;
+            vm.WeekOverWeekDisplay = "+12.3%";
+
+            // Set stall risk
+            vm.IsAtRisk = false;
+            vm.StallRiskLevel = "Low";
+            vm.StallRiskDescription = "Enrollment velocity is healthy";
+            vm.IsTrustTroughRisk = false;
+
+            // Generate mock chart data
+            var snapshots = new List<Models.EnrollmentSnapshot>();
+            var baseDate = DateTime.Today.AddDays(-30);
+            var baseEnrolled = 1500;
+            var random = new Random(42); // Fixed seed for consistent data
+            
+            for (int i = 0; i <= 30; i++)
+            {
+                var dailyGain = random.Next(10, 25);
+                baseEnrolled += dailyGain;
+                snapshots.Add(new Models.EnrollmentSnapshot
+                {
+                    Date = baseDate.AddDays(i),
+                    TotalConfigMgrDevices = 2500,
+                    TotalIntuneDevices = Math.Min(baseEnrolled, 1847),
+                    NewEnrollmentsCount = dailyGain
+                });
+            }
+
+            // Update chart via reflection to call private method
+            var updateChartMethod = typeof(EnrollmentMomentumViewModel).GetMethod("UpdateChart", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            updateChartMethod?.Invoke(vm, new object[] { snapshots });
+        }
+
+        /// <summary>
+        /// Load mock data into the Confidence ViewModel for UI preview
+        /// </summary>
+        private void LoadMockConfidenceData(EnrollmentConfidenceViewModel vm)
+        {
+            var mockResult = new Models.EnrollmentConfidenceResult
+            {
+                Score = 78,
+                Band = Models.ConfidenceBand.Medium,
+                Explanation = "Good enrollment velocity with some complexity factors to address",
+                Breakdown = new Models.ScoreBreakdown
+                {
+                    VelocityScore = 85,
+                    SuccessRateScore = 82,
+                    ComplexityScore = 65,
+                    InfrastructureScore = 90,
+                    ConditionalAccessScore = 70
+                },
+                TopDrivers = new List<Models.ScoreDriver>
+                {
+                    new Models.ScoreDriver
+                    {
+                        Name = "Strong Velocity",
+                        Description = "18+ devices/day enrollment rate",
+                        Impact = 15,
+                        Category = "Velocity"
+                    },
+                    new Models.ScoreDriver
+                    {
+                        Name = "CMG Configured",
+                        Description = "Cloud Management Gateway enables internet-based enrollment",
+                        Impact = 10,
+                        Category = "Infrastructure"
+                    },
+                    new Models.ScoreDriver
+                    {
+                        Name = "Co-Management Enabled",
+                        Description = "Hybrid management path established",
+                        Impact = 8,
+                        Category = "Infrastructure"
+                    }
+                },
+                TopDetractors = new List<Models.ScoreDriver>
+                {
+                    new Models.ScoreDriver
+                    {
+                        Name = "ESP App Complexity",
+                        Description = "12 apps blocking ESP completion",
+                        Impact = -12,
+                        Category = "Complexity"
+                    },
+                    new Models.ScoreDriver
+                    {
+                        Name = "CA Policy Friction",
+                        Description = "3 Conditional Access policies may block enrollment",
+                        Impact = -8,
+                        Category = "ConditionalAccess"
+                    }
+                }
+            };
+
+            vm.UpdateFromResult(mockResult);
+        }
+
+        /// <summary>
+        /// Load mock data into the Playbooks ViewModel for UI preview
+        /// </summary>
+        private void LoadMockPlaybooksData(EnrollmentPlaybooksViewModel vm)
+        {
+            var mockPlaybooks = new List<Models.EnrollmentPlaybook>
+            {
+                new Models.EnrollmentPlaybook
+                {
+                    Name = "Reduce ESP App Dependencies",
+                    Description = "Optimize Enrollment Status Page by reducing blocking apps to improve enrollment completion rates",
+                    Type = Models.PlaybookType.ReduceDependencies,
+                    RiskLevel = Models.PlaybookRiskLevel.Low,
+                    EstimatedTime = "2-4 hours",
+                    ExpectedImpactDevices = 180,
+                    IsRecommended = true,
+                    RecommendationReason = "High impact with low risk - addresses top enrollment friction point",
+                    Steps = new List<Models.PlaybookStep>
+                    {
+                        new Models.PlaybookStep { Order = 1, Title = "Review ESP apps", Description = "Identify apps marked as required during ESP", ActionType = "Review" },
+                        new Models.PlaybookStep { Order = 2, Title = "Analyze app dependencies", Description = "Determine which apps truly need ESP blocking", ActionType = "Review" },
+                        new Models.PlaybookStep { Order = 3, Title = "Reconfigure app assignments", Description = "Move non-critical apps to post-enrollment", ActionType = "Configure" },
+                        new Models.PlaybookStep { Order = 4, Title = "Test enrollment flow", Description = "Verify ESP completes faster", ActionType = "Verify" }
+                    }
+                },
+                new Models.EnrollmentPlaybook
+                {
+                    Name = "Conditional Access Policy Review",
+                    Description = "Audit and optimize CA policies that may be blocking device enrollment",
+                    Type = Models.PlaybookType.ReduceDependencies,
+                    RiskLevel = Models.PlaybookRiskLevel.Medium,
+                    EstimatedTime = "3-5 hours",
+                    ExpectedImpactDevices = 95,
+                    IsRecommended = true,
+                    RecommendationReason = "CA policies identified as enrollment friction - review recommended",
+                    Steps = new List<Models.PlaybookStep>
+                    {
+                        new Models.PlaybookStep { Order = 1, Title = "Export CA policies", Description = "Document current Conditional Access configuration", ActionType = "Review" },
+                        new Models.PlaybookStep { Order = 2, Title = "Identify blocking policies", Description = "Find policies that block non-compliant devices", ActionType = "Review" },
+                        new Models.PlaybookStep { Order = 3, Title = "Create enrollment exception", Description = "Add temporary exclusion for enrollment accounts", ActionType = "Configure", RequiresConfirmation = true },
+                        new Models.PlaybookStep { Order = 4, Title = "Monitor enrollment rates", Description = "Track enrollment success after changes", ActionType = "Verify" }
+                    }
+                },
+                new Models.EnrollmentPlaybook
+                {
+                    Name = "Scale Up Enrollment Batch Size",
+                    Description = "Increase daily enrollment targets to accelerate migration completion",
+                    Type = Models.PlaybookType.ScaleUp,
+                    RiskLevel = Models.PlaybookRiskLevel.Medium,
+                    EstimatedTime = "1-2 hours",
+                    ExpectedImpactDevices = 250,
+                    IsRecommended = false,
+                    RecommendationReason = "Consider after reducing friction points",
+                    Steps = new List<Models.PlaybookStep>
+                    {
+                        new Models.PlaybookStep { Order = 1, Title = "Review current capacity", Description = "Assess infrastructure readiness for higher volume", ActionType = "Review" },
+                        new Models.PlaybookStep { Order = 2, Title = "Adjust batch settings", Description = "Increase max devices per day from 50 to 100", ActionType = "Configure" },
+                        new Models.PlaybookStep { Order = 3, Title = "Monitor support tickets", Description = "Watch for increased enrollment issues", ActionType = "Verify" }
+                    }
+                },
+                new Models.EnrollmentPlaybook
+                {
+                    Name = "Autopilot Device Registration Cleanup",
+                    Description = "Remove stale or duplicate Autopilot device registrations causing enrollment conflicts",
+                    Type = Models.PlaybookType.AutopilotHygiene,
+                    RiskLevel = Models.PlaybookRiskLevel.Low,
+                    EstimatedTime = "2-3 hours",
+                    ExpectedImpactDevices = 45,
+                    IsRecommended = false,
+                    Steps = new List<Models.PlaybookStep>
+                    {
+                        new Models.PlaybookStep { Order = 1, Title = "Export Autopilot devices", Description = "Get list of all registered Autopilot devices", ActionType = "Review" },
+                        new Models.PlaybookStep { Order = 2, Title = "Identify duplicates", Description = "Find devices with multiple registrations", ActionType = "Review" },
+                        new Models.PlaybookStep { Order = 3, Title = "Remove stale entries", Description = "Delete outdated or duplicate registrations", ActionType = "Execute", RequiresConfirmation = true },
+                        new Models.PlaybookStep { Order = 4, Title = "Re-sync hardware IDs", Description = "Ensure clean device registration", ActionType = "Verify" }
+                    }
+                },
+                new Models.EnrollmentPlaybook
+                {
+                    Name = "Rebuild Enrollment Momentum",
+                    Description = "Address enrollment stall by restarting with optimized settings and fresh batches",
+                    Type = Models.PlaybookType.RebuildMomentum,
+                    RiskLevel = Models.PlaybookRiskLevel.High,
+                    EstimatedTime = "4-6 hours",
+                    ExpectedImpactDevices = 350,
+                    IsRecommended = false,
+                    RecommendationReason = "Use when enrollment has stalled for 7+ days",
+                    Steps = new List<Models.PlaybookStep>
+                    {
+                        new Models.PlaybookStep { Order = 1, Title = "Pause current enrollments", Description = "Stop active enrollment batches", ActionType = "Execute" },
+                        new Models.PlaybookStep { Order = 2, Title = "Analyze failure patterns", Description = "Review recent enrollment failures", ActionType = "Review" },
+                        new Models.PlaybookStep { Order = 3, Title = "Reset enrollment queues", Description = "Clear and rebuild device targeting", ActionType = "Configure", RequiresConfirmation = true },
+                        new Models.PlaybookStep { Order = 4, Title = "Restart with small batch", Description = "Begin with 10 devices to validate", ActionType = "Execute" },
+                        new Models.PlaybookStep { Order = 5, Title = "Gradually scale up", Description = "Increase batch size as success validates", ActionType = "Configure" }
+                    }
+                }
+            };
+
+            vm.UpdateFromPlaybooks(mockPlaybooks);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)

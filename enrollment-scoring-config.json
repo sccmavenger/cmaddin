@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Enrollment Analytics Scoring Configuration for Cloud Journey Dashboard",
+  "version": "1.0.0",
+  "lastUpdated": "2025-03-26T00:00:00Z",
+  
+  "weights": {
+    "velocity": {
+      "description": "Weight for enrollment velocity score (0-100). Higher velocity = better momentum.",
+      "value": 30,
+      "unit": "percent"
+    },
+    "successRate": {
+      "description": "Weight for enrollment success rate. Measures completions vs failures.",
+      "value": 25,
+      "unit": "percent"
+    },
+    "complexity": {
+      "description": "Weight for remaining complexity (inverse score - less complexity = higher score).",
+      "value": 20,
+      "unit": "percent"
+    },
+    "infrastructure": {
+      "description": "Weight for infrastructure readiness (connectors, policies, hybrid join).",
+      "value": 15,
+      "unit": "percent"
+    },
+    "conditionalAccess": {
+      "description": "Weight for Conditional Access policy coverage.",
+      "value": 10,
+      "unit": "percent"
+    }
+  },
+  
+  "velocityThresholds": {
+    "description": "Thresholds for classifying enrollment velocity as excellent/good/fair/poor.",
+    "excellent": {
+      "description": "Devices per week to be considered excellent velocity.",
+      "value": 100
+    },
+    "good": {
+      "description": "Devices per week to be considered good velocity.",
+      "value": 50
+    },
+    "fair": {
+      "description": "Devices per week to be considered fair velocity.",
+      "value": 25
+    },
+    "poor": {
+      "description": "Below this is considered poor velocity.",
+      "value": 10
+    }
+  },
+  
+  "stallDetection": {
+    "description": "Configuration for detecting enrollment stalls and Trust Trough risk.",
+    "trustTroughLowerBound": {
+      "description": "Lower bound of the Trust Trough zone (percentage).",
+      "value": 50
+    },
+    "trustTroughUpperBound": {
+      "description": "Upper bound of the Trust Trough zone (percentage).",
+      "value": 60
+    },
+    "stallThresholdDays": {
+      "description": "Days without significant enrollment progress to trigger stall warning.",
+      "value": 14
+    },
+    "significantProgressThreshold": {
+      "description": "Minimum devices enrolled to be considered significant progress.",
+      "value": 5
+    }
+  },
+  
+  "confidenceBands": {
+    "description": "Score ranges for confidence level classifications.",
+    "onTrack": {
+      "description": "Score range for 'On Track' status.",
+      "min": 70,
+      "max": 100,
+      "color": "#107C10",
+      "displayName": "On Track"
+    },
+    "atRisk": {
+      "description": "Score range for 'At Risk' status.",
+      "min": 50,
+      "max": 69,
+      "color": "#F57C00",
+      "displayName": "At Risk"
+    },
+    "stalled": {
+      "description": "Score range for 'Stalled' status.",
+      "min": 0,
+      "max": 49,
+      "color": "#D32F2F",
+      "displayName": "Stalled"
+    }
+  },
+  
+  "batchConfiguration": {
+    "description": "Settings for generating low-risk enrollment batches.",
+    "minBatchSize": {
+      "description": "Minimum devices to include in a batch.",
+      "value": 20
+    },
+    "maxBatchSize": {
+      "description": "Maximum devices to include in a batch.",
+      "value": 50
+    },
+    "preferredComplexityScore": {
+      "description": "Maximum complexity score for devices to be included in low-risk batches.",
+      "value": 30
+    },
+    "minReadinessScore": {
+      "description": "Minimum readiness score for devices to be included in low-risk batches.",
+      "value": 70
+    }
+  },
+  
+  "playbookGeneration": {
+    "description": "Settings for auto-generating playbooks based on current state.",
+    "enableAutogeneration": {
+      "description": "Whether to automatically generate playbooks based on analytics.",
+      "value": true
+    },
+    "maxPlaybooksPerType": {
+      "description": "Maximum number of playbooks to generate per type (enrollment, hygiene, etc.).",
+      "value": 3
+    },
+    "prioritizeByRisk": {
+      "description": "Whether to prioritize low-risk playbooks in the list.",
+      "value": true
+    }
+  },
+  
+  "telemetry": {
+    "description": "Privacy-first telemetry settings.",
+    "hashDeviceNames": {
+      "description": "Whether to hash device names in telemetry (recommended: true).",
+      "value": true
+    },
+    "includeTimestamps": {
+      "description": "Whether to include timestamps in telemetry events.",
+      "value": true
+    },
+    "eventPrefix": {
+      "description": "Prefix for all enrollment analytics telemetry events.",
+      "value": "EnrollmentAnalytics"
+    }
+  },
+  
+  "chartConfiguration": {
+    "description": "Settings for velocity trend chart visualization.",
+    "weeksToDisplay": {
+      "description": "Number of weeks to show in the velocity trend chart.",
+      "value": 12
+    },
+    "showTargetLine": {
+      "description": "Whether to show the target velocity line on the chart.",
+      "value": true
+    },
+    "targetVelocityMultiplier": {
+      "description": "Multiplier for calculating target velocity (1.2 = 20% above current average).",
+      "value": 1.2
+    }
+  },
+  
+  "refreshIntervals": {
+    "description": "How often to refresh various data points (in minutes).",
+    "momentumData": {
+      "description": "Refresh interval for momentum metrics.",
+      "value": 15
+    },
+    "confidenceScore": {
+      "description": "Refresh interval for confidence score calculation.",
+      "value": 30
+    },
+    "playbooks": {
+      "description": "Refresh interval for playbook generation.",
+      "value": 60
+    }
+  }
+}
