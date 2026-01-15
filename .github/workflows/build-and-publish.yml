@@ -124,7 +124,7 @@ jobs:
           Set-Content -Path $csprojPath -Value $csprojContent -NoNewline
           
           # Update XML manifest
-          $xmlPath = "CloudJourneyAddin.xml"
+          $xmlPath = "ZeroTrustMigrationAddin.xml"
           if (Test-Path $xmlPath) {
             $xmlContent = Get-Content $xmlPath -Raw
             $xmlContent = $xmlContent -replace 'Version="[\d\.]+"', "Version=`"$version`""

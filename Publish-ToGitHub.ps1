@@ -103,7 +103,7 @@ $csprojContent = $csprojContent -replace '<FileVersion>[\d\.]+</FileVersion>', "
 [System.IO.File]::WriteAllText($csprojPath, $csprojContent)
 
 # Update XML manifest
-$xmlPath = Join-Path $scriptDir "CloudJourneyAddin.xml"
+$xmlPath = Join-Path $scriptDir "ZeroTrustMigrationAddin.xml"
 if (Test-Path $xmlPath) {
     $xmlContent = Get-Content $xmlPath -Raw
     $xmlContent = $xmlContent -replace 'Version="[\d\.]+"', "Version=`"$newVersion`""
