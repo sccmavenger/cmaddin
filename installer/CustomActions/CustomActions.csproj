@@ -1,16 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>CustomActions</AssemblyName>
     <RootNamespace>ZeroTrustMigrationAddin.Installer</RootNamespace>
     <EnableMSDeployAppOffline>false</EnableMSDeployAppOffline>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;AnyCPU</Platforms>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="WixToolset.Dtf.WindowsInstaller" Version="5.0.0" />
+    <PackageReference Include="WixToolset.Dtf.WindowsInstaller" Version="4.0.4" />
   </ItemGroup>
 
 </Project>

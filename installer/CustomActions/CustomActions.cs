@@ -1,4 +1,4 @@
-using Microsoft.Deployment.WindowsInstaller;
+using WixToolset.Dtf.WindowsInstaller;
 using System;
 using System.IO;
 using System.Linq;

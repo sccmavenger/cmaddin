@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<ActionDescription Class="Executable" DisplayName="Cloud Journey Dashboard" MnemonicDisplayName="Cloud Journey">
-  <ShowOn>
-    <string>ContextMenu</string>
-  </ShowOn>
-  <Executable>
-    <FilePath>F:\Program Files\Microsoft Configuration Manager\AdminConsole\bin\bin\CloudJourneyAddin\CloudJourneyAddin.exe</FilePath>
-  </Executable>
-</ActionDescription>
