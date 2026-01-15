@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:ZeroTrustMigrationAddin.Converters"
+        xmlns:views="clr-namespace:ZeroTrustMigrationAddin.Views"
         Title="Cloud Journey Progress Dashboard" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
@@ -331,117 +332,6 @@
                                         <lvc:Axis Title="Windows 10/11 Devices"/>
                                     </lvc:CartesianChart.AxisY>
                                 </lvc:CartesianChart>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ========== DESIGN OPTION 4: READINESS TIERS ========== -->
-                        <Border Style="{StaticResource SectionCard}" Background="#FAFAFA">
-                            <StackPanel>
-                                <TextBlock Text="🎨 DESIGN OPTION 4: Vertical Stack with Readiness Tiers" 
-                                           FontSize="16" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,10"/>
-                                
-                                <TextBlock Text="🔐 Device Identity &amp; Enrollment Readiness" Style="{StaticResource SectionTitle}"/>
-                                
-                                <!-- READY FOR ENROLLMENT -->
-                                <Border Background="#F1F8F4" BorderBrush="#4CAF50" BorderThickness="2,2,2,0" 
-                                        CornerRadius="6,6,0,0" Padding="15" Margin="0,10,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="✅ READY FOR ENROLLMENT" FontSize="12" FontWeight="Bold" 
-                                                   Foreground="#4CAF50" Margin="0,0,0,10"/>
-                                        
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <!-- Hybrid Entra -->
-                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <TextBlock Text="Hybrid Entra joined" FontSize="11" Foreground="#666" Margin="0,0,0,5"/>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding DeviceEnrollment.HybridJoinedDevices}" 
-                                                               FontSize="28" FontWeight="Bold" Foreground="#4CAF50"/>
-                                                    <TextBlock Text=" devices" FontSize="12" Foreground="#666" VerticalAlignment="Bottom" Margin="5,0,0,5"/>
-                                                </StackPanel>
-                                                <TextBlock Text="Best for co-management scenarios" FontSize="9" 
-                                                           Foreground="#666" Margin="0,2,0,0"/>
-                                            </StackPanel>
-
-                                            <!-- Entra joined -->
-                                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                                <TextBlock Text="Entra joined (Cloud-Native)" FontSize="11" Foreground="#666" Margin="0,0,0,5"/>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding DeviceEnrollment.AzureADOnlyDevices}" 
-                                                               FontSize="28" FontWeight="Bold" Foreground="#4CAF50"/>
-                                                    <TextBlock Text=" devices" FontSize="12" Foreground="#666" VerticalAlignment="Bottom" Margin="5,0,0,5"/>
-                                                </StackPanel>
-                                                <TextBlock Text="Pure Intune management (no ConfigMgr)" FontSize="9" 
-                                                           Foreground="#666" Margin="0,2,0,0"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- ENROLLMENT BLOCKED -->
-                                <Border Background="#FFF9F9" BorderBrush="#D13438" BorderThickness="2" 
-                                        CornerRadius="0,0,6,6" Padding="15">
-                                    <StackPanel>
-                                        <TextBlock Text="⚠️ ENROLLMENT BLOCKED" FontSize="12" FontWeight="Bold" 
-                                                   Foreground="#D13438" Margin="0,0,0,10"/>
-                                        
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <!-- On-Prem Domain Only -->
-                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <TextBlock Text="Active Directory joined" FontSize="11" Foreground="#666" Margin="0,0,0,5"/>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding DeviceEnrollment.OnPremDomainOnlyDevices}" 
-                                                               FontSize="28" FontWeight="Bold" Foreground="#FDB813"/>
-                                                    <TextBlock Text=" devices" FontSize="12" Foreground="#666" VerticalAlignment="Bottom" Margin="5,0,0,5"/>
-                                                </StackPanel>
-                                                <TextBlock FontSize="9" Foreground="#666" Margin="0,2,0,0">
-                                                    <Run Text="⚡ Action:"/>
-                                                    <Run Text="Enable Hybrid Entra join" FontWeight="SemiBold"/>
-                                                </TextBlock>
-                                            </StackPanel>
-
-                                            <!-- Workgroup -->
-                                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                                <TextBlock Text="Workgroup (Not Domain-Joined)" FontSize="11" Foreground="#666" Margin="0,0,0,5"/>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding DeviceEnrollment.WorkgroupDevices}" 
-                                                               FontSize="28" FontWeight="Bold" Foreground="#D13438"/>
-                                                    <TextBlock Text=" devices" FontSize="12" Foreground="#666" VerticalAlignment="Bottom" Margin="5,0,0,5"/>
-                                                </StackPanel>
-                                                <TextBlock FontSize="9" Foreground="#666" Margin="0,2,0,0">
-                                                    <Run Text="⚡ Action:"/>
-                                                    <Run Text="Join to domain or Azure AD first" FontWeight="SemiBold"/>
-                                                </TextBlock>
-                                            </StackPanel>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Overall Readiness Summary -->
-                                <Border Background="#E3F2FD" CornerRadius="4" Padding="12" Margin="0,10,0,0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="📊" FontSize="20" Margin="0,0,10,0"/>
-                                        <TextBlock FontSize="13" VerticalAlignment="Center">
-                                            <Run Text="{Binding DeviceEnrollment.ReadyForEnrollmentCount, Mode=OneWay}" FontWeight="Bold" Foreground="#107C10"/>
-                                            <Run Text="of"/>
-                                            <Run Text="{Binding DeviceEnrollment.TotalDevices, Mode=OneWay}" FontWeight="Bold"/>
-                                            <Run Text="devices "/>
-                                            <Run Text="(" Foreground="#666"/>
-                                            <Run Text="{Binding DeviceEnrollment.ReadyPercentage, Mode=OneWay, StringFormat='{}{0:F0}%'}" FontWeight="Bold" Foreground="#107C10"/>
-                                            <Run Text=")" Foreground="#666"/>
-                                            <Run Text=" are ready for immediate Intune enrollment"/>
-                                        </TextBlock>
-                                    </StackPanel>
-                                </Border>
                             </StackPanel>
                         </Border>
 
@@ -2298,6 +2188,30 @@
 
                                 </StackPanel>
                             </Border>
+
+                            <!-- NEW: Enrollment Momentum & Analytics Section -->
+                            <Border Style="{StaticResource SectionCard}">
+                                <StackPanel>
+                                    <TextBlock Text="📈 Enrollment Momentum &amp; Analytics" Style="{StaticResource SectionTitle}" Margin="0,0,0,15"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="350"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Momentum Chart -->
+                                        <views:EnrollmentMomentumView Grid.Column="0" Margin="0,0,15,0"
+                                            x:Name="EnrollmentMomentumView"/>
+                                        
+                                        <!-- Confidence Card -->
+                                        <views:EnrollmentConfidenceCard Grid.Column="1"
+                                            x:Name="EnrollmentConfidenceCard"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- NEW: Enrollment Playbooks Section -->
+                            <views:EnrollmentPlaybooksView x:Name="EnrollmentPlaybooksView" Margin="0,0,0,15"/>
 
                             <!-- Enrollment Readiness (Moved from Overview) -->
                             <Border Style="{StaticResource SectionCard}">

@@ -1,0 +1,325 @@
+<UserControl x:Class="ZeroTrustMigrationAddin.Views.EnrollmentPlaybooksView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:ZeroTrustMigrationAddin.Converters">
+
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        
+        <Style x:Key="PlaybookCard" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="15"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="StepItem" TargetType="Border">
+            <Setter Property="Background" Value="#F8F9FA"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="FilterComboBox" TargetType="ComboBox">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="MinWidth" Value="120"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="#F8F9FA" CornerRadius="8" Padding="20">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="📋 ENROLLMENT PLAYBOOKS" FontSize="16" FontWeight="Bold" Foreground="#333333"/>
+                    <TextBlock Text="Guided actions to optimize your enrollment journey" FontSize="12" Foreground="#666666" Margin="0,5,0,0"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="📄 Export All" Command="{Binding ExportToMarkdownCommand}"
+                            Background="#107C10" Foreground="White" 
+                            Padding="12,8" FontSize="12" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button Content="↻ Refresh" Command="{Binding RefreshCommand}"
+                            Background="#0078D4" Foreground="White" 
+                            Padding="12,8" FontSize="12" BorderThickness="0" Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Filters and Summary -->
+            <Border Grid.Row="1" Background="White" CornerRadius="6" Padding="15" Margin="0,0,0,15"
+                    BorderBrush="#E0E0E0" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Filters -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="Filter:" FontSize="12" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox ItemsSource="{Binding RiskFilterOptions}" 
+                                  SelectedItem="{Binding SelectedRiskFilter, Mode=TwoWay}"
+                                  Style="{StaticResource FilterComboBox}" Margin="0,0,10,0"/>
+                        <ComboBox ItemsSource="{Binding TypeFilterOptions}" 
+                                  SelectedItem="{Binding SelectedTypeFilter, Mode=TwoWay}"
+                                  Style="{StaticResource FilterComboBox}"/>
+                    </StackPanel>
+
+                    <!-- Summary Stats -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Border Background="#E8F5E9" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🟢 Low Risk: " FontSize="11" Foreground="#2E7D32"/>
+                                <TextBlock Text="{Binding HighPriorityCount}" FontSize="11" FontWeight="Bold" Foreground="#2E7D32"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FFF3E0" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🟡 Medium: " FontSize="11" Foreground="#E65100"/>
+                                <TextBlock Text="{Binding MediumPriorityCount}" FontSize="11" FontWeight="Bold" Foreground="#E65100"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#F3F3F3" CornerRadius="4" Padding="10,5">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Total: " FontSize="11" Foreground="#666666"/>
+                                <TextBlock Text="{Binding TotalPlaybooks}" FontSize="11" FontWeight="Bold" Foreground="#333333"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Playbooks List -->
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Playbooks}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource PlaybookCard}">
+                                <StackPanel>
+                                    <!-- Playbook Header -->
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Risk Badge -->
+                                        <Border Grid.Column="0" CornerRadius="4" Padding="8,4" Margin="0,0,10,0"
+                                                VerticalAlignment="Center">
+                                            <Border.Background>
+                                                <SolidColorBrush Color="{Binding RiskColor}" Opacity="0.15"/>
+                                            </Border.Background>
+                                            <TextBlock Text="{Binding RiskBadge}" FontSize="11" FontWeight="SemiBold">
+                                                <TextBlock.Foreground>
+                                                    <SolidColorBrush Color="{Binding RiskColor}"/>
+                                                </TextBlock.Foreground>
+                                            </TextBlock>
+                                        </Border>
+
+                                        <!-- Title and Type -->
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" 
+                                                       Foreground="#333333" TextWrapping="Wrap"/>
+                                            <TextBlock FontSize="11" Foreground="#666666" Margin="0,3,0,0">
+                                                <Run Text="{Binding Type, Mode=OneWay}"/>
+                                                <Run Text=" • "/>
+                                                <Run Text="{Binding AffectedDeviceCount, Mode=OneWay}"/>
+                                                <Run Text=" devices"/>
+                                                <Run Text=" • "/>
+                                                <Run Text="{Binding EstimatedDuration, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+
+                                        <!-- Expand Button -->
+                                        <ToggleButton Grid.Column="2" IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                                                      Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                                      Padding="10,5" VerticalAlignment="Center">
+                                            <ToggleButton.Template>
+                                                <ControlTemplate TargetType="ToggleButton">
+                                                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                                                        <TextBlock x:Name="Arrow" Text="▼" FontSize="12" Foreground="#0078D4"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsChecked" Value="True">
+                                                            <Setter TargetName="Arrow" Property="Text" Value="▲"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </ToggleButton.Template>
+                                        </ToggleButton>
+                                    </Grid>
+
+                                    <!-- Description -->
+                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#666666" 
+                                               TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                                    <!-- Expanded Content: Steps -->
+                                    <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <Border Height="1" Background="#E0E0E0" Margin="0,5,0,15"/>
+                                        
+                                        <TextBlock Text="📝 STEPS" FontSize="12" FontWeight="SemiBold" 
+                                                   Foreground="#333333" Margin="0,0,0,10"/>
+                                        
+                                        <ItemsControl ItemsSource="{Binding Steps}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Style="{StaticResource StepItem}">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <!-- Step Number -->
+                                                            <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
+                                                                    Background="#0078D4" Margin="0,0,12,0" VerticalAlignment="Top">
+                                                                <TextBlock Text="{Binding Order}" FontSize="12" FontWeight="Bold"
+                                                                           Foreground="White" HorizontalAlignment="Center" 
+                                                                           VerticalAlignment="Center"/>
+                                                            </Border>
+
+                                                            <!-- Step Content -->
+                                                            <StackPanel Grid.Column="1">
+                                                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" 
+                                                                           Foreground="#333333"/>
+                                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#666666" 
+                                                                           TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                                                
+                                                                <!-- Script indicator -->
+                                                                <Border Background="#E3F2FD" CornerRadius="3" Padding="6,3" 
+                                                                        Margin="0,8,0,0" HorizontalAlignment="Left"
+                                                                        Visibility="{Binding HasScript, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                                    <TextBlock Text="💻 PowerShell script available" FontSize="10" Foreground="#0078D4"/>
+                                                                </Border>
+
+                                                                <!-- Documentation link -->
+                                                                <TextBlock Margin="0,5,0,0" FontSize="11"
+                                                                           Visibility="{Binding HasDocumentation, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                                    <Hyperlink NavigateUri="{Binding Documentation}" Foreground="#0078D4">
+                                                                        <Run Text="📚 View Documentation"/>
+                                                                    </Hyperlink>
+                                                                </TextBlock>
+                                                            </StackPanel>
+
+                                                            <!-- Manual/Auto Badge -->
+                                                            <Border Grid.Column="2" CornerRadius="3" Padding="6,3" VerticalAlignment="Top">
+                                                                <Border.Background>
+                                                                    <SolidColorBrush Color="{Binding IsManual, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter='ManualColor'}"/>
+                                                                </Border.Background>
+                                                                <TextBlock FontSize="10">
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Text" Value="🤖 Auto"/>
+                                                                            <Setter Property="Foreground" Value="#107C10"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsManual}" Value="True">
+                                                                                    <Setter Property="Text" Value="👤 Manual"/>
+                                                                                    <Setter Property="Foreground" Value="#666666"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- Action Buttons -->
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                            <Button Content="📋 Copy Steps" 
+                                                    Command="{Binding DataContext.CopyStepsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    Background="Transparent" BorderBrush="#0078D4" BorderThickness="1"
+                                                    Foreground="#0078D4" Padding="10,5" FontSize="11" Cursor="Hand" Margin="0,0,10,0">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" 
+                                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                            <Button Content="📄 Export Markdown"
+                                                    Command="{Binding DataContext.ExportSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    Background="#107C10" Foreground="White" 
+                                                    Padding="10,5" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Status Bar -->
+            <Border Grid.Row="3" Background="White" CornerRadius="4" Padding="10" Margin="0,10,0,0"
+                    BorderBrush="#E0E0E0" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="11" Foreground="#666666" 
+                               VerticalAlignment="Center"/>
+                    
+                    <!-- Loading Indicator -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" 
+                                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBlock Text="⏳" FontSize="12" Margin="0,0,5,0"/>
+                        <TextBlock Text="Loading..." FontSize="11" Foreground="#666666"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>
