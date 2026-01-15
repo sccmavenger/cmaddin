@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Generates phased migration plans with timelines and task lists.

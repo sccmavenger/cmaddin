@@ -1,11 +1,11 @@
-# Cloud Journey Add-in - Quick Update Script
+# Zero Trust Migration Journey Add-in - Quick Update Script
 # This script updates just the fixed executable and DLL
 
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Cloud Journey Add-in - Quick Update" -ForegroundColor Cyan
+Write-Host "Zero Trust Migration Journey Add-in - Quick Update" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -36,10 +36,10 @@ if (-not $configMgrPath) {
     }
 }
 
-$targetPath = Join-Path $configMgrPath "bin\bin\CloudJourneyAddin"
+$targetPath = Join-Path $configMgrPath "bin\bin\ZeroTrustMigrationAddin"
 
 if (-not (Test-Path $targetPath)) {
-    Write-Host "[INFO] CloudJourneyAddin folder not found - creating for fresh install..." -ForegroundColor Yellow
+    Write-Host "[INFO] ZeroTrustMigrationAddin folder not found - creating for fresh install..." -ForegroundColor Yellow
     New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
     Write-Host "[OK] Created directory: $targetPath" -ForegroundColor Green
 }
@@ -48,9 +48,9 @@ Write-Host "[INFO] Target directory: $targetPath" -ForegroundColor Cyan
 Write-Host ""
 
 # Stop any running instances
-$process = Get-Process -Name "CloudJourneyAddin" -ErrorAction SilentlyContinue
+$process = Get-Process -Name "ZeroTrustMigrationAddin" -ErrorAction SilentlyContinue
 if ($process) {
-    Write-Host "[INFO] Stopping running CloudJourneyAddin process..." -ForegroundColor Yellow
+    Write-Host "[INFO] Stopping running ZeroTrustMigrationAddin process..." -ForegroundColor Yellow
     $process | Stop-Process -Force
     Start-Sleep -Seconds 2
 }
@@ -60,7 +60,7 @@ $backupPath = Join-Path $targetPath "Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss'
 New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
 Write-Host "[INFO] Creating backup folder: $backupPath" -ForegroundColor Cyan
 
-$filesToBackup = @("CloudJourneyAddin.exe", "CloudJourneyAddin.dll")
+$filesToBackup = @("ZeroTrustMigrationAddin.exe", "ZeroTrustMigrationAddin.dll")
 $backedUpCount = 0
 
 foreach ($file in $filesToBackup) {
@@ -83,19 +83,19 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # Get all files from update package
 $updateFiles = Get-ChildItem $scriptDir -File | Where-Object { 
     $_.Extension -in @('.exe', '.dll', '.xml', '.json', '.config', '.html', '.md') -and 
-    $_.Name -ne 'Update-CloudJourneyAddin.ps1' -and
+    $_.Name -ne 'Update-ZeroTrustMigrationAddin.ps1' -and
     $_.Name -ne 'Diagnose-Installation.ps1' -and
-    $_.Name -ne 'Verify-CloudJourneyAddin.ps1' -and
+    $_.Name -ne 'Verify-ZeroTrustMigrationAddin.ps1' -and
     $_.Name -ne 'Check-ConsoleLog.ps1' -and
     $_.Name -ne 'Find-ConsoleLogs.ps1' -and
     $_.Name -ne 'Create-Shortcuts.ps1' -and
-    $_.Name -ne 'Uninstall-CloudJourneyAddin.ps1'
+    $_.Name -ne 'Uninstall-ZeroTrustMigrationAddin.ps1'
 }
 
 if ($updateFiles.Count -eq 0) {
     Write-Host "[WARN] No update files found in package. Installing all files from package..." -ForegroundColor Yellow
     $updateFiles = Get-ChildItem $scriptDir -File | Where-Object { 
-        $_.Name -ne 'Update-CloudJourneyAddin.ps1' 
+        $_.Name -ne 'Update-ZeroTrustMigrationAddin.ps1' 
     }
 }
 
@@ -156,7 +156,7 @@ try {
             Write-Host "($sourceSize KB)" -ForegroundColor Gray
             
             # For main executable, show version info
-            if ($file.Name -eq "CloudJourneyAddin.exe") {
+            if ($file.Name -eq "ZeroTrustMigrationAddin.exe") {
                 $newVersion = (Get-Item $destPath).VersionInfo.FileVersion
                 Write-Host "      Version: $newVersion" -ForegroundColor Cyan
             }
@@ -189,14 +189,14 @@ try {
     # Update XML manifest in the Extensions folder
     Write-Host ""
     Write-Host "[INFO] Checking for XML manifest..." -ForegroundColor Cyan
-    $xmlSourcePath = Join-Path $scriptDir "CloudJourneyAddin.xml"
+    $xmlSourcePath = Join-Path $scriptDir "ZeroTrustMigrationAddin.xml"
     if (Test-Path $xmlSourcePath) {
         $extensionsPath = Join-Path $configMgrPath "bin\XmlStorage\Extensions\Actions"
         if (Test-Path $extensionsPath) {
-            $xmlDestPath = Join-Path $extensionsPath "CloudJourneyAddin.xml"
+            $xmlDestPath = Join-Path $extensionsPath "ZeroTrustMigrationAddin.xml"
             Copy-Item $xmlSourcePath $xmlDestPath -Force
             $xmlSize = [math]::Round((Get-Item $xmlSourcePath).Length / 1KB, 2)
-            Write-Host "   Updated: CloudJourneyAddin.xml ($xmlSize KB)" -ForegroundColor Green
+            Write-Host "   Updated: ZeroTrustMigrationAddin.xml ($xmlSize KB)" -ForegroundColor Green
             Write-Host "   Location: $xmlDestPath" -ForegroundColor Gray
         } else {
             Write-Host "[WARN] Extensions folder not found: $extensionsPath" -ForegroundColor Yellow
@@ -289,10 +289,10 @@ Write-Host "IMPORTANT: Restart the ConfigMgr Console to see the add-in button!" 
 Write-Host ""
 Write-Host "After restarting the console:" -ForegroundColor Cyan
 Write-Host "  1. Go to the Home ribbon or Devices section" -ForegroundColor White
-Write-Host "  2. Look for 'Cloud Journey Progress' button" -ForegroundColor White
+Write-Host "  2. Look for 'Zero Trust Migration Journey Progress' button" -ForegroundColor White
 Write-Host "  3. Click it to launch the dashboard" -ForegroundColor White
 Write-Host ""
 Write-Host "Or run standalone:" -ForegroundColor Cyan
 Write-Host "  cd `"$targetPath`"" -ForegroundColor White
-Write-Host "  .\CloudJourneyAddin.exe" -ForegroundColor White
+Write-Host "  .\ZeroTrustMigrationAddin.exe" -ForegroundColor White
 Write-Host ""

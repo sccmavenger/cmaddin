@@ -51,7 +51,7 @@ When implementing:
 
 **EVERY build release MUST update these 4 locations:**
 
-### 1. CloudJourneyAddin.csproj (Lines 9-12)
+### 1. ZeroTrustMigrationAddin.csproj (Lines 9-12)
 ```xml
 <Version>1.4.0</Version>
 <AssemblyVersion>1.4.0.0</AssemblyVersion>
@@ -82,7 +82,7 @@ Brief description of changes
 
 ### 3. Views/DashboardWindow.xaml (Line 6)
 ```xml
-Title="Cloud Journey Progress Dashboard v1.4.0"
+Title="Zero Trust Migration Journey Dashboard v1.4.0"
 ```
 
 ### 4. ViewModels/DashboardViewModel.cs (Constructor)
@@ -127,7 +127,7 @@ dotnet publish -c Release -r win-x64 --self-contained true
 **Step 3: Copy to Distribution Folder (REQUIRED)**
 ```powershell
 # After successful build, ALWAYS copy package to Dropbox for deployment
-Copy-Item "CloudJourneyAddin-v{VERSION}-COMPLETE.zip" -Destination "C:\Users\dannygu\Dropbox\" -Force
+Copy-Item "ZeroTrustMigrationAddin-v{VERSION}-COMPLETE.zip" -Destination "C:\Users\dannygu\Dropbox\" -Force
 ```
 
 **Distribution Location:** `C:\Users\dannygu\Dropbox\`
@@ -139,7 +139,7 @@ Copy-Item "CloudJourneyAddin-v{VERSION}-COMPLETE.zip" -Destination "C:\Users\dan
 1. Copy package from `C:\Users\dannygu\Dropbox\` to target PC
 2. Extract ALL files (ensure ~500 files extracted, not partial)
 3. Run `Diagnose-Installation.ps1` to verify all dependencies present
-4. Run `Update-CloudJourneyAddin.ps1` to deploy to ConfigMgr Console
+4. Run `Update-ZeroTrustMigrationAddin.ps1` to deploy to ConfigMgr Console
    - OR use `Quick-Deploy.ps1` for standalone testing
 
 ### Automated Build Script (Recommended)
@@ -173,15 +173,15 @@ This script will:
                                                                   │
                                                                   ├─ Extract ZIP
                                                                   ├─ Run Diagnose-Installation.ps1
-                                                                  ├─ Run Update-CloudJourneyAddin.ps1
-                                                                  └─ Launch CloudJourneyAddin.exe
+                                                                  ├─ Run Update-ZeroTrustMigrationAddin.ps1
+                                                                  └─ Launch ZeroTrustMigrationAddin.exe
 ```
 
 ### Version Verification (On Target PC)
 
 After deployment, verify:
-1. **File Properties:** Right-click CloudJourneyAddin.exe → Properties → Details → File version: 1.4.0.0
-2. **Window Title:** Launch app → Title bar shows "Cloud Journey Progress Dashboard v1.4.0"
+1. **File Properties:** Right-click ZeroTrustMigrationAddin.exe → Properties → Details → File version: 1.4.0.0
+2. **Window Title:** Launch app → Title bar shows "Zero Trust Migration Journey Dashboard v1.4.0"
 3. **Logs:** Click "Open Logs" → Check for "Dashboard version: 1.4.0"
 4. **No Missing DLLs:** Click "Connect to Microsoft Graph" → Should NOT see "Could not load Azure.Identity.dll" error
 
@@ -232,15 +232,15 @@ Would automatically update all 4 locations + generate CHANGELOG entry.
 ## Build & Package Naming Convention
 
 **Build Output:**
-- `CloudJourneyAddin.exe` (version in file properties)
+- `ZeroTrustMigrationAddin.exe` (version in file properties)
 
 **Update Packages:**
-- `CloudJourneyAddin-v1.4.0-COMPLETE.zip` (full package with all dependencies)
-- `CloudJourneyAddin-v1.4.1-PATCH.zip` (small update, critical files only)
+- `ZeroTrustMigrationAddin-v1.4.0-COMPLETE.zip` (full package with all dependencies)
+- `ZeroTrustMigrationAddin-v1.4.1-PATCH.zip` (small update, critical files only)
 
 **Naming Format:**
 ```
-CloudJourneyAddin-v{VERSION}-{TYPE}.zip
+ZeroTrustMigrationAddin-v{VERSION}-{TYPE}.zip
                     |         |
                     |         +-- COMPLETE, PATCH, HOTFIX, ALPHA, BETA, RC
                     +------------ 1.4.0, 1.4.1, etc.
@@ -253,7 +253,7 @@ CloudJourneyAddin-v{VERSION}-{TYPE}.zip
 1. **Build succeeds:** `dotnet build -c Release`
 2. **File Properties correct:**
    ```powershell
-   (Get-Item "bin\Release\net8.0-windows\win-x64\publish\CloudJourneyAddin.exe").VersionInfo
+   (Get-Item "bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe").VersionInfo
    ```
    Should show: `FileVersion: 1.4.0.0`, `ProductVersion: 1.4.0`
 
@@ -261,7 +261,7 @@ CloudJourneyAddin-v{VERSION}-{TYPE}.zip
 
 4. **Logs show correct version:**
    ```powershell
-   Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\*.log" | Select-String "Dashboard version"
+   Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\Logs\*.log" | Select-String "Dashboard version"
    ```
    Should show: `Dashboard version: 1.4.0`
 
@@ -310,7 +310,7 @@ Brief 1-2 sentence description of the release focus.
 1. Increment PATCH version (e.g., 1.4.0 → 1.4.1)
 2. Update all 4 version locations
 3. Build and test fix
-4. Create package: `CloudJourneyAddin-v1.4.1-HOTFIX.zip`
+4. Create package: `ZeroTrustMigrationAddin-v1.4.1-HOTFIX.zip`
 5. Document in README.md with 🚨 emoji
 6. Git tag: `v1.4.1-hotfix`
 

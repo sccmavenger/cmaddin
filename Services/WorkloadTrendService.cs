@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Tracks workload progress over time and detects velocity trends.
@@ -24,7 +24,7 @@ namespace CloudJourneyAddin.Services
             // Store history in same folder as logs
             var appDataFolder = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "CloudJourneyAddin"
+                "ZeroTrustMigrationAddin"
             );
             Directory.CreateDirectory(appDataFolder);
             _historyFilePath = Path.Combine(appDataFolder, "workload_history.json");

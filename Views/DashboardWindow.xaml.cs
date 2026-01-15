@@ -1,11 +1,11 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using CloudJourneyAddin.ViewModels;
-using CloudJourneyAddin.Services;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.ViewModels;
+using ZeroTrustMigrationAddin.Services;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.Views
+namespace ZeroTrustMigrationAddin.Views
 {
     public partial class DashboardWindow : Window
     {
@@ -14,6 +14,10 @@ namespace CloudJourneyAddin.Views
             try
             {
                 InitializeComponent();
+                
+                // Set window title with current version
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                Title = $"Cloud Journey Progress Dashboard v{version?.Major}.{version?.Minor}.{version?.Build}";
                 
                 var telemetryService = new TelemetryService();
                 DataContext = new DashboardViewModel(telemetryService, tabVisibilityOptions);
@@ -146,6 +150,95 @@ namespace CloudJourneyAddin.Views
                 UseShellExecute = true
             });
             e.Handled = true;
+        }
+
+        /// <summary>
+        /// Handle clicks on device count numbers to show device list
+        /// </summary>
+        private async void DeviceCount_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.TextBlock textBlock && 
+                    textBlock.Tag is string joinTypeString &&
+                    DataContext is DashboardViewModel viewModel)
+                {
+                    // Parse join type from Tag
+                    DeviceJoinType joinType = joinTypeString switch
+                    {
+                        "HybridJoined" => DeviceJoinType.HybridAzureADJoined,
+                        "AzureADOnly" => DeviceJoinType.AzureADOnly,
+                        "OnPremOnly" => DeviceJoinType.OnPremDomainOnly,
+                        "Workgroup" => DeviceJoinType.WorkgroupOnly,
+                        _ => DeviceJoinType.Unknown
+                    };
+
+                    if (joinType == DeviceJoinType.Unknown)
+                    {
+                        MessageBox.Show("Unable to determine device join type.", "Error", 
+                            MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    // Get devices for this join type
+                    var graphService = new GraphDataService();
+                    var devices = await graphService.GetDevicesByJoinType(joinType);
+
+                    if (devices == null || devices.Count == 0)
+                    {
+                        MessageBox.Show($"No devices found for this category.", "No Devices", 
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
+                    }
+
+                    // Create and show device list dialog
+                    var deviceListViewModel = new DeviceListViewModel(joinType, devices);
+                    var deviceListDialog = new DeviceListDialog
+                    {
+                        DataContext = deviceListViewModel,
+                        Owner = this
+                    };
+                    deviceListDialog.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading device list:\n\n{ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Diagnostics.Debug.WriteLine($"DeviceCount_Click error: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Handle clicks on setup guide links
+        /// </summary>
+        private void SetupGuide_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.TextBlock textBlock && 
+                    textBlock.Tag is string guideType)
+                {
+                    string url = guideType switch
+                    {
+                        "HybridJoin" => "https://learn.microsoft.com/en-us/azure/active-directory/devices/howto-hybrid-join",
+                        "DomainJoin" => "https://learn.microsoft.com/en-us/azure/active-directory/devices/concept-device-registration",
+                        _ => "https://learn.microsoft.com/en-us/mem/intune/enrollment/windows-enrollment-methods"
+                    };
+
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening documentation:\n\n{ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Diagnostics.Debug.WriteLine($"SetupGuide_Click error: {ex}");
+            }
         }
     }
 }

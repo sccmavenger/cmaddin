@@ -69,7 +69,7 @@ ELSE
 ## Build Output Location
 
 ```
-bin\Release\net8.0-windows\win-x64\publish\CloudJourneyAddin.exe
+bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe
 ```
 
 ## Testing the New Features
@@ -96,13 +96,13 @@ Creates 5 test shortcuts on your Desktop with different configurations:
 #### Option 3: Manual Testing
 ```powershell
 # Test hiding tabs
-.\bin\Release\net8.0-windows\win-x64\publish\CloudJourneyAddin.exe /hidetabs:enrollment,workloads
+.\bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe /hidetabs:enrollment,workloads
 
 # Test showing only specific tabs
-.\bin\Release\net8.0-windows\win-x64\publish\CloudJourneyAddin.exe /showtabs:enrollment
+.\bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe /showtabs:enrollment
 
 # Default - all tabs visible
-.\bin\Release\net8.0-windows\win-x64\publish\CloudJourneyAddin.exe
+.\bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe
 ```
 
 ## Test Checklist

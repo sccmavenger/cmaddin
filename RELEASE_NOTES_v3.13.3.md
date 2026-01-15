@@ -2,7 +2,7 @@
 
 **Release Date:** January 10, 2026  
 **Build Type:** Patch Release (Critical Bug Fixes)  
-**Package:** CloudJourneyAddin-v3.13.3-COMPLETE.zip (86.75 MB, 285 files)
+**Package:** ZeroTrustMigrationAddin-v3.13.3-COMPLETE.zip (86.75 MB, 285 files)
 
 ---
 
@@ -124,7 +124,7 @@ ELSE
    - Triggers diagnostics refresh on save
    - Added AI initialization logging
 
-3. **CloudJourneyAddin.csproj**
+3. **ZeroTrustMigrationAddin.csproj**
    - Updated version to 3.13.3
 
 ---
@@ -146,13 +146,13 @@ Before deploying to production, verify:
 ## 📦 Installation Instructions
 
 ### New Installation
-1. Extract `CloudJourneyAddin-v3.13.3-COMPLETE.zip` to any folder
-2. Run `Install-CloudJourneyAddin.ps1` as Administrator
-3. Launch ConfigMgr Console and look for "Cloud Journey Progress" in the ribbon
+1. Extract `ZeroTrustMigrationAddin-v3.13.3-COMPLETE.zip` to any folder
+2. Run `Install-ZeroTrustMigrationAddin.ps1` as Administrator
+3. Launch ConfigMgr Console and look for "Zero Trust Migration Journey Progress" in the ribbon
 
 ### Upgrade from Previous Version
-1. Extract `CloudJourneyAddin-v3.13.3-COMPLETE.zip` to any folder
-2. Run `Update-CloudJourneyAddin.ps1` as Administrator
+1. Extract `ZeroTrustMigrationAddin-v3.13.3-COMPLETE.zip` to any folder
+2. Run `Update-ZeroTrustMigrationAddin.ps1` as Administrator
 3. Script will automatically detect and update existing installation
 4. Launch ConfigMgr Console (may need to restart console if already open)
 
@@ -162,7 +162,7 @@ Before deploying to production, verify:
 .\Diagnose-Installation.ps1
 
 # Check version
-Get-Item "C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin\CloudJourneyAddin\CloudJourneyAddin.exe" | Select-Object VersionInfo
+Get-Item "C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe" | Select-Object VersionInfo
 ```
 
 Expected output: **Version 3.13.3.0**
@@ -180,7 +180,7 @@ This release fixes issues reported in production:
 ## 📞 Support
 
 If you encounter any issues:
-1. Check log file: `%APPDATA%\CloudJourneyAddin\Logs\CloudJourneyAddin.log`
+1. Check log file: `%APPDATA%\ZeroTrustMigrationAddin\Logs\ZeroTrustMigrationAddin.log`
 2. Run diagnostic script: `.\Diagnose-Installation.ps1`
 3. Look for enrollment calculation messages in log showing which source is used
 
@@ -196,7 +196,7 @@ If you encounter any issues:
 
 ---
 
-**Package Location:** `C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.13.3-COMPLETE.zip`
+**Package Location:** `C:\Users\dannygu\Dropbox\ZeroTrustMigrationAddin-v3.13.3-COMPLETE.zip`
 
 **Previous Version:** 3.13.0 (January 9, 2026)  
 **Next Planned Version:** TBD based on feedback

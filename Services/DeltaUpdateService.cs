@@ -5,11 +5,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 using Newtonsoft.Json;
-using static CloudJourneyAddin.Services.FileLogger;
+using static ZeroTrustMigrationAddin.Services.FileLogger;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Service for managing delta updates by comparing manifests and downloading only changed files.
@@ -23,13 +23,13 @@ namespace CloudJourneyAddin.Services
 
         public DeltaUpdateService()
         {
-            // Determine installation path (where CloudJourneyAddin.exe is located)
+            // Determine installation path (where ZeroTrustMigrationAddin.exe is located)
             _installPath = AppDomain.CurrentDomain.BaseDirectory;
             
             // Local manifest storage
             _localManifestPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "CloudJourneyAddin",
+                "ZeroTrustMigrationAddin",
                 "manifest.json");
 
             // Temp folder for downloads
@@ -46,7 +46,7 @@ namespace CloudJourneyAddin.Services
             // Add GitHub authentication if token exists (for private repos)
             var settingsPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "CloudJourneyAddin",
+                "ZeroTrustMigrationAddin",
                 "update-settings.json");
 
             if (File.Exists(settingsPath))
@@ -62,7 +62,7 @@ namespace CloudJourneyAddin.Services
                         // GitHub API asset downloads require token in header + specific Accept header
                         _httpClient.DefaultRequestHeaders.Add("Authorization", $"token {token}");
                         _httpClient.DefaultRequestHeaders.Add("Accept", "application/octet-stream");
-                        _httpClient.DefaultRequestHeaders.Add("User-Agent", "CloudJourneyAddin");
+                        _httpClient.DefaultRequestHeaders.Add("User-Agent", "ZeroTrustMigrationAddin");
                         Instance.Info("🔑 GitHub authentication configured for asset downloads");
                     }
                 }
@@ -461,8 +461,8 @@ namespace CloudJourneyAddin.Services
         {
             var criticalFiles = new[]
             {
-                "CloudJourneyAddin.exe",
-                "CloudJourneyAddin.dll",
+                "ZeroTrustMigrationAddin.exe",
+                "ZeroTrustMigrationAddin.dll",
                 "Azure.Identity.dll",
                 "Microsoft.Graph.dll",
                 "Microsoft.Graph.Core.dll",

@@ -2,9 +2,9 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
-using CloudJourneyAddin.Services;
+using ZeroTrustMigrationAddin.Services;
 
-namespace CloudJourneyAddin.Converters
+namespace ZeroTrustMigrationAddin.Converters
 {
     public class RecommendationPriorityConverter : IValueConverter
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CloudJourneyAddin.Models
+namespace ZeroTrustMigrationAddin.Models
 {
     /// <summary>
     /// Defines the configuration and goals for autonomous enrollment operations

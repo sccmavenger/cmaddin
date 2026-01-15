@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace CloudJourneyAddin.ViewModels
+namespace ZeroTrustMigrationAddin.ViewModels
 {
     public class ViewModelBase : INotifyPropertyChanged
     {

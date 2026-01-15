@@ -369,4 +369,4 @@
 
 ## Contact & Feedback
 
-For questions or suggestions about these ideas, contact the Cloud Journey development team.
+For questions or suggestions about these ideas, contact the Zero Trust Migration Journey development team.

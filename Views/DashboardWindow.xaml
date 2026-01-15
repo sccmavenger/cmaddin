@@ -1,9 +1,9 @@
-<Window x:Class="CloudJourneyAddin.Views.DashboardWindow"
+<Window x:Class="ZeroTrustMigrationAddin.Views.DashboardWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
-        xmlns:converters="clr-namespace:CloudJourneyAddin.Converters"
-        Title="Cloud Journey Progress Dashboard v3.16.0" 
+        xmlns:converters="clr-namespace:ZeroTrustMigrationAddin.Converters"
+        Title="Cloud Journey Progress Dashboard" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         SizeToContent="Manual"
@@ -334,258 +334,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- ========== DESIGN OPTION 1: STATUS BADGE GRID ========== -->
-                        <Border Style="{StaticResource SectionCard}" Background="#FAFAFA">
-                            <StackPanel>
-                                <TextBlock Text="🎨 DESIGN OPTION 1: Status Badge Grid (Recommended)" 
-                                           FontSize="16" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,10"/>
-                                
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                    <TextBlock Text="🔐 Device Identity State" Style="{StaticResource SectionTitle}"/>
-                                    <Border Background="#0078D4" CornerRadius="3" Padding="5,2" Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="ENROLLMENT READINESS" FontSize="10" FontWeight="Bold" Foreground="White"/>
-                                    </Border>
-                                </StackPanel>
-                                
-                                <Grid Margin="0,0,0,15">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <!-- Hybrid Entra joined - READY -->
-                                    <Border Grid.Column="0" Background="#E8F5E9" BorderBrush="#4CAF50" 
-                                            BorderThickness="2" CornerRadius="6" Padding="12" Margin="0,0,5,0">
-                                        <StackPanel>
-                                            <TextBlock Text="✅ Hybrid Entra" FontSize="11" FontWeight="SemiBold" 
-                                                       Foreground="#4CAF50" Margin="0,0,0,5"/>
-                                            <TextBlock Text="{Binding DeviceEnrollment.HybridJoinedDevices}" 
-                                                       FontSize="24" FontWeight="Bold" Foreground="#4CAF50" 
-                                                       HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Ready to enroll" FontSize="9" Foreground="#666" 
-                                                       HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- Entra joined - READY -->
-                                    <Border Grid.Column="1" Background="#E3F2FD" BorderBrush="#0078D4" 
-                                            BorderThickness="2" CornerRadius="6" Padding="12" Margin="5,0">
-                                        <StackPanel>
-                                            <TextBlock Text="☁️ Entra joined" FontSize="11" FontWeight="SemiBold" 
-                                                       Foreground="#0078D4" Margin="0,0,0,5"/>
-                                            <TextBlock Text="{Binding DeviceEnrollment.AzureADOnlyDevices}" 
-                                                       FontSize="24" FontWeight="Bold" Foreground="#0078D4" 
-                                                       HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Cloud-native" FontSize="9" Foreground="#666" 
-                                                       HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- On-Prem Domain Only - BLOCKER -->
-                                    <Border Grid.Column="2" Background="#FFF9E6" BorderBrush="#FDB813" 
-                                            BorderThickness="2" CornerRadius="6" Padding="12" Margin="5,0">
-                                        <StackPanel>
-                                            <TextBlock Text="⚠️ AD only" FontSize="11" FontWeight="SemiBold" 
-                                                       Foreground="#FDB813" Margin="0,0,0,5"/>
-                                            <TextBlock Text="{Binding DeviceEnrollment.OnPremDomainOnlyDevices}" 
-                                                       FontSize="24" FontWeight="Bold" Foreground="#FDB813" 
-                                                       HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Needs Entra join" FontSize="9" Foreground="#666" 
-                                                       HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- Workgroup - BLOCKER -->
-                                    <Border Grid.Column="3" Background="#FFF4F4" BorderBrush="#D13438" 
-                                            BorderThickness="2" CornerRadius="6" Padding="12" Margin="5,0,0,0">
-                                        <StackPanel>
-                                            <TextBlock Text="❌ Workgroup" FontSize="11" FontWeight="SemiBold" 
-                                                       Foreground="#D13438" Margin="0,0,0,5"/>
-                                            <TextBlock Text="{Binding DeviceEnrollment.WorkgroupDevices}" 
-                                                       FontSize="24" FontWeight="Bold" Foreground="#D13438" 
-                                                       HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Cannot enroll" FontSize="9" Foreground="#666" 
-                                                       HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-
-                                <!-- Quick Action Banner -->
-                                <Border Background="#FFF9E6" BorderBrush="#FDB813" BorderThickness="1" 
-                                        CornerRadius="4" Padding="12" Margin="0,5,0,0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="💡" FontSize="16" Margin="0,0,10,0"/>
-                                        <TextBlock FontSize="12" VerticalAlignment="Center">
-                                            <Run Text="{Binding DeviceEnrollment.OnPremDomainOnlyDevices}" FontWeight="Bold"/>
-                                            <Run Text="devices need Hybrid Entra join before Intune enrollment. View Setup Guide →"/>
-                                        </TextBlock>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ========== DESIGN OPTION 2: HORIZONTAL PROGRESS BAR ========== -->
-                        <Border Style="{StaticResource SectionCard}" Background="#FAFAFA">
-                            <StackPanel>
-                                <TextBlock Text="🎨 DESIGN OPTION 2: Horizontal Progress Bar with Segments" 
-                                           FontSize="16" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,10"/>
-                                
-                                <TextBlock Text="🔐 Device Identity State Distribution" Style="{StaticResource SectionTitle}"/>
-                                
-                                <!-- Stacked Bar Visualization (using proportional star sizing) -->
-                                <Grid Height="60" Margin="0,10,0,15">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="68*"/><!-- Hybrid: 68% -->
-                                        <ColumnDefinition Width="19*"/><!-- Entra joined: 19% -->
-                                        <ColumnDefinition Width="10*"/><!-- On-Prem: 10% -->
-                                        <ColumnDefinition Width="3*"/><!-- Workgroup: 3% -->
-                                    </Grid.ColumnDefinitions>
-
-                                    <!-- Hybrid Entra Segment -->
-                                    <Border Grid.Column="0" Background="#4CAF50" CornerRadius="6,0,0,6">
-                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                            <TextBlock Text="{Binding DeviceEnrollment.HybridJoinedDevices}" 
-                                                       FontSize="18" FontWeight="Bold" Foreground="White"/>
-                                            <TextBlock Text="Hybrid" FontSize="10" Foreground="White"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- Entra joined Segment -->
-                                    <Border Grid.Column="1" Background="#0078D4">
-                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                            <TextBlock Text="{Binding DeviceEnrollment.AzureADOnlyDevices}" 
-                                                       FontSize="18" FontWeight="Bold" Foreground="White"/>
-                                            <TextBlock Text="Cloud" FontSize="10" Foreground="White"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- On-Prem Only Segment -->
-                                    <Border Grid.Column="2" Background="#FDB813">
-                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                            <TextBlock Text="{Binding DeviceEnrollment.OnPremDomainOnlyDevices}" 
-                                                       FontSize="18" FontWeight="Bold" Foreground="White"/>
-                                            <TextBlock Text="AD Only" FontSize="10" Foreground="White"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- Workgroup Segment -->
-                                    <Border Grid.Column="3" Background="#D13438" CornerRadius="0,6,6,0">
-                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                            <TextBlock Text="{Binding DeviceEnrollment.WorkgroupDevices}" 
-                                                       FontSize="18" FontWeight="Bold" Foreground="White"/>
-                                            <TextBlock Text="Workgroup" FontSize="10" Foreground="White"/>
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-
-                                <!-- Legend -->
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Ellipse Width="12" Height="12" Fill="#4CAF50" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Hybrid Entra (Ready)" FontSize="10" Foreground="#666"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Ellipse Width="12" Height="12" Fill="#0078D4" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Entra joined (Ready)" FontSize="10" Foreground="#666"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Ellipse Width="12" Height="12" Fill="#FDB813" Margin="0,0,5,0"/>
-                                        <TextBlock Text="AD Domain (Blocked)" FontSize="10" Foreground="#666"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Ellipse Width="12" Height="12" Fill="#D13438" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Workgroup (Blocked)" FontSize="10" Foreground="#666"/>
-                                    </StackPanel>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ========== DESIGN OPTION 3: PIE CHART WITH SUMMARY ========== -->
-                        <Border Style="{StaticResource SectionCard}" Background="#FAFAFA">
-                            <StackPanel>
-                                <TextBlock Text="🎨 DESIGN OPTION 3: Pie Chart with Summary Table" 
-                                           FontSize="16" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,15"/>
-                                
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <!-- Pie Chart Placeholder -->
-                                    <Border Grid.Column="0" Width="180" Height="180" 
-                                            Background="#F5F5F5" CornerRadius="90" 
-                                            BorderBrush="#E0E0E0" BorderThickness="2">
-                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                            <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Pie Chart" FontSize="12" Foreground="#666" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="(Requires LiveCharts)" FontSize="9" Foreground="#999" HorizontalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- Breakdown Table -->
-                                    <StackPanel Grid.Column="1" Margin="20,0,0,0">
-                                        <TextBlock Text="🔐 Device Identity State" Style="{StaticResource SectionTitle}"/>
-                                        
-                                        <Grid Margin="0,10,0,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-
-                                            <!-- Hybrid Entra -->
-                                            <Ellipse Grid.Row="0" Grid.Column="0" Width="12" Height="12" Fill="#4CAF50" Margin="0,0,10,10"/>
-                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="Hybrid Entra joined" FontSize="12" Margin="0,0,0,10"/>
-                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding DeviceEnrollment.HybridJoinedDevices}" 
-                                                       FontSize="14" FontWeight="Bold" Foreground="#4CAF50" Margin="10,0,10,10"/>
-                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="✅ Ready" FontSize="11" Foreground="#4CAF50" Margin="0,0,0,10"/>
-
-                                            <!-- Entra joined -->
-                                            <Ellipse Grid.Row="1" Grid.Column="0" Width="12" Height="12" Fill="#0078D4" Margin="0,0,10,10"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Entra joined" FontSize="12" Margin="0,0,0,10"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding DeviceEnrollment.AzureADOnlyDevices}" 
-                                                       FontSize="14" FontWeight="Bold" Foreground="#0078D4" Margin="10,0,10,10"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="3" Text="✅ Ready" FontSize="11" Foreground="#0078D4" Margin="0,0,0,10"/>
-
-                                            <!-- On-Prem Only -->
-                                            <Ellipse Grid.Row="2" Grid.Column="0" Width="12" Height="12" Fill="#FDB813" Margin="0,0,10,10"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Active Directory joined" FontSize="12" Margin="0,0,0,10"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding DeviceEnrollment.OnPremDomainOnlyDevices}" 
-                                                       FontSize="14" FontWeight="Bold" Foreground="#FDB813" Margin="10,0,10,10"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="3" Text="⚠️ Blocked" FontSize="11" Foreground="#FDB813" Margin="0,0,0,10"/>
-
-                                            <!-- Workgroup -->
-                                            <Ellipse Grid.Row="3" Grid.Column="0" Width="12" Height="12" Fill="#D13438" Margin="0,0,10,0"/>
-                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="Workgroup (Not Domain-Joined)" FontSize="12"/>
-                                            <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding DeviceEnrollment.WorkgroupDevices}" 
-                                                       FontSize="14" FontWeight="Bold" Foreground="#D13438" Margin="10,0,10,0"/>
-                                            <TextBlock Grid.Row="3" Grid.Column="3" Text="❌ Blocked" FontSize="11" Foreground="#D13438"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
                         <!-- ========== DESIGN OPTION 4: READINESS TIERS ========== -->
                         <Border Style="{StaticResource SectionCard}" Background="#FAFAFA">
                             <StackPanel>
@@ -752,7 +500,9 @@
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="2" Text="{Binding DeviceEnrollment.HybridJoinedDevices}" 
                                                            FontSize="18" FontWeight="Bold" Foreground="#4CAF50" 
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Cursor="Hand" MouseLeftButtonDown="DeviceCount_Click" Tag="HybridJoined"
+                                                           ToolTip="Click to view device list"/>
                                                 <Border Grid.Column="3" Background="#E8F5E9" CornerRadius="12" Padding="8,4" 
                                                         HorizontalAlignment="Center" VerticalAlignment="Center">
                                                     <TextBlock Text="Ready" FontSize="10" FontWeight="SemiBold" Foreground="#4CAF50"/>
@@ -780,7 +530,9 @@
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="2" Text="{Binding DeviceEnrollment.AzureADOnlyDevices}" 
                                                            FontSize="18" FontWeight="Bold" Foreground="#0078D4" 
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Cursor="Hand" MouseLeftButtonDown="DeviceCount_Click" Tag="AzureADOnly"
+                                                           ToolTip="Click to view device list"/>
                                                 <Border Grid.Column="3" Background="#E3F2FD" CornerRadius="12" Padding="8,4" 
                                                         HorizontalAlignment="Center" VerticalAlignment="Center">
                                                     <TextBlock Text="Ready" FontSize="10" FontWeight="SemiBold" Foreground="#0078D4"/>
@@ -808,7 +560,9 @@
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="2" Text="{Binding DeviceEnrollment.OnPremDomainOnlyDevices}" 
                                                            FontSize="18" FontWeight="Bold" Foreground="#FDB813" 
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Cursor="Hand" MouseLeftButtonDown="DeviceCount_Click" Tag="OnPremOnly"
+                                                           ToolTip="Click to view device list"/>
                                                 <Border Grid.Column="3" Background="#FFF9E6" CornerRadius="12" Padding="8,4" 
                                                         HorizontalAlignment="Center" VerticalAlignment="Center">
                                                     <TextBlock Text="Blocked" FontSize="10" FontWeight="SemiBold" Foreground="#FDB813"/>
@@ -817,7 +571,8 @@
                                                     <TextBlock FontSize="11" Foreground="#666">
                                                         <Run Text="Configure Hybrid Entra join"/>
                                                     </TextBlock>
-                                                    <TextBlock Text="View Setup Guide →" FontSize="10" Foreground="#0078D4" Cursor="Hand"/>
+                                                    <TextBlock Text="View Setup Guide →" FontSize="10" Foreground="#0078D4" Cursor="Hand"
+                                                               MouseLeftButtonDown="SetupGuide_Click" Tag="HybridJoin"/>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
@@ -840,7 +595,9 @@
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="2" Text="{Binding DeviceEnrollment.WorkgroupDevices}" 
                                                            FontSize="18" FontWeight="Bold" Foreground="#D13438" 
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Cursor="Hand" MouseLeftButtonDown="DeviceCount_Click" Tag="Workgroup"
+                                                           ToolTip="Click to view device list"/>
                                                 <Border Grid.Column="3" Background="#FFF4F4" CornerRadius="12" Padding="8,4" 
                                                         HorizontalAlignment="Center" VerticalAlignment="Center">
                                                     <TextBlock Text="Blocked" FontSize="10" FontWeight="SemiBold" Foreground="#D13438"/>
@@ -849,7 +606,8 @@
                                                     <TextBlock FontSize="11" Foreground="#666">
                                                         <Run Text="Join to domain or Azure AD first"/>
                                                     </TextBlock>
-                                                    <TextBlock Text="View Options →" FontSize="10" Foreground="#0078D4" Cursor="Hand"/>
+                                                    <TextBlock Text="View Options →" FontSize="10" Foreground="#0078D4" Cursor="Hand"
+                                                               MouseLeftButtonDown="SetupGuide_Click" Tag="DomainJoin"/>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>

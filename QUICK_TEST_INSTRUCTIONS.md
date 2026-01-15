@@ -10,14 +10,14 @@ cd "C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin"
 
 # Release 1: Base version v3.14.31 (already built)
 gh release create v3.14.31 `
-  CloudJourneyAddin-v3.14.31-COMPLETE.zip `
+  ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip `
   manifest.json `
   --title "v3.14.31 - Auto-Update Test Base"
 
 # Release 2: Build and upload v3.14.32
 .\Build-And-Distribute.ps1
 gh release create v3.14.32 `
-  CloudJourneyAddin-v3.14.32-COMPLETE.zip `
+  ZeroTrustMigrationAddin-v3.14.32-COMPLETE.zip `
   manifest.json `
   --title "v3.14.32 - Auto-Update Test Target"
 ```
@@ -27,14 +27,14 @@ gh release create v3.14.32 `
 ```powershell
 # Download from GitHub or copy from Dropbox
 # Extract ZIP
-Expand-Archive "CloudJourneyAddin-v3.14.31-COMPLETE.zip" -DestinationPath "C:\Temp\CloudJourney"
+Expand-Archive "ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip" -DestinationPath "C:\Temp\CloudJourney"
 
 # Run installer
 cd "C:\Temp\CloudJourney"
-.\Update-CloudJourneyAddin.ps1
+.\Update-ZeroTrustMigrationAddin.ps1
 
 # Verify version
-(Get-Item "$env:LOCALAPPDATA\CloudJourneyAddin\CloudJourneyAddin.exe").VersionInfo.FileVersion
+(Get-Item "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe").VersionInfo.FileVersion
 # Should show: 3.14.31.0
 ```
 
@@ -42,7 +42,7 @@ cd "C:\Temp\CloudJourney"
 
 ```powershell
 # Launch app
-& "$env:LOCALAPPDATA\CloudJourneyAddin\CloudJourneyAddin.exe"
+& "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe"
 
 # Watch for:
 # ✅ Progress window appears automatically (within 5 seconds)
@@ -55,7 +55,7 @@ cd "C:\Temp\CloudJourney"
 
 ```powershell
 # Check updated version
-(Get-Item "$env:LOCALAPPDATA\CloudJourneyAddin\CloudJourneyAddin.exe").VersionInfo.FileVersion
+(Get-Item "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe").VersionInfo.FileVersion
 # Should show: 3.14.32.0
 
 # Verify no re-update loop
@@ -80,7 +80,7 @@ cd "C:\Temp\CloudJourney"
 **No progress window?**
 ```powershell
 # Check logs
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\*.log" -Tail 50 | Select-String "update|GitHub"
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\Logs\*.log" -Tail 50 | Select-String "update|GitHub"
 ```
 
 **App doesn't restart?**
@@ -93,7 +93,7 @@ Get-ExecutionPolicy
 **Update loops forever?**
 ```powershell
 # Check local manifest version
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\manifest.json" | ConvertFrom-Json | Select Version
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\manifest.json" | ConvertFrom-Json | Select Version
 ```
 
 ---
@@ -109,5 +109,5 @@ For complete testing instructions, see [AUTO_UPDATE_TESTING_GUIDE.md](AUTO_UPDAT
 **Version:** 3.14.31
 **Package Size:** 87.89 MB
 **Files:** 286
-**Location:** `C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.31-COMPLETE.zip`
+**Location:** `C:\Users\dannygu\Dropbox\ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip`
 **Manifest:** Includes SHA256 hashes for 278 files

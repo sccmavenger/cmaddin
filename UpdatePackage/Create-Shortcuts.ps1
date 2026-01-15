@@ -1,16 +1,16 @@
-# Create Desktop Shortcut for Cloud Journey Dashboard
+# Create Desktop Shortcut for Zero Trust Migration Journey
 
 $configMgrPath = "F:\Program Files\Microsoft Configuration Manager\AdminConsole"
-$exePath = Join-Path $configMgrPath "bin\bin\CloudJourneyAddin\CloudJourneyAddin.exe"
+$exePath = Join-Path $configMgrPath "bin\bin\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe"
 
 if (-not (Test-Path $exePath)) {
-    Write-Host "[ERROR] CloudJourneyAddin.exe not found!" -ForegroundColor Red
+    Write-Host "[ERROR] ZeroTrustMigrationAddin.exe not found!" -ForegroundColor Red
     exit 1
 }
 
 # Create desktop shortcut
 $desktopPath = [Environment]::GetFolderPath("Desktop")
-$shortcutPath = Join-Path $desktopPath "Cloud Journey Dashboard.lnk"
+$shortcutPath = Join-Path $desktopPath "Zero Trust Migration Journey.lnk"
 
 $WScriptShell = New-Object -ComObject WScript.Shell
 $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
@@ -21,13 +21,13 @@ $shortcut.Save()
 
 Write-Host "[OK] Desktop shortcut created: $shortcutPath" -ForegroundColor Green
 Write-Host ""
-Write-Host "You can now launch the Cloud Journey Dashboard from your desktop!" -ForegroundColor Cyan
+Write-Host "You can now launch the Zero Trust Migration Journey from your desktop!" -ForegroundColor Cyan
 Write-Host ""
 
 # Also create Start Menu shortcut
 $startMenuPath = [Environment]::GetFolderPath("StartMenu")
 $programsPath = Join-Path $startMenuPath "Programs"
-$shortcutPath2 = Join-Path $programsPath "Cloud Journey Dashboard.lnk"
+$shortcutPath2 = Join-Path $programsPath "Zero Trust Migration Journey.lnk"
 
 $shortcut2 = $WScriptShell.CreateShortcut($shortcutPath2)
 $shortcut2.TargetPath = $exePath

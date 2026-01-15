@@ -1,8 +1,8 @@
 using System.Windows;
-using CloudJourneyAddin.Models;
-using CloudJourneyAddin.ViewModels;
+using ZeroTrustMigrationAddin.Models;
+using ZeroTrustMigrationAddin.ViewModels;
 
-namespace CloudJourneyAddin.Views
+namespace ZeroTrustMigrationAddin.Views
 {
     /// <summary>
     /// Interaction logic for UpdateNotificationWindow.xaml

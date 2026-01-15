@@ -1,7 +1,7 @@
 using System;
 using System.Windows;
 
-namespace CloudJourneyAddin.Views
+namespace ZeroTrustMigrationAddin.Views
 {
     public partial class DiagnosticsWindow : Window
     {

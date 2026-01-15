@@ -1,7 +1,7 @@
 using System.Windows;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.Views
+namespace ZeroTrustMigrationAddin.Views
 {
     /// <summary>
     /// Interaction logic for UpdateProgressWindow.xaml

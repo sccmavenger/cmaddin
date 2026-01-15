@@ -1,11 +1,11 @@
-# CloudJourneyAddin Installation Diagnostic Script
+# ZeroTrustMigrationAddin Installation Diagnostic Script
 # Checks for missing dependencies and provides remediation steps
 
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "CloudJourneyAddin - Installation Diagnostic" -ForegroundColor Cyan
+Write-Host "ZeroTrustMigrationAddin - Installation Diagnostic" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -17,8 +17,8 @@ Write-Host ""
 
 # Critical dependencies to check
 $criticalFiles = @(
-    "CloudJourneyAddin.exe",
-    "CloudJourneyAddin.dll",
+    "ZeroTrustMigrationAddin.exe",
+    "ZeroTrustMigrationAddin.dll",
     "Azure.Identity.dll",
     "Microsoft.Graph.dll",
     "Microsoft.Identity.Client.dll",
@@ -70,11 +70,11 @@ if ($missingFiles.Count -gt 0) {
     Write-Host "1. You may have only extracted SOME files from the ZIP" -ForegroundColor White
     Write-Host "2. The update ZIP should contain ~500 files (~90 MB)" -ForegroundColor White
     Write-Host "3. Extract the COMPLETE ZIP again:" -ForegroundColor White
-    Write-Host "   - Right-click CloudJourneyAddin-v1.4.0-FINAL.zip" -ForegroundColor Gray
+    Write-Host "   - Right-click ZeroTrustMigrationAddin-v1.4.0-FINAL.zip" -ForegroundColor Gray
     Write-Host "   - Select 'Extract All...'" -ForegroundColor Gray
     Write-Host "   - Choose a folder" -ForegroundColor Gray
     Write-Host "   - Wait for ALL files to extract" -ForegroundColor Gray
-    Write-Host "4. Then run Update-CloudJourneyAddin.ps1 from the extracted folder" -ForegroundColor White
+    Write-Host "4. Then run Update-ZeroTrustMigrationAddin.ps1 from the extracted folder" -ForegroundColor White
     Write-Host ""
     Write-Host "Expected file count: ~500 files" -ForegroundColor Cyan
     Write-Host "Your file count: $($allFiles.Count) files" -ForegroundColor $(if ($allFiles.Count -lt 400) { "Red" } else { "Green" })
@@ -87,8 +87,8 @@ if ($missingFiles.Count -gt 0) {
     Write-Host "Your installation appears complete." -ForegroundColor Green
     Write-Host ""
     Write-Host "If you're still getting errors:" -ForegroundColor Yellow
-    Write-Host "1. Try running CloudJourneyAddin.exe directly from this folder" -ForegroundColor White
-    Write-Host "2. Check the log file at: %LOCALAPPDATA%\CloudJourneyAddin\Logs" -ForegroundColor White
+    Write-Host "1. Try running ZeroTrustMigrationAddin.exe directly from this folder" -ForegroundColor White
+    Write-Host "2. Check the log file at: %LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs" -ForegroundColor White
     Write-Host "3. Make sure you have .NET 8.0 Runtime installed" -ForegroundColor White
 }
 

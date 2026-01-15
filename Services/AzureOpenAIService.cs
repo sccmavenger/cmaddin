@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.AI.OpenAI;
 using Newtonsoft.Json;
-using static CloudJourneyAddin.Services.FileLogger;
+using static ZeroTrustMigrationAddin.Services.FileLogger;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Service for integrating Azure OpenAI (GPT-4) to enhance AI recommendations.
@@ -43,7 +43,7 @@ namespace CloudJourneyAddin.Services
                 // Load from configuration file
                 string configPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "CloudJourneyAddin",
+                    "ZeroTrustMigrationAddin",
                     "openai-config.json");
 
                 if (File.Exists(configPath))
@@ -642,7 +642,7 @@ namespace CloudJourneyAddin.Services
 
     /// <summary>
     /// Configuration model for Azure OpenAI settings.
-    /// Stored in %APPDATA%\CloudJourneyAddin\openai-config.json
+    /// Stored in %APPDATA%\ZeroTrustMigrationAddin\openai-config.json
     /// </summary>
     public class AzureOpenAIConfig
     {
@@ -653,7 +653,7 @@ namespace CloudJourneyAddin.Services
 
         private static string ConfigPath => System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "CloudJourneyAddin",
+            "ZeroTrustMigrationAddin",
             "openai-config.json");
 
         public static AzureOpenAIConfig Load()

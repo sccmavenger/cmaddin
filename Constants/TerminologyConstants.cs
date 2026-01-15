@@ -1,6 +1,6 @@
 using System;
 
-namespace CloudJourneyAddin.Constants
+namespace ZeroTrustMigrationAddin.Constants
 {
     /// <summary>
     /// Centralized terminology constants for consistent Microsoft Entra branding.

@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace CloudJourneyAddin.Models
+namespace ZeroTrustMigrationAddin.Models
 {
     /// <summary>
     /// Configuration options for tab visibility in the Dashboard Window.
@@ -40,9 +40,9 @@ namespace CloudJourneyAddin.Models
         /// Parse command-line arguments to determine tab visibility.
         /// 
         /// Usage examples:
-        /// - CloudJourneyAddin.exe /hidetabs:enrollment,workloads
-        /// - CloudJourneyAddin.exe /showtabs:overview,enrollment
-        /// - CloudJourneyAddin.exe (shows all tabs by default)
+        /// - ZeroTrustMigrationAddin.exe /hidetabs:enrollment,workloads
+        /// - ZeroTrustMigrationAddin.exe /showtabs:overview,enrollment
+        /// - ZeroTrustMigrationAddin.exe (shows all tabs by default)
         /// </summary>
         public static TabVisibilityOptions ParseArguments(string[] args)
         {

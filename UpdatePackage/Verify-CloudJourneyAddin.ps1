@@ -1,11 +1,11 @@
-# Cloud Journey Add-in - Verification Script
+# Zero Trust Migration Journey Add-in - Verification Script
 # This script checks if the add-in is properly installed
 
 $ErrorActionPreference = "Continue"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Cloud Journey Add-in - Verification" -ForegroundColor Cyan
+Write-Host "Zero Trust Migration Journey Add-in - Verification" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -32,23 +32,23 @@ if (-not $configMgrPath) {
 }
 
 # Check executable
-$exePath = Join-Path $configMgrPath "bin\bin\CloudJourneyAddin\CloudJourneyAddin.exe"
+$exePath = Join-Path $configMgrPath "bin\bin\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe"
 if (Test-Path $exePath) {
-    Write-Host "[OK] CloudJourneyAddin.exe found" -ForegroundColor Green
+    Write-Host "[OK] ZeroTrustMigrationAddin.exe found" -ForegroundColor Green
 } else {
-    Write-Host "[ERROR] CloudJourneyAddin.exe NOT found at: $exePath" -ForegroundColor Red
+    Write-Host "[ERROR] ZeroTrustMigrationAddin.exe NOT found at: $exePath" -ForegroundColor Red
 }
 
 # Check DLL
-$dllPath = Join-Path $configMgrPath "bin\bin\CloudJourneyAddin\CloudJourneyAddin.dll"
+$dllPath = Join-Path $configMgrPath "bin\bin\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.dll"
 if (Test-Path $dllPath) {
-    Write-Host "[OK] CloudJourneyAddin.dll found" -ForegroundColor Green
+    Write-Host "[OK] ZeroTrustMigrationAddin.dll found" -ForegroundColor Green
 } else {
-    Write-Host "[ERROR] CloudJourneyAddin.dll NOT found at: $dllPath" -ForegroundColor Red
+    Write-Host "[ERROR] ZeroTrustMigrationAddin.dll NOT found at: $dllPath" -ForegroundColor Red
 }
 
 # Check XML in Extensions folder
-$xmlPath = Join-Path $configMgrPath "bin\XmlStorage\Extensions\Actions\CloudJourneyAddin.xml"
+$xmlPath = Join-Path $configMgrPath "bin\XmlStorage\Extensions\Actions\ZeroTrustMigrationAddin.xml"
 if (Test-Path $xmlPath) {
     Write-Host "[OK] XML manifest found in Extensions folder" -ForegroundColor Green
     Write-Host "     Location: $xmlPath" -ForegroundColor Gray

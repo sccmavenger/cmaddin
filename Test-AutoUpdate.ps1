@@ -11,13 +11,13 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║     Cloud Journey Auto-Update Manual Test Launcher       ║" -ForegroundColor Cyan
+Write-Host "║     Zero Trust Migration Journey Auto-Update Manual Test Launcher       ║" -ForegroundColor Cyan
 Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 
 $testRootPath = "C:\TestInstall\CloudJourney"
 $versionPath = Join-Path $testRootPath "v$Version"
-$packageName = "CloudJourneyAddin-v$Version-COMPLETE.zip"
+$packageName = "ZeroTrustMigrationAddin-v$Version-COMPLETE.zip"
 
 # Check if package exists
 if (!(Test-Path $packageName)) {
@@ -35,7 +35,7 @@ if (Test-Path $versionPath) {
     Write-Host "🧹 Cleaning previous test installation..." -ForegroundColor Yellow
     
     # Kill any running instances
-    Get-Process -Name "CloudJourneyAddin" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process -Name "ZeroTrustMigrationAddin" -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Seconds 1
     
     Remove-Item $versionPath -Recurse -Force
@@ -58,7 +58,7 @@ Write-Host ""
 
 # Verify critical files
 Write-Host "✅ Verifying installation..." -ForegroundColor Yellow
-$criticalFiles = @("CloudJourneyAddin.exe", "Azure.Identity.dll", "Microsoft.Graph.dll")
+$criticalFiles = @("ZeroTrustMigrationAddin.exe", "Azure.Identity.dll", "Microsoft.Graph.dll")
 $allPresent = $true
 
 foreach ($file in $criticalFiles) {
@@ -107,11 +107,11 @@ Write-Host "   $env:LOCALAPPDATA\CloudJourney\Logs\" -ForegroundColor White
 Write-Host ""
 Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Press Enter to launch CloudJourneyAddin v$Version..." -ForegroundColor Yellow
+Write-Host "Press Enter to launch ZeroTrustMigrationAddin v$Version..." -ForegroundColor Yellow
 Read-Host
 
 # Launch application
-$exePath = Join-Path $versionPath "CloudJourneyAddin.exe"
+$exePath = Join-Path $versionPath "ZeroTrustMigrationAddin.exe"
 Write-Host "🚀 Launching application..." -ForegroundColor Green
 Write-Host ""
 

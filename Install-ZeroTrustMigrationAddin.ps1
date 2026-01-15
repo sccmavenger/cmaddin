@@ -1,7 +1,7 @@
 
 <#
 .SYNOPSIS
-    Automated installer for ConfigMgr Cloud Journey Progress Add-in
+    Automated installer for ConfigMgr Zero Trust Migration Journey Progress Add-in
 .DESCRIPTION
     This script automatically:
     - Checks for prerequisites
@@ -14,9 +14,9 @@
 .PARAMETER ConfigMgrPath
     Custom ConfigMgr Console installation path
 .EXAMPLE
-    .\Install-CloudJourneyAddin.ps1
+    .\Install-ZeroTrustMigrationAddin.ps1
 .EXAMPLE
-    .\Install-CloudJourneyAddin.ps1 -SkipBuild -ConfigMgrPath "C:\Custom\Path"
+    .\Install-ZeroTrustMigrationAddin.ps1 -SkipBuild -ConfigMgrPath "C:\Custom\Path"
 #>
 
 [CmdletBinding()]
@@ -35,7 +35,7 @@ function Write-Warning { Write-Host "[WARN] $args" -ForegroundColor Yellow }
 function Write-Error { Write-Host "[ERROR] $args" -ForegroundColor Red }
 
 Write-Host "`n===================================================" -ForegroundColor Cyan
-Write-Host "   ConfigMgr Cloud Journey Progress Add-in Installer" -ForegroundColor Cyan
+Write-Host "   ConfigMgr Zero Trust Migration Journey Progress Add-in Installer" -ForegroundColor Cyan
 Write-Host "===================================================`n" -ForegroundColor Cyan
 
 # ============================================================================
@@ -108,7 +108,7 @@ if (-not $ConfigMgrPath) {
 
 if (-not $ConfigMgrPath -or -not (Test-Path $ConfigMgrPath)) {
     Write-Error "ConfigMgr Console not found. Please specify the path using -ConfigMgrPath parameter."
-    Write-Info "Example: .\Install-CloudJourneyAddin.ps1 -ConfigMgrPath 'F:\Program Files\Microsoft Configuration Manager\AdminConsole'"
+    Write-Info "Example: .\Install-ZeroTrustMigrationAddin.ps1 -ConfigMgrPath 'F:\Program Files\Microsoft Configuration Manager\AdminConsole'"
     exit 1
 }
 
@@ -158,9 +158,9 @@ if (-not $dotnetVersions) {
 # Step 4: Build the Application
 # ============================================================================
 if (-not $SkipBuild) {
-    Write-Info "Building Cloud Journey Add-in with all dependencies..."
+    Write-Info "Building Zero Trust Migration Journey Add-in with all dependencies..."
     
-    $projectPath = Join-Path $PSScriptRoot "CloudJourneyAddin.csproj"
+    $projectPath = Join-Path $PSScriptRoot "ZeroTrustMigrationAddin.csproj"
     
     if (-not (Test-Path $projectPath)) {
         Write-Error "Project file not found: $projectPath"
@@ -226,8 +226,8 @@ if (-not (Test-Path $extensionsPath)) {
     New-Item -ItemType Directory -Path $extensionsPath -Force | Out-Null
 }
 
-$xmlSource = Join-Path $PSScriptRoot "CloudJourneyAddin.xml"
-$xmlDest = Join-Path $extensionsPath "CloudJourneyAddin.xml"
+$xmlSource = Join-Path $PSScriptRoot "ZeroTrustMigrationAddin.xml"
+$xmlDest = Join-Path $extensionsPath "ZeroTrustMigrationAddin.xml"
 
 if (-not (Test-Path $xmlSource)) {
     Write-Error "XML manifest not found: $xmlSource"
@@ -242,7 +242,7 @@ Write-Success "XML manifest deployed to: $xmlDest"
 # ============================================================================
 Write-Info "Deploying application binaries..."
 
-$addInPath = Join-Path $binPath "CloudJourneyAddin"
+$addInPath = Join-Path $binPath "ZeroTrustMigrationAddin"
 
 # Create dedicated folder for add-in
 if (-not (Test-Path $addInPath)) {
@@ -270,7 +270,7 @@ Write-Success "Deployed $fileCount files to: $addInPath"
 
 # Update XML to point to new location
 $xmlContent = Get-Content $xmlDest -Raw
-$xmlContent = $xmlContent -replace '<FilePath>CloudJourneyAddin\.exe</FilePath>', "<FilePath>CloudJourneyAddin\CloudJourneyAddin.exe</FilePath>"
+$xmlContent = $xmlContent -replace '<FilePath>ZeroTrustMigrationAddin\.exe</FilePath>', "<FilePath>ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe</FilePath>"
 Set-Content -Path $xmlDest -Value $xmlContent
 
 # ============================================================================
@@ -279,10 +279,10 @@ Set-Content -Path $xmlDest -Value $xmlContent
 Write-Info "Creating uninstaller..."
 
 $uninstallScript = @"
-# Cloud Journey Add-in Uninstaller
+# Zero Trust Migration Journey Add-in Uninstaller
 `$ErrorActionPreference = "Stop"
 
-Write-Host "Uninstalling Cloud Journey Add-in..." -ForegroundColor Yellow
+Write-Host "Uninstalling Zero Trust Migration Journey Add-in..." -ForegroundColor Yellow
 
 # Close ConfigMgr Console if running
 `$process = Get-Process -Name "Microsoft.ConfigurationManagement" -ErrorAction SilentlyContinue
@@ -306,12 +306,12 @@ if (Test-Path `$binPath) {
     Write-Host "✓ Removed application files" -ForegroundColor Green
 }
 
-Write-Host "`nCloud Journey Add-in has been uninstalled." -ForegroundColor Green
+Write-Host "`nZero Trust Migration Journey Add-in has been uninstalled." -ForegroundColor Green
 Write-Host "You can now restart ConfigMgr Console." -ForegroundColor Cyan
 Pause
 "@
 
-$uninstallPath = Join-Path $PSScriptRoot "Uninstall-CloudJourneyAddin.ps1"
+$uninstallPath = Join-Path $PSScriptRoot "Uninstall-ZeroTrustMigrationAddin.ps1"
 Set-Content -Path $uninstallPath -Value $uninstallScript
 Write-Success "Uninstaller created: $uninstallPath"
 
@@ -326,11 +326,11 @@ if (-not (Test-Path $xmlDest)) {
     $validationErrors += "XML manifest not found at expected location"
 }
 
-if (-not (Test-Path (Join-Path $addInPath "CloudJourneyAddin.exe"))) {
+if (-not (Test-Path (Join-Path $addInPath "ZeroTrustMigrationAddin.exe"))) {
     $validationErrors += "Main executable not found"
 }
 
-if (-not (Test-Path (Join-Path $addInPath "CloudJourneyAddin.dll"))) {
+if (-not (Test-Path (Join-Path $addInPath "ZeroTrustMigrationAddin.dll"))) {
     $validationErrors += "Main assembly not found"
 }
 
@@ -357,10 +357,10 @@ Write-Host "  - Files Deployed: $fileCount" -ForegroundColor White
 
 Write-Host "`nNext Steps:" -ForegroundColor Yellow
 Write-Host "  1. Launch ConfigMgr Console" -ForegroundColor White
-Write-Host "  2. Look for Cloud Journey Progress in the ribbon" -ForegroundColor White
+Write-Host "  2. Look for Zero Trust Migration Journey Progress in the ribbon" -ForegroundColor White
 Write-Host "  3. Click to open the dashboard" -ForegroundColor White
 
-Write-Host "`nTo uninstall, run: .\Uninstall-CloudJourneyAddin.ps1" -ForegroundColor Gray
+Write-Host "`nTo uninstall, run: .\Uninstall-ZeroTrustMigrationAddin.ps1" -ForegroundColor Gray
 
 Write-Host "`nPress any key to exit..."
 $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')

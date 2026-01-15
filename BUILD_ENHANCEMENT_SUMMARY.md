@@ -76,7 +76,7 @@ Auto-inserts new entry template:
 ### ✅ 7. Release Notes Auto-Generation
 Creates professional release notes:
 ```markdown
-## Cloud Journey Add-in v3.14.32
+## Zero Trust Migration Journey Add-in v3.14.32
 
 ### Changes
 - See CHANGELOG.md for detailed changes

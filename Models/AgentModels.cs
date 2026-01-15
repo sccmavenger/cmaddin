@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace CloudJourneyAddin.Models
+namespace ZeroTrustMigrationAddin.Models
 {
     /// <summary>
     /// Base class for all agent tools that can be invoked during ReAct loop

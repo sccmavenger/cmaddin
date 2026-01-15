@@ -1,7 +1,7 @@
 # Auto-Update Testing Workflow
 
 **Date:** January 13, 2026  
-**Tester:** Cloud Journey Development Team  
+**Tester:** Zero Trust Migration Journey Development Team  
 **Goal:** Validate complete auto-update mechanism from v3.14.32 → v3.14.33
 
 ---
@@ -9,8 +9,8 @@
 ## Current State
 
 ✅ **Local Packages:**
-- CloudJourneyAddin-v3.14.31-COMPLETE.zip (87.89 MB)
-- CloudJourneyAddin-v3.14.32-COMPLETE.zip (87.89 MB)
+- ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip (87.89 MB)
+- ZeroTrustMigrationAddin-v3.14.32-COMPLETE.zip (87.89 MB)
 
 ✅ **manifest.json:** Version 3.14.32
 
@@ -47,8 +47,8 @@ Install v3.14.31 → Update to v3.14.32 → Update to v3.14.33
 ```powershell
 # Create GitHub release for v3.14.31
 gh release create v3.14.31 `
-  CloudJourneyAddin-v3.14.31-COMPLETE.zip `
-  --title "Cloud Journey Add-in v3.14.31 - Baseline" `
+  ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip `
+  --title "Zero Trust Migration Journey Add-in v3.14.31 - Baseline" `
   --notes "Baseline version for testing auto-update mechanism."
 ```
 
@@ -63,12 +63,12 @@ gh release create v3.14.31 `
 ```powershell
 # Extract v3.14.31 package
 $tempPath = "C:\Temp\CloudJourney_v3.14.31"
-Expand-Archive -Path "CloudJourneyAddin-v3.14.31-COMPLETE.zip" -DestinationPath $tempPath -Force
+Expand-Archive -Path "ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip" -DestinationPath $tempPath -Force
 
 # Generate manifest
 $manifest = @{
     Version = "3.14.31"
-    BuildDate = (Get-Item "CloudJourneyAddin-v3.14.31-COMPLETE.zip").LastWriteTimeUtc.ToString("o")
+    BuildDate = (Get-Item "ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip").LastWriteTimeUtc.ToString("o")
     Files = @()
     TotalSize = 0
 }
@@ -98,9 +98,9 @@ Remove-Item $tempPath -Recurse -Force
 # Re-create release with manifest
 gh release delete v3.14.31 --yes
 gh release create v3.14.31 `
-  CloudJourneyAddin-v3.14.31-COMPLETE.zip `
+  ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip `
   manifest-v3.14.31.json `
-  --title "Cloud Journey Add-in v3.14.31 - Baseline" `
+  --title "Zero Trust Migration Journey Add-in v3.14.31 - Baseline" `
   --notes "Baseline version for auto-update testing. This version will check for and download updates to v3.14.32+."
 ```
 
@@ -117,9 +117,9 @@ Copy-Item "manifest.json" "manifest-v3.14.32.json"
 
 # Create GitHub release
 gh release create v3.14.32 `
-  CloudJourneyAddin-v3.14.32-COMPLETE.zip `
+  ZeroTrustMigrationAddin-v3.14.32-COMPLETE.zip `
   manifest.json `
-  --title "Cloud Journey Add-in v3.14.32 - First Update" `
+  --title "Zero Trust Migration Journey Add-in v3.14.32 - First Update" `
   --notes "First update target for auto-update testing.
 
 ### Changes from v3.14.31
@@ -167,13 +167,13 @@ Users on v3.14.31 or v3.14.32 will receive automatic update prompt."
 1. **Extract v3.14.31 to test folder:**
    ```powershell
    $testPath = "C:\TestInstall\CloudJourney_v3.14.31"
-   Expand-Archive -Path "CloudJourneyAddin-v3.14.31-COMPLETE.zip" -DestinationPath $testPath -Force
+   Expand-Archive -Path "ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip" -DestinationPath $testPath -Force
    ```
 
 2. **Launch application:**
    ```powershell
    cd $testPath
-   .\CloudJourneyAddin.exe
+   .\ZeroTrustMigrationAddin.exe
    ```
 
 3. **Wait for update check** (happens automatically on launch)

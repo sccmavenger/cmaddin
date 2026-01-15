@@ -1,10 +1,10 @@
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Provides AI-powered enrollment momentum insights and recommendations.

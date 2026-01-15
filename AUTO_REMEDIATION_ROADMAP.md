@@ -261,6 +261,6 @@ public class EnrollmentPredictionService
 
 ---
 
-**Author**: Cloud Journey Team  
+**Author**: Zero Trust Migration Journey Team  
 **Date**: January 9, 2026  
 **Version**: 1.0 (Roadmap Draft)

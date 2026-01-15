@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Phase 2: Risk-based assessment for conditional autonomy

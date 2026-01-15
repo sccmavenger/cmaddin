@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `Build-And-Distribute.ps1` script is the **canonical build automation tool** for Cloud Journey Add-in. It handles all aspects of building, packaging, testing, and distributing releases with comprehensive validation and optional GitHub integration.
+The `Build-And-Distribute.ps1` script is the **canonical build automation tool** for Zero Trust Migration Journey Add-in. It handles all aspects of building, packaging, testing, and distributing releases with comprehensive validation and optional GitHub integration.
 
 **Version:** 2.0.0  
 **Status:** Production-ready, all recommended improvements implemented  
@@ -71,7 +71,7 @@ The `Build-And-Distribute.ps1` script is the **canonical build automation tool**
 
 ### ✅ Automated Version Management
 - Auto-increments version across **6 required locations**:
-  1. `CloudJourneyAddin.csproj` (Version, AssemblyVersion, FileVersion)
+  1. `ZeroTrustMigrationAddin.csproj` (Version, AssemblyVersion, FileVersion)
   2. `README.md` (all version references)
   3. `USER_GUIDE.md` (if exists)
   4. `Views/DashboardWindow.xaml` (UI version display)
@@ -92,7 +92,7 @@ The `Build-And-Distribute.ps1` script is the **canonical build automation tool**
    - Clean working directory validation
 
 3. **Project Configuration**
-   - CloudJourneyAddin.csproj exists
+   - ZeroTrustMigrationAddin.csproj exists
    - Can read current version
 
 4. **Disk Space Check**
@@ -107,13 +107,13 @@ The `Build-And-Distribute.ps1` script is the **canonical build automation tool**
 - Self-contained win-x64 deployment
 - .NET 8.0 targeting
 - Verification of critical DLLs:
-  - `CloudJourneyAddin.exe`
+  - `ZeroTrustMigrationAddin.exe`
   - `Azure.Identity.dll`
   - `Microsoft.Graph.dll`
   - And ~275 more files
 
 ### ✅ Advanced Packaging
-- Creates `CloudJourneyAddin-vX.X.X-COMPLETE.zip`
+- Creates `ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip`
 - Includes binaries + PowerShell update scripts
 - Optimal compression
 - Integrity verification
@@ -233,7 +233,7 @@ The `Build-And-Distribute.ps1` script is the **canonical build automation tool**
 1. Read current version from .csproj
 2. Calculate new version (auto-increment or explicit)
 3. Update all 6 version locations:
-   - CloudJourneyAddin.csproj (3 properties)
+   - ZeroTrustMigrationAddin.csproj (3 properties)
    - README.md
    - USER_GUIDE.md
    - DashboardWindow.xaml
@@ -273,7 +273,7 @@ switch ($BumpVersion) {
 1. Copy files to temp folder
    - All publish binaries
    - PowerShell update scripts
-   - CloudJourneyAddin.xml
+   - ZeroTrustMigrationAddin.xml
 2. Compress to ZIP (optimal compression)
 3. Generate manifest.json:
    - SHA256 hash for each file
@@ -284,7 +284,7 @@ switch ($BumpVersion) {
 ```
 
 **Output:**
-- `CloudJourneyAddin-vX.X.X-COMPLETE.zip` (~88 MB)
+- `ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip` (~88 MB)
 - `manifest.json` (~200 KB, 278 entries)
 - `builds/manifests/manifest-vX.X.X.json` (archived)
 
@@ -311,7 +311,7 @@ switch ($BumpVersion) {
 5. Display bandwidth savings (delta updates)
 ```
 
-**Output:** Package copied to `$DistributionPath\CloudJourneyAddin-vX.X.X-COMPLETE.zip`
+**Output:** Package copied to `$DistributionPath\ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip`
 
 ### Stage 8: GitHub Release (Optional)
 ```
@@ -346,7 +346,7 @@ switch ($BumpVersion) {
 
 ### Version Numbering Scheme
 
-Cloud Journey Add-in uses **Semantic Versioning (SemVer)**: `MAJOR.MINOR.PATCH`
+Zero Trust Migration Journey Add-in uses **Semantic Versioning (SemVer)**: `MAJOR.MINOR.PATCH`
 
 - **MAJOR** (X.0.0): Breaking changes, major feature overhauls
 - **MINOR** (X.Y.0): New features, backward-compatible
@@ -356,7 +356,7 @@ Cloud Journey Add-in uses **Semantic Versioning (SemVer)**: `MAJOR.MINOR.PATCH`
 
 The script updates version in **6 critical locations** to maintain consistency:
 
-#### 1. CloudJourneyAddin.csproj
+#### 1. ZeroTrustMigrationAddin.csproj
 ```xml
 <PropertyGroup>
     <Version>3.14.32</Version>
@@ -384,7 +384,7 @@ Version 3.14.32
 
 #### 3. USER_GUIDE.md (if exists)
 ```markdown
-Cloud Journey Dashboard v3.14.32
+Zero Trust Migration Journey v3.14.32
 ```
 
 **Why:** User documentation consistency
@@ -466,7 +466,7 @@ if ($verify.Version -ne $newVersion) {
   "BuildDate": "2024-01-15T10:30:00.000Z",
   "Files": [
     {
-      "RelativePath": "CloudJourneyAddin.exe",
+      "RelativePath": "ZeroTrustMigrationAddin.exe",
       "SHA256Hash": "a1b2c3d4...",
       "FileSize": 1234567,
       "LastModified": "2024-01-15T10:25:00.000Z",
@@ -498,8 +498,8 @@ foreach ($file in $publishFiles) {
 
 Marked with `"IsCritical": true` for priority delta download:
 
-- `CloudJourneyAddin.exe`
-- `CloudJourneyAddin.dll`
+- `ZeroTrustMigrationAddin.exe`
+- `ZeroTrustMigrationAddin.dll`
 - `Azure.Identity.dll`
 - `Microsoft.Graph.dll`
 - `Microsoft.Graph.Core.dll`
@@ -567,7 +567,7 @@ When `-PublishToGitHub` is used:
 
 Two files are uploaded:
 
-1. **CloudJourneyAddin-vX.X.X-COMPLETE.zip** - Full package
+1. **ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip** - Full package
 2. **manifest.json** - Update manifest for delta downloads
 
 ### Release Notes
@@ -575,15 +575,15 @@ Two files are uploaded:
 **Auto-generated template** (if `-ReleaseNotes` not provided):
 
 ```markdown
-## Cloud Journey Add-in vX.X.X
+## Zero Trust Migration Journey Add-in vX.X.X
 
 ### Changes
 - See CHANGELOG.md for detailed changes
 
 ### Installation
-1. Download CloudJourneyAddin-vX.X.X-COMPLETE.zip
+1. Download ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip
 2. Extract all files to installation directory
-3. Run CloudJourneyAddin.exe
+3. Run ZeroTrustMigrationAddin.exe
 
 ### Auto-Update
 Existing users on vX.Y.Z will receive automatic update prompt.
@@ -718,7 +718,7 @@ builds/logs/build-YYYYMMDD-HHMMSS.log
 #### Version Update Failed
 ```powershell
 # Manual rollback
-git checkout CloudJourneyAddin.csproj README.md # ...all changed files
+git checkout ZeroTrustMigrationAddin.csproj README.md # ...all changed files
 git status  # Verify rollback
 ```
 
@@ -735,7 +735,7 @@ git clean -fd
 #### Package Created but Distribution Failed
 ```powershell
 # Manually copy package
-Copy-Item "CloudJourneyAddin-vX.X.X-COMPLETE.zip" "C:\Users\dannygu\Dropbox"
+Copy-Item "ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip" "C:\Users\dannygu\Dropbox"
 Copy-Item "manifest.json" "C:\Users\dannygu\Dropbox"
 ```
 
@@ -743,9 +743,9 @@ Copy-Item "manifest.json" "C:\Users\dannygu\Dropbox"
 ```powershell
 # Manual release creation
 gh release create vX.X.X `
-    CloudJourneyAddin-vX.X.X-COMPLETE.zip `
+    ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip `
     manifest.json `
-    --title "Cloud Journey Add-in vX.X.X" `
+    --title "Zero Trust Migration Journey Add-in vX.X.X" `
     --notes-file release-notes.md
 ```
 
@@ -972,7 +972,7 @@ param(
 
 3. **Verify all 6 version locations manually**
    ```powershell
-   Select-String -Path "CloudJourneyAddin.csproj","README.md" -Pattern "99.99.99"
+   Select-String -Path "ZeroTrustMigrationAddin.csproj","README.md" -Pattern "99.99.99"
    ```
 
 4. **Test rollback by forcing error**
@@ -1046,7 +1046,7 @@ param(
 
 ```
 ╔═══════════════════════════════════════════════════════════════╗
-║         CLOUD JOURNEY BUILD SCRIPT QUICK REFERENCE            ║
+║         Zero Trust Migration Journey BUILD SCRIPT QUICK REFERENCE            ║
 ╠═══════════════════════════════════════════════════════════════╣
 ║ COMMON TASKS:                                                 ║
 ║   Patch build:       .\Build-And-Distribute.ps1              ║
@@ -1057,12 +1057,12 @@ param(
 ║   Force dirty:       -Force                                   ║
 ║                                                               ║
 ║ OUTPUTS:                                                      ║
-║   Package:    CloudJourneyAddin-vX.X.X-COMPLETE.zip (~88 MB) ║
+║   Package:    ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip (~88 MB) ║
 ║   Manifest:   manifest.json (~200 KB, 278 files)             ║
 ║   Log:        builds/logs/build-YYYYMMDD-HHMMSS.log          ║
 ║                                                               ║
 ║ VERSION LOCATIONS (6):                                        ║
-║   1. CloudJourneyAddin.csproj                                ║
+║   1. ZeroTrustMigrationAddin.csproj                                ║
 ║   2. README.md                                               ║
 ║   3. USER_GUIDE.md                                           ║
 ║   4. Views/DashboardWindow.xaml                              ║

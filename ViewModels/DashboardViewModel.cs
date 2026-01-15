@@ -5,14 +5,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using CloudJourneyAddin.Models;
-using CloudJourneyAddin.Services;
-using CloudJourneyAddin.Services.AgentTools;
+using ZeroTrustMigrationAddin.Models;
+using ZeroTrustMigrationAddin.Services;
+using ZeroTrustMigrationAddin.Services.AgentTools;
 using LiveCharts;
 using LiveCharts.Wpf;
-using static CloudJourneyAddin.Services.FileLogger;
+using static ZeroTrustMigrationAddin.Services.FileLogger;
 
-namespace CloudJourneyAddin.ViewModels
+namespace ZeroTrustMigrationAddin.ViewModels
 {
     public class DashboardViewModel : ViewModelBase
     {
@@ -37,7 +37,7 @@ namespace CloudJourneyAddin.ViewModels
         private bool _isConfigMgrConnected;
         private DateTime _lastProgressDate;
         private System.Text.StringBuilder _connectionLog = new System.Text.StringBuilder();
-        private CloudJourneyAddin.Services.MigrationPlan? _migrationPlan;
+        private ZeroTrustMigrationAddin.Services.MigrationPlan? _migrationPlan;
         private int _excellentReadinessCount;
         private int _goodReadinessCount;
         private int _fairReadinessCount;
@@ -156,7 +156,8 @@ namespace CloudJourneyAddin.ViewModels
             
             // Initialize file logger
             Instance.Info("======== CloudJourney Dashboard Starting ========");
-            Instance.Info($"Version: 3.13.0 - Enrollment Agent (Production Build)");
+            var assemblyVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+            Instance.Info($"Version: {assemblyVersion} - Enrollment Agent (Production Build)");
             Instance.Info($"User: {Environment.UserName}");
             Instance.Info($"Machine: {Environment.MachineName}");
             Instance.CleanupOldLogs(7); // Keep last 7 days
@@ -330,6 +331,13 @@ namespace CloudJourneyAddin.ViewModels
             }
         }
 
+        private SeriesCollection? _deviceIdentityPieSeries;
+        public SeriesCollection? DeviceIdentityPieSeries
+        {
+            get => _deviceIdentityPieSeries;
+            set => SetProperty(ref _deviceIdentityPieSeries, value);
+        }
+
         public ComplianceScore? ComplianceScore
         {
             get => _complianceScore;
@@ -405,7 +413,7 @@ namespace CloudJourneyAddin.ViewModels
         }
 
         // Phase 1 AI Enhancement Properties
-        public CloudJourneyAddin.Services.MigrationPlan? MigrationPlan
+        public ZeroTrustMigrationAddin.Services.MigrationPlan? MigrationPlan
         {
             get => _migrationPlan;
             set => SetProperty(ref _migrationPlan, value);
@@ -1042,14 +1050,30 @@ namespace CloudJourneyAddin.ViewModels
                 await TryManualConfigMgrConnection(siteServer);
             };
             
-            // Overall authentication status
-            bool fullyAuthenticated = IsFullyAuthenticated;
-            string overallStatus = fullyAuthenticated 
+            // CRITICAL: Check ACTUAL runtime state, not cached properties
+            bool graphConnected = _graphDataService?.IsAuthenticated ?? false;
+            bool configMgrConnected = _graphDataService?.ConfigMgrService?.IsConfigured ?? false;
+            bool aiConnected = _aiRecommendationService != null && (_aiRecommendationService?.IsConfigured ?? false);
+            
+            // Log actual state for debugging
+            Instance.Info($"[DIAGNOSTICS] Graph: {graphConnected}, ConfigMgr: {configMgrConnected}, AI: {aiConnected}, UseRealData: {UseRealData}");
+            
+            // Overall authentication status - based on ACTUAL state, not cached property
+            bool actuallyShowingRealData = graphConnected && configMgrConnected;
+            string overallStatus = actuallyShowingRealData 
                 ? "✅ FULLY AUTHENTICATED - Showing REAL DATA" 
                 : "⚠️ NOT FULLY AUTHENTICATED - Showing MOCK DATA";
             
+            // Add warning if cached property disagrees with reality
+            if (actuallyShowingRealData != UseRealData)
+            {
+                overallStatus += $"\n\n⚠️ WARNING: UI state mismatch detected!\n" +
+                    $"Expected UseRealData: {actuallyShowingRealData}\n" +
+                    $"Actual UseRealData: {UseRealData}";
+                Instance.Warning($"[DIAGNOSTICS] STATE MISMATCH: Expected UseRealData={actuallyShowingRealData}, Actual={UseRealData}");
+            }
+            
             // Graph status
-            bool graphConnected = _graphDataService.IsAuthenticated;
             diagWindow.SetGraphStatus(
                 graphConnected,
                 graphConnected ? 
@@ -1061,9 +1085,8 @@ namespace CloudJourneyAddin.ViewModels
             );
 
             // ConfigMgr status - Now with explicit connection details
-            bool configMgrConnected = _graphDataService.ConfigMgrService.IsConfigured;
-            string configMgrMethod = _graphDataService.ConfigMgrService.ConnectionMethod;
-            string connectionError = _graphDataService.ConfigMgrService.LastConnectionError;
+            string configMgrMethod = _graphDataService?.ConfigMgrService?.ConnectionMethod ?? "Unknown";
+            string connectionError = _graphDataService?.ConfigMgrService?.LastConnectionError ?? "Unknown";
             
             string statusMessage;
             if (configMgrConnected)
@@ -1073,7 +1096,9 @@ namespace CloudJourneyAddin.ViewModels
                     $"Status: Ready to query ConfigMgr device inventory\n\n" +
                     $"What this means:\n";
                 
-                if (_graphDataService.ConfigMgrService.IsUsingWmiFallback)
+                // Null-safe check for IsUsingWmiFallback
+                bool usingWmiFallback = _graphDataService?.ConfigMgrService?.IsUsingWmiFallback ?? false;
+                if (usingWmiFallback)
                 {
                     statusMessage += "• Admin Service (REST API) connection failed or unavailable\n" +
                         "• Automatically fell back to WMI (ConfigMgr SDK)\n" +
@@ -1113,7 +1138,6 @@ namespace CloudJourneyAddin.ViewModels
             );
 
             // Azure OpenAI status
-            bool aiConnected = _aiRecommendationService != null;
             diagWindow.SetAIStatus(
                 aiConnected,
                 aiConnected ?
@@ -1121,14 +1145,14 @@ namespace CloudJourneyAddin.ViewModels
                     "❌ Not configured\nClick '🤖 AI' button to configure Azure OpenAI",
                 aiConnected ?
                     "Required for: AI-powered recommendations, stall analysis, migration insights" :
-                    "NOT CONFIGURED - Required for real data"
+                    "NOT CONFIGURED - Optional enhancement"
             );
 
-            // Overall authentication message
+            // Overall authentication message - use actual state
             diagWindow.SetOverallStatus(
-                IsDataSourceConnected,
+                actuallyShowingRealData,
                 overallStatus,
-                IsDataSourceConnected ?
+                actuallyShowingRealData ?
                     "Data sources connected. Dashboard is showing real data from your environment." +
                     (!aiConnected ? "\n\n⚠️ Azure OpenAI not configured - AI features limited." : "") :
                     "⚠️ IMPORTANT: Both Microsoft Graph AND Configuration Manager must be connected to view real data.\n\n" +
@@ -1139,16 +1163,16 @@ namespace CloudJourneyAddin.ViewModels
                     "Mock data is being displayed until both data sources are connected."
             );
 
-            // Sections status
+            // Sections status - use actual state
             var sectionsStatus = new System.Text.StringBuilder();
-            sectionsStatus.AppendLine($"1. Overall Migration Status: {(IsDataSourceConnected ? "✅ REAL (from Intune workload policies)" : "❌ MOCK (placeholder)")}");
-            sectionsStatus.AppendLine($"2. Device Enrollment: {(IsDataSourceConnected ? "✅ REAL (from Intune + ConfigMgr)" : "❌ MOCK")}");
-            sectionsStatus.AppendLine($"3. Workload Status: {(IsDataSourceConnected ? "✅ REAL (detected from Intune policies)" : "❌ MOCK")}");
-            sectionsStatus.AppendLine($"4. Security & Compliance: {(IsDataSourceConnected ? "✅ REAL (from Intune compliance policies)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"1. Overall Migration Status: {(actuallyShowingRealData ? "✅ REAL (from Intune workload policies)" : "❌ MOCK (placeholder)")}");
+            sectionsStatus.AppendLine($"2. Device Enrollment: {(actuallyShowingRealData ? "✅ REAL (from Intune + ConfigMgr)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"3. Workload Status: {(actuallyShowingRealData ? "✅ REAL (detected from Intune policies)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"4. Security & Compliance: {(actuallyShowingRealData ? "✅ REAL (from Intune compliance policies)" : "❌ MOCK")}");
             sectionsStatus.AppendLine($"5. ROI & Savings: ⚠️ ESTIMATED (industry averages, not real cost data)");
-            sectionsStatus.AppendLine($"6. Enrollment Readiness: {(IsDataSourceConnected ? "✅ REAL (detected enrollment prerequisites)" : "❌ MOCK")}");
+            sectionsStatus.AppendLine($"6. Enrollment Readiness: {(actuallyShowingRealData ? "✅ REAL (detected enrollment prerequisites)" : "❌ MOCK")}");
             sectionsStatus.AppendLine($"7. Peer Benchmarking: ⚠️ ESTIMATED (Microsoft published statistics, not live comparison)");
-            sectionsStatus.AppendLine($"8. Alerts & Recommendations: {(_aiRecommendationService != null ? "✅ AI-POWERED (GPT-4)" : "⚠️ BASIC (AI not configured)")}");
+            sectionsStatus.AppendLine($"8. Alerts & Recommendations: {(aiConnected ? "✅ AI-POWERED (GPT-4)" : "⚠️ BASIC (AI not configured)")}");
             sectionsStatus.AppendLine($"9. Recent Milestones: ⚠️ PREDEFINED (example milestones, not detected achievements)");
             sectionsStatus.AppendLine($"10. Support & Engagement: ✅ REAL (Microsoft resources links)");
             
@@ -1864,6 +1888,46 @@ namespace CloudJourneyAddin.ViewModels
                 Instance.Info("Loading device enrollment from Graph API...");
                 DeviceEnrollment = await _graphDataService.GetDeviceEnrollmentAsync();
                 Instance.Info($"Device Enrollment loaded: Total={DeviceEnrollment?.TotalDevices}, Intune={DeviceEnrollment?.IntuneEnrolledDevices}, ConfigMgr={DeviceEnrollment?.ConfigMgrOnlyDevices}");
+
+                // Populate pie chart series
+                if (DeviceEnrollment != null)
+                {
+                    DeviceIdentityPieSeries = new SeriesCollection
+                    {
+                        new PieSeries
+                        {
+                            Title = "Hybrid Entra",
+                            Values = new ChartValues<int> { DeviceEnrollment.HybridJoinedDevices },
+                            Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80)),
+                            DataLabels = true,
+                            LabelPoint = point => $"{point.Y}"
+                        },
+                        new PieSeries
+                        {
+                            Title = "Entra Joined",
+                            Values = new ChartValues<int> { DeviceEnrollment.AzureADOnlyDevices },
+                            Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 212)),
+                            DataLabels = true,
+                            LabelPoint = point => $"{point.Y}"
+                        },
+                        new PieSeries
+                        {
+                            Title = "AD Domain",
+                            Values = new ChartValues<int> { DeviceEnrollment.OnPremDomainOnlyDevices },
+                            Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(253, 184, 19)),
+                            DataLabels = true,
+                            LabelPoint = point => $"{point.Y}"
+                        },
+                        new PieSeries
+                        {
+                            Title = "Workgroup",
+                            Values = new ChartValues<int> { DeviceEnrollment.WorkgroupDevices },
+                            Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(209, 52, 56)),
+                            DataLabels = true,
+                            LabelPoint = point => $"{point.Y}"
+                        }
+                    };
+                }
 
                 // Load compliance data from Graph
                 Instance.Info("Loading compliance data from Graph API...");
@@ -3144,7 +3208,7 @@ namespace CloudJourneyAddin.ViewModels
             {
                 var memoryPath = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "CloudJourneyAddin",
+                    "ZeroTrustMigrationAddin",
                     "AgentMemory");
 
                 if (System.IO.Directory.Exists(memoryPath))

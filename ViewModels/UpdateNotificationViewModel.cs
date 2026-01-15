@@ -2,9 +2,9 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.ViewModels
+namespace ZeroTrustMigrationAddin.ViewModels
 {
     /// <summary>
     /// ViewModel for the update notification window.

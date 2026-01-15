@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  
+  <!-- Product Configuration -->
+  <Product Id="*"
+           Name="Zero Trust Migration Journey Dashboard"
+           Language="1033"
+           Version="3.16.9.0"
+           Manufacturer="Microsoft Configuration Manager"
+           UpgradeCode="7B8C9D2E-4F5A-6B7C-8D9E-0F1A2B3C4D5E">
+    
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Description="ConfigMgr to Intune migration tracking dashboard"
+             Comments="Requires ConfigMgr Console and .NET 8.0 Desktop Runtime"
+             Manufacturer="Microsoft Configuration Manager" />
+
+    <!-- Major Upgrade Strategy -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+                  Schedule="afterInstallInitialize"
+                  AllowSameVersionUpgrades="no" />
+
+    <!-- Embedded UI Cabinet -->
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Custom Properties -->
+    <Property Id="CONFIGMGR_PATH" Secure="yes">
+      <RegistrySearch Id="SearchConfigMgrPath"
+                      Root="HKLM"
+                      Key="SOFTWARE\Microsoft\ConfigMgr10\Setup"
+                      Name="UI Installation Directory"
+                      Type="raw" />
+    </Property>
+
+    <Property Id="DOTNET_RUNTIME_INSTALLED" Secure="yes" />
+    <Property Id="CREATE_SHORTCUTS" Value="1" />
+    <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/sccmavenger/cmaddin" />
+
+    <!-- Launch Conditions -->
+    <Condition Message="This application requires Windows 10 version 1809 or later.">
+      <![CDATA[Installed OR (VersionNT >= 603)]]>
+    </Condition>
+
+    <Condition Message="ConfigMgr Console must be installed. Please install Configuration Manager Console before installing [ProductName].">
+      <![CDATA[Installed OR CONFIGMGR_PATH]]>
+    </Condition>
+
+    <!-- Icon for Add/Remove Programs -->
+    <Icon Id="ProductIcon" SourceFile="..\bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe" />
+
+    <!-- Directory Structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      
+      <!-- ConfigMgr Console Installation Path -->
+      <Directory Id="CONFIGMGR_PATH" Name="AdminConsole">
+        
+        <!-- Application Binaries -->
+        <Directory Id="BinDir" Name="bin">
+          <Directory Id="INSTALLFOLDER" Name="ZeroTrustMigrationAddin" />
+        </Directory>
+        
+        <!-- ConfigMgr Extension Manifest -->
+        <Directory Id="XmlStorageDir" Name="XmlStorage">
+          <Directory Id="ExtensionsDir" Name="Extensions">
+            <Directory Id="ActionsDir" Name="Actions" />
+          </Directory>
+        </Directory>
+        
+      </Directory>
+
+      <!-- Desktop Shortcut (Optional) -->
+      <Directory Id="DesktopFolder" Name="Desktop" />
+
+      <!-- Start Menu -->
+      <Directory Id="ProgramMenuFolder" Name="Programs">
+        <Directory Id="ApplicationProgramsFolder" Name="Zero Trust Migration Journey" />
+      </Directory>
+
+    </Directory>
+
+    <!-- Feature: Core Application (Required) -->
+    <Feature Id="ProductFeature"
+             Title="Zero Trust Migration Journey Dashboard"
+             Description="Core application files and ConfigMgr Console integration"
+             Level="1"
+             Absent="disallow"
+             AllowAdvertise="no"
+             Display="expand"
+             ConfigurableDirectory="INSTALLFOLDER">
+
+      <!-- ConfigMgr Extension Manifest -->
+      <ComponentGroupRef Id="ExtensionManifest" />
+
+      <!-- Application Files -->
+      <ComponentGroupRef Id="ApplicationFiles" />
+
+    </Feature>
+
+    <!-- Feature: Desktop Shortcuts (Optional) -->
+    <Feature Id="DesktopShortcuts"
+             Title="Desktop Shortcut"
+             Description="Create a shortcut on the desktop"
+             Level="1"
+             AllowAdvertise="no">
+      <ComponentGroupRef Id="DesktopShortcutComponent" />
+    </Feature>
+
+    <!-- Feature: Start Menu (Optional) -->
+    <Feature Id="StartMenuShortcuts"
+             Title="Start Menu Shortcuts"
+             Description="Create shortcuts in the Start Menu"
+             Level="1"
+             AllowAdvertise="no">
+      <ComponentGroupRef Id="StartMenuComponents" />
+    </Feature>
+
+    <!-- Custom Actions -->
+    <CustomAction Id="CA_CheckDotNetRuntime"
+                  BinaryKey="CustomActionsDll"
+                  DllEntry="CheckDotNetRuntime"
+                  Execute="immediate"
+                  Return="check" />
+
+    <CustomAction Id="CA_UpdateXmlManifest"
+                  BinaryKey="CustomActionsDll"
+                  DllEntry="UpdateXmlManifestPath"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+
+    <CustomAction Id="CA_SetXmlPath"
+                  Property="CA_UpdateXmlManifest"
+                  Value="XmlPath=[ActionsDir]ZeroTrustMigrationAddin.xml;ExePath=[INSTALLFOLDER]ZeroTrustMigrationAddin.exe"
+                  Execute="immediate" />
+
+    <!-- Custom Action Sequences -->
+    <InstallExecuteSequence>
+      <!-- Check .NET Runtime -->
+      <Custom Action="CA_CheckDotNetRuntime" After="LaunchConditions">
+        NOT Installed
+      </Custom>
+
+      <!-- Update XML Manifest Path -->
+      <Custom Action="CA_SetXmlPath" After="InstallFiles">
+        NOT Installed
+      </Custom>
+      <Custom Action="CA_UpdateXmlManifest" After="CA_SetXmlPath">
+        NOT Installed
+      </Custom>
+    </InstallExecuteSequence>
+
+    <!-- UI Sequence -->
+    <UI>
+      <UIRef Id="WixUI_FeatureTree" />
+      <UIRef Id="WixUI_ErrorProgressText" />
+      
+      <Publish Dialog="ExitDialog"
+               Control="Finish"
+               Event="DoAction"
+               Value="LaunchApplication">
+        WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed
+      </Publish>
+    </UI>
+
+    <!-- Custom License -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    
+    <!-- Custom Banners -->
+    <WixVariable Id="WixUIBannerBmp" Value="Banner.bmp" Overridable="yes" />
+    <WixVariable Id="WixUIDialogBmp" Value="Dialog.bmp" Overridable="yes" />
+
+  </Product>
+
+  <!-- Component Groups -->
+  
+  <!-- ConfigMgr Extension Manifest -->
+  <Fragment>
+    <ComponentGroup Id="ExtensionManifest" Directory="ActionsDir">
+      <Component Id="ConfigMgrXmlManifest" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+        <File Id="ExtensionXml"
+              Name="ZeroTrustMigrationAddin.xml"
+              Source="..\ZeroTrustMigrationAddin.xml"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- Desktop Shortcut -->
+  <Fragment>
+    <ComponentGroup Id="DesktopShortcutComponent" Directory="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="B2C3D4E5-F6A7-8901-BCDE-F12345678901">
+        <Shortcut Id="DesktopShortcut"
+                  Name="Zero Trust Migration Journey"
+                  Description="ConfigMgr to Intune migration dashboard"
+                  Target="[INSTALLFOLDER]ZeroTrustMigrationAddin.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Microsoft\ZeroTrustMigrationAddin"
+                       Name="DesktopShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- Start Menu Shortcuts -->
+  <Fragment>
+    <ComponentGroup Id="StartMenuComponents" Directory="ApplicationProgramsFolder">
+      <Component Id="StartMenuShortcut" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012">
+        <Shortcut Id="StartMenuShortcut"
+                  Name="Zero Trust Migration Journey"
+                  Description="ConfigMgr to Intune migration dashboard"
+                  Target="[INSTALLFOLDER]ZeroTrustMigrationAddin.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <Shortcut Id="UserGuideShortcut"
+                  Name="User Guide"
+                  Description="Administrator User Guide"
+                  Target="[INSTALLFOLDER]AdminUserGuide.html"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="CleanupStartMenu" Directory="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Microsoft\ZeroTrustMigrationAddin"
+                       Name="StartMenuShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- Application Files Component Group -->
+  <!-- NOTE: This needs to be generated using Heat.exe due to 489 files -->
+  <!-- Run: heat dir "..\bin\Release\net8.0-windows\win-x64\publish" -cg ApplicationFiles -dr INSTALLFOLDER -gg -sfrag -srd -var var.PublishDir -out ApplicationFiles.wxs -->
+  <Fragment>
+    <ComponentGroup Id="ApplicationFiles" Directory="INSTALLFOLDER">
+      <!-- Placeholder - Generate with Heat.exe -->
+      <!-- This will include all 489 files from the publish folder -->
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- Custom Action Binary -->
+  <Fragment>
+    <Binary Id="CustomActionsDll" SourceFile="CustomActions.CA.dll" />
+  </Fragment>
+
+</Wix>

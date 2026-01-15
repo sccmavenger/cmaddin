@@ -1,6 +1,6 @@
-# ConfigMgr Cloud Journey Progress Add-in
+# ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.16.0** | January 13, 2026
+**Version 3.16.3** | January 14, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -48,8 +48,8 @@
 ### For ConfigMgr Administrators - Zero Setup Required!
 
 1. **Extract the files** to any folder
-2. **Right-click** `Install-CloudJourneyAddin.ps1` → **Run with PowerShell**
-3. **Launch ConfigMgr Console** and look for "Cloud Journey Progress" in the ribbon
+2. **Right-click** `Install-ZeroTrustMigrationAddin.ps1` → **Run with PowerShell**
+3. **Launch ConfigMgr Console** and look for "Zero Trust Migration Journey Progress" in the ribbon
 
 **That's it!** The installer automatically:
 - ✅ Checks and elevates to admin if needed
@@ -79,10 +79,10 @@
 **Installation Locations:**
 ```
 C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
-├── XmlStorage\Extensions\Actions\CloudJourneyAddin.xml  (manifest)
-└── bin\CloudJourneyAddin\                               (all app files)
-    ├── CloudJourneyAddin.exe                            (main executable)
-    ├── CloudJourneyAddin.dll                            (app logic)
+├── XmlStorage\Extensions\Actions\ZeroTrustMigrationAddin.xml  (manifest)
+└── bin\ZeroTrustMigrationAddin\                               (all app files)
+    ├── ZeroTrustMigrationAddin.exe                            (main executable)
+    ├── ZeroTrustMigrationAddin.dll                            (app logic)
     └── ... (487 more files including dependencies)
 ```
 
@@ -90,13 +90,71 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ## 🆕 What's New
 
+### Version 3.16.3 (January 14, 2026) - Auto-Update UAC Elevation Fix
+
+#### 🔒 Critical Auto-Update Fix
+
+**Resolved "Access is Denied" Errors During Updates**
+- **Issue Fixed:** Auto-updates failing to apply files in Program Files due to permissions
+- **Solution:** Updates now request UAC elevation via standard Windows security prompt
+- **User Experience:** Click "Yes" on UAC prompt to allow file updates (same as Chrome, VS Code)
+- **Technical:** PowerShell update script launched with `Verb = "runas"` for administrator elevation
+- **Security:** Standard Windows UAC model - only applies updates when user explicitly authorizes
+- **Compatibility:** Works on all supported Windows versions (Windows 10/11, Server 2016+)
+
+**What Changed:**
+- ✅ UAC prompt appears after download completes
+- ✅ User clicks "Yes" to authorize file updates
+- ✅ PowerShell script successfully writes to Program Files
+- ✅ Application restarts with new version
+- ✅ Update logs confirm successful file operations (no more "Access is denied")
+
+**Why This Matters:**
+- Previous versions (v3.16.0-v3.16.1) downloaded updates but silently failed to apply them
+- Users remained on old versions despite "successful" updates
+- v3.16.3 ensures updates complete successfully with proper elevation
+
+#### 📊 Enhanced Data Export
+
+**CSV Export for All Data Tables**
+- Export device lists, workload status, application inventory to Excel-compatible CSV
+- One-click export buttons on every data grid
+- Preserves column formatting and data types
+- Files saved to Documents folder with timestamp
+- **Use Cases:**
+  - Share device readiness scores with management
+  - Analyze workload migration trends in Excel
+  - Create custom reports from exported data
+  - Archive snapshots of migration progress
+
+#### ☁️ Microsoft Entra ID Terminology
+
+**Updated Throughout Application**
+- "Azure Active Directory" → "Microsoft Entra ID"
+- "Azure AD" → "Entra ID"
+- "AAD" → "Entra"
+- Aligns with Microsoft's official rebranding (October 2023)
+- Consistent with Intune admin center terminology
+- Updated in UI labels, tooltips, documentation, and logs
+
+#### 🔗 Device Drill-Through Framework (In Development)
+
+**Foundation for Interactive Dashboard**
+- Framework added to make dashboard counts clickable
+- **Planned:** Click "42 Entra Joined devices" to see filtered device list
+- **Planned:** Click workload counts to see devices by migration status
+- **Status:** Backend infrastructure complete, UI integration in progress
+- **Target:** v3.17.0 for full drill-through functionality
+
+---
+
 ### Version 3.16.0 (January 13, 2026) - Automatic Updates
 
 #### 🚀 Zero-Touch Automatic Updates
 
-**Effortless Updates - No More Manual ZIP Downloads**
+**Effortless Updates - Minimal User Interaction**
 - **Automatic Update Check:** Application checks for updates on every launch
-- **Zero User Interaction:** Updates download and install automatically in the background
+- **One-Click Authorization:** UAC prompt for secure file updates (v3.16.3+)
 - **Delta Updates:** Only changed files are downloaded (80-90% bandwidth savings)
 - **Intelligent Updates:** SHA256 hash comparison ensures only necessary files are updated
 - **Seamless Restart:** Application closes, applies updates, and restarts automatically
@@ -106,22 +164,27 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - ✅ Always running the latest version with bug fixes and features
 - ✅ No more manual downloads from Dropbox or file shares
 - ✅ Fast updates: ~10-20 MB downloads instead of 87 MB full packages
-- ✅ Zero configuration required - works out of the box
+- ✅ UAC elevation ensures secure updates (same as Chrome, VS Code)
 - ✅ No interruption to your workflow - update happens at launch
 
 **Technical Details:**
 - Update check completes in 2-4 seconds
 - Delta downloads save 80-90% bandwidth (15 MB vs 87 MB typical)
-- Total update time: ~30-45 seconds (vs 2-3 minutes manual process)
+- UAC prompt appears for administrator elevation (v3.16.3+)
+- Total update time: ~30-60 seconds including UAC authorization
 - Uses manifest.json with SHA256 hashes for file integrity
-- PowerShell-based updater ensures safe file replacement
+- PowerShell-based updater with elevation ensures safe file replacement
+- Backup created before update: `%TEMP%\ZeroTrustMigrationAddin-Backup\`
 
 **For Administrators:**
 - Updates distributed via GitHub Releases (free, reliable hosting)
 - No changes to firewall rules (uses standard HTTPS)
-- Update logs available in `%LocalAppData%\CloudJourneyAddin\Logs`
+- UAC elevation required for Program Files installations
+- Update logs available in `%LocalAppData%\ZeroTrustMigrationAddin\Logs`
+- PowerShell script log: `%TEMP%\ZeroTrustMigrationAddin-Update.log`
 - Can review update history in GitHub release notes
-- Update manifest: `%LocalAppData%\CloudJourneyAddin\manifest.json`
+- Update manifest: `%LocalAppData%\ZeroTrustMigrationAddin\manifest.json`
+- Private repository support via GitHub Personal Access Token
 
 ---
 
@@ -277,7 +340,7 @@ Or:
 
 ## 📊 Dashboard Overview
 
-The Cloud Journey Progress Dashboard is your intelligent command center for migrating from ConfigMgr to Microsoft Intune. It combines real-time data from **both ConfigMgr and Intune** with AI-powered insights to accelerate your cloud migration journey.
+The Zero Trust Migration Journey Dashboard is your intelligent command center for migrating from ConfigMgr to Microsoft Intune. It combines real-time data from **both ConfigMgr and Intune** with AI-powered insights to accelerate your cloud migration journey.
 
 ### Key Features
 
@@ -338,7 +401,7 @@ The Cloud Journey Progress Dashboard is your intelligent command center for migr
 ### What You Need to Do (Takes 5 Minutes)
 
 **Step 1: Open the Dashboard**
-- Find "Cloud Journey Progress" in your ConfigMgr Console ribbon
+- Find "Zero Trust Migration Journey Progress" in your ConfigMgr Console ribbon
 - Or double-click the desktop shortcut
 
 **Step 2: Connect to Your Intune Data**
@@ -410,7 +473,7 @@ Replace `{tenant-id}` with your actual tenant ID.
 
 **"Can't find the dashboard in ConfigMgr Console":**
 - The installation might not have worked
-- Try running `Install-CloudJourneyAddin.ps1` again
+- Try running `Install-ZeroTrustMigrationAddin.ps1` again
 - Or ask whoever installed it to check
 
 ---
@@ -570,7 +633,7 @@ MIGRATION PLAN:
 2. **Your Azure Instance** - Data goes to YOUR Azure OpenAI (not shared with others)
 3. **No Training** - Azure OpenAI doesn't use your data to train models ([Microsoft Data Privacy](https://learn.microsoft.com/legal/cognitive-services/openai/data-privacy))
 4. **Local Caching** - Responses cached locally (30 min) to minimize calls
-5. **Audit Logging** - All API calls logged to `%APPDATA%\CloudJourneyAddin\logs`
+5. **Audit Logging** - All API calls logged to `%APPDATA%\ZeroTrustMigrationAddin\logs`
 
 ### Azure Setup Required
 
@@ -590,7 +653,7 @@ MIGRATION PLAN:
 3. Click **Test Connection** to verify
 4. Click **Save** to store configuration
 
-Configuration saved to: `%APPDATA%\CloudJourneyAddin\openai-config.json`
+Configuration saved to: `%APPDATA%\ZeroTrustMigrationAddin\openai-config.json`
 
 #### Option 2: Environment Variables
 
@@ -903,7 +966,7 @@ A: Click the **📖 Guide** button in the top toolbar - opens full documentation
 ### One-Command Install
 
 ```powershell
-.\Install-CloudJourneyAddin.ps1
+.\Install-ZeroTrustMigrationAddin.ps1
 ```
 
 The automated installer handles everything:
@@ -921,7 +984,7 @@ The automated installer handles everything:
 
 After installation:
 1. Launch ConfigMgr Console
-2. Look for "Cloud Journey Progress" in ribbon/toolbar
+2. Look for "Zero Trust Migration Journey Progress" in ribbon/toolbar
 3. Click to open dashboard
 
 ---
@@ -942,7 +1005,7 @@ dotnet build -c Release
 Copy XML manifest:
 ```powershell
 $extensionsPath = "${env:ProgramFiles(x86)}\Microsoft Configuration Manager\AdminConsole\XmlStorage\Extensions\Actions"
-Copy-Item "CloudJourneyAddin.xml" -Destination $extensionsPath
+Copy-Item "ZeroTrustMigrationAddin.xml" -Destination $extensionsPath
 ```
 
 Copy executable and dependencies:
@@ -978,7 +1041,7 @@ Invoke-WebRequest -Uri $url -OutFile "windowsdesktop-runtime-8.0.11-win-x64.exe"
    ```
 3. Run installer:
    ```powershell
-   .\Install-CloudJourneyAddin.ps1 -SkipBuild
+   .\Install-ZeroTrustMigrationAddin.ps1 -SkipBuild
    ```
 
 ---
@@ -988,7 +1051,7 @@ Invoke-WebRequest -Uri $url -OutFile "windowsdesktop-runtime-8.0.11-win-x64.exe"
 After installation, an uninstaller is automatically created:
 
 ```powershell
-.\Uninstall-CloudJourneyAddin.ps1
+.\Uninstall-ZeroTrustMigrationAddin.ps1
 ```
 
 The uninstaller removes:
@@ -1042,10 +1105,10 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ### Diagnostic Tools
 
 #### Open Logs Button (📋)
-Click to open log directory: `%LOCALAPPDATA%\CloudJourneyAddin\Logs\`
+Click to open log directory: `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\`
 
 **Log Files:**
-- `CloudJourneyAddin_YYYYMMDD.log` - Daily log file
+- `ZeroTrustMigrationAddin_YYYYMMDD.log` - Daily log file
 - Automatic cleanup (keeps last 7 days)
 - Timestamped entries with log levels
 
@@ -1115,7 +1178,7 @@ The application follows Model-View-ViewModel pattern:
 ## 📁 Project Structure
 
 ```
-CloudJourneyAddin/
+ZeroTrustMigrationAddin/
 ├── Models/
 │   ├── DashboardModels.cs          # Dashboard data structures
 │   ├── AgentModels.cs              # Enrollment agent models
@@ -1140,8 +1203,8 @@ CloudJourneyAddin/
 │   └── RecommendationPriorityConverter.cs # Priority colors
 ├── App.xaml                         # Application resources
 ├── App.xaml.cs                      # Application entry point
-├── CloudJourneyAddin.xml           # ConfigMgr manifest
-└── CloudJourneyAddin.csproj        # Project file
+├── ZeroTrustMigrationAddin.xml           # ConfigMgr manifest
+└── ZeroTrustMigrationAddin.csproj        # Project file
 ```
 
 ---
@@ -1176,7 +1239,7 @@ This launches dashboard as standalone window with mock data.
 
 Use automated installer:
 ```powershell
-.\Install-CloudJourneyAddin.ps1
+.\Install-ZeroTrustMigrationAddin.ps1
 ```
 
 Or manual deployment:
@@ -1188,7 +1251,7 @@ dotnet build -c Release
 $extensionsPath = "${env:ProgramFiles(x86)}\Microsoft Configuration Manager\AdminConsole\XmlStorage\Extensions\Actions"
 $binPath = "${env:ProgramFiles(x86)}\Microsoft Configuration Manager\AdminConsole\bin"
 
-Copy-Item "CloudJourneyAddin.xml" -Destination $extensionsPath -Force
+Copy-Item "ZeroTrustMigrationAddin.xml" -Destination $extensionsPath -Force
 Copy-Item "bin\Release\net8.0-windows\*" -Destination $binPath -Recurse -Force
 
 # Restart ConfigMgr Console
@@ -1215,7 +1278,7 @@ Options:
 1. Reads current version from `.csproj`
 2. Increments version based on bump type
 3. Updates 6 locations automatically:
-   - CloudJourneyAddin.csproj (Version, AssemblyVersion, FileVersion)
+   - ZeroTrustMigrationAddin.csproj (Version, AssemblyVersion, FileVersion)
    - README.md
    - USER_GUIDE.md (archived)
    - INTERNAL_DOCS_vX.X.X.md (creates new)
@@ -1241,7 +1304,7 @@ dotnet build -c Release
 dotnet publish -c Release -r win-x64 --self-contained true
 
 # Create ZIP manually
-Compress-Archive -Path "bin\Release\net8.0-windows\win-x64\publish\*" -DestinationPath "CloudJourneyAddin-vX.X.X-COMPLETE.zip"
+Compress-Archive -Path "bin\Release\net8.0-windows\win-x64\publish\*" -DestinationPath "ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip"
 ```
 
 ### Deployment to Target PC
@@ -1249,7 +1312,7 @@ Compress-Archive -Path "bin\Release\net8.0-windows\win-x64\publish\*" -Destinati
 1. Copy package ZIP from `C:\Users\dannygu\Dropbox\` to target PC
 2. Extract ALL files (~489 files)
 3. Run diagnostics: `.\Diagnose-Installation.ps1`
-4. Deploy: `.\Update-CloudJourneyAddin.ps1`
+4. Deploy: `.\Update-ZeroTrustMigrationAddin.ps1`
 
 **Critical:** Always extract complete package. Partial extraction causes DLL errors.
 
@@ -1306,7 +1369,7 @@ When running builds, the agent analyzes changes and applies appropriate bump:
 ```
 
 **Locations Updated Automatically:**
-1. CloudJourneyAddin.csproj (3 properties)
+1. ZeroTrustMigrationAddin.csproj (3 properties)
 2. README.md (version header)
 3. INTERNAL_DOCS_vX.X.X.md (creates new file)
 4. Views/DashboardWindow.xaml (window title)
@@ -1320,14 +1383,14 @@ When running builds, the agent analyzes changes and applies appropriate bump:
 
 ```powershell
 cd "C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin"
-.\Install-CloudJourneyAddin.ps1
+.\Install-ZeroTrustMigrationAddin.ps1
 ```
 
 **Expected Time:** 2-5 minutes
 
 **After Installation:**
 1. Launch ConfigMgr Console
-2. Look for "Cloud Journey Progress" in ribbon
+2. Look for "Zero Trust Migration Journey Progress" in ribbon
 3. Click to open dashboard
 4. Connect to Graph and ConfigMgr
 5. Verify data loads
@@ -1343,7 +1406,7 @@ Creates: `UpdatePackage\CloudJourney-v*.zip` with installer and documentation
 
 **2. Copy to target machine:**
 - Extract ZIP
-- Run `Install-CloudJourneyAddin.ps1` as Administrator
+- Run `Install-ZeroTrustMigrationAddin.ps1` as Administrator
 
 ### Option C: Standalone Testing (No ConfigMgr)
 
@@ -1354,7 +1417,7 @@ Test UI without ConfigMgr integration:
 .\Build-And-Distribute.ps1
 
 # Run directly
-.\bin\Release\net8.0-windows\win-x64\publish\CloudJourneyAddin.exe
+.\bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe
 ```
 
 Shows dashboard with placeholder data.
@@ -1370,8 +1433,8 @@ Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\ConfigMgr10\Setup" -Name "UI In
 
 # Step 3: Deploy
 $consolePath = "${env:ProgramFiles(x86)}\Microsoft Configuration Manager\AdminConsole"
-Copy-Item "CloudJourneyAddin.xml" -Destination "$consolePath\XmlStorage\Extensions\Actions\" -Force
-Copy-Item "bin\Release\net8.0-windows\win-x64\publish\*" -Destination "$consolePath\bin\CloudJourneyAddin\" -Recurse -Force
+Copy-Item "ZeroTrustMigrationAddin.xml" -Destination "$consolePath\XmlStorage\Extensions\Actions\" -Force
+Copy-Item "bin\Release\net8.0-windows\win-x64\publish\*" -Destination "$consolePath\bin\ZeroTrustMigrationAddin\" -Recurse -Force
 
 # Step 4: Restart ConfigMgr Console
 ```
@@ -1381,7 +1444,7 @@ Copy-Item "bin\Release\net8.0-windows\win-x64\publish\*" -Destination "$consoleP
 1. **Check Files Deployed:**
    ```powershell
    $consolePath = "${env:ProgramFiles(x86)}\Microsoft Configuration Manager\AdminConsole"
-   Get-ChildItem "$consolePath\bin\CloudJourneyAddin" | Measure-Object
+   Get-ChildItem "$consolePath\bin\ZeroTrustMigrationAddin" | Measure-Object
    # Should see ~489 files
    ```
 
@@ -1615,7 +1678,7 @@ Microsoft Internal Use
 ### Documentation Files (Archived)
 
 Historical documentation moved to `/documents` folder:
-- Configuration Manager Customer - Cloud Journey.docx
+- Configuration Manager Customer - Zero Trust Migration Journey.docx
 - Configuration Manager Customer - Middle-Stage.docx
 - Configuration Manager Middle View.docx
 
@@ -1638,4 +1701,4 @@ Historical documentation moved to `/documents` folder:
 
 **Last Updated:** December 22, 2025  
 **Version:** 2.5.0  
-**Maintainer:** Cloud Journey Add-in Team
+**Maintainer:** Zero Trust Migration Journey Add-in Team

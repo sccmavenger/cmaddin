@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace CloudJourneyAddin.Views
+namespace ZeroTrustMigrationAddin.Views
 {
     /// <summary>
     /// Interaction logic for DeviceListDialog.xaml

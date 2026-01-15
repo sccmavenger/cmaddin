@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Complete uninstall script for Cloud Journey Add-in
+    Complete uninstall script for Zero Trust Migration Journey Add-in
     
 .DESCRIPTION
     Removes all traces of the application including:
@@ -12,17 +12,17 @@
     - XML manifest from ConfigMgr Extensions
     
 .PARAMETER KeepLogs
-    If specified, keeps the log files in %LOCALAPPDATA%\CloudJourneyAddin\Logs
+    If specified, keeps the log files in %LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs
     
 .PARAMETER KeepBackups
     If specified, keeps backup folders
     
 .EXAMPLE
-    .\Uninstall-CloudJourneyAddin.ps1
+    .\Uninstall-ZeroTrustMigrationAddin.ps1
     # Complete removal including logs
     
 .EXAMPLE
-    .\Uninstall-CloudJourneyAddin.ps1 -KeepLogs
+    .\Uninstall-ZeroTrustMigrationAddin.ps1 -KeepLogs
     # Remove app but keep logs for troubleshooting
 #>
 
@@ -35,10 +35,10 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Red
-Write-Host "Cloud Journey Add-in - UNINSTALL" -ForegroundColor Red
+Write-Host "Zero Trust Migration Journey Add-in - UNINSTALL" -ForegroundColor Red
 Write-Host "========================================" -ForegroundColor Red
 Write-Host ""
-Write-Host "??  This will completely remove the Cloud Journey Add-in" -ForegroundColor Yellow
+Write-Host "??  This will completely remove the Zero Trust Migration Journey Add-in" -ForegroundColor Yellow
 Write-Host ""
 
 $confirmation = Read-Host "Are you sure you want to uninstall? (Type 'YES' to confirm)"
@@ -51,7 +51,7 @@ if ($confirmation -ne "YES") {
 Write-Host ""
 Write-Host "[1/6] Stopping running processes..." -ForegroundColor Yellow
 
-$processes = Get-Process -Name "CloudJourneyAddin" -ErrorAction SilentlyContinue
+$processes = Get-Process -Name "ZeroTrustMigrationAddin" -ErrorAction SilentlyContinue
 if ($processes) {
     $processes | Stop-Process -Force
     Write-Host "   ? Stopped $($processes.Count) running process(es)" -ForegroundColor Green
@@ -94,7 +94,7 @@ Write-Host "[3/6] Removing application files..." -ForegroundColor Yellow
 $removedFileCount = 0
 
 if ($configMgrPath) {
-    $targetPath = Join-Path $configMgrPath "bin\bin\CloudJourneyAddin"
+    $targetPath = Join-Path $configMgrPath "bin\bin\ZeroTrustMigrationAddin"
     
     if (Test-Path $targetPath) {
         # List what will be removed
@@ -122,7 +122,7 @@ if ($configMgrPath) {
     
     # Remove XML manifest from Extensions
     Write-Host "   Checking for XML manifest..." -ForegroundColor Gray
-    $extensionsPath = Join-Path $configMgrPath "bin\XmlStorage\Extensions\Actions\CloudJourneyAddin.xml"
+    $extensionsPath = Join-Path $configMgrPath "bin\XmlStorage\Extensions\Actions\ZeroTrustMigrationAddin.xml"
     if (Test-Path $extensionsPath) {
         Remove-Item $extensionsPath -Force
         Write-Host "   ? Removed XML manifest from ConfigMgr Extensions" -ForegroundColor Green
@@ -139,7 +139,7 @@ Write-Host "[4/6] Removing shortcuts..." -ForegroundColor Yellow
 $shortcutsRemoved = 0
 
 # Desktop shortcut
-$desktopShortcut = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "Cloud Journey Dashboard.lnk")
+$desktopShortcut = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "Zero Trust Migration Journey.lnk")
 if (Test-Path $desktopShortcut) {
     Remove-Item $desktopShortcut -Force
     Write-Host "   ? Removed desktop shortcut" -ForegroundColor Green
@@ -149,7 +149,7 @@ if (Test-Path $desktopShortcut) {
 }
 
 # Start Menu shortcut
-$startMenuPath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Programs"), "Cloud Journey Dashboard.lnk")
+$startMenuPath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Programs"), "Zero Trust Migration Journey.lnk")
 if (Test-Path $startMenuPath) {
     Remove-Item $startMenuPath -Force
     Write-Host "   ? Removed Start Menu shortcut" -ForegroundColor Green
@@ -166,7 +166,7 @@ Write-Host ""
 Write-Host "[5/6] Removing logs and configuration..." -ForegroundColor Yellow
 
 $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
-$appDataPath = Join-Path $localAppData "CloudJourneyAddin"
+$appDataPath = Join-Path $localAppData "ZeroTrustMigrationAddin"
 
 if (Test-Path $appDataPath) {
     $logFiles = Get-ChildItem "$appDataPath\Logs" -Filter "*.log" -ErrorAction SilentlyContinue
@@ -188,9 +188,9 @@ Write-Host ""
 Write-Host "[6/6] Checking for standalone installations..." -ForegroundColor Yellow
 
 $standaloneLocations = @(
-    "$localAppData\CloudJourneyAddin\App",
-    "$env:USERPROFILE\Desktop\CloudJourneyAddin",
-    "$env:TEMP\CloudJourneyAddin"
+    "$localAppData\ZeroTrustMigrationAddin\App",
+    "$env:USERPROFILE\Desktop\ZeroTrustMigrationAddin",
+    "$env:TEMP\ZeroTrustMigrationAddin"
 )
 
 $standaloneFound = $false
@@ -221,7 +221,7 @@ Write-Host "  ? Shortcuts removed: $shortcutsRemoved" -ForegroundColor White
 Write-Host "  ? Logs: $(if ($KeepLogs) { 'KEPT' } else { 'REMOVED' })" -ForegroundColor White
 Write-Host "  ? Backups: $(if ($KeepBackups) { 'KEPT' } else { 'REMOVED' })" -ForegroundColor White
 Write-Host ""
-Write-Host "? Cloud Journey Add-in has been completely removed" -ForegroundColor Green
+Write-Host "? Zero Trust Migration Journey Add-in has been completely removed" -ForegroundColor Green
 Write-Host ""
 
 if ($KeepLogs) {

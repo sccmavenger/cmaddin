@@ -16,8 +16,8 @@ This guide provides step-by-step instructions for testing the automatic update m
 ### Step 1: Create Base Release (v3.14.31)
 
 **Build Location:**
-- Local: `C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin\CloudJourneyAddin-v3.14.31-COMPLETE.zip`
-- Dropbox: `C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.31-COMPLETE.zip`
+- Local: `C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin\ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip`
+- Dropbox: `C:\Users\dannygu\Dropbox\ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip`
 - Manifest: `C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin\manifest.json`
 
 **Upload to GitHub:**
@@ -27,18 +27,18 @@ cd "C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin"
 
 # Create release v3.14.31 (base version for testing)
 gh release create v3.14.31 `
-  CloudJourneyAddin-v3.14.31-COMPLETE.zip `
+  ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip `
   manifest.json `
-  --title "Cloud Journey Add-in v3.14.31 - Auto-Update Test Base" `
+  --title "Zero Trust Migration Journey Add-in v3.14.31 - Auto-Update Test Base" `
   --notes "Base version for testing automatic update mechanism. This version includes the auto-update infrastructure and will automatically check for updates on every launch."
 ```
 
 **Alternative (Manual Upload):**
 1. Go to GitHub repository → Releases → Create new release
 2. Tag: `v3.14.31`
-3. Title: `Cloud Journey Add-in v3.14.31 - Auto-Update Test Base`
+3. Title: `Zero Trust Migration Journey Add-in v3.14.31 - Auto-Update Test Base`
 4. Upload both files:
-   - `CloudJourneyAddin-v3.14.31-COMPLETE.zip`
+   - `ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip`
    - `manifest.json`
 5. Publish release
 
@@ -52,8 +52,8 @@ To test the update mechanism, we need a newer version. Make a minor change and r
 ```powershell
 # Option A: Update the version log message in DashboardViewModel
 # Edit Views/DashboardViewModel.cs line ~60
-# Change: _logger.LogInformation("CloudJourneyAddin version 3.14.31 initialized");
-# To: _logger.LogInformation("CloudJourneyAddin version 3.14.32 initialized - Auto-Update Test");
+# Change: _logger.LogInformation("ZeroTrustMigrationAddin version 3.14.31 initialized");
+# To: _logger.LogInformation("ZeroTrustMigrationAddin version 3.14.32 initialized - Auto-Update Test");
 
 # Option B: Simply increment version and rebuild (no code changes needed)
 ```
@@ -64,15 +64,15 @@ To test the update mechanism, we need a newer version. Make a minor change and r
 ```
 
 This will create:
-- `CloudJourneyAddin-v3.14.32-COMPLETE.zip` (87.89 MB)
+- `ZeroTrustMigrationAddin-v3.14.32-COMPLETE.zip` (87.89 MB)
 - `manifest.json` (updated with v3.14.32 file hashes)
 
 **Upload to GitHub:**
 ```powershell
 gh release create v3.14.32 `
-  CloudJourneyAddin-v3.14.32-COMPLETE.zip `
+  ZeroTrustMigrationAddin-v3.14.32-COMPLETE.zip `
   manifest.json `
-  --title "Cloud Journey Add-in v3.14.32 - Auto-Update Test Target" `
+  --title "Zero Trust Migration Journey Add-in v3.14.32 - Auto-Update Test Target" `
   --notes "Updated version for testing automatic updates from v3.14.31. This release validates the delta update mechanism and automatic installation process."
 ```
 
@@ -85,24 +85,24 @@ gh release create v3.14.32 `
 **On Clean Test Machine:**
 
 1. **Download Base Version**
-   - Download `CloudJourneyAddin-v3.14.31-COMPLETE.zip` from GitHub Release
-   - OR copy from Dropbox: `C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.31-COMPLETE.zip`
+   - Download `ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip` from GitHub Release
+   - OR copy from Dropbox: `C:\Users\dannygu\Dropbox\ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip`
 
 2. **Extract Package**
    ```powershell
    # Extract to temporary location
-   Expand-Archive -Path "CloudJourneyAddin-v3.14.31-COMPLETE.zip" -DestinationPath "C:\Temp\CloudJourney-v3.14.31"
+   Expand-Archive -Path "ZeroTrustMigrationAddin-v3.14.31-COMPLETE.zip" -DestinationPath "C:\Temp\CloudJourney-v3.14.31"
    ```
 
 3. **Install Base Version**
    ```powershell
    cd "C:\Temp\CloudJourney-v3.14.31"
-   .\Update-CloudJourneyAddin.ps1
+   .\Update-ZeroTrustMigrationAddin.ps1
    ```
 
 4. **Verify Installation**
-   - Check installed location: `%LocalAppData%\CloudJourneyAddin\`
-   - Verify version in file properties: Right-click `CloudJourneyAddin.exe` → Properties → Details → File version should show `3.14.31.0`
+   - Check installed location: `%LocalAppData%\ZeroTrustMigrationAddin\`
+   - Verify version in file properties: Right-click `ZeroTrustMigrationAddin.exe` → Properties → Details → File version should show `3.14.31.0`
    - Launch ConfigMgr Console and verify add-in ribbon appears
 
 ---
@@ -123,7 +123,7 @@ When you launch the app after v3.14.32 is published, the update process should b
 1. **Launch Application**
    ```powershell
    # Start the installed application
-   & "$env:LOCALAPPDATA\CloudJourneyAddin\CloudJourneyAddin.exe"
+   & "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe"
    ```
 
 2. **Observe Update Process**
@@ -142,14 +142,14 @@ When you launch the app after v3.14.32 is published, the update process should b
 4. **Verify Updated Version**
    ```powershell
    # Check file version
-   (Get-Item "$env:LOCALAPPDATA\CloudJourneyAddin\CloudJourneyAddin.exe").VersionInfo.FileVersion
+   (Get-Item "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe").VersionInfo.FileVersion
    # Should output: 3.14.32.0
    ```
 
 5. **Verify Delta Update Efficiency**
    ```powershell
    # Check update logs to confirm delta download (not full package)
-   Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\*.log" -Tail 50 | Select-String "delta|download"
+   Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\Logs\*.log" -Tail 50 | Select-String "delta|download"
    
    # Expected log entries:
    # "Found X files changed out of Y total files"
@@ -166,10 +166,10 @@ After updating to v3.14.32, the app should NOT attempt to update again:
 1. **Close and Relaunch App**
    ```powershell
    # Close app if running
-   Stop-Process -Name CloudJourneyAddin -Force -ErrorAction SilentlyContinue
+   Stop-Process -Name ZeroTrustMigrationAddin -Force -ErrorAction SilentlyContinue
    
    # Relaunch
-   & "$env:LOCALAPPDATA\CloudJourneyAddin\CloudJourneyAddin.exe"
+   & "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe"
    ```
 
 2. **Expected Behavior**
@@ -185,16 +185,16 @@ After updating to v3.14.32, the app should NOT attempt to update again:
 ### Logs Location
 ```powershell
 # Application logs
-Get-ChildItem "$env:LOCALAPPDATA\CloudJourneyAddin\Logs" | Sort-Object LastWriteTime -Descending | Select-Object -First 5
+Get-ChildItem "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\Logs" | Sort-Object LastWriteTime -Descending | Select-Object -First 5
 
 # Update-specific logs (search for update-related entries)
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\*.log" -Tail 100 | Select-String "update|GitHub|release|delta|manifest"
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\Logs\*.log" -Tail 100 | Select-String "update|GitHub|release|delta|manifest"
 ```
 
 ### Update Settings File
 ```powershell
 # Check update settings (stores last check time)
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\update-settings.json" | ConvertFrom-Json
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\update-settings.json" | ConvertFrom-Json
 
 # Expected content:
 # {
@@ -206,7 +206,7 @@ Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\update-settings.json" | Convert
 ### Local Manifest File
 ```powershell
 # Check installed version manifest
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\manifest.json" | ConvertFrom-Json | Select-Object Version, ReleaseDate
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\manifest.json" | ConvertFrom-Json | Select-Object Version, ReleaseDate
 
 # Should show:
 # Version: 3.14.32
@@ -270,7 +270,7 @@ Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\manifest.json" | ConvertFrom-Js
 
 ### Successful Update Flow
 ```
-[T+0s]   User launches CloudJourneyAddin.exe (v3.14.31)
+[T+0s]   User launches ZeroTrustMigrationAddin.exe (v3.14.31)
 [T+1s]   App.xaml.cs CheckForUpdatesAsync() executes on startup
 [T+2s]   GitHubUpdateService queries GitHub Releases API
 [T+3s]   Found newer version: v3.14.32 (current: v3.14.31)
@@ -287,10 +287,10 @@ Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\manifest.json" | ConvertFrom-Js
 [T+27s]  UpdateApplier.ScheduleUpdateScript() creates PowerShell script
 [T+28s]  Application closes
 [T+29s]  PowerShell script runs in background:
-         - Waits for CloudJourneyAddin.exe process to exit
-         - Copies 8 updated files to %LocalAppData%\CloudJourneyAddin
+         - Waits for ZeroTrustMigrationAddin.exe process to exit
+         - Copies 8 updated files to %LocalAppData%\ZeroTrustMigrationAddin
          - Updates local manifest.json to v3.14.32
-         - Restarts CloudJourneyAddin.exe
+         - Restarts ZeroTrustMigrationAddin.exe
 [T+35s]  Application launches with v3.14.32
 [T+36s]  Update check runs again (every launch)
 [T+37s]  No update available (current: 3.14.32, latest: 3.14.32)
@@ -338,7 +338,7 @@ Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\manifest.json" | ConvertFrom-Js
 - Repository must be public OR you must configure a GitHub Personal Access Token (PAT)
 - Releases feature must be enabled
 - Each release must have these assets:
-  - `CloudJourneyAddin-vX.X.X-COMPLETE.zip` (naming must match pattern)
+  - `ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip` (naming must match pattern)
   - `manifest.json` (must contain SHA256 hashes)
 
 **Repository Name in Code:**
@@ -360,7 +360,7 @@ If your repository is private, users need a GitHub PAT:
 ## Support Information
 
 **Questions or Issues?**
-- Check logs: `%LocalAppData%\CloudJourneyAddin\Logs\*.log`
+- Check logs: `%LocalAppData%\ZeroTrustMigrationAddin\Logs\*.log`
 - Review [AUTO_UPDATE_GUIDE.md](AUTO_UPDATE_GUIDE.md) for architecture details
 - Review [AUTO_UPDATE_QUICKSTART.md](AUTO_UPDATE_QUICKSTART.md) for quick reference
 

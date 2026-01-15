@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.AI.OpenAI;
-using CloudJourneyAddin.Models;
-using CloudJourneyAddin.Services.AgentTools;
+using ZeroTrustMigrationAddin.Models;
+using ZeroTrustMigrationAddin.Services.AgentTools;
 using Microsoft.Extensions.Logging;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// ReAct Agent with function calling and local learning (v3.0)

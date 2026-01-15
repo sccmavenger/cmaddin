@@ -3,12 +3,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 using Newtonsoft.Json;
 using Octokit;
-using static CloudJourneyAddin.Services.FileLogger;
+using static ZeroTrustMigrationAddin.Services.FileLogger;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Service for checking GitHub Releases for CloudJourneyAddin updates.
@@ -18,30 +18,50 @@ namespace CloudJourneyAddin.Services
     {
         private const string RepoOwner = "sccmavenger";
         private const string RepoName = "cmaddin";
+        
+        // Token should be set via environment variable or update-settings.json for security
+        // Note: Public repositories don't require authentication for releases
+        private const string EmbeddedToken = ""; // Removed for security - use GITHUB_TOKEN env var if needed
+        
         private readonly GitHubClient _client;
         private readonly string _settingsPath;
         private UpdateSettings? _settings;
 
         public GitHubUpdateService()
         {
-            _client = new GitHubClient(new ProductHeaderValue("CloudJourneyAddin"));
+            _client = new GitHubClient(new ProductHeaderValue("ZeroTrustMigrationAddin"));
             
             // Load settings and configure authentication if token exists
             _settingsPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "CloudJourneyAddin",
+                "ZeroTrustMigrationAddin",
                 "update-settings.json");
             
             LoadSettings();
 
+            // Priority: User's token > Embedded token > Anonymous
+            string? tokenToUse = null;
+            string authSource = "Anonymous (60 req/hr)";
+            
             if (!string.IsNullOrEmpty(_settings?.GitHubToken))
             {
-                _client.Credentials = new Credentials(_settings.GitHubToken);
-                Instance.Info("GitHub API authenticated with Personal Access Token");
+                tokenToUse = _settings.GitHubToken;
+                authSource = "User-configured token";
+            }
+            else if (!string.IsNullOrEmpty(EmbeddedToken))
+            {
+                tokenToUse = EmbeddedToken;
+                authSource = "Embedded token (5,000 req/hr)";
+            }
+            
+            if (!string.IsNullOrEmpty(tokenToUse))
+            {
+                _client.Credentials = new Credentials(tokenToUse);
+                Instance.Info($"GitHub API authenticated with {authSource}");
             }
             else
             {
-                Instance.Info("GitHub API using anonymous access (60 req/hr limit)");
+                Instance.Info($"GitHub API using {authSource}");
             }
         }
 
@@ -110,9 +130,19 @@ namespace CloudJourneyAddin.Services
         {
             try
             {
+                var isAuthenticated = _client.Credentials != Credentials.Anonymous;
+                
+                // Track authentication status in telemetry
+                AzureTelemetryService.Instance.TrackEvent("UpdateCheckStarted", new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "AuthenticationMethod", isAuthenticated ? "Authenticated" : "Anonymous" },
+                    { "Repository", $"{RepoOwner}/{RepoName}" },
+                    { "HasGitHubToken", isAuthenticated.ToString() }
+                });
+                
                 Instance.Info($"🔍 [DEBUG] Checking GitHub for latest release: {RepoOwner}/{RepoName}");
                 Instance.Info($"🔍 [DEBUG] API Endpoint: https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest");
-                Instance.Info($"🔍 [DEBUG] Authentication: {(_client.Credentials == Credentials.Anonymous ? "Anonymous (60/hr)" : "Authenticated")}");
+                Instance.Info($"🔍 [DEBUG] Authentication: {(isAuthenticated ? "Authenticated" : "Anonymous (60/hr)")}");
                 
                 // Try to get all releases first to debug
                 Instance.Info($"🔍 [DEBUG] Fetching ALL releases to diagnose issue...");
@@ -135,6 +165,14 @@ namespace CloudJourneyAddin.Services
                     Instance.Info($"🔍 [DEBUG]   - Asset: {asset.Name} ({asset.Size:N0} bytes)");
                 }
                 
+                // Track successful update check
+                AzureTelemetryService.Instance.TrackEvent("UpdateCheckSuccess", new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "LatestVersion", release.TagName },
+                    { "AssetCount", release.Assets.Count.ToString() },
+                    { "PublishedDate", release.PublishedAt?.ToString("yyyy-MM-dd") ?? "unknown" }
+                });
+                
                 return release;
             }
             catch (NotFoundException ex)
@@ -143,6 +181,16 @@ namespace CloudJourneyAddin.Services
                 Instance.Warning($"🔍 [DEBUG] Exception message: {ex.Message}");
                 Instance.Warning($"🔍 [DEBUG] Status code: {ex.StatusCode}");
                 Instance.Warning($"No releases found in repository {RepoOwner}/{RepoName}");
+                
+                // Track 404 error - likely private repo without token
+                AzureTelemetryService.Instance.TrackEvent("UpdateCheckFailed", new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "ErrorType", "NotFoundException" },
+                    { "StatusCode", ex.StatusCode.ToString() },
+                    { "IsAuthenticated", (_client.Credentials != Credentials.Anonymous).ToString() },
+                    { "Message", "Repository not found or inaccessible (likely private repo without token)" }
+                });
+                
                 return null;
             }
             catch (RateLimitExceededException ex)
@@ -150,6 +198,17 @@ namespace CloudJourneyAddin.Services
                 Instance.Error($"❌ [DEBUG] Rate limit exceeded!");
                 Instance.Error($"GitHub API rate limit exceeded. Resets at: {ex.Reset}");
                 Instance.Error($"🔍 [DEBUG] Limit: {ex.Limit}, Remaining: {ex.Remaining}");
+                
+                // Track rate limit error
+                AzureTelemetryService.Instance.TrackEvent("UpdateCheckFailed", new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "ErrorType", "RateLimitExceeded" },
+                    { "ResetTime", ex.Reset.ToString() },
+                    { "Limit", ex.Limit.ToString() },
+                    { "Remaining", ex.Remaining.ToString() },
+                    { "IsAuthenticated", (_client.Credentials != Credentials.Anonymous).ToString() }
+                });
+                
                 return null;
             }
             catch (Exception ex)
@@ -159,6 +218,15 @@ namespace CloudJourneyAddin.Services
                 Instance.Error($"🔍 [DEBUG] Message: {ex.Message}");
                 Instance.Error($"🔍 [DEBUG] Stack trace: {ex.StackTrace}");
                 Instance.Error($"Failed to get latest release: {ex.Message}");
+                
+                // Track unexpected error
+                AzureTelemetryService.Instance.TrackEvent("UpdateCheckFailed", new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "ErrorType", ex.GetType().Name },
+                    { "Message", ex.Message },
+                    { "IsAuthenticated", (_client.Credentials != Credentials.Anonymous).ToString() }
+                });
+                
                 return null;
             }
         }
@@ -257,6 +325,7 @@ namespace CloudJourneyAddin.Services
                         result.DownloadUrl = !string.IsNullOrEmpty(_settings?.GitHubToken) 
                             ? asset.Url  // API endpoint (authenticated)
                             : asset.BrowserDownloadUrl;  // Direct download (public repos)
+                        result.TotalSize = asset.Size;  // Store ZIP size for bandwidth savings calculation
                         Instance.Info($"Found ZIP asset: {asset.Name} ({asset.Size:N0} bytes)");
                     }
                     else if (asset.Name.Equals("manifest.json", StringComparison.OrdinalIgnoreCase))

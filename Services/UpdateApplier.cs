@@ -5,10 +5,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CloudJourneyAddin.Models;
-using static CloudJourneyAddin.Services.FileLogger;
+using ZeroTrustMigrationAddin.Models;
+using static ZeroTrustMigrationAddin.Services.FileLogger;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Service for applying updates by replacing changed files and restarting the application.
@@ -23,7 +23,7 @@ namespace CloudJourneyAddin.Services
         {
             _installPath = AppDomain.CurrentDomain.BaseDirectory;
             _executablePath = Process.GetCurrentProcess().MainModule?.FileName ?? 
-                            Path.Combine(_installPath, "CloudJourneyAddin.exe");
+                            Path.Combine(_installPath, "ZeroTrustMigrationAddin.exe");
 
             Instance.Info($"UpdateApplier initialized:");
             Instance.Info($"  Install path: {_installPath}");
@@ -166,13 +166,14 @@ namespace CloudJourneyAddin.Services
                 {
                     FileName = "powershell.exe",
                     Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
+                    UseShellExecute = true,  // Required for Verb = "runas"
+                    Verb = "runas",          // Request elevation (UAC prompt)
+                    CreateNoWindow = false,  // Must be false when using runas
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
 
                 Process.Start(psi);
-                Instance.Info("✅ Update script started");
+                Instance.Info("✅ Update script started (elevated)");
 
                 return true;
             }
@@ -190,7 +191,7 @@ namespace CloudJourneyAddin.Services
         {
             var manifestPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "CloudJourneyAddin",
+                "ZeroTrustMigrationAddin",
                 "manifest.json");
 
             var manifestJson = Newtonsoft.Json.JsonConvert.SerializeObject(newManifest, Newtonsoft.Json.Formatting.Indented)
@@ -222,7 +223,7 @@ $maxWaitSeconds = 30
 $waitedSeconds = 0
 
 while ($waitedSeconds -lt $maxWaitSeconds) {{
-    $processes = Get-Process -Name 'CloudJourneyAddin' -ErrorAction SilentlyContinue
+    $processes = Get-Process -Name 'ZeroTrustMigrationAddin' -ErrorAction SilentlyContinue
     if (-not $processes) {{
         Write-Log ""Application closed""
         break
@@ -355,7 +356,7 @@ Remove-Item -Path $PSCommandPath -Force
         public bool IsApplicationRunning()
         {
             var currentProcess = Process.GetCurrentProcess();
-            var processes = Process.GetProcessesByName("CloudJourneyAddin")
+            var processes = Process.GetProcessesByName("ZeroTrustMigrationAddin")
                 .Where(p => p.Id != currentProcess.Id)
                 .ToList();
 
@@ -370,7 +371,7 @@ Remove-Item -Path $PSCommandPath -Force
             try
             {
                 var currentProcess = Process.GetCurrentProcess();
-                var processes = Process.GetProcessesByName("CloudJourneyAddin")
+                var processes = Process.GetProcessesByName("ZeroTrustMigrationAddin")
                     .Where(p => p.Id != currentProcess.Id)
                     .ToList();
 
@@ -400,7 +401,7 @@ Remove-Item -Path $PSCommandPath -Force
                 {
                     await Task.Delay(1000);
                     
-                    var stillRunning = Process.GetProcessesByName("CloudJourneyAddin")
+                    var stillRunning = Process.GetProcessesByName("ZeroTrustMigrationAddin")
                         .Where(p => p.Id != currentProcess.Id)
                         .ToList();
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the GitHub Releases-based auto-update system implemented for CloudJourneyAddin. The system enables automatic distribution of updates to test customers without manually sending ZIP files.
+This document describes the GitHub Releases-based auto-update system implemented for ZeroTrustMigrationAddin. The system enables automatic distribution of updates to test customers without manually sending ZIP files.
 
 ## Architecture
 
@@ -108,8 +108,8 @@ This document describes the GitHub Releases-based auto-update system implemented
 ### Typical File Changes
 
 **Patch (3.14.25 → 3.14.26):** 5-15 files
-- CloudJourneyAddin.exe
-- CloudJourneyAddin.dll
+- ZeroTrustMigrationAddin.exe
+- ZeroTrustMigrationAddin.dll
 - 3-10 modified service DLLs
 - manifest.json
 
@@ -129,7 +129,7 @@ This document describes the GitHub Releases-based auto-update system implemented
 .\Build-And-Distribute.ps1
 
 # Output:
-# - CloudJourneyAddin-v3.14.26-COMPLETE.zip
+# - ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip
 # - manifest.json (at project root)
 ```
 
@@ -138,13 +138,13 @@ This document describes the GitHub Releases-based auto-update system implemented
 ```powershell
 # Manual method
 gh release create v3.14.26 `
-  "CloudJourneyAddin-v3.14.26-COMPLETE.zip" `
+  "ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip" `
   "manifest.json" `
   --title "Version 3.14.26" `
   --notes-file RELEASE_NOTES_v3.14.26.md
 ```
 
-**Important:** Always include both `CloudJourneyAddin-v*.zip` AND `manifest.json` as release assets.
+**Important:** Always include both `ZeroTrustMigrationAddin-v*.zip` AND `manifest.json` as release assets.
 
 #### 3. Test Update Flow
 
@@ -159,10 +159,10 @@ gh release create v3.14.26 `
 
 #### First Install (Manual)
 
-1. Download `CloudJourneyAddin-v3.14.26-COMPLETE.zip` from GitHub Releases
+1. Download `ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip` from GitHub Releases
 2. Extract to folder
-3. Run `Install-CloudJourneyAddin.ps1` (or manual install)
-4. Launch `CloudJourneyAddin.exe`
+3. Run `Install-ZeroTrustMigrationAddin.ps1` (or manual install)
+4. Launch `ZeroTrustMigrationAddin.exe`
 
 #### Subsequent Updates (Automatic)
 
@@ -182,13 +182,13 @@ Updates happen automatically on every launch. To disable:
 }
 ```
 
-Save to `%LocalAppData%\CloudJourneyAddin\update-settings.json`
+Save to `%LocalAppData%\ZeroTrustMigrationAddin\update-settings.json`
 ## Configuration
 
 ### Update Settings Location
 
 ```
-%LocalAppData%\CloudJourneyAddin\
+%LocalAppData%\ZeroTrustMigrationAddin\
   ├─ manifest.json (current version info)
   └─ update-settings.json (user preferences)
 ```
@@ -241,7 +241,7 @@ If you have GitHub CLI installed and authenticated:
 $ghToken = gh auth token
 
 # Create update-settings.json with authentication
-$settingsPath = "$env:LOCALAPPDATA\CloudJourneyAddin\update-settings.json"
+$settingsPath = "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\update-settings.json"
 $settings = @{
     RepositoryOwner = "sccmavenger"
     RepositoryName = "cmaddin"
@@ -297,7 +297,7 @@ If you see `"Authentication: Unauthenticated"` or `"using anonymous access"`, th
 **Cause:** Already on latest version or update check disabled  
 **Solution:** Check logs for update check messages
 **Cause:** Last check was < 24 hours ago  
-**Solution:** Delete `%LocalAppData%\CloudJourneyAddin\update-settings.json`
+**Solution:** Delete `%LocalAppData%\ZeroTrustMigrationAddin\update-settings.json`
 
 ### "No releases found in repository"
 
@@ -309,7 +309,7 @@ If you see `"Authentication: Unauthenticated"` or `"using anonymous access"`, th
 ### "No ZIP package found in release assets"
 
 **Cause:** ZIP file not uploaded to GitHub Release  
-**Solution:** Ensure release contains `CloudJourneyAddin-v*.zip`
+**Solution:** Ensure release contains `ZeroTrustMigrationAddin-v*.zip`
 
 ### "Failed to download manifest"
 
@@ -327,7 +327,40 @@ If you see `"Authentication: Unauthenticated"` or `"using anonymous access"`, th
 ### Application Won't Restart After Update
 
 **Cause:** PowerShell execution policy or script error  
-**Solution:** Check `%TEMP%\CloudJourneyAddin-Update.log` for details
+**Solution:** Check `%TEMP%\ZeroTrustMigrationAddin-Update.log` for details
+
+### Files Not Updating Despite Download Success (v3.16.1 and earlier)
+
+**Cause:** Application installed in Program Files without UAC elevation  
+**Symptoms:**
+- Update downloads successfully
+- Progress window completes
+- App restarts but still shows old version
+- `ZeroTrustMigrationAddin-Update.log` shows: `"Access to the path '...' is denied"` for ALL files
+
+**Solution:** Update to v3.16.2 or later (includes UAC elevation fix)  
+**Details:** v3.16.2+ uses `Verb = "runas"` to request administrator elevation before applying file updates
+
+### UAC Prompt Doesn't Appear
+
+**Cause:** User account doesn't have admin rights or UAC disabled  
+**Solution:**
+1. Verify user is in Administrators group
+2. Check UAC settings: `Control Panel → User Accounts → Change User Account Control settings`
+3. UAC should be set to at least "Notify me only when apps try to make changes"
+
+**Alternative:** Install application to user-writable location (not Program Files)
+
+### User Declines UAC Prompt
+
+**Cause:** User clicked "No" on UAC elevation request  
+**Behavior:**
+- Update process terminates
+- Application continues running with current (old) version
+- No error message shown to user
+- Next launch will retry the update
+
+**Solution:** Accept UAC prompt on next launch to apply update
 
 ## Advanced Features
 
@@ -363,8 +396,12 @@ var result = await applier.ApplyUpdateAsync(
 
 1. **SHA256 Verification:** All downloaded files verified before installation
 2. **HTTPS Only:** GitHub Releases uses HTTPS for downloads
-3. **No Elevated Privileges:** Updates don't require admin rights (user-level install)
-4. **Backup Created:** Original files backed up to `%TEMP%\CloudJourneyAddin-Backup\`
+3. **UAC Elevation Required (v3.16.2+):** Updates now request administrator elevation via UAC
+   - **Why:** Application installed in Program Files requires admin rights to modify files
+   - **User Experience:** Standard Windows UAC prompt appears before file updates
+   - **Security:** Same elevation model used by Chrome, VS Code, and other major applications
+   - **Implementation:** PowerShell update script launched with `Verb = "runas"`
+4. **Backup Created:** Original files backed up to `%TEMP%\ZeroTrustMigrationAddin-Backup\`
 5. **Source Authentication:** Only downloads from official `sccmavenger/cmaddin` repository
 
 ## Future Enhancements
@@ -397,61 +434,97 @@ var result = await applier.ApplyUpdateAsync(
 
 ### Before Release
 
-- [ User confirmation dialog (automatic updates only)
-- ❌ Skip version (updates are mandatory)
-- ❌ Update frequency control (checks every launch
-- [ ] SHA256 hashes match actual file contents
-- [ ] GitHub Release created with ZIP + manifest
+- [ ] Build script completes without errors
+- [ ] Version correctly embedded in all files (exe, dll, manifest)
+- [ ] SHA256 hashes in manifest.json match actual file contents
+- [ ] GitHub Release created with both ZIP + manifest.json assets
+- [ ] Manifest.json not empty (hash should NOT be E3B0C44...)
 - [ ] Update check detects new version
-- [ ] Delta calculation identifies correct files
+- [ ] Delta calculation identifies correct changed files
 - [ ] Download progress shows accurately
-- [ ] Files replaced successfully
-- [ ] Application restarts after update
+- [ ] **UAC elevation prompt appears**
+- [ ] **Files replaced successfully after accepting UAC**
+- [ ] Application restarts after update with correct new version
 - [ ] Local manifest updated to new version
-- [ ] Logs show update process clearly
+- [ ] Logs show update process clearly (both app log and Update.log)
+- [ ] ZeroTrustMigrationAddin-Update.log shows successful file copies (not "Access is denied")
 
 ### Test Scenarios
 
-1. **First Install:** Manual ZIP → Should generate manifest on startup
-2. **Patch Update:** 3.14.25 → 3.14.26 → Should download 10-15 files
-3. **Minor Update:** 3.14.x → 3.15.0 → Should download 20-40 files
-4. **Skip Version:** User clicks "Skip" → Version ignored
-5. **Remind Later:** User clicks "Remind" → Dialog reappears on next launch
-6. **Network Error:** Disconnect during download → Shows error, allows retry
-7. **Rate Limit:** Make 61 requests → Should show rate limit error
-8. **Private Repository:** Access without token → Should show "No releases found" error
-9. **Authentication:** Configure token → Should show "Authentication: Authenticated" in logs
+1. **First Install:** Manual ZIP → Should generate manifest on startup (278 files)
+2. **Patch Update:** 3.16.1 → 3.16.2 → Should download 5 files (~2.3 MB, UAC required)
+3. **Minor Update:** 3.15.x → 3.16.0 → Should download 20-40 files
+4. **Full Update (No Manifest):** Delete local manifest → Should download all 278 files (87.9 MB)
+5. **UAC Declined:** User clicks "No" on UAC → Update fails, app continues with old version
+6. **UAC Accepted:** User clicks "Yes" on UAC → Files update successfully, app restarts
+7. **Network Error:** Disconnect during download → Shows error, allows retry
+8. **Rate Limit:** Make 61 anonymous requests → Should show rate limit error
+9. **Private Repository:** Access without token → Should show "No releases found" error
+10. **Authentication:** Configure token → Should show "Authentication: Authenticated" in logs
+11. **Cached Manifest:** Update with stale cached manifest → Should recalculate delta correctly
+12. **Permissions Test:** Check ZeroTrustMigrationAddin-Update.log for "Access is denied" errors
 
-### Verified Test Results (v3.15.0 - January 13, 2026)
+### Verified Test Results (v3.16.2 - January 14, 2026)
 
 ✅ **Authentication Test:**
 - Repository: sccmavenger/cmaddin (PRIVATE)
 - Without token: "No releases found in repository"
 - With GitHub CLI token: "Authentication: Authenticated"
-- Result: **PASS** - Successfully detected 3 releases
+- Result: **PASS** - Successfully detected 6 releases
 
 ✅ **Release Detection:**
-- Found v3.15.0, v3.14.32, v3.14.31
+- Found v3.16.2, v3.16.1, v3.16.0, v3.15.0, v3.14.32, v3.14.31
 - Each release has 2 assets (ZIP + manifest.json)
-- GetLatest() returned v3.15.0 correctly
+- GetLatest() returned v3.16.2 correctly
 - Result: **PASS**
 
 ✅ **Version Comparison:**
-- Current version: 3.15.0
-- Latest version: 3.15.0
+- Current version: 3.16.2
+- Latest version: 3.16.2
 - Message: "No update available - current version is up to date"
 - Result: **PASS**
 
-✅ **Build Script Fix:**
-- Issue: PowerShell case-insensitive variable collision
+✅ **Delta Update Test (v3.16.1 → v3.16.2):**
+- Changed files detected: 5 (ZeroTrustMigrationAddin.exe, .dll, .pdb, .deps.json, README.md)
+- Download size: 2,334,826 bytes (~2.3 MB)
+- Bandwidth savings: 97.5% (vs 87.9 MB full package)
+- Download time: ~4 seconds
+- Result: **PASS**
+
+✅ **UAC Elevation Test (v3.16.2):**
+- UAC prompt appeared: YES
+- User accepted elevation: YES
+- PowerShell script completed: SUCCESS
+- All 5 files copied: SUCCESS (verified in ZeroTrustMigrationAddin-Update.log)
+- Application restarted: SUCCESS
+- Final version: 3.16.2
+- Result: **PASS** - Critical fix resolved permissions failures
+
+✅ **Full Update Test (v3.15.0 → v3.16.1):**
+- Test device: UCL-CM (ConfigMgr server)
+- No local manifest: Treated all 278 files as changed
+- Download size: 92,174,568 bytes (87.9 MB)
+- Download time: ~30 seconds
+- Extraction: 278 files verified
+- UAC elevation: Required and accepted
+- Result: **PASS**
+
+✅ **Build Script Fix (v3.15.0):**
+- Issue: PowerShell case-insensitive variable collision ($version vs $Version)
 - Built v3.15.0 successfully (not 9.0.308)
 - Version correctly applied to all 6 locations
 - Result: **PASS**
 
 **Key Learnings:**
-- Private repositories MUST have authentication configured
-- GitHub CLI (`gh auth token`) provides quick token access
+- Private repositories MUST have authentication configured on all devices
+- GitHub CLI (`gh auth token`) provides quick token access for dev machines
 - PowerShell variable names must be unique regardless of case
+- **UAC elevation is REQUIRED for Program Files installations**
+  * Without elevation: ALL file copy operations fail with "Access is denied"
+  * ZeroTrustMigrationAddin-Update.log is essential for diagnosing permissions failures
+  * Users must accept UAC prompt for updates to apply successfully
+- Manifest caching dramatically improves bandwidth efficiency (97.5% savings)
+- Delta updates complete in seconds vs minutes for full package
 - Debug logging is essential for diagnosing update issues
 
 ## File Locations Reference
@@ -467,21 +540,21 @@ Views/UpdateNotificationWindow.xaml.cs
 ViewModels/UpdateNotificationViewModel.cs
 App.xaml.cs (modified)
 Build-And-Distribute.ps1 (modified - Step 5a added)
-CloudJourneyAddin.csproj (added Octokit NuGet)
+ZeroTrustMigrationAddin.csproj (added Octokit NuGet)
 ```
 
 ### Runtime Files
 ```
-%LocalAppData%\CloudJourneyAddin\
+%LocalAppData%\ZeroTrustMigrationAddin\
   ├─ manifest.json
   ├─ update-settings.json
-  └─ Logs\CloudJourneyAddin_YYYYMMDD.log
+  └─ Logs\ZeroTrustMigrationAddin_YYYYMMDD.log
 
 %TEMP%\
-  ├─ CloudJourneyAddin-Update\{GUID}\ (download temp)
-  ├─ CloudJourneyAddin-Backup\{timestamp}\ (backup)
-  ├─ CloudJourneyAddin-ApplyUpdate.ps1 (update script)
-  └─ CloudJourneyAddin-Update.log (update log)
+  ├─ ZeroTrustMigrationAddin-Update\{GUID}\ (download temp)
+  ├─ ZeroTrustMigrationAddin-Backup\{timestamp}\ (backup)
+  ├─ ZeroTrustMigrationAddin-ApplyUpdate.ps1 (update script)
+  └─ ZeroTrustMigrationAddin-Update.log (update log)
 ```
 
 ## Support
@@ -490,12 +563,12 @@ CloudJourneyAddin.csproj (added Octokit NuGet)
 
 **Application Logs:**
 ```
-%LocalAppData%\CloudJourneyAddin\Logs\CloudJourneyAddin_YYYYMMDD.log
+%LocalAppData%\ZeroTrustMigrationAddin\Logs\ZeroTrustMigrationAddin_YYYYMMDD.log
 ```
 
 **Update Script Log:**
 ```
-%TEMP%\CloudJourneyAddin-Update.log
+%TEMP%\ZeroTrustMigrationAddin-Update.log
 ```
 
 ### Key Log Messages

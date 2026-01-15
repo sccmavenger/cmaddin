@@ -62,7 +62,7 @@ if (Test-Path $extensionsPath) {
         Write-Host "  - $($_.Name)" -ForegroundColor Gray
         
         # Show first few lines of each XML
-        if ($_.Name -eq "CloudJourneyAddin.xml") {
+        if ($_.Name -eq "ZeroTrustMigrationAddin.xml") {
             Write-Host "    Content preview:" -ForegroundColor Yellow
             Get-Content $_.FullName | Select-Object -First 8 | ForEach-Object {
                 Write-Host "      $_" -ForegroundColor Gray

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CloudJourneyAddin.Models
+namespace ZeroTrustMigrationAddin.Models
 {
     /// <summary>
     /// Represents an AI-generated enrollment plan with batched execution schedule
