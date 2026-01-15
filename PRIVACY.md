@@ -5,7 +5,7 @@
 
 ## Overview
 
-The Cloud Journey Dashboard is designed with privacy and security as core principles. This document provides complete transparency about what data is collected, transmitted, and stored by the application.
+The Zero Trust Migration Journey is designed with privacy and security as core principles. This document provides complete transparency about what data is collected, transmitted, and stored by the application.
 
 ---
 
@@ -115,12 +115,12 @@ Data Sent Example:
 3. **Smart Caching**
    - Responses cached locally for 30 minutes
    - Reduces redundant API calls by ~65%
-   - Cache stored in: `%APPDATA%\CloudJourneyAddin\cache`
+   - Cache stored in: `%APPDATA%\ZeroTrustMigrationAddin\cache`
 
 4. **Audit Logging**
    - All Azure OpenAI API calls logged locally
    - Includes timestamp, prompt summary, response status
-   - Logs stored in: `%APPDATA%\CloudJourneyAddin\logs`
+   - Logs stored in: `%APPDATA%\ZeroTrustMigrationAddin\logs`
    - Never transmitted externally
 
 5. **Optional Feature**
@@ -134,7 +134,7 @@ Data Sent Example:
 
 ### Configuration Files
 
-**Location:** `%APPDATA%\CloudJourneyAddin\`
+**Location:** `%APPDATA%\ZeroTrustMigrationAddin\`
 
 **Files Stored:**
 - `openai-config.json` - Azure OpenAI credentials (endpoint, deployment name, API key)
@@ -215,7 +215,7 @@ The application ONLY connects to:
 ### For Administrators
 
 1. **Protect API Keys**
-   - Azure OpenAI API keys stored in `%APPDATA%\CloudJourneyAddin\openai-config.json`
+   - Azure OpenAI API keys stored in `%APPDATA%\ZeroTrustMigrationAddin\openai-config.json`
    - Use environment variables for shared deployments
    - Rotate keys regularly (Azure Portal → Keys and Endpoint)
 
@@ -245,16 +245,16 @@ The application ONLY connects to:
 **A:** Yes. Azure OpenAI is entirely optional. All core features work without it. You simply won't see AI-powered recommendations.
 
 ### Q: Where is my Azure OpenAI API key stored?
-**A:** In `%APPDATA%\CloudJourneyAddin\openai-config.json` (your user profile folder). It's protected by Windows file permissions and only accessible to your user account.
+**A:** In `%APPDATA%\ZeroTrustMigrationAddin\openai-config.json` (your user profile folder). It's protected by Windows file permissions and only accessible to your user account.
 
 ### Q: Can I review what data is sent to Azure OpenAI?
-**A:** Yes. All API calls are logged to `%APPDATA%\CloudJourneyAddin\logs`. You can review the exact prompts sent and responses received.
+**A:** Yes. All API calls are logged to `%APPDATA%\ZeroTrustMigrationAddin\logs`. You can review the exact prompts sent and responses received.
 
 ### Q: Does this work in air-gapped/disconnected environments?
 **A:** Partially. ConfigMgr data works (local network only). Microsoft Graph and Azure OpenAI require internet connectivity.
 
 ### Q: How do I delete all local data?
-**A:** Delete the folder: `%APPDATA%\CloudJourneyAddin\`. This removes all configuration, cache, and logs.
+**A:** Delete the folder: `%APPDATA%\ZeroTrustMigrationAddin\`. This removes all configuration, cache, and logs.
 
 ### Q: Is the source code available for security review?
 **A:** Yes. The code is available for review to verify data handling practices.
@@ -275,7 +275,7 @@ If you discover a security issue or privacy concern:
 
 For questions about data handling:
 - Review this PRIVACY.md document
-- Check logs in `%APPDATA%\CloudJourneyAddin\logs`
+- Check logs in `%APPDATA%\ZeroTrustMigrationAddin\logs`
 - Review API permissions in Azure Portal (if using Azure OpenAI)
 
 ---

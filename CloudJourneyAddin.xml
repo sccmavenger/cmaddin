@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ActionDescription Class="Executable" DisplayName="Cloud Journey Dashboard" MnemonicDisplayName="Cloud Journey">
+<ActionDescription Class="Executable" DisplayName="Zero Trust Migration Journey" MnemonicDisplayName="Zero Trust">
   <ShowOn>
+    <string>DefaultHomeTab</string>
     <string>ContextMenu</string>
   </ShowOn>
   <Executable>
-    <FilePath>F:\Program Files\Microsoft Configuration Manager\AdminConsole\bin\bin\CloudJourneyAddin\CloudJourneyAddin.exe</FilePath>
+    <FilePath>F:\Program Files\Microsoft Configuration Manager\AdminConsole\bin\bin\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe</FilePath>
   </Executable>
 </ActionDescription>

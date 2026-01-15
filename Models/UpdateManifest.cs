@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CloudJourneyAddin.Models
+namespace ZeroTrustMigrationAddin.Models
 {
     /// <summary>
     /// Represents the manifest file containing version information and file entries for updates.
@@ -36,7 +36,7 @@ namespace CloudJourneyAddin.Models
     public class FileEntry
     {
         /// <summary>
-        /// Relative path within the installation directory (e.g., "CloudJourneyAddin.exe")
+        /// Relative path within the installation directory (e.g., "ZeroTrustMigrationAddin.exe")
         /// </summary>
         public string RelativePath { get; set; } = string.Empty;
 
@@ -63,7 +63,7 @@ namespace CloudJourneyAddin.Models
 
     /// <summary>
     /// User settings for auto-update behavior.
-    /// Stored in %LocalAppData%\CloudJourneyAddin\update-settings.json
+    /// Stored in %LocalAppData%\ZeroTrustMigrationAddin\update-settings.json
     /// </summary>
     public class UpdateSettings
     {
@@ -137,6 +137,11 @@ namespace CloudJourneyAddin.Models
         /// Total size of delta update in bytes
         /// </summary>
         public long DeltaSize { get; set; }
+
+        /// <summary>
+        /// Total size of full package in bytes (for bandwidth savings calculation)
+        /// </summary>
+        public long TotalSize { get; set; }
 
         /// <summary>
         /// Release date

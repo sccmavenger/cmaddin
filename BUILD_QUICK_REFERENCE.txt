@@ -1,5 +1,5 @@
 ╔═══════════════════════════════════════════════════════════════════════════╗
-║                CLOUD JOURNEY BUILD SCRIPT - QUICK REFERENCE               ║
+║                Zero Trust Migration Journey BUILD SCRIPT - QUICK REFERENCE               ║
 ╠═══════════════════════════════════════════════════════════════════════════╣
 ║                                                                           ║
 ║  COMMON COMMANDS:                                                         ║
@@ -69,18 +69,18 @@
 ║  OUTPUTS:                                                                 ║
 ║  ════════════════════════════════════════════════════════════════════     ║
 ║                                                                           ║
-║  CloudJourneyAddin-vX.X.X-COMPLETE.zip     Main package (~88 MB)         ║
+║  ZeroTrustMigrationAddin-vX.X.X-COMPLETE.zip     Main package (~88 MB)         ║
 ║  manifest.json                              Update manifest (~200 KB)    ║
 ║  builds/logs/build-YYYYMMDD-HHMMSS.log     Full build log               ║
 ║  builds/manifests/manifest-vX.X.X.json     Archived manifest             ║
-║  builds/archive/CloudJourneyAddin-*.zip    Previous builds               ║
+║  builds/archive/ZeroTrustMigrationAddin-*.zip    Previous builds               ║
 ║                                                                           ║
 ╠═══════════════════════════════════════════════════════════════════════════╣
 ║                                                                           ║
 ║  VERSION LOCATIONS (6 files updated):                                     ║
 ║  ════════════════════════════════════════════════════════════════════     ║
 ║                                                                           ║
-║  1. CloudJourneyAddin.csproj         (Version, AssemblyVersion, etc.)    ║
+║  1. ZeroTrustMigrationAddin.csproj         (Version, AssemblyVersion, etc.)    ║
 ║  2. README.md                         (All version references)           ║
 ║  3. USER_GUIDE.md                     (Header version)                   ║
 ║  4. Views/DashboardWindow.xaml        (UI version display)               ║
@@ -117,7 +117,7 @@
 ║                                                                           ║
 ║  ❌ "GitHub Release creation failed"                                     ║
 ║     → Package still created locally. Create release manually:           ║
-║       gh release create vX.X.X CloudJourneyAddin-*.zip manifest.json    ║
+║       gh release create vX.X.X ZeroTrustMigrationAddin-*.zip manifest.json    ║
 ║                                                                           ║
 ║  ⚠️  Build takes too long                                                ║
 ║     → Normal! First build: ~5 min. Subsequent: ~3 min                   ║
@@ -149,7 +149,7 @@
 ║  ════════════════════════════════════════════════════════════════════     ║
 ║                                                                           ║
 ║  Version:        3.14.31 → 3.14.32                                       ║
-║  Package:        CloudJourneyAddin-v3.14.32-COMPLETE.zip                 ║
+║  Package:        ZeroTrustMigrationAddin-v3.14.32-COMPLETE.zip                 ║
 ║  Size:           87.89 MB                                                ║
 ║  Files:          283                                                     ║
 ║  Build Time:     3.2 minutes                                             ║
@@ -202,7 +202,7 @@
 ║  LAST UPDATED: 2024-01-15                                                 ║
 ║  STATUS: Production Ready                                                 ║
 ║                                                                           ║
-║  This is THE canonical build script for all Cloud Journey releases.      ║
+║  This is THE canonical build script for all Zero Trust Migration Journey releases.      ║
 ║  No other build process should be used.                                   ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝

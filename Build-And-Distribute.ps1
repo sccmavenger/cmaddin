@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Complete automated build, test, and distribution script for Cloud Journey Add-in
+    Complete automated build, test, and distribution script for Zero Trust Migration Journey Add-in
     
 .DESCRIPTION
     Enterprise-grade build automation that:
@@ -47,6 +47,10 @@
 .PARAMETER SkipTests
     Skip post-build smoke tests. Not recommended for production builds.
     
+.PARAMETER BuildMsi
+    Build MSI installer package using WiX Toolset (requires WiX v4+).
+    Creates enterprise-ready MSI with ConfigMgr Console integration.
+    
 .EXAMPLE
     .\Build-And-Distribute.ps1
     # Auto-increment patch version, build, package (3.14.31 → 3.14.32)
@@ -64,12 +68,20 @@
     # Build and automatically publish to GitHub
     
 .EXAMPLE
+    .\Build-And-Distribute.ps1 -BuildMsi
+    # Build application and create MSI installer package
+    
+.EXAMPLE
+    .\Build-And-Distribute.ps1 -BuildMsi -PublishToGitHub
+    # Build, create MSI, and publish both ZIP and MSI to GitHub Releases
+    
+.EXAMPLE
     .\Build-And-Distribute.ps1 -DryRun
     # Validate build process without creating any files
     
 .NOTES
     File Name      : Build-And-Distribute.ps1
-    Author         : Cloud Journey Development Team
+    Author         : Zero Trust Migration Journey Development Team
     Prerequisite   : PowerShell 5.1+, .NET 8.0 SDK, gh CLI (optional)
     Version        : 2.0.0
     
@@ -90,7 +102,8 @@ param(
     [switch]$DryRun,
     [switch]$Force,
     [switch]$ArchiveOldBuilds = $true,
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    [switch]$BuildMsi
 )
 
 # ============================================
@@ -114,7 +127,7 @@ Start-Transcript -Path $buildLogPath -Append
 # Display banner
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║  Cloud Journey Add-in - Enterprise Build & Distribution  ║" -ForegroundColor Cyan
+Write-Host "║  Zero Trust Migration Journey Add-in - Enterprise Build & Distribution  ║" -ForegroundColor Cyan
 Write-Host "║  Version 2.0.0 - Enhanced Automation                      ║" -ForegroundColor Cyan
 Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
@@ -122,6 +135,169 @@ Write-Host ""
 if ($DryRun) {
     Write-Host "🧪 DRY RUN MODE - No files will be created or modified" -ForegroundColor Yellow
     Write-Host ""
+}
+
+# ============================================
+# HELPER FUNCTIONS
+# ============================================
+
+function Get-UnreleasedChangelog {
+    <#
+    .SYNOPSIS
+        Parse [Unreleased] section from CHANGELOG.md
+    #>
+    param([string]$ChangelogPath)
+    
+    $content = Get-Content $ChangelogPath -Raw
+    
+    # Match [Unreleased] section until next version heading
+    if ($content -match '(?s)##\s+\[Unreleased\].*?(?=##\s+\[\d+\.\d+\.\d+\]|$)') {
+        $unreleasedSection = $matches[0]
+        
+        # Extract Added items
+        $added = @()
+        if ($unreleasedSection -match '(?s)###\s+Added\s*\n(.*?)(?=###|$)') {
+            $addedText = $matches[1]
+            $added = $addedText -split '\n' | Where-Object { $_ -match '^\s*-' } | ForEach-Object { $_.Trim() -replace '^-\s*', '' }
+        }
+        
+        # Extract Changed items
+        $changed = @()
+        if ($unreleasedSection -match '(?s)###\s+Changed\s*\n(.*?)(?=###|$)') {
+            $changedText = $matches[1]
+            $changed = $changedText -split '\n' | Where-Object { $_ -match '^\s*-' } | ForEach-Object { $_.Trim() -replace '^-\s*', '' }
+        }
+        
+        # Extract Fixed items
+        $fixed = @()
+        if ($unreleasedSection -match '(?s)###\s+Fixed\s*\n(.*?)(?=###|$)') {
+            $fixedText = $matches[1]
+            $fixed = $fixedText -split '\n' | Where-Object { $_ -match '^\s*-' } | ForEach-Object { $_.Trim() -replace '^-\s*', '' }
+        }
+        
+        return @{
+            Added = $added
+            Changed = $changed
+            Fixed = $fixed
+            HasContent = ($added.Count -gt 0 -or $changed.Count -gt 0 -or $fixed.Count -gt 0)
+        }
+    }
+    
+    return @{
+        Added = @()
+        Changed = @()
+        Fixed = @()
+        HasContent = $false
+    }
+}
+
+function ConvertTo-VersionedChangelog {
+    <#
+    .SYNOPSIS
+        Convert [Unreleased] to [Version] with date in CHANGELOG.md
+    #>
+    param(
+        [string]$ChangelogPath,
+        [string]$Version,
+        [string]$Date
+    )
+    
+    $content = Get-Content $ChangelogPath -Raw
+    
+    # Replace [Unreleased] with [Version] - Date
+    $content = $content -replace '##\s+\[Unreleased\]', "## [$Version] - $Date"
+    
+    # Add new [Unreleased] template at the top
+    $unreleasedTemplate = @"
+
+## [Unreleased]
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+"@
+    
+    $content = $content -replace '(# Zero Trust Migration Journey - Change Log)', "`${1}`n$unreleasedTemplate"
+    
+    [System.IO.File]::WriteAllText($ChangelogPath, $content)
+}
+
+function ConvertTo-UserGuideHTML {
+    <#
+    .SYNOPSIS
+        Generate HTML alert box content from changelog items
+    #>
+    param(
+        [string]$Version,
+        [string]$Date,
+        [array]$Added,
+        [array]$Changed,
+        [array]$Fixed
+    )
+    
+    $dateFormatted = [DateTime]::ParseExact($Date, 'yyyy-MM-dd', $null).ToString('MMMM d, yyyy')
+    $items = @()
+    
+    # Process Added items
+    foreach ($item in $Added) {
+        if ($item -and $item.Trim()) {
+            # Parse emoji and description (e.g., "Feature Name 📊 Description text")
+            if ($item -match '^\*\*(.+?)\*\*\s*(.*)$') {
+                $title = $matches[1].Trim()
+                $description = $matches[2].Trim()
+                $items += "                    <li><strong>$title</strong> $description</li>"
+            } else {
+                $items += "                    <li>$item</li>"
+            }
+        }
+    }
+    
+    # Process Changed items
+    foreach ($item in $Changed) {
+        if ($item -and $item.Trim()) {
+            if ($item -match '^\*\*(.+?)\*\*\s*(.*)$') {
+                $title = $matches[1].Trim()
+                $description = $matches[2].Trim()
+                $items += "                    <li><strong>$title</strong> $description</li>"
+            } else {
+                $items += "                    <li>$item</li>"
+            }
+        }
+    }
+    
+    # Process Fixed items
+    foreach ($item in $Fixed) {
+        if ($item -and $item.Trim()) {
+            if ($item -match '^\*\*(.+?)\*\*\s*(.*)$') {
+                $title = $matches[1].Trim()
+                $description = $matches[2].Trim()
+                $items += "                    <li><strong>$title</strong> $description</li>"
+            } else {
+                $items += "                    <li>$item</li>"
+            }
+        }
+    }
+    
+    if ($items.Count -eq 0) {
+        $items += "                    <li>Version update</li>"
+    }
+    
+    $html = @"
+            <div class="alert alert-success">
+                <strong>🎉 Version $Version - $dateFormatted</strong>
+                <ul>
+$($items -join "`n")
+                </ul>
+            </div>
+"@
+    
+    return $html
 }
 
 # ============================================
@@ -193,10 +369,10 @@ Write-Host ""
 
 # Check 3: Project file exists
 Write-Host "[CHECK 3/5] Project Configuration" -ForegroundColor Yellow
-$csprojPath = Join-Path $scriptDir "CloudJourneyAddin.csproj"
+$csprojPath = Join-Path $scriptDir "ZeroTrustMigrationAddin.csproj"
 
 if (!(Test-Path $csprojPath)) {
-    Write-Host "   ❌ CloudJourneyAddin.csproj not found!" -ForegroundColor Red
+    Write-Host "   ❌ ZeroTrustMigrationAddin.csproj not found!" -ForegroundColor Red
     Stop-Transcript
     exit 1
 }
@@ -294,8 +470,8 @@ Write-Host "📝 Updating version in required locations..." -ForegroundColor Yel
 Write-Host ""
 
 try {
-    # 1. CloudJourneyAddin.csproj
-    Write-Host "   [1/6] CloudJourneyAddin.csproj" -ForegroundColor White
+    # 1. ZeroTrustMigrationAddin.csproj
+    Write-Host "   [1/7] ZeroTrustMigrationAddin.csproj" -ForegroundColor White
     $csproj.Project.PropertyGroup.Version = $newVersion
     $csproj.Project.PropertyGroup.AssemblyVersion = "$newVersion.0"
     $csproj.Project.PropertyGroup.FileVersion = "$newVersion.0"
@@ -311,7 +487,7 @@ try {
     Write-Host "      ✅ Updated to v$newVersion" -ForegroundColor Green
     
     # 2. README.md
-    Write-Host "   [2/6] README.md" -ForegroundColor White
+    Write-Host "   [2/7] README.md" -ForegroundColor White
     $readmePath = Join-Path $scriptDir "README.md"
     if (Test-Path $readmePath) {
         $readmeContent = Get-Content $readmePath -Raw
@@ -323,8 +499,56 @@ try {
         Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
     }
     
-    # 3. USER_GUIDE.md (if exists)
-    Write-Host "   [3/6] USER_GUIDE.md" -ForegroundColor White
+    # 3. AdminUserGuide.html - Generate from CHANGELOG.md
+    Write-Host "   [3/7] AdminUserGuide.html" -ForegroundColor White
+    $adminGuidePath = Join-Path $scriptDir "AdminUserGuide.html"
+    $changelogPath = Join-Path $scriptDir "CHANGELOG.md"
+    
+    if ((Test-Path $adminGuidePath) -and (Test-Path $changelogPath)) {
+        $content = Get-Content $adminGuidePath -Raw
+        
+        # Parse the NEW versioned entry we just created in CHANGELOG.md
+        $changelogContent = Get-Content $changelogPath -Raw
+        
+        # Extract the current version entry (not [Unreleased])
+        $versionEntry = @{
+            Added = @()
+            Changed = @()
+            Fixed = @()
+        }
+        
+        if ($changelogContent -match "(?s)##\s+\[$newVersion\].*?(?=##\s+\[|$)") {
+            $currentSection = $matches[0]
+            
+            if ($currentSection -match '(?s)###\s+Added\s*\n(.*?)(?=###|$)') {
+                $versionEntry.Added = $matches[1] -split '\n' | Where-Object { $_ -match '^\s*-' } | ForEach-Object { $_.Trim() -replace '^\s*-\s*', '' }
+            }
+            if ($currentSection -match '(?s)###\s+Changed\s*\n(.*?)(?=###|$)') {
+                $versionEntry.Changed = $matches[1] -split '\n' | Where-Object { $_ -match '^\s*-' } | ForEach-Object { $_.Trim() -replace '^\s*-\s*', '' }
+            }
+            if ($currentSection -match '(?s)###\s+Fixed\s*\n(.*?)(?=###|$)') {
+                $versionEntry.Fixed = $matches[1] -split '\n' | Where-Object { $_ -match '^\s*-' } | ForEach-Object { $_.Trim() -replace '^\s*-\s*', '' }
+            }
+        }
+        
+        # Generate HTML from changelog
+        $alertHtml = ConvertTo-UserGuideHTML -Version $newVersion -Date (Get-Date -Format 'yyyy-MM-dd') `
+            -Added $versionEntry.Added -Changed $versionEntry.Changed -Fixed $versionEntry.Fixed
+        
+        # Replace the entire alert box (match from <div class="alert to </div>)
+        $content = $content -replace '(?s)<div class="alert alert-success">.*?</div>', $alertHtml.Trim()
+        
+        # Update the footer version
+        $content = $content -replace "(Zero Trust Migration Journey Add-in\s+v)[\d.]+", "`${1}$newVersion"
+        
+        [System.IO.File]::WriteAllText($adminGuidePath, $content)
+        Write-Host "      ✅ Generated from CHANGELOG.md (alert + footer)" -ForegroundColor Green
+    } else {
+        Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
+    }
+    
+    # 4. USER_GUIDE.md (if exists)
+    Write-Host "   [4/7] USER_GUIDE.md" -ForegroundColor White
     $userGuidePath = Join-Path $scriptDir "USER_GUIDE.md"
     if (Test-Path $userGuidePath) {
         $content = Get-Content $userGuidePath -Raw
@@ -336,8 +560,8 @@ try {
         Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
     }
     
-    # 4. DashboardWindow.xaml
-    Write-Host "   [4/6] Views/DashboardWindow.xaml" -ForegroundColor White
+    # 5. DashboardWindow.xaml
+    Write-Host "   [5/7] Views/DashboardWindow.xaml" -ForegroundColor White
     $xamlPath = Join-Path $scriptDir "Views\DashboardWindow.xaml"
     if (Test-Path $xamlPath) {
         $content = Get-Content $xamlPath -Raw
@@ -348,8 +572,8 @@ try {
         Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
     }
     
-    # 5. DashboardViewModel.cs
-    Write-Host "   [5/6] ViewModels/DashboardViewModel.cs" -ForegroundColor White
+    # 6. DashboardViewModel.cs
+    Write-Host "   [6/7] ViewModels/DashboardViewModel.cs" -ForegroundColor White
     $viewModelPath = Join-Path $scriptDir "ViewModels\DashboardViewModel.cs"
     if (Test-Path $viewModelPath) {
         $content = Get-Content $viewModelPath -Raw
@@ -360,28 +584,33 @@ try {
         Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
     }
     
-    # 6. CHANGELOG.md - Auto-insert new entry
-    Write-Host "   [6/6] CHANGELOG.md" -ForegroundColor White
+    # 7. CHANGELOG.md - Convert [Unreleased] to versioned entry
+    Write-Host "   [7/7] CHANGELOG.md" -ForegroundColor White
     $changelogPath = Join-Path $scriptDir "CHANGELOG.md"
     if (Test-Path $changelogPath) {
-        $changelogContent = Get-Content $changelogPath -Raw
-        $newEntry = @"
+        $changelog = Get-UnreleasedChangelog -ChangelogPath $changelogPath
+        
+        if ($changelog.HasContent) {
+            # Convert [Unreleased] to [Version] and create new [Unreleased] template
+            ConvertTo-VersionedChangelog -ChangelogPath $changelogPath -Version $newVersion -Date (Get-Date -Format 'yyyy-MM-dd')
+            Write-Host "      ✅ [Unreleased] → [$newVersion] (new [Unreleased] template created)" -ForegroundColor Green
+        } else {
+            Write-Host "      ⚠️ [Unreleased] section empty - add changes before building" -ForegroundColor Yellow
+            Write-Host "      Creating placeholder entry..." -ForegroundColor Gray
+            
+            # Create placeholder if [Unreleased] is empty
+            $changelogContent = Get-Content $changelogPath -Raw
+            $newEntry = @"
 
 ## [$newVersion] - $(Get-Date -Format 'yyyy-MM-dd')
 
-### Added
-- [Add new features here]
-
 ### Changed
-- [Add changes here]
-
-### Fixed
-- [Add bug fixes here]
+- Version update
 
 "@
-        $updatedChangelog = $changelogContent -replace "(# Cloud Journey Dashboard - Change Log)", "`$1`n$newEntry"
-        [System.IO.File]::WriteAllText($changelogPath, $updatedChangelog)
-        Write-Host "      ✅ New entry added (PLEASE UPDATE)" -ForegroundColor Green
+            $updatedChangelog = $changelogContent -replace "(## \[Unreleased\].*?)(?=## \[\d+\.\d+\.\d+\]|$)", "`$1$newEntry"
+            [System.IO.File]::WriteAllText($changelogPath, $updatedChangelog)
+        }
     } else {
         Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
     }
@@ -420,7 +649,7 @@ if ($SkipBuild) {
 } else {
     # Clean
     Write-Host "[STEP 1/4] Cleaning previous build..." -ForegroundColor Yellow
-    dotnet clean CloudJourneyAddin.csproj -c Release --nologo -v quiet
+    dotnet clean ZeroTrustMigrationAddin.csproj -c Release --nologo -v quiet
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   ❌ Clean failed!" -ForegroundColor Red
         Stop-Transcript
@@ -431,7 +660,7 @@ if ($SkipBuild) {
     
     # Build
     Write-Host "[STEP 2/4] Building project..." -ForegroundColor Yellow
-    dotnet build CloudJourneyAddin.csproj -c Release --nologo -v quiet
+    dotnet build ZeroTrustMigrationAddin.csproj -c Release --nologo -v quiet
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   ❌ Build failed!" -ForegroundColor Red
         Stop-Transcript
@@ -444,7 +673,7 @@ if ($SkipBuild) {
     Write-Host "[STEP 3/4] Publishing with dependencies..." -ForegroundColor Yellow
     $publishPath = Join-Path $scriptDir "bin\Release\net8.0-windows\win-x64\publish"
     
-    dotnet publish CloudJourneyAddin.csproj -c Release -r win-x64 --self-contained true --nologo -v quiet
+    dotnet publish ZeroTrustMigrationAddin.csproj -c Release -r win-x64 --self-contained true --nologo -v quiet
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   ❌ Publish failed!" -ForegroundColor Red
         Stop-Transcript
@@ -455,7 +684,7 @@ if ($SkipBuild) {
     Write-Host "   ✅ Published $fileCount files" -ForegroundColor Green
     
     # Verify critical files
-    $criticalFiles = @("CloudJourneyAddin.exe", "Azure.Identity.dll", "Microsoft.Graph.dll")
+    $criticalFiles = @("ZeroTrustMigrationAddin.exe", "Azure.Identity.dll", "Microsoft.Graph.dll")
     foreach ($file in $criticalFiles) {
         $path = Join-Path $publishPath $file
         if (!(Test-Path $path)) {
@@ -491,7 +720,7 @@ Write-Host "📦 PACKAGE CREATION" -ForegroundColor Magenta
 Write-Host "═══════════════════════════════════════" -ForegroundColor Magenta
 Write-Host ""
 
-$packageName = "CloudJourneyAddin-v$newVersion-COMPLETE.zip"
+$packageName = "ZeroTrustMigrationAddin-v$newVersion-COMPLETE.zip"
 $packagePath = Join-Path $scriptDir $packageName
 $tempFolder = Join-Path $scriptDir "TempPackage_$newVersion"
 
@@ -519,7 +748,7 @@ Write-Host "   ✅ Copied $binCount binary files" -ForegroundColor Green
 $updatePackagePath = Join-Path $scriptDir "UpdatePackage"
 if (Test-Path $updatePackagePath) {
     $scriptFiles = @(Get-ChildItem $updatePackagePath -Filter "*.ps1")
-    $xmlFile = Join-Path $updatePackagePath "CloudJourneyAddin.xml"
+    $xmlFile = Join-Path $updatePackagePath "ZeroTrustMigrationAddin.xml"
     if (Test-Path $xmlFile) { $scriptFiles += Get-Item $xmlFile }
     
     foreach ($script in $scriptFiles) {
@@ -568,7 +797,7 @@ foreach ($file in $manifestFiles) {
     
     $hash = (Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLower()
     
-    $criticalFiles = @("CloudJourneyAddin.exe", "CloudJourneyAddin.dll", "Azure.Identity.dll", 
+    $criticalFiles = @("ZeroTrustMigrationAddin.exe", "ZeroTrustMigrationAddin.dll", "Azure.Identity.dll", 
                        "Microsoft.Graph.dll", "Microsoft.Graph.Core.dll", "Newtonsoft.Json.dll")
     
     $manifest.Files += @{
@@ -640,7 +869,7 @@ Expand-Archive -Path $packagePath -DestinationPath $verifyFolder -Force
 
 # Verify critical files
 $criticalFilesPresent = $true
-foreach ($file in @("CloudJourneyAddin.exe", "Azure.Identity.dll", "Microsoft.Graph.dll")) {
+foreach ($file in @("ZeroTrustMigrationAddin.exe", "Azure.Identity.dll", "Microsoft.Graph.dll")) {
     $path = Join-Path $verifyFolder $file
     if (!(Test-Path $path)) {
         Write-Host "   ❌ Missing: $file" -ForegroundColor Red
@@ -656,7 +885,7 @@ if (!$criticalFilesPresent) {
 }
 
 # Verify EXE version
-$exeInPackage = Join-Path $verifyFolder "CloudJourneyAddin.exe"
+$exeInPackage = Join-Path $verifyFolder "ZeroTrustMigrationAddin.exe"
 $exeVersion = (Get-Item $exeInPackage).VersionInfo.FileVersion
 
 if ($exeVersion -ne "$newVersion.0") {
@@ -685,7 +914,7 @@ if (!$SkipTests) {
     
     try {
         # Test EXE launches
-        $exePath = Join-Path $testFolder "CloudJourneyAddin.exe"
+        $exePath = Join-Path $testFolder "ZeroTrustMigrationAddin.exe"
         $testProcess = Start-Process $exePath -ArgumentList "--version" -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop
         
         if ($testProcess.ExitCode -eq 0) {
@@ -739,7 +968,7 @@ if ($ArchiveOldBuilds -and $oldVersion -ne $newVersion) {
         New-Item -ItemType Directory -Path $archivePath -Force | Out-Null
     }
     
-    $oldPackage = Join-Path $scriptDir "CloudJourneyAddin-v$oldVersion-COMPLETE.zip"
+    $oldPackage = Join-Path $scriptDir "ZeroTrustMigrationAddin-v$oldVersion-COMPLETE.zip"
     if (Test-Path $oldPackage) {
         Move-Item $oldPackage -Destination $archivePath -Force
         Write-Host "   ✅ Moved v$oldVersion to archive" -ForegroundColor Green
@@ -751,7 +980,7 @@ if ($ArchiveOldBuilds -and $oldVersion -ne $newVersion) {
 }
 
 # Package size comparison
-$previousPackage = Join-Path "$archivePath" "CloudJourneyAddin-v$oldVersion-COMPLETE.zip"
+$previousPackage = Join-Path "$archivePath" "ZeroTrustMigrationAddin-v$oldVersion-COMPLETE.zip"
 if (Test-Path $previousPackage) {
     $oldSize = [math]::Round((Get-Item $previousPackage).Length / 1MB, 2)
     $sizeDiff = $packageSize - $oldSize
@@ -776,15 +1005,15 @@ if ($PublishToGitHub) {
     # Generate release notes if not provided
     if (!$ReleaseNotes) {
         $ReleaseNotes = @"
-## Cloud Journey Add-in v$newVersion
+## Zero Trust Migration Journey Add-in v$newVersion
 
 ### Changes
 - See CHANGELOG.md for detailed changes
 
 ### Installation
-1. Download CloudJourneyAddin-v$newVersion-COMPLETE.zip
+1. Download ZeroTrustMigrationAddin-v$newVersion-COMPLETE.zip
 2. Extract all files to installation directory
-3. Run CloudJourneyAddin.exe
+3. Run ZeroTrustMigrationAddin.exe
 
 ### Auto-Update
 Existing users on v$oldVersion will receive automatic update prompt.
@@ -833,7 +1062,7 @@ Package Size: $packageSize MB
             "release", "create", "v$newVersion",
             $packagePath,
             $manifestPath,
-            "--title", "Cloud Journey Add-in v$newVersion",
+            "--title", "Zero Trust Migration Journey Add-in v$newVersion",
             "--notes-file", $notesFile
         )
         
@@ -849,6 +1078,73 @@ Package Size: $packageSize MB
         Write-Host "   ❌ Release creation failed: $_" -ForegroundColor Red
     } finally {
         Remove-Item $notesFile -Force -ErrorAction SilentlyContinue
+    }
+    
+    Write-Host ""
+}
+
+# ============================================
+# MSI INSTALLER BUILD (OPTIONAL)
+# ============================================
+
+if ($BuildMsi -and -not $DryRun) {
+    Write-Host ""
+    Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
+    Write-Host "║               BUILDING MSI INSTALLER 📦                   ║" -ForegroundColor Magenta
+    Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
+    Write-Host ""
+    
+    $msiStartTime = Get-Date
+    
+    # Check if WiX toolset is installed
+    try {
+        $wixVersion = & wix --version 2>&1
+        Write-Host "✓ WiX Toolset detected: $wixVersion" -ForegroundColor Green
+    } catch {
+        Write-Host "⚠ WiX Toolset not found - skipping MSI build" -ForegroundColor Yellow
+        Write-Host "  Install with: dotnet tool install --global wix" -ForegroundColor Gray
+        $BuildMsi = $false
+    }
+    
+    if ($BuildMsi) {
+        $installerScriptPath = Join-Path $PSScriptRoot "installer\Build-Installer.ps1"
+        
+        if (Test-Path $installerScriptPath) {
+            Write-Host "Executing MSI build script..." -ForegroundColor Cyan
+            
+            # Run the installer build script
+            & $installerScriptPath -BuildApp:$false -SkipHeat:$false
+            
+            if ($LASTEXITCODE -eq 0) {
+                $msiPath = Join-Path $PSScriptRoot "builds\ZeroTrustMigrationAddin.msi"
+                
+                if (Test-Path $msiPath) {
+                    $msiSize = [math]::Round((Get-Item $msiPath).Length / 1MB, 2)
+                    Write-Host ""
+                    Write-Host "✓ MSI installer created successfully" -ForegroundColor Green
+                    Write-Host "  Location: $msiPath" -ForegroundColor White
+                    Write-Host "  Size: $msiSize MB" -ForegroundColor White
+                    
+                    # Copy MSI to distribution folder
+                    if ($DistributionPath -and (Test-Path $DistributionPath)) {
+                        $msiDestination = Join-Path $DistributionPath "ZeroTrustMigrationAddin-v$newVersion.msi"
+                        Copy-Item $msiPath $msiDestination -Force
+                        Write-Host "  Copied to: $msiDestination" -ForegroundColor White
+                    }
+                } else {
+                    Write-Host "⚠ MSI file not found after build" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "⚠ MSI build failed with exit code $LASTEXITCODE" -ForegroundColor Yellow
+            }
+            
+            $msiDuration = (Get-Date) - $msiStartTime
+            Write-Host ""
+            Write-Host "MSI Build Time: $([math]::Round($msiDuration.TotalMinutes, 1)) minutes" -ForegroundColor Gray
+        } else {
+            Write-Host "⚠ Installer build script not found at: $installerScriptPath" -ForegroundColor Yellow
+            Write-Host "  Create the installer project first - see installer\README.md" -ForegroundColor Gray
+        }
     }
     
     Write-Host ""
@@ -874,6 +1170,12 @@ Write-Host "Package:        $packageName" -ForegroundColor White
 Write-Host "Size:           $packageSize MB" -ForegroundColor White
 Write-Host "Files:          $packageFileCount" -ForegroundColor White
 Write-Host "Build Time:     $([math]::Round($buildDuration.TotalMinutes, 1)) minutes" -ForegroundColor White
+
+if ($BuildMsi -and (Test-Path (Join-Path $PSScriptRoot "builds\ZeroTrustMigrationAddin.msi"))) {
+    $msiSize = [math]::Round((Get-Item (Join-Path $PSScriptRoot "builds\ZeroTrustMigrationAddin.msi")).Length / 1MB, 2)
+    Write-Host "MSI Installer:  $msiSize MB" -ForegroundColor White
+}
+
 Write-Host ""
 Write-Host "📂 LOCATIONS" -ForegroundColor Cyan
 Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan

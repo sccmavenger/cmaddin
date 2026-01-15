@@ -9,7 +9,7 @@ using System.Management;
 using Azure.Identity;
 using Azure.Core;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// ConfigMgr Admin Service integration for querying device inventory

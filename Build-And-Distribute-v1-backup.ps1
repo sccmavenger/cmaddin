@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Complete build and distribution script for Cloud Journey Add-in
+    Complete build and distribution script for Zero Trust Migration Journey Add-in
     
 .DESCRIPTION
     Automatically increments version, updates all 6 required documentation locations,
@@ -49,16 +49,16 @@ $scriptDir = $PSScriptRoot
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Cloud Journey Add-in - Build & Distribute" -ForegroundColor Cyan
+Write-Host "Zero Trust Migration Journey Add-in - Build & Distribute" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # ============================================
 # AUTO VERSION BUMP
 # ============================================
-$csprojPath = Join-Path $scriptDir "CloudJourneyAddin.csproj"
+$csprojPath = Join-Path $scriptDir "ZeroTrustMigrationAddin.csproj"
 if (-not (Test-Path $csprojPath)) {
-    Write-Host "❌ ERROR: Could not find CloudJourneyAddin.csproj" -ForegroundColor Red
+    Write-Host "❌ ERROR: Could not find ZeroTrustMigrationAddin.csproj" -ForegroundColor Red
     exit 1
 }
 
@@ -93,12 +93,12 @@ if (-not $Version) {
     # Update all 6 locations automatically
     Write-Host "📝 Updating version in 6 required locations..." -ForegroundColor Yellow
     
-    # 1. CloudJourneyAddin.csproj (3 places)
+    # 1. ZeroTrustMigrationAddin.csproj (3 places)
     $csproj.Project.PropertyGroup.Version = $newVersion
     $csproj.Project.PropertyGroup.AssemblyVersion = "$newVersion.0"
     $csproj.Project.PropertyGroup.FileVersion = "$newVersion.0"
     $csproj.Save($csprojPath)
-    Write-Host "   [1/6] ✅ CloudJourneyAddin.csproj" -ForegroundColor Green
+    Write-Host "   [1/6] ✅ ZeroTrustMigrationAddin.csproj" -ForegroundColor Green
     
     # 2. README.md
     $readmePath = Join-Path $scriptDir "README.md"
@@ -158,7 +158,7 @@ Write-Host ""
 
 # Check 1: Version number updated in .csproj
 Write-Host "[CHECK 1/5] Version Number" -ForegroundColor Yellow
-Write-Host "   Location: CloudJourneyAddin.csproj (line 10-12)" -ForegroundColor Gray
+Write-Host "   Location: ZeroTrustMigrationAddin.csproj (line 10-12)" -ForegroundColor Gray
 Write-Host "   Current: $currentVersion" -ForegroundColor White
 Write-Host "   ✅ Version detected: $currentVersion" -ForegroundColor Green
 Write-Host ""
@@ -199,7 +199,7 @@ Write-Host "   Location: Views/DashboardWindow.xaml (line 6)" -ForegroundColor G
 $xamlPath = Join-Path $scriptDir "Views\DashboardWindow.xaml"
 if (Test-Path $xamlPath) {
     $xamlContent = Get-Content $xamlPath -Raw
-    if ($xamlContent -match "Title=`"Cloud Journey Progress Dashboard v$currentVersion`"") {
+    if ($xamlContent -match "Title=`"Zero Trust Migration Journey Dashboard v$currentVersion`"") {
         Write-Host "   ✅ XAML Title contains v$currentVersion" -ForegroundColor Green
     } else {
         Write-Host "   ⚠️  WARNING: XAML Title may not match version $currentVersion" -ForegroundColor Yellow
@@ -258,14 +258,14 @@ if ($Version -notmatch '^\d+\.\d+\.\d+$') {
 if (-not $SkipBuild) {
     Write-Host ""
     Write-Host "[2/7] Cleaning previous build..." -ForegroundColor Yellow
-    dotnet clean CloudJourneyAddin.csproj -c Release --nologo -v quiet
+    dotnet clean ZeroTrustMigrationAddin.csproj -c Release --nologo -v quiet
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   ❌ Clean failed!" -ForegroundColor Red
         exit 1
     }
     
     # Clean Azure OpenAI configuration for fresh testing
-    $configPath = Join-Path $env:APPDATA "CloudJourneyAddin\openai-config.json"
+    $configPath = Join-Path $env:APPDATA "ZeroTrustMigrationAddin\openai-config.json"
     if (Test-Path $configPath) {
         Remove-Item $configPath -Force -ErrorAction SilentlyContinue
         Write-Host "   🧹 Cleaned Azure OpenAI configuration" -ForegroundColor Green
@@ -281,7 +281,7 @@ if (-not $SkipBuild) {
 if (-not $SkipBuild) {
     Write-Host ""
     Write-Host "[3/7] Building project..." -ForegroundColor Yellow
-    dotnet build CloudJourneyAddin.csproj -c Release --nologo -v quiet
+    dotnet build ZeroTrustMigrationAddin.csproj -c Release --nologo -v quiet
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   ❌ Build failed!" -ForegroundColor Red
         exit 1
@@ -298,18 +298,18 @@ if (-not $SkipBuild) {
     Write-Host "[4/7] Publishing with dependencies..." -ForegroundColor Yellow
     $publishPath = Join-Path $scriptDir "bin\Release\net8.0-windows\win-x64\publish"
     
-    dotnet publish CloudJourneyAddin.csproj -c Release -r win-x64 --self-contained true --nologo -v quiet
+    dotnet publish ZeroTrustMigrationAddin.csproj -c Release -r win-x64 --self-contained true --nologo -v quiet
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   ❌ Publish failed!" -ForegroundColor Red
         exit 1
     }
     
     # Verify critical files
-    $exePath = Join-Path $publishPath "CloudJourneyAddin.exe"
+    $exePath = Join-Path $publishPath "ZeroTrustMigrationAddin.exe"
     $azureIdentityPath = Join-Path $publishPath "Azure.Identity.dll"
     
     if (-not (Test-Path $exePath)) {
-        Write-Host "   ❌ ERROR: CloudJourneyAddin.exe not found in publish folder!" -ForegroundColor Red
+        Write-Host "   ❌ ERROR: ZeroTrustMigrationAddin.exe not found in publish folder!" -ForegroundColor Red
         exit 1
     }
     
@@ -331,7 +331,7 @@ if (-not $SkipBuild) {
 Write-Host ""
 Write-Host "[5/7] Creating complete package..." -ForegroundColor Yellow
 
-$packageName = "CloudJourneyAddin-v$Version-COMPLETE.zip"
+$packageName = "ZeroTrustMigrationAddin-v$Version-COMPLETE.zip"
 $packagePath = Join-Path $scriptDir $packageName
 $tempFolder = Join-Path $scriptDir "TempPackage_$Version"
 
@@ -366,11 +366,11 @@ if (Test-Path $updatePackagePath) {
         Write-Host "      ✓ $($script.Name)" -ForegroundColor DarkGray
     }
     
-    # Copy CloudJourneyAddin.xml if exists
-    $xmlPath = Join-Path $updatePackagePath "CloudJourneyAddin.xml"
+    # Copy ZeroTrustMigrationAddin.xml if exists
+    $xmlPath = Join-Path $updatePackagePath "ZeroTrustMigrationAddin.xml"
     if (Test-Path $xmlPath) {
         Copy-Item $xmlPath -Destination $tempFolder -Force
-        Write-Host "      ✓ CloudJourneyAddin.xml" -ForegroundColor DarkGray
+        Write-Host "      ✓ ZeroTrustMigrationAddin.xml" -ForegroundColor DarkGray
     }
     
     Write-Host "   ✓ Copied $($scriptFiles.Count + 1) scripts/config files" -ForegroundColor Green
@@ -424,8 +424,8 @@ foreach ($file in $publishFiles) {
     # Determine if file is critical
     $isCritical = $false
     $criticalFiles = @(
-        "CloudJourneyAddin.exe",
-        "CloudJourneyAddin.dll",
+        "ZeroTrustMigrationAddin.exe",
+        "ZeroTrustMigrationAddin.dll",
         "Azure.Identity.dll",
         "Microsoft.Graph.dll",
         "Microsoft.Graph.Core.dll",
@@ -467,11 +467,11 @@ if (Test-Path $verifyFolder) {
 }
 Expand-Archive -Path $packagePath -DestinationPath $verifyFolder -Force
 
-$exeInPackage = Join-Path $verifyFolder "CloudJourneyAddin.exe"
+$exeInPackage = Join-Path $verifyFolder "ZeroTrustMigrationAddin.exe"
 $azureIdentityInPackage = Join-Path $verifyFolder "Azure.Identity.dll"
 
 if (-not (Test-Path $exeInPackage)) {
-    Write-Host "   ❌ ERROR: CloudJourneyAddin.exe not found in package!" -ForegroundColor Red
+    Write-Host "   ❌ ERROR: ZeroTrustMigrationAddin.exe not found in package!" -ForegroundColor Red
     Remove-Item $verifyFolder -Recurse -Force
     exit 1
 }
@@ -487,7 +487,7 @@ if ($exeVersion -ne "$Version.0") {
     Write-Host "   ⚠️ WARNING: EXE version mismatch! Expected: $Version.0, Found: $exeVersion" -ForegroundColor Yellow
 }
 
-Write-Host "   ✅ CloudJourneyAddin.exe version: $exeVersion" -ForegroundColor Green
+Write-Host "   ✅ ZeroTrustMigrationAddin.exe version: $exeVersion" -ForegroundColor Green
 Write-Host "   ✅ Azure.Identity.dll present ($(([math]::Round((Get-Item $azureIdentityInPackage).Length / 1KB, 1))) KB)" -ForegroundColor Green
 
 # Clean verification folder
@@ -532,7 +532,7 @@ Write-Host "📋 Next Steps:" -ForegroundColor Yellow
 Write-Host "   1. Copy package from Dropbox to target PC" -ForegroundColor White
 Write-Host "   2. Extract ALL files (~$packageFileCount files)" -ForegroundColor White
 Write-Host "   3. Run Diagnose-Installation.ps1 to verify" -ForegroundColor White
-Write-Host "   4. Run Update-CloudJourneyAddin.ps1 to deploy" -ForegroundColor White
+Write-Host "   4. Run Update-ZeroTrustMigrationAddin.ps1 to deploy" -ForegroundColor White
 Write-Host ""
 
 # ============================================

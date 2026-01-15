@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Cloud Journey Dashboard now supports command-line arguments to control which tabs are visible when the application starts. This allows you to create customized views of the dashboard based on your specific needs.
+The Zero Trust Migration Journey now supports command-line arguments to control which tabs are visible when the application starts. This allows you to create customized views of the dashboard based on your specific needs.
 
 ## Usage Examples
 
@@ -12,13 +12,13 @@ Hide individual tabs while showing all others:
 
 ```powershell
 # Hide the Enrollment tab
-CloudJourneyAddin.exe /hidetabs:enrollment
+ZeroTrustMigrationAddin.exe /hidetabs:enrollment
 
 # Hide multiple tabs (comma-separated)
-CloudJourneyAddin.exe /hidetabs:enrollment,workloads
+ZeroTrustMigrationAddin.exe /hidetabs:enrollment,workloads
 
 # Hide all AI-related tabs
-CloudJourneyAddin.exe /hidetabs:aiactions,brainstorm
+ZeroTrustMigrationAddin.exe /hidetabs:aiactions,brainstorm
 ```
 
 ### Show Only Specific Tabs
@@ -27,13 +27,13 @@ Show only the specified tabs (hides all others, but Overview is always visible):
 
 ```powershell
 # Show only Overview and Enrollment tabs
-CloudJourneyAddin.exe /showtabs:enrollment
+ZeroTrustMigrationAddin.exe /showtabs:enrollment
 
 # Show only Overview, Enrollment, and Workloads
-CloudJourneyAddin.exe /showtabs:enrollment,workloads
+ZeroTrustMigrationAddin.exe /showtabs:enrollment,workloads
 
 # Show only Overview and AI Actions
-CloudJourneyAddin.exe /showtabs:ai
+ZeroTrustMigrationAddin.exe /showtabs:ai
 ```
 
 ## Available Tab Names
@@ -58,10 +58,10 @@ You can create desktop shortcuts with specific tab configurations:
 ```powershell
 # Create a shortcut for enrollment tracking only
 $WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Cloud Journey - Enrollment.lnk")
-$Shortcut.TargetPath = "C:\Path\To\CloudJourneyAddin.exe"
+$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Zero Trust Migration Journey - Enrollment.lnk")
+$Shortcut.TargetPath = "C:\Path\To\ZeroTrustMigrationAddin.exe"
 $Shortcut.Arguments = "/showtabs:enrollment"
-$Shortcut.Description = "Cloud Journey Dashboard - Enrollment Focus"
+$Shortcut.Description = "Zero Trust Migration Journey - Enrollment Focus"
 $Shortcut.Save()
 ```
 
@@ -70,10 +70,10 @@ $Shortcut.Save()
 ```powershell
 # Create a shortcut for workload planning
 $WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Cloud Journey - Workloads.lnk")
-$Shortcut.TargetPath = "C:\Path\To\CloudJourneyAddin.exe"
+$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Zero Trust Migration Journey - Workloads.lnk")
+$Shortcut.TargetPath = "C:\Path\To\ZeroTrustMigrationAddin.exe"
 $Shortcut.Arguments = "/showtabs:workloads,brainstorm"
-$Shortcut.Description = "Cloud Journey Dashboard - Workload Focus"
+$Shortcut.Description = "Zero Trust Migration Journey - Workload Focus"
 $Shortcut.Save()
 ```
 
@@ -82,10 +82,10 @@ $Shortcut.Save()
 ```powershell
 # Create a shortcut without experimental AI features
 $WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Cloud Journey - Core.lnk")
-$Shortcut.TargetPath = "C:\Path\To\CloudJourneyAddin.exe"
+$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Zero Trust Migration Journey - Core.lnk")
+$Shortcut.TargetPath = "C:\Path\To\ZeroTrustMigrationAddin.exe"
 $Shortcut.Arguments = "/hidetabs:brainstorm,aiactions"
-$Shortcut.Description = "Cloud Journey Dashboard - Core Features Only"
+$Shortcut.Description = "Zero Trust Migration Journey - Core Features Only"
 $Shortcut.Save()
 ```
 
@@ -94,25 +94,25 @@ $Shortcut.Save()
 ### 1. Executive Dashboards
 Show only high-level overview and key metrics:
 ```powershell
-CloudJourneyAddin.exe /hidetabs:brainstorm,aiactions,applications
+ZeroTrustMigrationAddin.exe /hidetabs:brainstorm,aiactions,applications
 ```
 
 ### 2. Technical Team View
 Show enrollment and technical details:
 ```powershell
-CloudJourneyAddin.exe /showtabs:enrollment,workloads,applications
+ZeroTrustMigrationAddin.exe /showtabs:enrollment,workloads,applications
 ```
 
 ### 3. Planning Sessions
 Focus on workload brainstorming:
 ```powershell
-CloudJourneyAddin.exe /showtabs:workloads,brainstorm
+ZeroTrustMigrationAddin.exe /showtabs:workloads,brainstorm
 ```
 
 ### 4. Demo Mode
 Hide tabs still under development:
 ```powershell
-CloudJourneyAddin.exe /hidetabs:aiactions
+ZeroTrustMigrationAddin.exe /hidetabs:aiactions
 ```
 
 ## Notes

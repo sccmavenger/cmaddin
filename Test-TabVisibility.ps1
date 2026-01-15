@@ -3,17 +3,17 @@
 .SYNOPSIS
     Test script for Tab Visibility features
 .DESCRIPTION
-    Launches the Cloud Journey Dashboard with various tab visibility configurations
+    Launches the Zero Trust Migration Journey with various tab visibility configurations
 #>
 
-$exePath = "bin\Release\net8.0-windows\win-x64\publish\CloudJourneyAddin.exe"
+$exePath = "bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe"
 
-Write-Host "`n=== Cloud Journey Dashboard - Tab Visibility Testing ===" -ForegroundColor Cyan
+Write-Host "`n=== Zero Trust Migration Journey - Tab Visibility Testing ===" -ForegroundColor Cyan
 Write-Host "Executable: $exePath`n" -ForegroundColor White
 
 if (-not (Test-Path $exePath)) {
     Write-Host "Error: Executable not found at $exePath" -ForegroundColor Red
-    Write-Host "Please run: dotnet publish CloudJourneyAddin.csproj -c Release --self-contained true -r win-x64" -ForegroundColor Yellow
+    Write-Host "Please run: dotnet publish ZeroTrustMigrationAddin.csproj -c Release --self-contained true -r win-x64" -ForegroundColor Yellow
     exit 1
 }
 

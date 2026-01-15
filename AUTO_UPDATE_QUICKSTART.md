@@ -12,7 +12,7 @@ cd "C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin"
 .\Build-And-Distribute.ps1
 
 # Output files:
-# - CloudJourneyAddin-v3.14.26-COMPLETE.zip (in Dropbox)
+# - ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip (in Dropbox)
 # - manifest.json (in project root)
 ```
 
@@ -23,7 +23,7 @@ cd "C:\Users\dannygu\Downloads\GitHub Copilot\cmaddin"
 ```powershell
 # Upload to GitHub Releases
 gh release create v3.14.26 `
-  "C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.26-COMPLETE.zip" `
+  "C:\Users\dannygu\Dropbox\ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip" `
   "manifest.json" `
   --title "Version 3.14.26 - Auto-Update Test" `
   --notes "Test release for auto-update system. Includes delta update support."
@@ -36,7 +36,7 @@ gh release create v3.14.26 `
 3. Release title: `Version 3.14.26 - Auto-Update Test`
 4. Description: `Test release for auto-update system`
 5. Attach files:
-   - `CloudJourneyAddin-v3.14.26-COMPLETE.zip`
+   - `ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip`
    - `manifest.json`
 6. Click "Publish release"
 
@@ -45,12 +45,12 @@ gh release create v3.14.26 `
 ```powershell
 # Install from the release you just created
 # Extract ZIP to test location
-$testPath = "C:\TestInstall\CloudJourneyAddin"
-Expand-Archive -Path "C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.26-COMPLETE.zip" `
+$testPath = "C:\TestInstall\ZeroTrustMigrationAddin"
+Expand-Archive -Path "C:\Users\dannygu\Dropbox\ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip" `
                -DestinationPath $testPath -Force
 
 # Run the app
-& "$testPath\CloudJourneyAddin.exe"
+& "$testPath\ZeroTrustMigrationAddin.exe"
 
 # Expected: App starts normally (no update dialog - already on latest)
 ```
@@ -64,7 +64,7 @@ Expand-Archive -Path "C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.26-COMPLE
 
 # This auto-increments to v3.14.27
 # Creates:
-# - CloudJourneyAddin-v3.14.27-COMPLETE.zip
+# - ZeroTrustMigrationAddin-v3.14.27-COMPLETE.zip
 # - manifest.json (updated)
 ```
 
@@ -73,7 +73,7 @@ Expand-Archive -Path "C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.26-COMPLE
 ```powershell
 # Upload the new version
 gh release create v3.14.27 `
-  "C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.27-COMPLETE.zip" `
+  "C:\Users\dannygu\Dropbox\ZeroTrustMigrationAddin-v3.14.27-COMPLETE.zip" `
   "manifest.json" `
   --title "Version 3.14.27 - Update Test" `
   --notes "Testing auto-update from v3.14.26 to v3.14.27"
@@ -83,7 +83,7 @@ gh release create v3.14.27 `
 
 ```powershell
 # Run the OLD version (3.14.26) from test install
-& "$testPath\CloudJourneyAddin.exe"
+& "$testPath\ZeroTrustMigrationAddin.exe"
 
 # Expected behavior:
 # 1. App starts normally
@@ -108,21 +108,21 @@ gh release create v3.14.27 `
 **Check 2:** Are you running the old version?
 ```powershell
 # Verify EXE version
-(Get-Item "$testPath\CloudJourneyAddin.exe").VersionInfo.FileVersion
+(Get-Item "$testPath\ZeroTrustMigrationAddin.exe").VersionInfo.FileVersion
 # Should show: 3.14.26.0an
 ```
 
 **Check 3:** Check logs for errors
 ```powershell
 # View application log
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\CloudJourneyAddin_$(Get-Date -Format 'yyyyMMdd').log" -Tail 50
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\Logs\ZeroTrustMigrationAddin_$(Get-Date -Format 'yyyyMMdd').log" -Tail 50
 ```
 
 ### Check Logs
 
 ```powershell
 # View application log
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\CloudJourneyAddin_$(Get-Date -Format 'yyyyMMdd').log" -Tail 50
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\Logs\ZeroTrustMigrationAddin_$(Get-Date -Format 'yyyyMMdd').log" -Tail 50
 
 # Look for:
 # "Checking for updates from GitHub Releases..."
@@ -134,7 +134,7 @@ Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\CloudJourneyAddin_$(Get-Da
 
 ```powershell
 # View settings
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\update-settings.json" | ConvertFrom-Json | Format-List
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\update-settings.json" | ConvertFrom-Json | Format-List
 
 # Expected:
 # GitHubToken        : 
@@ -162,7 +162,7 @@ Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\update-settings.json" | Convert
 # Run this BEFORE clicking "Download & Install":
 
 # Full ZIP size
-$fullSize = (Get-Item "C:\Users\dannygu\Dropbox\CloudJourneyAddin-v3.14.27-COMPLETE.zip").Length / 1MB
+$fullSize = (Get-Item "C:\Users\dannygu\Dropbox\ZeroTrustMigrationAddin-v3.14.27-COMPLETE.zip").Length / 1MB
 Write-Host "Full ZIP: $([math]::Round($fullSize, 2)) MB"
 
 # Delta size (shown in update dialog)
@@ -181,22 +181,22 @@ Write-Host "Full ZIP: $([math]::Round($fullSize, 2)) MB"
 6. Restart app
 7. **Expected:** Update will retry automatically
 
-### Test 2d `CloudJourneyAddin-v*.zip`
-3. Extract and run `Install-CloudJourneyAddin.ps1`
+### Test 2d `ZeroTrustMigrationAddin-v*.zip`
+3. Extract and run `Install-ZeroTrustMigrationAddin.ps1`
 4. Future updates will be automatic
 
 ##Check logs to see actual delta size
 
 **Initial distribution via email/Dropbox:**
-- Send: `CloudJourneyAddin-v3.14.26-COMPLETE.zip`
+- Send: `ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip`
 
 **Customers install manually:**
 ```powershell
 # Extract
-Expand-Archive -Path "CloudJourneyAddin-v3.14.26-COMPLETE.zip" -DestinationPath "C:\CloudJourney"
+Expand-Archive -Path "ZeroTrustMigrationAddin-v3.14.26-COMPLETE.zip" -DestinationPath "C:\CloudJourney"
 
 # Run
-& "C:\CloudJourney\CloudJourneyAddin.exe"
+& "C:\CloudJourney\ZeroTrustMigrationAddin.exe"
 ```
 
 **Future updates:** Automatic via GitHub Releases
@@ -208,10 +208,10 @@ Create a shortcut for customers to manually check:
 ```powershell
 # Create shortcut on desktop
 $WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Check Cloud Journey Updates.lnk")
+$Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Check Zero Trust Migration Journey Updates.lnk")
 $Shortcut.TargetPath = "powershell.exe"
-$Shortcut.Arguments = "-Command `"Remove-Item '$env:LOCALAPPDATA\CloudJourneyAddin\update-settings.json' -Force; Start-Process 'C:\CloudJourney\CloudJourneyAddin.exe'`""
-$Shortcut.Description = "Force check for Cloud Journey updates"
+$Shortcut.Arguments = "-Command `"Remove-Item '$env:LOCALAPPDATA\ZeroTrustMigrationAddin\update-settings.json' -Force; Start-Process 'C:\CloudJourney\ZeroTrustMigrationAddin.exe'`""
+$Shortcut.Description = "Force check for Zero Trust Migration Journey updates"
 $Shortcut.Save()
 ```
 
@@ -223,7 +223,7 @@ For higher rate limits (5,000 req/hr vs 60):
 
 1. Go to https://github.com/settings/tokens
 2. Click "Generate new token (classic)"
-3. Name: `CloudJourneyAddin Updates`
+3. Name: `ZeroTrustMigrationAddin Updates`
 4. Expiration: `90 days`
 5. Scopes: ✅ `public_repo` (read-only)
 6. Click "Generate token"
@@ -234,7 +234,7 @@ For higher rate limits (5,000 req/hr vs 60):
 **Option A: Manual (JSON file)**
 ```powershell
 # Edit settings file
-$settingsPath = "$env:LOCALAPPDATA\CloudJourneyAddin\update-settings.json"
+$settingsPath = "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\update-settings.json"
 $settings = @{
     GitHubToken = "ghp_xxxxxxxxxxxxxxxxxxxx"
     AutoCheckForUpdates = $true
@@ -251,7 +251,7 @@ $settings | ConvertTo-Json | Out-File $settingsPath -Encoding UTF8
 
 ```powershell
 # Check logs after next update check
-Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\CloudJourneyAddin_$(Get-Date -Format 'yyyyMMdd').log" | Select-String "GitHub API"
+Get-Content "$env:LOCALAPPDATA\ZeroTrustMigrationAddin\Logs\ZeroTrustMigrationAddin_$(Get-Date -Format 'yyyyMMdd').log" | Select-String "GitHub API"
 
 # Should show:
 # "GitHub API authenticated with Personal Access Token"
@@ -292,5 +292,5 @@ Get-Content "$env:LOCALAPPDATA\CloudJourneyAddin\Logs\CloudJourneyAddin_$(Get-Da
 Check the full guide: `AUTO_UPDATE_GUIDE.md`
 
 For issues, check logs:
-- App: `%LocalAppData%\CloudJourneyAddin\Logs\`
-- Update: `%TEMP%\CloudJourneyAddin-Update.log`
+- App: `%LocalAppData%\ZeroTrustMigrationAddin\Logs\`
+- Update: `%TEMP%\ZeroTrustMigrationAddin-Update.log`

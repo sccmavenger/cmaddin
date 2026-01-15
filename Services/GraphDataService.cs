@@ -3,11 +3,11 @@ using System.Threading.Tasks;
 using Microsoft.Graph;
 using Azure.Identity;
 using System.Collections.Generic;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 using System.Linq;
-using static CloudJourneyAddin.Services.FileLogger;
+using static ZeroTrustMigrationAddin.Services.FileLogger;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     public class GraphDataService
     {

@@ -1,0 +1,99 @@
+# Continuous Integration workflow for Zero Trust Migration Journey Add-in
+# Runs on every push and pull request to validate builds
+
+name: CI Build
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  CONFIGURATION: 'Release'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+      
+      - name: Restore
+        run: dotnet restore
+      
+      - name: Build
+        run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
+      
+      - name: Publish (Validation)
+        run: dotnet publish --configuration ${{ env.CONFIGURATION }} --output ./publish --self-contained true --runtime win-x64 --no-build
+      
+      - name: Validate Output
+        shell: pwsh
+        run: |
+          $required = @(
+            "ZeroTrustMigrationAddin.exe",
+            "ZeroTrustMigrationAddin.dll",
+            "AdminUserGuide.html"
+          )
+          
+          $missing = @()
+          foreach ($file in $required) {
+            $path = "./publish/$file"
+            if (!(Test-Path $path)) {
+              $missing += $file
+            }
+          }
+          
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing required files: $($missing -join ', ')"
+            exit 1
+          }
+          
+          $fileCount = (Get-ChildItem -Path ./publish -Recurse -File).Count
+          $totalSize = (Get-ChildItem -Path ./publish -Recurse -File | Measure-Object -Property Length -Sum).Sum
+          
+          Write-Host "✅ Build validation passed"
+          Write-Host "   Files: $fileCount"
+          Write-Host "   Total size: $([math]::Round($totalSize / 1MB, 2)) MB"
+      
+      - name: Build Summary
+        if: always()
+        shell: pwsh
+        run: |
+          $status = if ($env:JOB_STATUS -eq 'success') { '✅ Passed' } else { '❌ Failed' }
+          
+          @"
+          ## CI Build Results
+          
+          | Item | Value |
+          |------|-------|
+          | Status | $status |
+          | Branch | ${{ github.ref_name }} |
+          | Commit | ${{ github.sha }} |
+          | .NET Version | ${{ env.DOTNET_VERSION }} |
+          
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+        env:
+          JOB_STATUS: ${{ job.status }}

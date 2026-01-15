@@ -2,11 +2,11 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// File-based logger for comprehensive debug information.
-    /// Logs to %LOCALAPPDATA%\CloudJourneyAddin\Logs\
+    /// Logs to %LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\
     /// </summary>
     public class FileLogger
     {
@@ -32,9 +32,9 @@ namespace CloudJourneyAddin.Services
 
         private FileLogger()
         {
-            // Log to %LOCALAPPDATA%\CloudJourneyAddin\Logs\
+            // Log to %LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\
             var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            _logDirectory = Path.Combine(appDataPath, "CloudJourneyAddin", "Logs");
+            _logDirectory = Path.Combine(appDataPath, "ZeroTrustMigrationAddin", "Logs");
             
             // Create directory if it doesn't exist
             if (!Directory.Exists(_logDirectory))
@@ -43,7 +43,7 @@ namespace CloudJourneyAddin.Services
             }
 
             // Log file name includes date for easy organization
-            var logFileName = $"CloudJourneyAddin_{DateTime.Now:yyyyMMdd}.log";
+            var logFileName = $"ZeroTrustMigrationAddin_{DateTime.Now:yyyyMMdd}.log";
             _logFilePath = Path.Combine(_logDirectory, logFileName);
 
             // Write startup header
@@ -123,7 +123,7 @@ namespace CloudJourneyAddin.Services
             try
             {
                 var cutoffDate = DateTime.Now.AddDays(-daysToKeep);
-                var logFiles = Directory.GetFiles(_logDirectory, "CloudJourneyAddin_*.log");
+                var logFiles = Directory.GetFiles(_logDirectory, "ZeroTrustMigrationAddin_*.log");
 
                 foreach (var file in logFiles)
                 {

@@ -2,11 +2,11 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
-using CloudJourneyAddin.Views;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Views;
+using ZeroTrustMigrationAddin.Models;
 using Microsoft.Win32;
 
-namespace CloudJourneyAddin
+namespace ZeroTrustMigrationAddin
 {
     public partial class App : Application
     {
@@ -19,6 +19,15 @@ namespace CloudJourneyAddin
 
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
+            // Track exception to Azure
+            Services.AzureTelemetryService.Instance.TrackException(e.Exception, new System.Collections.Generic.Dictionary<string, string>
+            {
+                { "ExceptionSource", "DispatcherUnhandledException" },
+                { "Handled", "true" }
+            });
+
+            Services.FileLogger.Instance.LogException(e.Exception, "DispatcherUnhandledException");
+
             MessageBox.Show(
                 $"Unhandled Exception:\n\n" +
                 $"Message: {e.Exception.Message}\n\n" +
@@ -35,6 +44,19 @@ namespace CloudJourneyAddin
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             var ex = e.ExceptionObject as Exception;
+
+            // Track exception to Azure
+            if (ex != null)
+            {
+                Services.AzureTelemetryService.Instance.TrackException(ex, new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "ExceptionSource", "CurrentDomainUnhandledException" },
+                    { "IsTerminating", e.IsTerminating.ToString() }
+                });
+
+                Services.FileLogger.Instance.LogException(ex, "CurrentDomainUnhandledException");
+            }
+
             MessageBox.Show(
                 $"Fatal Unhandled Exception:\n\n" +
                 $"Message: {ex?.Message ?? "Unknown"}\n\n" +
@@ -49,6 +71,19 @@ namespace CloudJourneyAddin
         {
             try
             {
+                // Initialize telemetry service
+                _ = Services.AzureTelemetryService.Instance;
+
+                // Track app start event
+                Services.AzureTelemetryService.Instance.TrackEvent("AppStarted", new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "Version", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown" },
+                    { "OS", Environment.OSVersion.ToString() },
+                    { "CLR", Environment.Version.ToString() }
+                });
+
+                Services.FileLogger.Instance.Info("[APP] Application started");
+
                 // Check for updates on startup (once per day)
                 _ = CheckForUpdatesAsync();
 
@@ -83,6 +118,14 @@ namespace CloudJourneyAddin
             }
             catch (Exception ex)
             {
+                // Track startup exception
+                Services.AzureTelemetryService.Instance.TrackException(ex, new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "ExceptionSource", "ApplicationStartup" }
+                });
+
+                Services.FileLogger.Instance.LogException(ex, "ApplicationStartup");
+
                 MessageBox.Show(
                     $"Failed to start dashboard:\n\n" +
                     $"Error: {ex.Message}\n\n" +
@@ -94,6 +137,29 @@ namespace CloudJourneyAddin
                     MessageBoxImage.Error);
                 Shutdown();
             }
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            try
+            {
+                // Track app exit
+                Services.AzureTelemetryService.Instance.TrackEvent("AppExited", new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "ExitCode", e.ApplicationExitCode.ToString() }
+                });
+
+                // Flush telemetry before shutdown
+                Services.AzureTelemetryService.Instance.Flush();
+
+                Services.FileLogger.Instance.Info($"[APP] Application exited with code {e.ApplicationExitCode}");
+            }
+            catch (Exception ex)
+            {
+                Services.FileLogger.Instance.Warning($"[APP] Error during shutdown: {ex.Message}");
+            }
+
+            base.OnExit(e);
         }
 
         /// <summary>
@@ -142,6 +208,17 @@ namespace CloudJourneyAddin
                     Services.FileLogger.Instance.Info($"Update available: {updateResult.CurrentVersion} → {updateResult.LatestVersion}");
                     Services.FileLogger.Instance.Info($"Delta: {changedFiles.Count} files, {updateResult.DeltaSize:N0} bytes");
                     
+                    // Track update detection in telemetry
+                    Services.AzureTelemetryService.Instance.TrackEvent("UpdateDetected", new System.Collections.Generic.Dictionary<string, string>
+                    {
+                        { "CurrentVersion", updateResult.CurrentVersion },
+                        { "LatestVersion", updateResult.LatestVersion },
+                        { "ChangedFilesCount", changedFiles.Count.ToString() },
+                        { "DeltaSize", updateResult.DeltaSize.ToString() },
+                        { "TotalSize", updateResult.TotalSize.ToString() },
+                        { "BandwidthSavings", updateResult.TotalSize > 0 ? $"{(1 - (double)updateResult.DeltaSize / updateResult.TotalSize) * 100:F1}%" : "N/A" }
+                    });
+                    
                     // Skip update if no files changed (already on latest version)
                     if (changedFiles.Count == 0)
                     {
@@ -183,12 +260,29 @@ namespace CloudJourneyAddin
 
                             if (success)
                             {
+                                // Track successful update application
+                                Services.AzureTelemetryService.Instance.TrackEvent("UpdateApplied", new System.Collections.Generic.Dictionary<string, string>
+                                {
+                                    { "FromVersion", updateResult.CurrentVersion },
+                                    { "ToVersion", updateResult.LatestVersion },
+                                    { "ChangedFiles", changedFiles.Count.ToString() },
+                                    { "DeltaSize", updateResult.DeltaSize.ToString() }
+                                });
+                                
                                 progressWindow.UpdateProgress(100, "Update complete! Restarting...");
                                 await System.Threading.Tasks.Task.Delay(2000);
                                 // App will restart via PowerShell script
                             }
                             else
                             {
+                                // Track update application failure
+                                Services.AzureTelemetryService.Instance.TrackEvent("UpdateFailed", new System.Collections.Generic.Dictionary<string, string>
+                                {
+                                    { "FromVersion", updateResult.CurrentVersion },
+                                    { "ToVersion", updateResult.LatestVersion },
+                                    { "FailureStage", "Apply" }
+                                });
+                                
                                 progressWindow.UpdateProgress(0, "Update failed. Please try again.");
                                 await System.Threading.Tasks.Task.Delay(3000);
                                 progressWindow.Close();
@@ -196,6 +290,14 @@ namespace CloudJourneyAddin
                         }
                         else
                         {
+                            // Track download failure
+                            Services.AzureTelemetryService.Instance.TrackEvent("UpdateFailed", new System.Collections.Generic.Dictionary<string, string>
+                            {
+                                { "FromVersion", updateResult.CurrentVersion },
+                                { "ToVersion", updateResult.LatestVersion },
+                                { "FailureStage", "Download" }
+                            });
+                            
                             progressWindow.UpdateProgress(0, "Download failed. Please check your connection.");
                             await System.Threading.Tasks.Task.Delay(3000);
                             progressWindow.Close();

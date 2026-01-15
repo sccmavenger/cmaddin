@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CloudJourneyAddin.Models;
-using CloudJourneyAddin.Services.AgentTools;
+using ZeroTrustMigrationAddin.Models;
+using ZeroTrustMigrationAddin.Services.AgentTools;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Phase 3: Autonomous device monitoring service

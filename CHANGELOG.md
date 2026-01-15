@@ -1,4 +1,243 @@
-# Cloud Journey Dashboard - Change Log
+# Zero Trust Migration Journey - Change Log
+
+## [Unreleased]
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.14] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.13] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.12] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.11] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.10] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.9] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.9] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.9] - 2026-01-14
+
+### Added
+- **Clickable Device Numbers** 💻 Overview tab Design Option 5 now has drill-down functionality - click device counts to view filtered device lists
+- **Device List Export** 📊 Export filtered device lists to CSV from drill-down dialog
+- **Setup Guide Links** 🔗 Active links to Microsoft documentation for Hybrid Join and Domain Join setup
+
+### Changed
+- **Removed Design Option 3** from Overview tab to simplify interface
+
+### Fixed
+- Device join type filtering now properly categorizes Hybrid Joined, Azure AD Only, On-Prem Only, and Workgroup devices
+
+
+## [3.16.8] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.8] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.8] - 2026-01-14
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.8] - 2026-01-14
+
+### Added
+- **Embedded GitHub Token** 🔑 Auto-update now works for private repositories without user configuration (embedded read-only token with fallback to user token)
+- **Update Telemetry Tracking** 📊 Comprehensive telemetry for update checks including authentication status, success/failure, error types, version changes, and bandwidth savings
+- **Update Authentication Diagnostics** 🔍 Logs now show authentication source (User-configured, Embedded, or Anonymous) for troubleshooting
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.7] - 2026-01-14
+
+### Added
+- **Pie Chart Visualization** 📊 Interactive pie chart in Overview tab showing device identity distribution (Hybrid Entra, Entra-only, AD-only, Workgroup) with color-coded segments
+- **ZIP Integrity Check** 🔒 Update script now validates package integrity before extraction to prevent corrupted updates
+- **Progress Indicators** ⏳ Update script shows real-time file copy progress with percentage complete
+- **Backup Retention Policy** 🗂️ Update script automatically keeps only last 3 backups to prevent disk bloat
+- **Automatic Rollback** ↩️ Update script automatically restores previous version if file copy fails
+- **Disk Space Check** 💾 Update script verifies 100MB available before creating backup
+- **Diagnostic Logging Guide** 📝 Comprehensive documentation for FileLogger service (log levels, prefixes, rotation, privacy)
+- **Telemetry Guide** 📊 Complete transparency documentation for Azure Application Insights integration (what's tracked, PII sanitization, anonymous ID generation)
+
+### Changed
+- **Overview Tab Simplified** 🧹 Removed design mockup options 1 and 2, keeping only functional dashboard layouts (options 3, 4, 5)
+
+### Fixed
+- **Pie Chart Rendering** 🎨 Replaced placeholder Border element with functional LiveCharts component bound to device enrollment data
+
+
+## [3.16.6] - 2026-01-14
+
+### Added
+- [Add new features here]
+
+### Changed
+- [Add changes here]
+
+### Fixed
+- [Add bug fixes here]
+
+
+## [3.16.5] - 2026-01-14
+
+### Added
+- [Add new features here]
+
+### Changed
+- [Add changes here]
+
+### Fixed
+- [Add bug fixes here]
+
+
+## [3.16.3] - 2026-01-14
+
+### Added
+- [Add new features here]
+
+### Changed
+- [Add changes here]
+
+### Fixed
+- [Add bug fixes here]
+
+
+## [3.16.2] - 2026-01-14
+
+### Added
+- [Add new features here]
+
+### Changed
+- [Add changes here]
+
+### Fixed
+- [Add bug fixes here]
+
+
+## [3.16.1] - 2026-01-14
+
+### Added
+- [Add new features here]
+
+### Changed
+- [Add changes here]
+
+### Fixed
+- [Add bug fixes here]
+
 
 ## [3.16.0] - 2026-01-13
 
@@ -35,7 +274,7 @@
   - PowerShell-based updater for safe file replacement
   - Automatic application restart after update
   - Progress window shows download percentage and status
-  - Update logs in `%LocalAppData%\CloudJourneyAddin\Logs`
+  - Update logs in `%LocalAppData%\ZeroTrustMigrationAddin\Logs`
 
 ### Technical Components Added
 - **Models/UpdateManifest.cs** - Data structures for update manifest, file entries, settings, and check results
@@ -408,12 +647,12 @@ When admin reports "no devices showing" - check logs for:
 **Usage Examples:**
 ```powershell
 # Default: Overview + Enrollment only
-CloudJourneyAddin.exe
+ZeroTrustMigrationAddin.exe
 
 # Show specific additional tabs
-CloudJourneyAddin.exe /showtabs:workloads
-CloudJourneyAddin.exe /showtabs:workloads,apps
-CloudJourneyAddin.exe /showtabs:workloads,brainstorm,apps,ai
+ZeroTrustMigrationAddin.exe /showtabs:workloads
+ZeroTrustMigrationAddin.exe /showtabs:workloads,apps
+ZeroTrustMigrationAddin.exe /showtabs:workloads,brainstorm,apps,ai
 ```
 
 ---
@@ -670,7 +909,7 @@ CloudJourneyAddin.exe /showtabs:workloads,brainstorm,apps,ai
 
 ### Changed
 - 🔒 **Azure OpenAI Configuration** - Removed hardcoded credentials
-  - Now loads from `%APPDATA%\CloudJourneyAddin\openai-config.json`
+  - Now loads from `%APPDATA%\ZeroTrustMigrationAddin\openai-config.json`
   - Fallback to environment variables (AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, AZURE_OPENAI_KEY)
   - Shows warning if not configured: "Use the AI Settings button (🤖) in the toolbar"
 - 🔒 **ConfigMgr Admin Service** - Removed hardcoded URL (`https://localhost/AdminService`)
@@ -857,7 +1096,7 @@ CloudJourneyAddin.exe /showtabs:workloads,brainstorm,apps,ai
 - AI recommendations prioritize high-readiness batches
 
 **3. Workload Trend Tracking**
-- Records daily workload progress to JSON file (`%LOCALAPPDATA%\CloudJourneyAddin\workload_history.json`)
+- Records daily workload progress to JSON file (`%LOCALAPPDATA%\ZeroTrustMigrationAddin\workload_history.json`)
 - Calculates velocity (% progress per week) and categorizes: Excellent (15%+), Good (10-15%), Moderate (5-10%), Slow (<5%)
 - Detects stalls (<5% velocity for >14 days) and provides recovery actions
 - AI recommendations include motivational feedback for excellent velocity
@@ -873,7 +1112,7 @@ CloudJourneyAddin.exe /showtabs:workloads,brainstorm,apps,ai
 - `Services/AIRecommendationService.cs` - Integration of Phase 1 services (backward compatible)
 
 **Data Persistence:**
-- `%LOCALAPPDATA%\CloudJourneyAddin\workload_history.json` - 365-day retention with auto-cleanup
+- `%LOCALAPPDATA%\ZeroTrustMigrationAddin\workload_history.json` - 365-day retention with auto-cleanup
 
 ### Customer Feedback Addressed
 - ✅ Feedback #2: "Co-management workload trends would be nice" → WorkloadTrendService
@@ -950,7 +1189,7 @@ Result: HTTP 200 (OK) with device data
 
 ### Added
 - ✅ **FileLogger Service:** New singleton class for persistent file logging
-- ✅ **Log Files:** Saved to `%LOCALAPPDATA%\CloudJourneyAddin\Logs\CloudJourneyAddin_YYYYMMDD.log`
+- ✅ **Log Files:** Saved to `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\ZeroTrustMigrationAddin_YYYYMMDD.log`
 - ✅ **Open Logs Button:** UI button (gray, next to Diagnostics) opens log directory
 - ✅ **Automatic Cleanup:** Deletes logs older than 7 days
 - ✅ **Log Levels:** DEBUG, INFO, WARNING, ERROR, CRITICAL with color-coded console output
@@ -1003,7 +1242,7 @@ Result: HTTP 200 (OK) with device data
 [ERROR] ConfigMgr Admin Service query failed: Invalid filter syntax
 EXCEPTION: System.Net.Http.HttpRequestException: Response status code does not indicate success: 404 (Not Found).
    at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
-   at CloudJourneyAddin.Services.ConfigMgrAdminService.GetDevicesViaRestApiAsync() in C:\...\ConfigMgrAdminService.cs:line 395
+   at ZeroTrustMigrationAddin.Services.ConfigMgrAdminService.GetDevicesViaRestApiAsync() in C:\...\ConfigMgrAdminService.cs:line 395
 ```
 
 ### Use Cases
@@ -1276,7 +1515,7 @@ EXCEPTION: System.Net.Http.HttpRequestException: Response status code does not i
   - ROI Calculator
   - Get Help & Resources
 - ✨ Self-contained .NET 8.0 deployment (no prerequisites)
-- ✨ Automated installation scripts (INSTALL.ps1, Update-CloudJourneyAddin.ps1)
+- ✨ Automated installation scripts (INSTALL.ps1, Update-ZeroTrustMigrationAddin.ps1)
 - ✨ Desktop and Start Menu shortcuts
 - 📚 Comprehensive documentation (DATA_ACCESS.md, TESTING_INSTRUCTIONS.md)
 

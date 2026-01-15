@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.Services.AgentTools
+namespace ZeroTrustMigrationAddin.Services.AgentTools
 {
     /// <summary>
     /// Registry of all available agent tools

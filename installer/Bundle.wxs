@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!-- Bootstrapper Bundle -->
+  <Bundle Name="Zero Trust Migration Journey Dashboard"
+          Version="3.16.9.0"
+          Manufacturer="Microsoft Configuration Manager"
+          UpgradeCode="8C9D0E1F-5A6B-7C8D-9E0F-1A2B3C4D5E6F"
+          IconSourceFile="..\bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe"
+          Compressed="yes">
+
+    <!-- Boot conditions -->
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
+      <bal:WixStandardBootstrapperApplication LicenseFile="License.rtf"
+                                               LogoFile="Logo.png"
+                                               ThemeFile="HyperlinkTheme.xml"
+                                               SuppressOptionsUI="yes" />
+    </BootstrapperApplicationRef>
+
+    <!-- Variables -->
+    <Variable Name="InstallFolder" Type="string" Value="" />
+    <Variable Name="LaunchTarget" Value="[InstallFolder]ZeroTrustMigrationAddin.exe" />
+
+    <!-- Search for .NET 8.0 Desktop Runtime -->
+    <util:RegistrySearch Root="HKLM"
+                         Key="SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost"
+                         Value="Version"
+                         Variable="DotNetVersion"
+                         Result="exists" />
+
+    <!-- Chain -->
+    <Chain>
+      
+      <!-- .NET 8.0 Desktop Runtime Prerequisite -->
+      <ExePackage Id="DotNet8DesktopRuntime"
+                  DisplayName=".NET 8.0 Desktop Runtime"
+                  Description="Required runtime for Zero Trust Migration Journey Dashboard"
+                  DownloadUrl="https://download.visualstudio.microsoft.com/download/pr/6224f00f-08da-4e7f-85b1-00d42c2bb3d3/b775de636b91e023574a0bbc291f705a/windowsdesktop-runtime-8.0.11-win-x64.exe"
+                  InstallCommand="/install /quiet /norestart /log &quot;[TempFolder]dotnet-install.log&quot;"
+                  RepairCommand="/repair /quiet /norestart /log &quot;[TempFolder]dotnet-repair.log&quot;"
+                  UninstallCommand="/uninstall /quiet /norestart /log &quot;[TempFolder]dotnet-uninstall.log&quot;"
+                  DetectCondition="DotNetVersion"
+                  InstallCondition="NOT DotNetVersion"
+                  Permanent="yes"
+                  Compressed="no"
+                  PerMachine="yes"
+                  Vital="yes" />
+
+      <!-- Main MSI Package -->
+      <MsiPackage Id="ZeroTrustMigrationAddinMsi"
+                  DisplayName="Zero Trust Migration Journey Dashboard"
+                  Description="ConfigMgr to Intune migration tracking dashboard"
+                  SourceFile="ZeroTrustMigrationAddin.msi"
+                  Vital="yes"
+                  Compressed="yes"
+                  EnableFeatureSelection="yes"
+                  DisplayInternalUI="yes">
+        
+        <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
+        
+      </MsiPackage>
+
+    </Chain>
+
+  </Bundle>
+
+</Wix>

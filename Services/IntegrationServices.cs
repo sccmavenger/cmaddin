@@ -3,7 +3,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Service for interacting with Microsoft Graph API to retrieve Intune telemetry

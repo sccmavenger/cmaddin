@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.Services.AgentTools
+namespace ZeroTrustMigrationAddin.Services.AgentTools
 {
     /// <summary>
     /// Tool for querying device inventory

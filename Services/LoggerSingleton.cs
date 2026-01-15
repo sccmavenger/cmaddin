@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Global Logger singleton for use across all services (Phase 3 requirement)

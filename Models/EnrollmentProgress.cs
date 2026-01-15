@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CloudJourneyAddin.Models
+namespace ZeroTrustMigrationAddin.Models
 {
     /// <summary>
     /// Tracks real-time progress of autonomous enrollment execution

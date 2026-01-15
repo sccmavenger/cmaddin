@@ -5,9 +5,9 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 
-namespace CloudJourneyAddin.Converters
+namespace ZeroTrustMigrationAddin.Converters
 {
     public class PercentageConverter : IValueConverter
     {

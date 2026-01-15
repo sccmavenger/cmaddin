@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 using Microsoft.Extensions.Logging;
 
-namespace CloudJourneyAddin.Services
+namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Agent memory service for local learning (v2.5)
@@ -28,7 +28,7 @@ namespace CloudJourneyAddin.Services
 
             var appDataPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "CloudJourneyAddin",
+                "ZeroTrustMigrationAddin",
                 "AgentMemory");
 
             Directory.CreateDirectory(appDataPath);

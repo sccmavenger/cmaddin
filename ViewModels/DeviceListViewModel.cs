@@ -8,11 +8,11 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
-using CloudJourneyAddin.Models;
+using ZeroTrustMigrationAddin.Models;
 using Microsoft.Graph.Models;
 using Microsoft.Win32;
 
-namespace CloudJourneyAddin.ViewModels
+namespace ZeroTrustMigrationAddin.ViewModels
 {
     /// <summary>
     /// ViewModel for the Device List Dialog showing filtered devices by join type
