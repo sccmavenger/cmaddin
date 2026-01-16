@@ -6,6 +6,7 @@ using ZeroTrustMigrationAddin.ViewModels;
 using ZeroTrustMigrationAddin.Services;
 using ZeroTrustMigrationAddin.Models;
 using Microsoft.Graph.Models;
+using static ZeroTrustMigrationAddin.Services.FileLogger;
 
 namespace ZeroTrustMigrationAddin.Views
 {
@@ -22,10 +23,14 @@ namespace ZeroTrustMigrationAddin.Views
                 Title = $"Zero Trust Journey Dashboard v{version?.Major}.{version?.Minor}.{version?.Build}";
                 
                 var telemetryService = new TelemetryService();
-                DataContext = new DashboardViewModel(telemetryService, tabVisibilityOptions);
+                var viewModel = new DashboardViewModel(telemetryService, tabVisibilityOptions);
+                DataContext = viewModel;
                 
-                // Initialize Enrollment Analytics ViewModels
+                // Initialize Enrollment Analytics ViewModels with mock data
                 InitializeEnrollmentAnalytics();
+                
+                // v3.16.23 - Subscribe to refresh analytics when real data loads
+                viewModel.RealDataLoaded += OnRealDataLoaded;
             }
             catch (Exception ex)
             {
@@ -403,6 +408,93 @@ namespace ZeroTrustMigrationAddin.Views
                 // Fall back to reasonable defaults if detection fails
                 Width = 1200;
                 Height = 800;
+            }
+        }
+
+        /// <summary>
+        /// v3.16.23 - Refresh Enrollment Analytics views with real data after authentication
+        /// </summary>
+        private async void OnRealDataLoaded(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (DataContext is DashboardViewModel viewModel && viewModel.IsDataSourceConnected)
+                {
+                    Instance.Info("[ANALYTICS] Real data loaded - refreshing Enrollment Analytics views");
+                    
+                    // Get the authenticated GraphDataService from the main ViewModel
+                    var graphDataService = viewModel.GraphDataService;
+                    
+                    // Refresh Momentum View with real data
+                    if (EnrollmentMomentumView?.DataContext is EnrollmentMomentumViewModel momentumVM)
+                    {
+                        // Create new analytics service with authenticated GraphDataService
+                        var newMomentumVM = new EnrollmentMomentumViewModel(graphDataService);
+                        await newMomentumVM.RefreshAsync();
+                        
+                        // Update on UI thread
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            EnrollmentMomentumView.DataContext = newMomentumVM;
+                        });
+                        
+                        Instance.Info($"[ANALYTICS] Momentum view refreshed: {newMomentumVM.TotalConfigMgrDevices} ConfigMgr, {newMomentumVM.TotalIntuneDevices} co-managed");
+                    }
+                    
+                    // Refresh Confidence Card with real data
+                    if (EnrollmentConfidenceCard?.DataContext is EnrollmentConfidenceViewModel)
+                    {
+                        var newConfidenceVM = new EnrollmentConfidenceViewModel();
+                        await newConfidenceVM.RefreshAsync(graphDataService);
+                        
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            EnrollmentConfidenceCard.DataContext = newConfidenceVM;
+                        });
+                        
+                        Instance.Info($"[ANALYTICS] Confidence card refreshed: Score={newConfidenceVM.Score}");
+                    }
+                    
+                    // Refresh Playbooks View with real data
+                    if (EnrollmentPlaybooksView?.DataContext is EnrollmentPlaybooksViewModel)
+                    {
+                        var newPlaybooksVM = new EnrollmentPlaybooksViewModel();
+                        await newPlaybooksVM.RefreshAsync(graphDataService);
+                        
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            EnrollmentPlaybooksView.DataContext = newPlaybooksVM;
+                        });
+                        
+                        Instance.Info($"[ANALYTICS] Playbooks view refreshed: {newPlaybooksVM.Playbooks?.Count ?? 0} playbooks");
+                    }
+                    
+                    Instance.Info("[ANALYTICS] All Enrollment Analytics views refreshed with real data");
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[ANALYTICS] Error refreshing analytics views: {ex.Message}");
+                // Don't throw - analytics refresh failure shouldn't crash the app
+            }
+        }
+
+        /// <summary>
+        /// Scroll to the Device Readiness section when user clicks the link
+        /// </summary>
+        private void ScrollToDeviceReadiness_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                // Find the scroll viewer (should be the main content scroll)
+                if (DeviceReadinessSection != null)
+                {
+                    DeviceReadinessSection.BringIntoView();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error scrolling to device readiness: {ex.Message}");
             }
         }
 

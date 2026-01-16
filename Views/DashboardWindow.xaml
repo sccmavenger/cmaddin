@@ -1664,7 +1664,9 @@
                                                     </TextBlock>
                                                     <TextBlock Text="👉 View device readiness below" 
                                                                FontSize="11" Foreground="#0078D4" FontStyle="Italic" 
-                                                               Margin="0,2,0,0" Cursor="Hand"/>
+                                                               Margin="0,2,0,0" Cursor="Hand"
+                                                               MouseLeftButtonUp="ScrollToDeviceReadiness_Click"
+                                                               TextDecorations="Underline"/>
                                                 </StackPanel>
                                             </Grid>
 
@@ -1715,9 +1717,9 @@
                                                 <StackPanel Grid.Column="1" Margin="20,0,0,0">
                                                     <TextBlock Text="Accelerate Velocity" FontSize="14" FontWeight="Bold" Foreground="#666666"/>
                                                     <TextBlock FontSize="12" Foreground="#666666" TextWrapping="Wrap" Margin="0,3,0,0">
-                                                        <Run Text="AI recommends"/>
+                                                        <Run Text="Recommended:"/>
                                                         <Run Text="{Binding RecommendedEnrollmentVelocity, StringFormat=' {0:F0}', TargetNullValue=' --', Mode=OneWay}" FontWeight="SemiBold" Foreground="#F57C00"/>
-                                                        <Run Text=" devices/week to optimize completion"/>
+                                                        <Run Text=" devices/week to meet target"/>
                                                     </TextBlock>
                                                 </StackPanel>
                                             </Grid>
@@ -1804,7 +1806,7 @@
                             </Border>
 
                             <!-- SMART ENROLLMENT MANAGEMENT (Merged Device Readiness + Agent) -->
-                            <Border Style="{StaticResource SectionCard}">
+                            <Border x:Name="DeviceReadinessSection" Style="{StaticResource SectionCard}">
                                 <StackPanel>
                                     <!-- Main Header -->
                                     <TextBlock Text="🎯 Smart Enrollment Management" Style="{StaticResource SectionTitle}"/>
@@ -2332,7 +2334,6 @@
                             <!-- NEW: Enrollment Momentum & Analytics Section -->
                             <Border Style="{StaticResource SectionCard}">
                                 <StackPanel>
-                                    <TextBlock Text="📈 Enrollment Momentum &amp; Analytics" Style="{StaticResource SectionTitle}" Margin="0,0,0,15"/>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -2350,8 +2351,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- NEW: Enrollment Playbooks Section -->
-                            <views:EnrollmentPlaybooksView x:Name="EnrollmentPlaybooksView" Margin="0,0,0,15"/>
+                            <!-- NEW: Enrollment Playbooks Section (Hidden) -->
+                            <views:EnrollmentPlaybooksView x:Name="EnrollmentPlaybooksView" Margin="0,0,0,15" Visibility="Collapsed"/>
 
                             <!-- Enrollment Readiness (Moved from Overview) -->
                             <Border Style="{StaticResource SectionCard}">

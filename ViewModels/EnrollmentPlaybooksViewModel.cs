@@ -132,6 +132,41 @@ namespace ZeroTrustMigrationAddin.ViewModels
         }
 
         /// <summary>
+        /// v3.16.23 - Refresh playbooks from real Graph/ConfigMgr data
+        /// </summary>
+        public async Task RefreshAsync(GraphDataService graphDataService)
+        {
+            try
+            {
+                Instance.Info("[PLAYBOOKS VM] Refreshing with real data...");
+                IsLoading = true;
+                StatusMessage = "Loading playbook recommendations...";
+                
+                var analyticsService = new EnrollmentAnalyticsService(graphDataService);
+                var result = await analyticsService.ComputeAsync();
+                
+                if (result?.RecommendedPlaybooks != null)
+                {
+                    UpdateFromPlaybooks(result.RecommendedPlaybooks);
+                    Instance.Info($"[PLAYBOOKS VM] Refreshed with real data: {result.RecommendedPlaybooks.Count} playbooks");
+                }
+                else
+                {
+                    Instance.Warning("[PLAYBOOKS VM] No playbook data returned from analytics service");
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[PLAYBOOKS VM] Refresh failed: {ex.Message}");
+                StatusMessage = $"Error: {ex.Message}";
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        /// <summary>
         /// Updates the view model from a list of playbooks.
         /// </summary>
         public void UpdateFromPlaybooks(List<EnrollmentPlaybook> playbooks)

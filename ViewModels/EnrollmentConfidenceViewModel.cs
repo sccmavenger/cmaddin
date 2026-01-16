@@ -126,6 +126,33 @@ namespace ZeroTrustMigrationAddin.ViewModels
         }
 
         /// <summary>
+        /// v3.16.23 - Refresh confidence data from real Graph/ConfigMgr data
+        /// </summary>
+        public async Task RefreshAsync(GraphDataService graphDataService)
+        {
+            try
+            {
+                Instance.Info("[CONFIDENCE VM] Refreshing with real data...");
+                var analyticsService = new EnrollmentAnalyticsService(graphDataService);
+                var result = await analyticsService.ComputeAsync();
+                
+                if (result?.Confidence != null)
+                {
+                    UpdateFromResult(result.Confidence);
+                    Instance.Info($"[CONFIDENCE VM] Refreshed with real data: Score={result.Confidence.Score}");
+                }
+                else
+                {
+                    Instance.Warning("[CONFIDENCE VM] No confidence data returned from analytics service");
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CONFIDENCE VM] Refresh failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Updates the view model from an EnrollmentConfidenceResult.
         /// </summary>
         public void UpdateFromResult(EnrollmentConfidenceResult result)
