@@ -29,6 +29,10 @@ namespace ZeroTrustMigrationAddin.Models
         public int WorkgroupDevices { get; set; }
         public int UnknownJoinTypeDevices { get; set; }
         
+        // Cloud Native Devices: Entra/AAD joined + Intune managed, NO ConfigMgr record
+        public int CloudNativeDevices { get; set; }
+        public double CloudNativePercentage => TotalDevices > 0 ? (double)CloudNativeDevices / TotalDevices * 100 : 0;
+        
         // Computed properties for join type visualization
         public int ReadyForEnrollmentCount => HybridJoinedDevices + AzureADOnlyDevices;
         public double ReadyPercentage => TotalDevices > 0 ? (double)ReadyForEnrollmentCount / TotalDevices * 100 : 0;

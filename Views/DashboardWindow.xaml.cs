@@ -18,7 +18,7 @@ namespace ZeroTrustMigrationAddin.Views
                 
                 // Set window title with current version
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                Title = $"Cloud Journey Progress Dashboard v{version?.Major}.{version?.Minor}.{version?.Build}";
+                Title = $"Zero Trust Journey Dashboard v{version?.Major}.{version?.Minor}.{version?.Build}";
                 
                 var telemetryService = new TelemetryService();
                 DataContext = new DashboardViewModel(telemetryService, tabVisibilityOptions);
@@ -485,8 +485,8 @@ namespace ZeroTrustMigrationAddin.Views
                 {
                     string url = guideType switch
                     {
-                        "HybridJoin" => "https://learn.microsoft.com/en-us/azure/active-directory/devices/howto-hybrid-join",
-                        "DomainJoin" => "https://learn.microsoft.com/en-us/azure/active-directory/devices/concept-device-registration",
+                        "HybridJoin" => "https://learn.microsoft.com/en-us/entra/identity/devices/how-to-hybrid-join",
+                        "DomainJoin" => "https://learn.microsoft.com/en-us/entra/identity/devices/concept-device-registration",
                         _ => "https://learn.microsoft.com/en-us/mem/intune/enrollment/windows-enrollment-methods"
                     };
 

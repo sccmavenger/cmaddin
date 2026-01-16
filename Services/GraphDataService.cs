@@ -667,6 +667,31 @@ namespace ZeroTrustMigrationAddin.Services
                     workgroupCount = 0;
                 }
                 
+                // Calculate Cloud Native devices: Entra/AAD joined + Intune managed + NO ConfigMgr record
+                int cloudNativeCount = 0;
+                int configMgrCount2 = configMgrDevices != null ? configMgrDevices.Count : 0;
+                if (configMgrCount2 > 0)
+                {
+                    // In co-management: Cloud native = Intune devices NOT in ConfigMgr
+                    var configMgrNames = new HashSet<string>(
+                        configMgrDevices?.Where(d => !string.IsNullOrEmpty(d.Name))
+                            .Select(d => d.Name.ToLowerInvariant()) ?? Enumerable.Empty<string>(),
+                        StringComparer.OrdinalIgnoreCase);
+                    
+                    cloudNativeCount = intuneEligibleDevices.Count(d => 
+                        !string.IsNullOrEmpty(d.DeviceName) &&
+                        !configMgrNames.Contains(d.DeviceName.ToLowerInvariant()) &&
+                        !string.IsNullOrEmpty(d.AzureADDeviceId)); // Has AAD identity
+                        
+                    Instance.Info($"☁️ Cloud Native (Intune-only, no ConfigMgr): {cloudNativeCount}");
+                }
+                else
+                {
+                    // In Intune-only scenario: All Azure AD devices are cloud native
+                    cloudNativeCount = azureADOnlyCount;
+                    Instance.Info($"☁️ Cloud Native (all Azure AD only): {cloudNativeCount}");
+                }
+                
                 Instance.Info("=================================================");
 
                 // Generate trend data showing migration from ConfigMgr to cloud (co-managed/Intune)
@@ -679,6 +704,7 @@ namespace ZeroTrustMigrationAddin.Services
                     TotalDevices = totalDevices,
                     IntuneEnrolledDevices = cloudManagedCount, // Co-managed or Intune-managed Windows devices
                     ConfigMgrOnlyDevices = configMgrOnlyCount,
+                    CloudNativeDevices = cloudNativeCount, // Entra/AAD + Intune, no ConfigMgr record
                     TrendData = trendData,
                     // Device join type categorization
                     HybridJoinedDevices = hybridJoinedCount,
