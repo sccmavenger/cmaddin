@@ -257,55 +257,78 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Instance.Info($"=== GetDevicesByJoinType: {joinType} ===");
                 
-                // Get all Intune devices
+                var filteredDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                
+                // Get all Intune devices for lookup
                 var allIntuneDevices = await GetCachedManagedDevicesAsync();
                 Instance.Info($"Total Intune devices: {allIntuneDevices.Count}");
                 
-                // Get ConfigMgr devices for domain info (if configured)
-                List<ConfigMgrDevice>? configMgrDevices = null;
-                Dictionary<string, string> deviceDomainMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                // Build Intune device lookup by name for matching
+                var intuneDevicesByName = allIntuneDevices
+                    .Where(d => !string.IsNullOrEmpty(d.DeviceName))
+                    .GroupBy(d => d.DeviceName!.ToLowerInvariant())
+                    .ToDictionary(g => g.Key, g => g.First());
                 
                 if (_configMgrService.IsConfigured)
                 {
-                    configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
-                    Instance.Info($"ConfigMgr devices: {configMgrDevices?.Count ?? 0}");
+                    // Co-management scenario: Use ConfigMgr devices as the source (matches count logic)
+                    var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                    Instance.Info($"ConfigMgr devices (source of truth): {configMgrDevices?.Count ?? 0}");
                     
-                    // Build domain lookup map from ConfigMgr
                     if (configMgrDevices != null)
                     {
                         foreach (var cmDevice in configMgrDevices)
                         {
-                            if (!string.IsNullOrEmpty(cmDevice.Name))
+                            // Try to find matching Intune device by name
+                            Microsoft.Graph.Models.ManagedDevice? intuneDevice = null;
+                            if (!string.IsNullOrEmpty(cmDevice.Name) &&
+                                intuneDevicesByName.TryGetValue(cmDevice.Name.ToLowerInvariant(), out var found))
                             {
-                                deviceDomainMap[cmDevice.Name.ToLowerInvariant()] = cmDevice.DomainOrWorkgroup ?? "";
+                                intuneDevice = found;
+                            }
+                            
+                            // Use ConfigMgr domain info for accurate join type detection
+                            var detectedType = DetectJoinType(cmDevice.DomainOrWorkgroup, intuneDevice?.AzureADDeviceId);
+                            
+                            if (detectedType == joinType)
+                            {
+                                // Return the Intune device if found, otherwise create a placeholder
+                                if (intuneDevice != null)
+                                {
+                                    filteredDevices.Add(intuneDevice);
+                                }
+                                else
+                                {
+                                    // Create a minimal ManagedDevice for ConfigMgr-only devices
+                                    filteredDevices.Add(new Microsoft.Graph.Models.ManagedDevice
+                                    {
+                                        DeviceName = cmDevice.Name,
+                                        OperatingSystem = cmDevice.OperatingSystem ?? "Windows"
+                                    });
+                                }
+                                Instance.Debug($"  ✓ {cmDevice.Name} - Domain: {cmDevice.DomainOrWorkgroup ?? "(none)"}, AAD: {intuneDevice?.AzureADDeviceId != null}");
                             }
                         }
                     }
                 }
-                
-                // Filter devices based on detected join type using ConfigMgr domain info
-                var filteredDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
-                
-                foreach (var device in allIntuneDevices)
+                else
                 {
-                    // Skip non-Windows devices for domain-based filtering
-                    if (device.OperatingSystem?.IndexOf("Windows", StringComparison.OrdinalIgnoreCase) < 0)
-                        continue;
+                    // Intune-only scenario: Filter Windows devices (no domain info available)
+                    Instance.Info("No ConfigMgr connected - using Intune devices only");
                     
-                    // Get domain from ConfigMgr lookup
-                    string? domain = null;
-                    if (!string.IsNullOrEmpty(device.DeviceName) && 
-                        deviceDomainMap.TryGetValue(device.DeviceName.ToLowerInvariant(), out var foundDomain))
+                    var intuneWindowsDevices = allIntuneDevices.Where(d =>
+                        d.OperatingSystem?.IndexOf("Windows", StringComparison.OrdinalIgnoreCase) >= 0);
+                    
+                    foreach (var device in intuneWindowsDevices)
                     {
-                        domain = foundDomain;
-                    }
-                    
-                    var detectedType = DetectJoinType(domain, device.AzureADDeviceId);
-                    
-                    if (detectedType == joinType)
-                    {
-                        filteredDevices.Add(device);
-                        Instance.Debug($"  ✓ {device.DeviceName} - Domain: {domain ?? "(none)"}, AAD: {!string.IsNullOrEmpty(device.AzureADDeviceId)}");
+                        // Without ConfigMgr, we can't determine domain, so all are AzureADOnly or Unknown
+                        var detectedType = DetectJoinType(null, device.AzureADDeviceId);
+                        
+                        if (detectedType == joinType)
+                        {
+                            filteredDevices.Add(device);
+                            Instance.Debug($"  ✓ {device.DeviceName} - AAD: {device.AzureADDeviceId != null}");
+                        }
                     }
                 }
 
