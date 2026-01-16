@@ -4,7 +4,7 @@
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:ZeroTrustMigrationAddin.Converters"
         xmlns:views="clr-namespace:ZeroTrustMigrationAddin.Views"
-        Title="Cloud Journey Progress Dashboard" 
+        Title="Zero Trust Journey Dashboard" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         SizeToContent="Manual"
@@ -119,7 +119,7 @@
                 </Grid.ColumnDefinitions>
                 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="Cloud Journey Progress" FontSize="28" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Zero Trust Journey" FontSize="28" FontWeight="Bold" Foreground="White"/>
                     <TextBlock Text="Track your migration from ConfigMgr to Microsoft Intune" 
                                FontSize="14" Foreground="#E0E0E0" Margin="0,5,0,0"/>
                 </StackPanel>
@@ -301,6 +301,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0">
@@ -310,12 +311,19 @@
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Intune Enrolled" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock Text="Comanaged" Style="{StaticResource MetricLabel}"/>
                                         <TextBlock Text="{Binding DeviceEnrollment.IntuneEnrolledDevices}" 
                                                    Style="{StaticResource MetricValue}" FontSize="20" Foreground="#107C10"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Cloud Native" Style="{StaticResource MetricLabel}"/>
+                                        <TextBlock Text="{Binding DeviceEnrollment.CloudNativeDevices}" 
+                                                   Style="{StaticResource MetricValue}" FontSize="20" Foreground="#0078D4"
+                                                   ToolTip="Entra joined + Intune managed, no ConfigMgr record"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="3">
                                         <TextBlock Text="ConfigMgr Only" Style="{StaticResource MetricLabel}"/>
                                         <TextBlock Text="{Binding DeviceEnrollment.ConfigMgrOnlyDevices}" 
                                                    Style="{StaticResource MetricValue}" FontSize="20" Foreground="#D13438"/>
@@ -335,12 +343,9 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- ========== DESIGN OPTION 5: TABULAR DASHBOARD ========== -->
+                        <!-- Device Identity State Analysis -->
                         <Border Style="{StaticResource SectionCard}" Background="#FAFAFA">
                             <StackPanel>
-                                <TextBlock Text="🎨 DESIGN OPTION 5: Tabular Dashboard Widget" 
-                                           FontSize="16" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,10"/>
-                                
                                 <TextBlock Text="🔐 Device Identity State Analysis" Style="{StaticResource SectionTitle}"/>
                                 
                                 <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4">
@@ -1360,18 +1365,27 @@
                                                     Style="{StaticResource ActionButton}"
                                                     Background="White"
                                                     BorderBrush="#0078D4"
-                                                    BorderThickness="2"
-                                                    HorizontalContentAlignment="Left"
+                                                    BorderThickness="1"
+                                                    HorizontalContentAlignment="Stretch"
                                                     Margin="0,0,0,10"
                                                     Padding="15,12">
-                                                <StackPanel>
-                                                    <TextBlock Text="{Binding Title}" 
-                                                               FontWeight="SemiBold" FontSize="13" 
-                                                               Foreground="#0078D4"/>
-                                                    <TextBlock Text="{Binding Description}" 
-                                                               FontSize="11" Foreground="#666666" 
-                                                               TextWrapping="Wrap" Margin="0,3,0,0"/>
-                                                </StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding IconPath}" 
+                                                               FontSize="24" VerticalAlignment="Center" 
+                                                               Margin="0,0,15,0"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Title}" 
+                                                                   FontWeight="SemiBold" FontSize="13" 
+                                                                   Foreground="#0078D4"/>
+                                                        <TextBlock Text="{Binding Description}" 
+                                                                   FontSize="11" Foreground="#666666" 
+                                                                   TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
                                             </Button>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
