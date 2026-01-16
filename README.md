@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.16.29** | January 16, 2026
+**Version 3.16.30** | January 16, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -100,6 +100,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.16.29 (January 16, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.16.28 (January 16, 2026)
 
 ### Added
@@ -150,21 +164,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 - Device health score thresholds documented correctly (≥85/60-84/40-59/<40)
-
----
-
-### Version 3.16.24 (January 16, 2026)
-
-### Added
-- Dashboard Tabs section documenting all tabs and visibility options
-- Device Identity States documentation (Hybrid Entra, Entra-joined, AD-only, Workgroup)
-- Device Readiness & Health Scoring algorithm documentation
-- Enrollment Momentum section documentation
-- Autonomous Enrollment Agent section (placeholder for future feature)
-
-### Changed
-- Updated Graph API permissions table with actual required permissions
-- Updated FAQ with new questions about health tiers, blocked devices, agent safety
 
 ---
 
