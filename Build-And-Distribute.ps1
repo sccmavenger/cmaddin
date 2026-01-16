@@ -491,6 +491,10 @@ try {
     $readmePath = Join-Path $scriptDir "README.md"
     if (Test-Path $readmePath) {
         $readmeContent = Get-Content $readmePath -Raw
+        # Update bold version format: **Version X.X.X** | Date
+        $todayDate = (Get-Date).ToString("MMMM d, yyyy")
+        $readmeContent = $readmeContent -replace "\*\*Version \d+\.\d+\.\d+\*\* \| [A-Za-z]+ \d+, \d+", "**Version $newVersion** | $todayDate"
+        # Also update any plain version references
         $readmeContent = $readmeContent -replace "Version $oldVersion", "Version $newVersion"
         $readmeContent = $readmeContent -replace "v$oldVersion", "v$newVersion"
         [System.IO.File]::WriteAllText($readmePath, $readmeContent)
