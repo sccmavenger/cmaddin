@@ -248,23 +248,66 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Get devices filtered by join type for drill-through functionality
+        /// Get devices filtered by join type for drill-through functionality.
+        /// Cross-references ConfigMgr devices with Intune for accurate join type detection.
         /// </summary>
         public async Task<List<Microsoft.Graph.Models.ManagedDevice>> GetDevicesByJoinType(Models.DeviceJoinType joinType)
         {
             try
             {
-                var allDevices = await GetCachedManagedDevicesAsync();
+                Instance.Info($"=== GetDevicesByJoinType: {joinType} ===");
                 
-                // Filter devices based on detected join type
-                var filteredDevices = allDevices.Where(device =>
+                // Get all Intune devices
+                var allIntuneDevices = await GetCachedManagedDevicesAsync();
+                Instance.Info($"Total Intune devices: {allIntuneDevices.Count}");
+                
+                // Get ConfigMgr devices for domain info (if configured)
+                List<ConfigMgrDevice>? configMgrDevices = null;
+                Dictionary<string, string> deviceDomainMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                
+                if (_configMgrService.IsConfigured)
                 {
-                    // Detect join type for this device
-                    // Note: ManagedDevice doesn't have DomainName, so we use AzureActiveDirectoryDeviceId
-                    // For full detection, we'd need additional API calls
-                    var detectedType = DetectJoinType(null, device.AzureADDeviceId);
-                    return detectedType == joinType;
-                }).ToList();
+                    configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                    Instance.Info($"ConfigMgr devices: {configMgrDevices?.Count ?? 0}");
+                    
+                    // Build domain lookup map from ConfigMgr
+                    if (configMgrDevices != null)
+                    {
+                        foreach (var cmDevice in configMgrDevices)
+                        {
+                            if (!string.IsNullOrEmpty(cmDevice.Name))
+                            {
+                                deviceDomainMap[cmDevice.Name.ToLowerInvariant()] = cmDevice.DomainOrWorkgroup ?? "";
+                            }
+                        }
+                    }
+                }
+                
+                // Filter devices based on detected join type using ConfigMgr domain info
+                var filteredDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                
+                foreach (var device in allIntuneDevices)
+                {
+                    // Skip non-Windows devices for domain-based filtering
+                    if (device.OperatingSystem?.IndexOf("Windows", StringComparison.OrdinalIgnoreCase) < 0)
+                        continue;
+                    
+                    // Get domain from ConfigMgr lookup
+                    string? domain = null;
+                    if (!string.IsNullOrEmpty(device.DeviceName) && 
+                        deviceDomainMap.TryGetValue(device.DeviceName.ToLowerInvariant(), out var foundDomain))
+                    {
+                        domain = foundDomain;
+                    }
+                    
+                    var detectedType = DetectJoinType(domain, device.AzureADDeviceId);
+                    
+                    if (detectedType == joinType)
+                    {
+                        filteredDevices.Add(device);
+                        Instance.Debug($"  ✓ {device.DeviceName} - Domain: {domain ?? "(none)"}, AAD: {!string.IsNullOrEmpty(device.AzureADDeviceId)}");
+                    }
+                }
 
                 Instance.Info($"Filtered {filteredDevices.Count} devices for join type: {joinType}");
                 return filteredDevices;
@@ -695,7 +738,7 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info("=================================================");
 
                 // Generate trend data showing migration from ConfigMgr to cloud (co-managed/Intune)
-                var trendData = GenerateTrendData(totalDevices, cloudManagedCount, configMgrOnlyCount);
+                var trendData = GenerateTrendData(totalDevices, cloudManagedCount, configMgrOnlyCount, cloudNativeCount);
 
                 System.Diagnostics.Debug.WriteLine($"=== FINAL RESULT: Total={totalDevices}, CloudManaged={cloudManagedCount}, ConfigMgrOnly={configMgrOnlyCount} ===");
 
@@ -838,7 +881,7 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
-        private EnrollmentTrend[] GenerateTrendData(int currentTotal, int currentCloudManaged, int currentConfigMgrOnly)
+        private EnrollmentTrend[] GenerateTrendData(int currentTotal, int currentCloudManaged, int currentConfigMgrOnly, int currentCloudNative = 0)
         {
             // Generate 6 months of trend data showing co-management journey
             // Cloud-managed = co-managed or Intune-only Windows devices (the progress metric)
@@ -846,8 +889,9 @@ namespace ZeroTrustMigrationAddin.Services
             var trends = new List<EnrollmentTrend>();
             var baseDate = DateTime.Now.AddMonths(-6);
             
-            // Estimate current cloud native devices (roughly 10-15% of cloud managed)
-            int currentCloudNative = (int)(currentCloudManaged * 0.12);
+            // Use actual cloud native count if provided, otherwise estimate
+            if (currentCloudNative == 0 && currentCloudManaged > 0)
+                currentCloudNative = (int)(currentCloudManaged * 0.12);
 
             for (int i = 0; i <= 6; i++)
             {
