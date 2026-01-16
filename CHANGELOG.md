@@ -12,7 +12,7 @@
 - 
 
 
-## [3.16.27] - 2026-01-16
+## [3.16.28] - 2026-01-16
 
 ### Added
 - 
@@ -22,66 +22,75 @@
 
 ### Fixed
 - 
+
+
+## [3.16.27] - 2026-01-16
+
+### Added
+- Automated README "What's New" section generation from CHANGELOG (last 5 versions with content)
+- Build script now auto-updates README version header AND What's New section
+
+### Changed
+- README What's New section now auto-generated from CHANGELOG.md during builds
+
+### Fixed
+- README version pattern matching for bold markdown format
 
 
 ## [3.16.26] - 2026-01-16
 
 ### Added
-- 
+- MSI installer support (WiX v6 toolset)
 
 ### Changed
-- 
+- Build script README update pattern now handles bold markdown and dates
 
 ### Fixed
-- 
+- README version not updating (was stuck at 3.16.3)
 
 
 ## [3.16.25] - 2026-01-16
 
 ### Added
-- 
+- AdminUserGuide.html comprehensive documentation overhaul
 
 ### Changed
-- 
+- Autonomous Enrollment Agent section marked as "NOT YET FUNCTIONAL" with prominent warning
 
 ### Fixed
-- 
+- Device health score thresholds documented correctly (≥85/60-84/40-59/<40)
 
 
 ## [3.16.24] - 2026-01-16
 
 ### Added
-- 
+- Dashboard Tabs section documenting all tabs and visibility options
+- Device Identity States documentation (Hybrid Entra, Entra-joined, AD-only, Workgroup)
+- Device Readiness & Health Scoring algorithm documentation
+- Enrollment Momentum section documentation
+- Autonomous Enrollment Agent section (placeholder for future feature)
 
 ### Changed
-- 
-
-### Fixed
-- 
+- Updated Graph API permissions table with actual required permissions
+- Updated FAQ with new questions about health tiers, blocked devices, agent safety
 
 
 ## [3.16.23] - 2026-01-16
 
-### Added
-- 
-
 ### Changed
-- 
+- "INTUNE DEVICES" label changed to "CO-MANAGED DEVICES" in Enrollment Momentum
+- Hidden Enrollment Playbooks section (not functional)
+- Removed "📈 Enrollment Momentum & Analytics" title for cleaner UI
 
 ### Fixed
-- 
+- HighRiskDeviceCount now uses actual PoorReadinessCount instead of 10% estimate
+- Analytics views (Enrollment Confidence, Playbooks) now refresh after Graph authentication
 
 
 ## [3.16.22] - 2026-01-16
 
-### Added
-- 
-
-### Changed
-- 
-
 ### Fixed
-- 
+- Device Identity click-through navigation to device list
 
 
 ## [3.16.21] - 2026-01-15
