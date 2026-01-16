@@ -225,10 +225,13 @@
             <h2>Quick Navigation</h2>
             <ul>
                 <li><a href="#overview">Overview</a></li>
+                <li><a href="#dashboard-tabs">Dashboard Tabs</a></li>
                 <li><a href="#requirements">Requirements</a></li>
                 <li><a href="#installation">Installation</a></li>
                 <li><a href="#auto-updates">Automatic Updates</a></li>
                 <li><a href="#enrollment">Device Enrollment</a></li>
+                <li><a href="#device-readiness">Device Readiness</a></li>
+                <li><a href="#enrollment-agent">Enrollment Agent</a></li>
                 <li><a href="#troubleshooting">Troubleshooting</a></li>
                 <li><a href="#faq">FAQ</a></li>
             </ul>
@@ -239,7 +242,7 @@
             <h2><span class="emoji">🎯</span> Overview</h2>
             
             <div class="alert alert-success">
-                <strong>🎉 Version 3.16.24 - January 16, 2026</strong>
+                <strong>🎉 Version 3.16.25 - January 16, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -250,22 +253,136 @@
 
             <h3>Key Features</h3>
             <ul>
-                <li><strong>Real-Time Data:</strong> Connects to Microsoft Graph to pull actual device enrollment data</li>
-                <li><strong>Enrollment Tracking:</strong> Visualize enrollment progress with charts and metrics</li>
-                <li><strong>Device Health Monitoring:</strong> Track device readiness and identify issues</li>
+                <li><strong>Real-Time Data:</strong> Connects to Microsoft Graph and ConfigMgr Admin Service to pull actual device data</li>
+                <li><strong>Enrollment Tracking:</strong> Visualize enrollment progress with charts, velocity metrics, and trend analysis</li>
+                <li><strong>Device Readiness Analysis:</strong> 4-tier health scoring (Excellent/Good/Fair/Poor) with predicted success rates</li>
+                <li><strong>Smart Enrollment Management:</strong> AI-powered device categorization and enrollment recommendations</li>
+                <li><strong>Enrollment Momentum:</strong> Track velocity, set targets, and project migration timelines</li>
+                <li><strong>Device Identity Analysis:</strong> Understand Hybrid Entra, Entra-joined, and AD-only device states</li>
+                <li><strong>Autonomous Enrollment Agent:</strong> Optional AI agent for automated enrollment with configurable risk tolerance</li>
                 <li><strong>Automatic Updates:</strong> Self-updating application ensures you always have the latest features</li>
                 <li><strong>Privacy-Safe Telemetry:</strong> Anonymous usage analytics help improve the tool</li>
             </ul>
 
-            <h3>Current Focus: Enrollment Dashboard</h3>
-            <p>This release focuses on the <strong>Overview</strong> and <strong>Enrollment</strong> tabs, providing:</p>
+            <h3>Current Focus: Migration Dashboard</h3>
+            <p>This release provides comprehensive migration tracking across multiple dashboard tabs:</p>
             <ul>
-                <li>Total device count from your environment</li>
-                <li>Enrolled device tracking (Intune-managed devices)</li>
-                <li>Enrollment percentage and trends</li>
-                <li>Visual charts showing progress over time</li>
-                <li>Device health scores and readiness metrics</li>
+                <li><strong>Overview Tab:</strong> Executive summary with device counts, enrollment status, device identity breakdown, and compliance scorecard</li>
+                <li><strong>Enrollment Tab:</strong> Smart Enrollment Management with 4-tier device readiness, enrollment momentum tracking, and optional AI agent</li>
+                <li><strong>Workloads Tab:</strong> Track workload migration from ConfigMgr to Intune (hidden by default)</li>
+                <li><strong>AI Actions Tab:</strong> View AI-generated recommendations and blockers (hidden by default)</li>
             </ul>
+        </section>
+
+        <!-- Dashboard Tabs Section -->
+        <section id="dashboard-tabs">
+            <h2><span class="emoji">🗂️</span> Dashboard Tabs</h2>
+
+            <h3>Tab Overview</h3>
+            <p>The dashboard organizes information across multiple tabs. Some tabs are hidden by default and can be enabled via command-line arguments.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tab</th>
+                        <th>Icon</th>
+                        <th>Purpose</th>
+                        <th>Default Visibility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Overview</strong></td>
+                        <td>📊</td>
+                        <td>Executive summary: device counts, identity states, compliance scorecard</td>
+                        <td>✅ Always visible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Enrollment</strong></td>
+                        <td>📱</td>
+                        <td>Smart Enrollment Management, device readiness, enrollment momentum</td>
+                        <td>✅ Visible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Workloads</strong></td>
+                        <td>🔄</td>
+                        <td>Track workload migration from ConfigMgr to Intune policies</td>
+                        <td>❌ Hidden</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI Actions</strong></td>
+                        <td>🤖</td>
+                        <td>AI-generated enrollment and workload recommendations</td>
+                        <td>❌ Hidden</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Applications</strong></td>
+                        <td>📦</td>
+                        <td>Application migration tracking (future)</td>
+                        <td>❌ Hidden</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Tab Visibility Configuration</h3>
+            <p>Use command-line arguments to show or hide tabs:</p>
+            <pre><code># Hide specific tabs
+ZeroTrustMigrationAddin.exe /HideTabs:Workloads,AI
+
+# Show only specific tabs
+ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
+
+            <h3>Overview Tab Contents</h3>
+            <p>The Overview tab contains several key sections:</p>
+            <ul>
+                <li><strong>Device Enrollment Summary:</strong> Total Windows 10/11 devices, Co-managed, Cloud Native, ConfigMgr Only</li>
+                <li><strong>Device Identity State Analysis:</strong> Breakdown by join type (Hybrid Entra, Entra-joined, AD-only, Workgroup)</li>
+                <li><strong>Security & Compliance Scorecard:</strong> Compliance rates, policy status, security posture</li>
+                <li><strong>Quick Actions:</strong> Connect to Graph, refresh data, open diagnostics</li>
+            </ul>
+
+            <h3>Device Identity States</h3>
+            <p>Understanding device identity is critical for enrollment planning:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>State</th>
+                        <th>Icon</th>
+                        <th>Description</th>
+                        <th>Enrollment Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Hybrid Entra Joined</strong></td>
+                        <td>✅</td>
+                        <td>Domain-joined + Azure AD registered</td>
+                        <td>Ready for co-management</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Entra Joined</strong></td>
+                        <td>☁️</td>
+                        <td>Azure AD joined only (cloud-native)</td>
+                        <td>Ready for Intune-only</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AD Joined Only</strong></td>
+                        <td>⚠️</td>
+                        <td>On-premises AD only, no Azure AD</td>
+                        <td>Blocked - needs Hybrid Entra</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Workgroup</strong></td>
+                        <td>❌</td>
+                        <td>Standalone, not domain-joined</td>
+                        <td>Blocked - needs domain/Azure AD join</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="alert alert-warning">
+                <strong>⚠️ Enrollment Blockers:</strong> Devices in "AD Joined Only" or "Workgroup" states cannot be enrolled in Intune without first establishing Azure AD identity.
+            </div>
         </section>
 
         <!-- Requirements Section -->
@@ -335,8 +452,41 @@
                 </tbody>
             </table>
 
+            <h3>Microsoft Graph API Permissions</h3>
+            <p>The app requests these delegated permissions when you sign in:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Permission</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>DeviceManagementManagedDevices.Read.All</code></td>
+                        <td>Read Intune enrolled devices, compliance state, sync status</td>
+                    </tr>
+                    <tr>
+                        <td><code>DeviceManagementConfiguration.Read.All</code></td>
+                        <td>Read device configuration profiles and compliance policies</td>
+                    </tr>
+                    <tr>
+                        <td><code>DeviceManagementApps.Read.All</code></td>
+                        <td>Read mobile apps and app protection policies</td>
+                    </tr>
+                    <tr>
+                        <td><code>Directory.Read.All</code></td>
+                        <td>Read Azure AD devices and directory information</td>
+                    </tr>
+                    <tr>
+                        <td><code>User.Read</code></td>
+                        <td>Sign in and read your profile</td>
+                    </tr>
+                </tbody>
+            </table>
+
             <div class="alert alert-info">
-                <strong>💡 Tip:</strong> If you can access the Intune portal at <code>endpoint.microsoft.com</code>, you likely have the required permissions to use this tool.
+                <strong>💡 Tip:</strong> If you can access the Intune portal at <code>intune.microsoft.com</code>, you likely have the required permissions to use this tool.
             </div>
 
             <h3>ConfigMgr Admin Service (Optional)</h3>
@@ -377,11 +527,8 @@
                 <li>The dashboard will load your device data</li>
             </ol>
 
-            <div class="alert alert-success">
-                <strong>🎉 Version 3.16.24 - January 16, 2026</strong>
-                <ul>
-                    <li>Version update</li>
-                </ul>
+            <div class="alert alert-info">
+                <strong>💡 First-time users:</strong> The app will prompt you to grant permissions on first sign-in. This is a one-time setup - subsequent launches will sign in automatically.
             </div>
         </section>
 
@@ -478,24 +625,29 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Total Devices</td>
-                        <td>Microsoft Graph</td>
-                        <td><code>/devices</code></td>
-                    </tr>
-                    <tr>
-                        <td>Enrolled Devices</td>
-                        <td>Microsoft Graph</td>
+                        <td>Total Windows Devices</td>
+                        <td>ConfigMgr + Graph</td>
                         <td><code>/deviceManagement/managedDevices</code></td>
                     </tr>
                     <tr>
-                        <td>Enrollment Date</td>
-                        <td>Intune</td>
-                        <td><code>enrolledDateTime</code> property</td>
+                        <td>Enrolled/Co-managed Devices</td>
+                        <td>Microsoft Graph</td>
+                        <td><code>/deviceManagement/managedDevices?$filter=...</code></td>
                     </tr>
                     <tr>
-                        <td>Device Health</td>
-                        <td>Calculated</td>
-                        <td>Based on compliance state + last sync</td>
+                        <td>Device Compliance</td>
+                        <td>Intune</td>
+                        <td><code>complianceState</code> property</td>
+                    </tr>
+                    <tr>
+                        <td>Device Health Score</td>
+                        <td>ConfigMgr</td>
+                        <td><code>SMS_CH_Summary</code> (Admin Service)</td>
+                    </tr>
+                    <tr>
+                        <td>Autopilot Devices</td>
+                        <td>Intune</td>
+                        <td><code>/deviceManagement/windowsAutopilotDeviceIdentities</code></td>
                     </tr>
                 </tbody>
             </table>
@@ -503,24 +655,242 @@
             <h3>Interpreting the Data</h3>
 
             <h4>Enrollment Percentage</h4>
-            <p><strong>Formula:</strong> (Enrolled Devices ÷ Total Devices) × 100</p>
+            <p><strong>Formula:</strong> (Co-managed + Cloud Native) ÷ Total Windows 10/11 Devices × 100</p>
             <ul>
-                <li><strong>0-25%:</strong> Early migration phase - just getting started</li>
-                <li><strong>25-50%:</strong> Active migration - pilot groups enrolled</li>
-                <li><strong>50-75%:</strong> Majority migrated - focus on stragglers</li>
-                <li><strong>75-100%:</strong> Near completion - final wave</li>
+                <li><strong>0-25%:</strong> Early migration phase - pilot groups, initial testing</li>
+                <li><strong>25-50%:</strong> Active migration - expanding to broader user groups</li>
+                <li><strong>50-75%:</strong> Majority migrated - focus on remediation and stragglers</li>
+                <li><strong>75-95%:</strong> Near completion - final wave, exception handling</li>
+                <li><strong>95-100%:</strong> Migration complete - transition to steady state</li>
             </ul>
 
-            <h4>Device Health Scores</h4>
-            <ul>
-                <li><strong>90-100:</strong> Healthy - compliant, syncing regularly</li>
-                <li><strong>70-89:</strong> Good - minor issues, generally working</li>
-                <li><strong>50-69:</strong> Fair - some compliance/sync issues</li>
-                <li><strong>Below 50:</strong> Poor - needs attention</li>
-            </ul>
+            <h4>Device Health Scores (4-Tier System)</h4>
+            <p>Devices are categorized into 4 tiers based on a 100-point health score:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tier</th>
+                        <th>Health Score</th>
+                        <th>Predicted Success</th>
+                        <th>Recommendation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>✅ Excellent</strong></td>
+                        <td>≥85</td>
+                        <td>98%</td>
+                        <td>Ready for enrollment - prioritize these devices</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🟢 Good</strong></td>
+                        <td>60-84</td>
+                        <td>85%</td>
+                        <td>Acceptable for enrollment with monitoring</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🟡 Fair</strong></td>
+                        <td>40-59</td>
+                        <td>60%</td>
+                        <td>Remediate client issues before enrollment</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🔴 Poor</strong></td>
+                        <td>&lt;40</td>
+                        <td>30%</td>
+                        <td>Fix critical issues - high failure risk</td>
+                    </tr>
+                </tbody>
+            </table>
 
             <div class="alert alert-info">
                 <strong>💡 Tip:</strong> Use the trend chart to identify enrollment velocity. If enrollment has stalled, you may need to communicate with users or adjust your deployment strategy.
+            </div>
+        </section>
+
+        <!-- Device Readiness Section -->
+        <section id="device-readiness">
+            <h2><span class="emoji">🎯</span> Device Readiness & Health Scoring</h2>
+
+            <h3>Health Score Algorithm</h3>
+            <p>The device health score (0-100) is calculated using 5 weighted factors from ConfigMgr client data:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Factor</th>
+                        <th>Weight</th>
+                        <th>Scoring Breakdown</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Last Active Time</strong></td>
+                        <td>30%</td>
+                        <td>&lt;1 day: 30pts | &lt;7 days: 25pts | &lt;14 days: 20pts | &lt;30 days: 10pts | 30+ days: 0pts</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Policy Request</strong></td>
+                        <td>20%</td>
+                        <td>&lt;1 day: 20pts | &lt;7 days: 15pts | &lt;14 days: 10pts | &lt;30 days: 5pts</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hardware Scan</strong></td>
+                        <td>20%</td>
+                        <td>&lt;7 days: 20pts | &lt;14 days: 15pts | &lt;30 days: 10pts | &lt;60 days: 5pts</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Software Scan</strong></td>
+                        <td>20%</td>
+                        <td>&lt;7 days: 20pts | &lt;14 days: 15pts | &lt;30 days: 10pts | &lt;60 days: 5pts</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Client Active Status</strong></td>
+                        <td>10%</td>
+                        <td>Active: 10pts | Inactive: 0pts</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Smart Enrollment Management</h3>
+            <p>The Enrollment tab includes the Smart Enrollment Management section which provides:</p>
+            <ul>
+                <li><strong>Readiness Dashboard:</strong> Visual breakdown of Excellent/Good/Fair/Poor devices</li>
+                <li><strong>Ready for Enrollment:</strong> Combined count of Excellent + Good devices (high success probability)</li>
+                <li><strong>Needs Preparation:</strong> Fair tier devices that should be remediated first</li>
+                <li><strong>High Risk:</strong> Poor tier devices with critical issues blocking enrollment</li>
+                <li><strong>Export Device List:</strong> Export categorized device lists to CSV for remediation</li>
+            </ul>
+
+            <h3>Enrollment Blockers</h3>
+            <p>Certain conditions will block devices from successful enrollment:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Blocker Type</th>
+                        <th>Description</th>
+                        <th>Resolution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Unsupported OS</strong></td>
+                        <td>Windows 7/8.x not supported</td>
+                        <td>Upgrade to Windows 10/11</td>
+                    </tr>
+                    <tr>
+                        <td><strong>No TPM Detected</strong></td>
+                        <td>TPM required for Autopilot/Windows Hello</td>
+                        <td>Enable TPM in BIOS or replace hardware</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Client Not Responding</strong></td>
+                        <td>ConfigMgr client offline 30+ days</td>
+                        <td>Verify network connectivity, reinstall client</td>
+                    </tr>
+                    <tr>
+                        <td><strong>No Network Connectivity</strong></td>
+                        <td>No hardware scan in 30+ days</td>
+                        <td>Check firewall, VPN, or network access</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Enrollment Momentum</h3>
+            <p>The Enrollment Momentum section helps you track and plan your migration velocity:</p>
+            <ul>
+                <li><strong>Progress Ring:</strong> Visual percentage of devices enrolled</li>
+                <li><strong>Enrollment Journey Timeline:</strong> 4-milestone tracker
+                    <ol>
+                        <li>Assessment Complete - initial device analysis</li>
+                        <li>Active Enrollment - current velocity (devices/week)</li>
+                        <li>Accelerate Velocity - recommended velocity to meet target</li>
+                        <li>Migration Complete - projected completion date</li>
+                    </ol>
+                </li>
+                <li><strong>Target Adjustment Slider:</strong> Set target completion (4-52 weeks)</li>
+                <li><strong>Required Velocity:</strong> Calculated devices/week needed to meet target</li>
+            </ul>
+
+            <div class="alert alert-success">
+                <strong>🎉 Version 3.16.25 - January 16, 2026</strong>
+                <ul>
+                    <li>Version update</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Enrollment Agent Section -->
+        <section id="enrollment-agent">
+            <h2><span class="emoji">🤖</span> Autonomous Enrollment Agent</h2>
+
+            <div style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: center; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);">
+                <h3 style="margin: 0 0 10px 0; font-size: 1.8em;">🚧 FEATURE NOT YET FUNCTIONAL 🚧</h3>
+                <p style="margin: 0; font-size: 1.2em;">The Autonomous Enrollment Agent is <strong>under development</strong> and is not currently operational. The UI elements are visible for preview purposes only. Automated enrollments are <strong>NOT being performed</strong>.</p>
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>⚠️ Future Feature:</strong> When completed, the Autonomous Enrollment Agent will be an AI-powered feature for automated device enrollment. The documentation below describes planned functionality.
+            </div>
+
+            <h3>Overview (Planned Functionality)</h3>
+            <p>The Autonomous Enrollment Agent uses a ReAct (Reasoning + Acting) architecture to intelligently manage device enrollments with configurable automation levels.</p>
+
+            <h3>Autonomy Phases</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Behavior</th>
+                        <th>When to Use</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>🔒 Supervised</strong></td>
+                        <td>All enrollments require manual approval</td>
+                        <td>Initial testing, high-security environments</td>
+                    </tr>
+                    <tr>
+                        <td><strong>⚖️ Conditional</strong></td>
+                        <td>Low/Medium risk auto-approved; High/Critical requires approval</td>
+                        <td>Balanced approach for most organizations</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🚀 Autonomous</strong></td>
+                        <td>Continuous monitoring, auto-enrolls all qualifying devices</td>
+                        <td>Mature environments with good device health</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Agent Configuration</h3>
+            <ul>
+                <li><strong>Target Completion Date:</strong> When you want migration complete</li>
+                <li><strong>Max Devices Per Day:</strong> Rate limit to prevent overwhelming help desk</li>
+                <li><strong>Operating Hours:</strong>
+                    <ul>
+                        <li>Business Hours (9am-5pm weekdays)</li>
+                        <li>Extended Hours (7am-9pm weekdays)</li>
+                        <li>24/7 (continuous operation)</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Agent Reasoning Log</h3>
+            <p>The agent shows its decision-making process in real-time:</p>
+            <ul>
+                <li><strong>💭 Thought:</strong> What the agent is considering</li>
+                <li><strong>🛠️ Tool:</strong> What action it's taking</li>
+                <li><strong>👁️ Observation:</strong> What it discovered</li>
+                <li><strong>📝 Reflection:</strong> What it learned for future decisions</li>
+            </ul>
+
+            <h3>Emergency Stop</h3>
+            <p>An <strong>Emergency Stop</strong> button is always visible when the agent is active. Click it to immediately halt all automated enrollments.</p>
+
+            <div class="alert alert-info">
+                <strong>💡 Best Practice:</strong> Start with Supervised mode, review the agent's recommendations for 1-2 weeks, then gradually increase autonomy as you build confidence.
             </div>
         </section>
 
@@ -602,29 +972,41 @@
             <p><strong>A:</strong> We collect anonymous usage analytics (which buttons you click, errors that occur) to improve the tool. We DO NOT collect usernames, device names, tenant IDs, emails, IPs, or any identifiable information. All PII is automatically sanitized before sending to Azure.</p>
 
             <h4>Q: Can I use this in production?</h4>
-            <p><strong>A:</strong> The tool reads data only - it doesn't modify your Intune or ConfigMgr environment. It's safe to use in production for monitoring purposes.</p>
+            <p><strong>A:</strong> Yes! The tool reads data only by default - it doesn't modify your Intune or ConfigMgr environment. The Autonomous Enrollment Agent can make changes, but only when explicitly enabled.</p>
 
             <h4>Q: How often does data refresh?</h4>
             <p><strong>A:</strong> Data refreshes when you click the refresh button or switch between data sources. The Microsoft Graph data is real-time.</p>
+
+            <h4>Q: What's the difference between health score tiers?</h4>
+            <p><strong>A:</strong> Excellent (≥85) has 98% enrollment success rate, Good (60-84) has 85%, Fair (40-59) has 60%, and Poor (&lt;40) has only 30%. Focus on Excellent/Good devices first for quick wins.</p>
+
+            <h4>Q: Why are some devices showing as "Blocked"?</h4>
+            <p><strong>A:</strong> Devices in AD-only or Workgroup state cannot be enrolled in Intune. They need Hybrid Azure AD Join or Azure AD Join first. The Device Identity section shows which devices are blocked.</p>
+
+            <h4>Q: Is the Autonomous Enrollment Agent safe to use?</h4>
+            <p><strong>A:</strong> The Autonomous Enrollment Agent is <strong>not yet functional</strong> - it's under development. The UI is visible for preview purposes, but no automated enrollments are being performed. When completed, it will use a ReAct architecture with configurable autonomy levels.</p>
 
             <h4>Q: Why do I need admin permissions for updates?</h4>
             <p><strong>A:</strong> The app is installed in Program Files, which is protected by Windows. Admin elevation is required to modify files in that location - this is standard security practice.</p>
 
             <h4>Q: What happens to ConfigMgr integration?</h4>
-            <p><strong>A:</strong> ConfigMgr integration is optional. You can connect to ConfigMgr Admin Service if available, or use Microsoft Graph only. Mock Data mode is also available for testing.</p>
+            <p><strong>A:</strong> ConfigMgr integration is automatic when the ConfigMgr console is installed. The tool uses the Admin Service API to pull device health data. If ConfigMgr isn't available, Graph-only mode works fine.</p>
 
             <h4>Q: How do I export device lists?</h4>
-            <p><strong>A:</strong> Most data grids have an "Export to CSV" button in the top-right corner. Click it to save the current data to a CSV file.</p>
+            <p><strong>A:</strong> The Smart Enrollment Management section has an "Export Device List" button that exports categorized devices to CSV for remediation planning.</p>
 
             <h4>Q: Where are my Graph tokens stored?</h4>
             <p><strong>A:</strong> Authentication tokens are managed by MSAL (Microsoft Authentication Library) and stored securely in Windows Credential Manager. They're never written to log files.</p>
 
             <h4>Q: Can I deploy this via Intune/SCCM?</h4>
-            <p><strong>A:</strong> Not recommended. The tool updates itself automatically from GitHub. Simply share the download link with users - they'll always have the latest version via auto-update.</p>
+            <p><strong>A:</strong> Yes, but it's not required. The tool updates itself automatically from GitHub. You can deploy the initial install via Intune/SCCM, and users will receive automatic updates going forward.</p>
+
+            <h4>Q: How do I show hidden tabs like Workloads or AI Actions?</h4>
+            <p><strong>A:</strong> Use the command-line argument: <code>ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment,Workloads,AI</code></p>
         </section>
 
         <footer>
-            <p>Zero Trust Migration Journey Add-in v3.16.24 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Zero Trust Migration Journey Add-in v3.16.25 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>
