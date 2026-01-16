@@ -80,13 +80,13 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Intune Devices -->
+                <!-- Co-managed Devices -->
                 <Border Grid.Column="2" Style="{StaticResource MetricCard}">
                     <StackPanel>
-                        <TextBlock Text="INTUNE DEVICES" Style="{StaticResource MetricLabel}"/>
+                        <TextBlock Text="CO-MANAGED DEVICES" Style="{StaticResource MetricLabel}"/>
                         <TextBlock Text="{Binding TotalIntuneDevices, StringFormat='{}{0:N0}'}" 
                                    Style="{StaticResource MetricValue}" Foreground="#107C10"/>
-                        <TextBlock Text="Enrolled in Intune" FontSize="10" Foreground="#999999" Margin="0,5,0,0"/>
+                        <TextBlock Text="ConfigMgr + Intune" FontSize="10" Foreground="#999999" Margin="0,5,0,0"/>
                     </StackPanel>
                 </Border>
 

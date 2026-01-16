@@ -76,6 +76,9 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private AgentExecutionTrace? _currentAgentTrace;
         private EnrollmentGoals? _agentGoals;
         private string? _agentCompletionMessage;
+        
+        // v3.16.23 - Event for notifying UI when real data is loaded
+        public event EventHandler? RealDataLoaded;
 
         // Tab visibility options (controlled by command-line switches)
         private Visibility _showEnrollmentTab = Visibility.Visible;
@@ -2043,17 +2046,27 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 {
                     DeviceReadiness = await _deviceReadinessService.GetDeviceReadinessBreakdownAsync();
                     EnrollmentBlockers = await _deviceReadinessService.GetEnrollmentBlockersAsync();
-                    Instance.Info($"✅ Device readiness loaded: {DeviceReadiness?.HighSuccessDevices ?? 0} high success, {DeviceReadiness?.ModerateSuccessDevices ?? 0} moderate, {DeviceReadiness?.HighRiskDevices ?? 0} high risk");
+                    
+                    // v3.16.23 - Enhanced logging with 4-tier readiness breakdown
+                    Instance.Info($"✅ Device readiness loaded:");
+                    Instance.Info($"   Excellent (≥85): {DeviceReadiness?.ExcellentDevices ?? 0} devices");
+                    Instance.Info($"   Good (60-84): {DeviceReadiness?.GoodDevices ?? 0} devices");
+                    Instance.Info($"   Fair (40-59): {DeviceReadiness?.FairDevices ?? 0} devices");
+                    Instance.Info($"   Poor (<40): {DeviceReadiness?.PoorDevices ?? 0} devices");
                     Instance.Info($"✅ Enrollment blockers loaded: {EnrollmentBlockers?.TotalBlockedDevices ?? 0} blocked, {EnrollmentBlockers?.EnrollableDevices ?? 0} enrollable");
                 }
                 catch (Exception ex)
                 {
                     Instance.LogException(ex, "Failed to load device readiness");
+                    Instance.Warning("Device readiness will use estimated values in Smart Enrollment Management");
                     DeviceReadiness = null;
                     EnrollmentBlockers = null;
                 }
                 
                 Instance.Info("LoadRealDataAsync completed successfully");
+                
+                // v3.16.23 - Notify UI to refresh analytics views with real data
+                RealDataLoaded?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -2656,9 +2669,24 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 }
 
                 DevicesNeedingPreparation = FairReadinessCount;
-                HighRiskDeviceCount = Math.Max(0, (int)(unenrolledCount * 0.10)); // ~10% high risk
+                
+                // v3.16.23 - Use PoorReadinessCount for High Risk when real data is available
+                // Poor readiness (<40 score) = critical issues, 30% enrollment success rate
+                if (DeviceReadiness != null)
+                {
+                    HighRiskDeviceCount = PoorReadinessCount;
+                    Instance.Info($"✅ Using real readiness data for High Risk: {HighRiskDeviceCount} devices");
+                }
+                else
+                {
+                    // Fallback estimate when no real data (mock mode)
+                    HighRiskDeviceCount = Math.Max(0, (int)(unenrolledCount * 0.10));
+                    Instance.Info($"ℹ️ Using estimated High Risk (10% of {unenrolledCount}): {HighRiskDeviceCount} devices");
+                }
 
                 OnPropertyChanged(nameof(NextBatchSize));
+                OnPropertyChanged(nameof(DevicesNeedingPreparation));
+                OnPropertyChanged(nameof(HighRiskDeviceCount));
 
                 Instance.Info($"Device selection data loaded: {ExcellentReadinessCount} excellent, {GoodReadinessCount} good, {FairReadinessCount} fair, {PoorReadinessCount} poor");
             }
