@@ -2354,6 +2354,9 @@
                             <!-- NEW: Enrollment Playbooks Section (Hidden) -->
                             <views:EnrollmentPlaybooksView x:Name="EnrollmentPlaybooksView" Margin="0,0,0,15" Visibility="Collapsed"/>
 
+                            <!-- NEW: Migration Impact Forecast Section -->
+                            <views:MigrationImpactCard x:Name="MigrationImpactCard" Margin="0,0,0,15"/>
+
                             <!-- Enrollment Readiness (Moved from Overview) -->
                             <Border Style="{StaticResource SectionCard}">
                                 <StackPanel>

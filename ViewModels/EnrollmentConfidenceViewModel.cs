@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using ZeroTrustMigrationAddin.Models;
 using ZeroTrustMigrationAddin.Services;
+using ZeroTrustMigrationAddin.Views;
 using static ZeroTrustMigrationAddin.Services.FileLogger;
 
 namespace ZeroTrustMigrationAddin.ViewModels
@@ -16,6 +18,13 @@ namespace ZeroTrustMigrationAddin.ViewModels
     /// </summary>
     public class EnrollmentConfidenceViewModel : ViewModelBase
     {
+        #region Private Fields
+
+        private EnrollmentConfidenceResult? _currentResult;
+        private GraphDataService? _graphDataService;
+
+        #endregion
+
         #region Observable Properties
 
         private int _score;
@@ -116,6 +125,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         public ICommand ToggleBreakdownCommand { get; }
         public ICommand ViewDetailsCommand { get; }
+        public ICommand GetRecommendationsCommand { get; }
 
         #endregion
 
@@ -123,6 +133,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         {
             ToggleBreakdownCommand = new RelayCommand(() => ShowBreakdown = !ShowBreakdown);
             ViewDetailsCommand = new RelayCommand(() => ViewDetails());
+            GetRecommendationsCommand = new RelayCommand(async () => await GetRecommendationsAsync());
         }
 
         /// <summary>
@@ -132,12 +143,14 @@ namespace ZeroTrustMigrationAddin.ViewModels
         {
             try
             {
+                _graphDataService = graphDataService;
                 Instance.Info("[CONFIDENCE VM] Refreshing with real data...");
                 var analyticsService = new EnrollmentAnalyticsService(graphDataService);
                 var result = await analyticsService.ComputeAsync();
                 
                 if (result?.Confidence != null)
                 {
+                    _currentResult = result.Confidence;
                     UpdateFromResult(result.Confidence);
                     Instance.Info($"[CONFIDENCE VM] Refreshed with real data: Score={result.Confidence.Score}");
                 }
@@ -207,7 +220,41 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         private void ViewDetails()
         {
-            Instance.Info("[CONFIDENCE VM] View details clicked");
+            Instance.Info("[CONFIDENCE VM] View details clicked - opening breakdown window");
+            try
+            {
+                var detailsWindow = new ConfidenceDetailsWindow(_currentResult);
+                detailsWindow.Owner = Application.Current.MainWindow;
+                detailsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CONFIDENCE VM] Failed to open details window: {ex.Message}");
+                MessageBox.Show($"Unable to open details view: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async Task GetRecommendationsAsync()
+        {
+            Instance.Info("[CONFIDENCE VM] Get recommendations clicked");
+            try
+            {
+                if (_graphDataService == null)
+                {
+                    MessageBox.Show("Please connect to Graph API first to get personalized recommendations.", 
+                        "Connection Required", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var recommendationsWindow = new RecommendationsWindow(_currentResult, _graphDataService);
+                recommendationsWindow.Owner = Application.Current.MainWindow;
+                recommendationsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CONFIDENCE VM] Failed to get recommendations: {ex.Message}");
+                MessageBox.Show($"Unable to get recommendations: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 

@@ -251,7 +251,7 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <Button Content="💡 Get Recommendations" 
+                <Button Content="💡 Get Recommendations" Command="{Binding GetRecommendationsCommand}"
                         Background="#0078D4" Foreground="White" 
                         Padding="12,6" FontSize="12" BorderThickness="0" Cursor="Hand">
                     <Button.Template>
