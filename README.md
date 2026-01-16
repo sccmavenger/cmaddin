@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.16.27** | January 16, 2026
+**Version 3.16.28** | January 16, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -91,68 +91,72 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ## 🆕 What's New
 
 
+
+### Version 3.16.27 (January 16, 2026)
+
+### Added
+- Automated README "What's New" section generation from CHANGELOG (last 5 versions with content)
+- Build script now auto-updates README version header AND What's New section
+
+### Changed
+- README What's New section now auto-generated from CHANGELOG.md during builds
+
+### Fixed
+- README version pattern matching for bold markdown format
+
+---
+
 ### Version 3.16.26 (January 16, 2026)
 
 ### Added
-- 
+- MSI installer support (WiX v6 toolset)
 
 ### Changed
-- 
+- Build script README update pattern now handles bold markdown and dates
 
 ### Fixed
--
+- README version not updating (was stuck at 3.16.3)
 
 ---
 
 ### Version 3.16.25 (January 16, 2026)
 
 ### Added
-- 
+- AdminUserGuide.html comprehensive documentation overhaul
 
 ### Changed
-- 
+- Autonomous Enrollment Agent section marked as "NOT YET FUNCTIONAL" with prominent warning
 
 ### Fixed
--
+- Device health score thresholds documented correctly (≥85/60-84/40-59/<40)
 
 ---
 
 ### Version 3.16.24 (January 16, 2026)
 
 ### Added
-- 
+- Dashboard Tabs section documenting all tabs and visibility options
+- Device Identity States documentation (Hybrid Entra, Entra-joined, AD-only, Workgroup)
+- Device Readiness & Health Scoring algorithm documentation
+- Enrollment Momentum section documentation
+- Autonomous Enrollment Agent section (placeholder for future feature)
 
 ### Changed
-- 
-
-### Fixed
--
+- Updated Graph API permissions table with actual required permissions
+- Updated FAQ with new questions about health tiers, blocked devices, agent safety
 
 ---
 
 ### Version 3.16.23 (January 16, 2026)
 
-### Added
-- 
-
 ### Changed
-- 
+- "INTUNE DEVICES" label changed to "CO-MANAGED DEVICES" in Enrollment Momentum
+- Hidden Enrollment Playbooks section (not functional)
+- Removed "📈 Enrollment Momentum & Analytics" title for cleaner UI
 
 ### Fixed
--
-
----
-
-### Version 3.16.22 (January 16, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
+- HighRiskDeviceCount now uses actual PoorReadinessCount instead of 10% estimate
+- Analytics views (Enrollment Confidence, Playbooks) now refresh after Graph authentication
 
 ---
 

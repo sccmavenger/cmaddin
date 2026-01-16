@@ -214,7 +214,8 @@ function Get-LastNVersionsFromChangelog {
         $body = $match.Groups[3].Value.Trim()
         
         # Skip empty entries (just "### Added/Changed/Fixed" with no real content)
-        $hasRealContent = $body -match '###\s+(Added|Changed|Fixed)\s*\n+\s*-\s+[^\s\n-]'
+        # Match entries that have actual text after the dash, not just whitespace or newlines
+        $hasRealContent = $body -match '###\s+(Added|Changed|Fixed)\s*\n+-\s+\S+\s*\S'
         
         if ($hasRealContent) {
             $versions += @{
