@@ -194,33 +194,50 @@
             <TabControl Margin="10" Background="Transparent" BorderThickness="0">
                 <TabControl.Resources>
                     <Style TargetType="TabItem">
-                        <Setter Property="Padding" Value="20,10"/>
+                        <Setter Property="Padding" Value="20,12"/>
                         <Setter Property="FontSize" Value="14"/>
-                        <Setter Property="FontWeight" Value="SemiBold"/>
-                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="FontWeight" Value="Normal"/>
+                        <Setter Property="Background" Value="#F0F0F0"/>
+                        <Setter Property="Foreground" Value="#666666"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="TabItem">
                                     <Border Name="Border" 
                                             Background="{TemplateBinding Background}"
-                                            BorderBrush="#0078D4"
+                                            BorderBrush="Transparent"
                                             BorderThickness="0,0,0,3"
+                                            CornerRadius="6,6,0,0"
                                             Padding="{TemplateBinding Padding}"
-                                            Margin="5,0">
+                                            Margin="3,0">
                                         <ContentPresenter ContentSource="Header"
                                                           HorizontalAlignment="Center"
                                                           VerticalAlignment="Center"/>
                                     </Border>
                                     <ControlTemplate.Triggers>
+                                        <!-- SELECTED STATE - Very prominent -->
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#F0F8FF"/>
+                                            <Setter TargetName="Border" Property="Background" Value="White"/>
                                             <Setter TargetName="Border" Property="BorderBrush" Value="#0078D4"/>
+                                            <Setter TargetName="Border" Property="BorderThickness" Value="0,0,0,4"/>
                                             <Setter Property="Foreground" Value="#0078D4"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
                                         </Trigger>
+                                        <!-- HOVER STATE - Subtle highlight -->
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#F9F9F9"/>
+                                            <Setter TargetName="Border" Property="Background" Value="#E8E8E8"/>
+                                            <Setter Property="Foreground" Value="#444444"/>
                                         </Trigger>
+                                        <!-- Combined: Selected + Hover -->
+                                        <MultiTrigger>
+                                            <MultiTrigger.Conditions>
+                                                <Condition Property="IsSelected" Value="True"/>
+                                                <Condition Property="IsMouseOver" Value="True"/>
+                                            </MultiTrigger.Conditions>
+                                            <Setter TargetName="Border" Property="Background" Value="#F0F8FF"/>
+                                            <Setter Property="Foreground" Value="#0078D4"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                        </MultiTrigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </Setter.Value>
@@ -296,6 +313,7 @@
                                     </Border>
                                 </StackPanel>
                                 
+                                <!-- Metric Cards with Color-Coded Trend Indicators -->
                                 <Grid Margin="0,0,0,20">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -304,35 +322,83 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="Total Windows 10/11" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock Text="{Binding DeviceEnrollment.TotalDevices}" 
-                                                   Style="{StaticResource MetricValue}" FontSize="20"/>
-                                    </StackPanel>
+                                    <!-- Total Devices - No trend line (it's the sum) -->
+                                    <Border Grid.Column="0" Background="#F8F8F8" CornerRadius="6" Padding="12" Margin="0,0,5,0">
+                                        <StackPanel>
+                                            <TextBlock Text="Total Windows 10/11" Style="{StaticResource MetricLabel}"/>
+                                            <TextBlock Text="{Binding DeviceEnrollment.TotalDevices}" 
+                                                       Style="{StaticResource MetricValue}" FontSize="22"/>
+                                        </StackPanel>
+                                    </Border>
 
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Comanaged" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock Text="{Binding DeviceEnrollment.IntuneEnrolledDevices}" 
-                                                   Style="{StaticResource MetricValue}" FontSize="20" Foreground="#107C10"/>
-                                    </StackPanel>
+                                    <!-- Comanaged - GREEN line in chart -->
+                                    <Border Grid.Column="1" Background="#F0FFF0" CornerRadius="6" Padding="12" Margin="5,0,5,0"
+                                            BorderBrush="#107C10" BorderThickness="0,0,0,4">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="10" Height="10" Fill="#107C10" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="Comanaged" Style="{StaticResource MetricLabel}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding DeviceEnrollment.IntuneEnrolledDevices}" 
+                                                       Style="{StaticResource MetricValue}" FontSize="22" Foreground="#107C10"/>
+                                            <TextBlock Text="📈 Tracked in chart" FontSize="9" Foreground="#107C10" FontStyle="Italic"/>
+                                        </StackPanel>
+                                    </Border>
 
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Cloud Native" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock Text="{Binding DeviceEnrollment.CloudNativeDevices}" 
-                                                   Style="{StaticResource MetricValue}" FontSize="20" Foreground="#0078D4"
-                                                   ToolTip="Entra joined + Intune managed, no ConfigMgr record"/>
-                                    </StackPanel>
+                                    <!-- Cloud Native - BLUE (informational, not in trend) -->
+                                    <Border Grid.Column="2" Background="#F0F8FF" CornerRadius="6" Padding="12" Margin="5,0,5,0"
+                                            BorderBrush="#0078D4" BorderThickness="0,0,0,4">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="10" Height="10" Fill="#0078D4" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="Cloud Native" Style="{StaticResource MetricLabel}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding DeviceEnrollment.CloudNativeDevices}" 
+                                                       Style="{StaticResource MetricValue}" FontSize="22" Foreground="#0078D4"
+                                                       ToolTip="Entra joined + Intune managed, no ConfigMgr record"/>
+                                            <TextBlock Text="☁️ Intune only" FontSize="9" Foreground="#0078D4" FontStyle="Italic"/>
+                                        </StackPanel>
+                                    </Border>
 
-                                    <StackPanel Grid.Column="3">
-                                        <TextBlock Text="ConfigMgr Only" Style="{StaticResource MetricLabel}"/>
-                                        <TextBlock Text="{Binding DeviceEnrollment.ConfigMgrOnlyDevices}" 
-                                                   Style="{StaticResource MetricValue}" FontSize="20" Foreground="#D13438"/>
-                                    </StackPanel>
+                                    <!-- ConfigMgr Only - RED/ORANGE line in chart -->
+                                    <Border Grid.Column="3" Background="#FFF5F5" CornerRadius="6" Padding="12" Margin="5,0,0,0"
+                                            BorderBrush="#D13438" BorderThickness="0,0,0,4">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Rectangle Width="10" Height="10" Fill="#D13438" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="ConfigMgr Only" Style="{StaticResource MetricLabel}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding DeviceEnrollment.ConfigMgrOnlyDevices}" 
+                                                       Style="{StaticResource MetricValue}" FontSize="22" Foreground="#D13438"/>
+                                            <TextBlock Text="📉 Tracked in chart" FontSize="9" Foreground="#D13438" FontStyle="Italic"/>
+                                        </StackPanel>
+                                    </Border>
                                 </Grid>
 
-                                <TextBlock Text="Enrollment Trend (6 Months)" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                <!-- Chart with Legend -->
+                                <TextBlock Text="Enrollment Trend (6 Months)" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Border Background="#107C10" CornerRadius="3" Padding="8,3" Margin="0,0,10,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Comanaged (Growing ↑)" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#0078D4" CornerRadius="3" Padding="8,3" Margin="0,0,10,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Polygon Points="4,0 8,8 0,8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Cloud Native (Growing ↑)" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#D13438" CornerRadius="3" Padding="8,3">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Rectangle Width="8" Height="8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="ConfigMgr Only (Shrinking ↓)" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
                                 <lvc:CartesianChart Height="250" Series="{Binding EnrollmentTrendSeries, Mode=OneWay}" 
-                                                    LegendLocation="Bottom">
+                                                    LegendLocation="None">
                                     <lvc:CartesianChart.AxisX>
                                         <lvc:Axis Labels="{Binding EnrollmentTrendLabels, Mode=OneWay}"/>
                                     </lvc:CartesianChart.AxisX>
@@ -1362,29 +1428,68 @@
                                         <DataTemplate>
                                             <Button Command="{Binding DataContext.LearnMoreCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding Url}"
-                                                    Style="{StaticResource ActionButton}"
                                                     Background="White"
-                                                    BorderBrush="#0078D4"
+                                                    BorderBrush="#E0E0E0"
                                                     BorderThickness="1"
                                                     HorizontalContentAlignment="Stretch"
                                                     Margin="0,0,0,10"
-                                                    Padding="15,12">
+                                                    Padding="12,10"
+                                                    Cursor="Hand">
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border x:Name="border" 
+                                                                            Background="{TemplateBinding Background}"
+                                                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                                                            CornerRadius="6"
+                                                                            Padding="{TemplateBinding Padding}">
+                                                                        <ContentPresenter HorizontalAlignment="Stretch"/>
+                                                                    </Border>
+                                                                    <ControlTemplate.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter TargetName="border" Property="Background" Value="#F0F7FF"/>
+                                                                            <Setter TargetName="border" Property="BorderBrush" Value="#0078D4"/>
+                                                                        </Trigger>
+                                                                    </ControlTemplate.Triggers>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </Button.Style>
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="50"/>
                                                         <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Grid.Column="0" Text="{Binding IconPath}" 
-                                                               FontSize="24" VerticalAlignment="Center" 
-                                                               Margin="0,0,15,0"/>
-                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    
+                                                    <!-- Icon Circle -->
+                                                    <Border Grid.Column="0" Width="40" Height="40" 
+                                                            Background="#F0F7FF" CornerRadius="20"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding IconPath}" 
+                                                                   FontSize="20" 
+                                                                   HorizontalAlignment="Center" 
+                                                                   VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    
+                                                    <!-- Title and Description -->
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="5,0,0,0">
                                                         <TextBlock Text="{Binding Title}" 
                                                                    FontWeight="SemiBold" FontSize="13" 
-                                                                   Foreground="#0078D4"/>
+                                                                   Foreground="#323130"/>
                                                         <TextBlock Text="{Binding Description}" 
                                                                    FontSize="11" Foreground="#666666" 
                                                                    TextWrapping="Wrap" Margin="0,3,0,0"/>
                                                     </StackPanel>
+                                                    
+                                                    <!-- Arrow indicator -->
+                                                    <TextBlock Grid.Column="2" Text="→" 
+                                                               FontSize="16" Foreground="#0078D4"
+                                                               VerticalAlignment="Center" Margin="10,0,5,0"/>
                                                 </Grid>
                                             </Button>
                                         </DataTemplate>

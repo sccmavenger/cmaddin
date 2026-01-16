@@ -46,6 +46,7 @@ namespace ZeroTrustMigrationAddin.Models
     {
         public DateTime Month { get; set; }
         public int IntuneDevices { get; set; }
+        public int CloudNativeDevices { get; set; }
         public int ConfigMgrDevices { get; set; }
     }
 

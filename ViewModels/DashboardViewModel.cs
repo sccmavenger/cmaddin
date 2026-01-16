@@ -312,6 +312,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
             IsConfigMgrConnected &&
             _aiRecommendationService != null;
 
+        /// <summary>
+        /// Exposes the GraphDataService for device queries
+        /// </summary>
+        public GraphDataService GraphDataService => _graphDataService;
+
         public MigrationStatus? MigrationStatus
         {
             get => _migrationStatus;
@@ -1731,17 +1736,33 @@ namespace ZeroTrustMigrationAddin.ViewModels
             {
                 new LineSeries
                 {
-                    Title = "Intune Enrolled",
+                    Title = "Comanaged",
                     Values = new ChartValues<int>(),
                     PointGeometry = DefaultGeometries.Circle,
-                    PointGeometrySize = 8
+                    PointGeometrySize = 10,
+                    Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x10, 0x7C, 0x10)), // Green #107C10
+                    Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0x10, 0x7C, 0x10)), // Transparent green
+                    StrokeThickness = 3
+                },
+                new LineSeries
+                {
+                    Title = "Cloud Native",
+                    Values = new ChartValues<int>(),
+                    PointGeometry = DefaultGeometries.Diamond,
+                    PointGeometrySize = 10,
+                    Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0x78, 0xD4)), // Blue #0078D4
+                    Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0x00, 0x78, 0xD4)), // Transparent blue
+                    StrokeThickness = 3
                 },
                 new LineSeries
                 {
                     Title = "ConfigMgr Only",
                     Values = new ChartValues<int>(),
                     PointGeometry = DefaultGeometries.Square,
-                    PointGeometrySize = 8
+                    PointGeometrySize = 10,
+                    Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xD1, 0x34, 0x38)), // Red #D13438
+                    Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xD1, 0x34, 0x38)), // Transparent red
+                    StrokeThickness = 3
                 }
             };
             OnPropertyChanged(nameof(EnrollmentTrendSeries));
@@ -2217,18 +2238,21 @@ namespace ZeroTrustMigrationAddin.ViewModels
             if (DeviceEnrollment?.TrendData != null)
             {
                 var intuneValues = new ChartValues<int>();
+                var cloudNativeValues = new ChartValues<int>();
                 var configMgrValues = new ChartValues<int>();
                 var labels = new List<string>();
 
                 foreach (var trend in DeviceEnrollment.TrendData)
                 {
                     intuneValues.Add(trend.IntuneDevices);
+                    cloudNativeValues.Add(trend.CloudNativeDevices);
                     configMgrValues.Add(trend.ConfigMgrDevices);
                     labels.Add(trend.Month.ToString("MMM yyyy"));
                 }
 
                 EnrollmentTrendSeries[0].Values = intuneValues;
-                EnrollmentTrendSeries[1].Values = configMgrValues;
+                EnrollmentTrendSeries[1].Values = cloudNativeValues;
+                EnrollmentTrendSeries[2].Values = configMgrValues;
                 EnrollmentTrendLabels = labels.ToArray();
                 
                 OnPropertyChanged(nameof(EnrollmentTrendSeries));
@@ -2251,18 +2275,21 @@ namespace ZeroTrustMigrationAddin.ViewModels
             if (DeviceEnrollment?.TrendData != null)
             {
                 var intuneValues = new ChartValues<int>();
+                var cloudNativeValues = new ChartValues<int>();
                 var configMgrValues = new ChartValues<int>();
                 var labels = new List<string>();
 
                 foreach (var trend in DeviceEnrollment.TrendData)
                 {
                     intuneValues.Add(trend.IntuneDevices);
+                    cloudNativeValues.Add(trend.CloudNativeDevices);
                     configMgrValues.Add(trend.ConfigMgrDevices);
                     labels.Add(trend.Month.ToString("MMM yyyy"));
                 }
 
                 EnrollmentTrendSeries[0].Values = intuneValues;
-                EnrollmentTrendSeries[1].Values = configMgrValues;
+                EnrollmentTrendSeries[1].Values = cloudNativeValues;
+                EnrollmentTrendSeries[2].Values = configMgrValues;
                 EnrollmentTrendLabels = labels.ToArray();
                 
                 OnPropertyChanged(nameof(EnrollmentTrendSeries));

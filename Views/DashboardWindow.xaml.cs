@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using ZeroTrustMigrationAddin.ViewModels;
 using ZeroTrustMigrationAddin.Services;
 using ZeroTrustMigrationAddin.Models;
+using Microsoft.Graph.Models;
 
 namespace ZeroTrustMigrationAddin.Views
 {
@@ -444,9 +445,18 @@ namespace ZeroTrustMigrationAddin.Views
                         return;
                     }
 
-                    // Get devices for this join type
-                    var graphService = new GraphDataService();
-                    var devices = await graphService.GetDevicesByJoinType(joinType);
+                    List<ManagedDevice> devices;
+                    
+                    // Use ViewModel's authenticated GraphDataService if available
+                    if (viewModel.GraphDataService.IsAuthenticated)
+                    {
+                        devices = await viewModel.GraphDataService.GetDevicesByJoinType(joinType);
+                    }
+                    else
+                    {
+                        // Generate mock data for demonstration
+                        devices = GenerateMockDevices(joinType, viewModel.DeviceEnrollment);
+                    }
 
                     if (devices == null || devices.Count == 0)
                     {
@@ -503,6 +513,54 @@ namespace ZeroTrustMigrationAddin.Views
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 System.Diagnostics.Debug.WriteLine($"SetupGuide_Click error: {ex}");
             }
+        }
+
+        /// <summary>
+        /// Generate mock device data for demonstration when not connected to Graph API
+        /// </summary>
+        private List<ManagedDevice> GenerateMockDevices(DeviceJoinType joinType, DeviceEnrollment? enrollment)
+        {
+            var devices = new List<ManagedDevice>();
+            var random = new Random();
+            
+            // Determine how many devices to generate based on enrollment data
+            int count = joinType switch
+            {
+                DeviceJoinType.HybridAzureADJoined => enrollment?.HybridJoinedDevices ?? 78000,
+                DeviceJoinType.AzureADOnly => enrollment?.AzureADOnlyDevices ?? 22000,
+                DeviceJoinType.OnPremDomainOnly => enrollment?.OnPremDomainOnlyDevices ?? 12000,
+                DeviceJoinType.WorkgroupOnly => enrollment?.WorkgroupDevices ?? 3000,
+                _ => 100
+            };
+
+            // Limit to 50 sample devices for display
+            int displayCount = Math.Min(50, count);
+            
+            string[] osVersions = { "Windows 10 Enterprise 22H2", "Windows 11 Enterprise 23H2", "Windows 11 Pro 23H2" };
+            string[] prefixes = joinType switch
+            {
+                DeviceJoinType.HybridAzureADJoined => new[] { "WKS", "DESKTOP", "PC", "LAPTOP" },
+                DeviceJoinType.AzureADOnly => new[] { "CLOUD", "AAD", "ENTRA", "MODERN" },
+                DeviceJoinType.OnPremDomainOnly => new[] { "DOMAIN", "CORP", "AD", "LEGACY" },
+                DeviceJoinType.WorkgroupOnly => new[] { "WKGRP", "LOCAL", "HOME", "TEST" },
+                _ => new[] { "DEVICE" }
+            };
+
+            for (int i = 0; i < displayCount; i++)
+            {
+                var prefix = prefixes[random.Next(prefixes.Length)];
+                var suffix = random.Next(10000, 99999);
+                
+                devices.Add(new ManagedDevice
+                {
+                    DeviceName = $"{prefix}-{suffix}",
+                    OperatingSystem = osVersions[random.Next(osVersions.Length)],
+                    LastSyncDateTime = DateTimeOffset.Now.AddDays(-random.Next(0, 30)),
+                    ComplianceState = random.Next(10) < 9 ? ComplianceState.Compliant : ComplianceState.Noncompliant
+                });
+            }
+
+            return devices;
         }
     }
 }
