@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.16.26** | January 16, 2026
+**Version 3.16.27** | January 16, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -90,251 +90,74 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ## 🆕 What's New
 
-### Version 3.16.3 (January 14, 2026) - Auto-Update UAC Elevation Fix
 
-#### 🔒 Critical Auto-Update Fix
+### Version 3.16.26 (January 16, 2026)
 
-**Resolved "Access is Denied" Errors During Updates**
-- **Issue Fixed:** Auto-updates failing to apply files in Program Files due to permissions
-- **Solution:** Updates now request UAC elevation via standard Windows security prompt
-- **User Experience:** Click "Yes" on UAC prompt to allow file updates (same as Chrome, VS Code)
-- **Technical:** PowerShell update script launched with `Verb = "runas"` for administrator elevation
-- **Security:** Standard Windows UAC model - only applies updates when user explicitly authorizes
-- **Compatibility:** Works on all supported Windows versions (Windows 10/11, Server 2016+)
+### Added
+- 
 
-**What Changed:**
-- ✅ UAC prompt appears after download completes
-- ✅ User clicks "Yes" to authorize file updates
-- ✅ PowerShell script successfully writes to Program Files
-- ✅ Application restarts with new version
-- ✅ Update logs confirm successful file operations (no more "Access is denied")
+### Changed
+- 
 
-**Why This Matters:**
-- Previous versions (v3.16.0-v3.16.1) downloaded updates but silently failed to apply them
-- Users remained on old versions despite "successful" updates
-- v3.16.3 ensures updates complete successfully with proper elevation
-
-#### 📊 Enhanced Data Export
-
-**CSV Export for All Data Tables**
-- Export device lists, workload status, application inventory to Excel-compatible CSV
-- One-click export buttons on every data grid
-- Preserves column formatting and data types
-- Files saved to Documents folder with timestamp
-- **Use Cases:**
-  - Share device readiness scores with management
-  - Analyze workload migration trends in Excel
-  - Create custom reports from exported data
-  - Archive snapshots of migration progress
-
-#### ☁️ Microsoft Entra ID Terminology
-
-**Updated Throughout Application**
-- "Azure Active Directory" → "Microsoft Entra ID"
-- "Azure AD" → "Entra ID"
-- "AAD" → "Entra"
-- Aligns with Microsoft's official rebranding (October 2023)
-- Consistent with Intune admin center terminology
-- Updated in UI labels, tooltips, documentation, and logs
-
-#### 🔗 Device Drill-Through Framework (In Development)
-
-**Foundation for Interactive Dashboard**
-- Framework added to make dashboard counts clickable
-- **Planned:** Click "42 Entra Joined devices" to see filtered device list
-- **Planned:** Click workload counts to see devices by migration status
-- **Status:** Backend infrastructure complete, UI integration in progress
-- **Target:** v3.17.0 for full drill-through functionality
+### Fixed
+-
 
 ---
 
-### Version 3.16.0 (January 13, 2026) - Automatic Updates
+### Version 3.16.25 (January 16, 2026)
 
-#### 🚀 Zero-Touch Automatic Updates
+### Added
+- 
 
-**Effortless Updates - Minimal User Interaction**
-- **Automatic Update Check:** Application checks for updates on every launch
-- **One-Click Authorization:** UAC prompt for secure file updates (v3.16.3+)
-- **Delta Updates:** Only changed files are downloaded (80-90% bandwidth savings)
-- **Intelligent Updates:** SHA256 hash comparison ensures only necessary files are updated
-- **Seamless Restart:** Application closes, applies updates, and restarts automatically
-- **GitHub Releases Integration:** Updates hosted on GitHub Releases for reliability
+### Changed
+- 
 
-**What This Means for You:**
-- ✅ Always running the latest version with bug fixes and features
-- ✅ No more manual downloads from Dropbox or file shares
-- ✅ Fast updates: ~10-20 MB downloads instead of 87 MB full packages
-- ✅ UAC elevation ensures secure updates (same as Chrome, VS Code)
-- ✅ No interruption to your workflow - update happens at launch
-
-**Technical Details:**
-- Update check completes in 2-4 seconds
-- Delta downloads save 80-90% bandwidth (15 MB vs 87 MB typical)
-- UAC prompt appears for administrator elevation (v3.16.3+)
-- Total update time: ~30-60 seconds including UAC authorization
-- Uses manifest.json with SHA256 hashes for file integrity
-- PowerShell-based updater with elevation ensures safe file replacement
-- Backup created before update: `%TEMP%\ZeroTrustMigrationAddin-Backup\`
-
-**For Administrators:**
-- Updates distributed via GitHub Releases (free, reliable hosting)
-- No changes to firewall rules (uses standard HTTPS)
-- UAC elevation required for Program Files installations
-- Update logs available in `%LocalAppData%\ZeroTrustMigrationAddin\Logs`
-- PowerShell script log: `%TEMP%\ZeroTrustMigrationAddin-Update.log`
-- Can review update history in GitHub release notes
-- Update manifest: `%LocalAppData%\ZeroTrustMigrationAddin\manifest.json`
-- Private repository support via GitHub Personal Access Token
+### Fixed
+-
 
 ---
 
-### Version 3.13.4 (January 10, 2026) - Critical Enrollment & AI Diagnostics Fixes
+### Version 3.16.24 (January 16, 2026)
 
-#### 🐛 Critical Bug Fixes
+### Added
+- 
 
-**Fixed Enrollment Percentage Calculation (Was Showing 4200%)**
-- **Issue:** Enrollment Progress showed incorrect percentages like 4200% (e.g., "84 of 2 devices")
-- **Root Cause:** Code was using ConfigMgr's limited device query (only Windows 10/11 workstations) as TotalDevices, while Intune had the complete Windows device inventory
-- **Solution:** Now intelligently selects the LARGER count between ConfigMgr and Intune as the true total
-  - Prioritizes Intune's complete Windows device inventory when available
-  - Uses detailed logging to show which data source is being used (ConfigMgr vs Intune)
-  - Correctly calculates enrollment percentage as (enrolled devices / total eligible devices)
-- **Impact:** Enrollment Progress now shows accurate percentages (e.g., 100% instead of 4200%)
+### Changed
+- 
 
-**Fixed AI Diagnostics Status Display**
-- **Issue:** AI diagnostics continued showing "⚠️ BASIC (AI not configured)" even after successfully configuring Azure OpenAI
-- **Root Cause:** Diagnostics display wasn't refreshing after saving configuration
-- **Solution:** Added immediate property refresh after Azure OpenAI configuration
-  - Diagnostics now update in real-time when AI is configured
-  - Shows "✅ AI-POWERED (GPT-4)" immediately after successful configuration
-  - Added logging to track AI service initialization status
-- **Impact:** Users now get immediate visual confirmation that AI features are active
+### Fixed
+-
 
-#### 📊 Improved Device Count Accuracy
+---
 
-**Intelligent Dual-Source Logic**
-- ConfigMgr queries may be limited to specific OS versions (Windows 10/11)
-- Intune provides complete picture of all Windows devices in the organization
-- Dashboard now uses the most accurate count from available sources
-- Logs which source is used for transparency and troubleshooting
+### Version 3.16.23 (January 16, 2026)
 
-**What You'll See:**
-```
-✅ Using Intune as source: 84 total Windows devices
-   ConfigMgr devices: 2, Co-managed: 2, Pure Intune: 82
-```
+### Added
+- 
 
-Or:
-```
-✅ Using ConfigMgr as source: 1234 total devices
-   ConfigMgr devices: 1234, Co-managed: 456, Pure Intune: 0
-```
+### Changed
+- 
 
-### Version 3.13.0 (January 9, 2026) - Enhanced Azure OpenAI Diagnostics
+### Fixed
+-
 
-#### 🔍 Comprehensive Test Connection Diagnostics
-- Pre-validation of all fields before testing (endpoint, deployment, API key)
-- Detailed error messages with specific troubleshooting steps
-- HTTP status code interpretation (401, 404, 429, 500+)
-- Network and DNS error detection
-- SSL/Certificate error guidance
-- Response time and token usage display on success
+---
 
-### Version 3.12.0 (January 8, 2026) - Real Enrollment Acceleration Insights
+### Version 3.16.22 (January 16, 2026)
 
-#### 📈 Live Data Integration
-- Real enrollment velocity calculations based on device enrollment dates
-- Peer benchmarks based on actual organization size
-- Intelligent alerts based on real conditions (stalls, blockers, velocity trends)
-- 7-day rolling velocity calculations
+### Added
+- 
 
-### Version 2.5.0 (December 21, 2025) - ConfigMgr Admin Service Integration
+### Changed
+- 
 
-#### Dual-Source Data Integration
-**Connect to BOTH ConfigMgr Admin Service AND Microsoft Graph for complete visibility.**
+### Fixed
+-
 
-**What This Changes:**
-- **✅ Complete Device Inventory** - See ALL Windows 10/11 devices from ConfigMgr (not just enrolled ones)
-- **✅ True Migration Gap** - Accurate count of devices still needing Intune enrollment
-- **✅ Real Co-Management Data** - Actual co-managed device counts and workload status
-- **✅ Better AI Recommendations** - AI gets full context for smarter migration guidance
-- **✅ Accurate Progress Tracking** - True completion % based on total eligible devices
+---
 
-**New UI Features:**
-- **🖥️ ConfigMgr Button** - One-click connection to ConfigMgr Admin Service
-- **Auto-Detection** - Automatically finds ConfigMgr console installation and site server
-- **Dual Status Indicators** - See connection status for both Graph API and ConfigMgr
-- **Enhanced Diagnostics** - Shows data source for each metric (ConfigMgr, Intune, or Both)
+> 📋 **[View Complete Changelog](#-changelog-highlights)** for all version history
 
-**How It Works:**
-1. Connect to Microsoft Graph (Intune data) - Click "🔗 Graph" button
-2. Connect to ConfigMgr (Complete inventory) - Click "🖥️ ConfigMgr" button
-3. Dashboard Updates Automatically - Shows data from both sources
-
-**ConfigMgr Requirements:**
-- ConfigMgr Admin Service enabled (CB 1810+)
-- Full Administrator or Read-only Analyst role
-- Network access to site server (HTTPS port 443)
-- Optional: WMI fallback if Admin Service unavailable
-
-**Benefits:**
-- **Before (Graph only):** See 456 Intune-enrolled devices → "Great progress!"
-- **After (ConfigMgr + Graph):** See 1,234 total devices, 456 enrolled → "778 devices still need migration"
-
-#### Tab Reorganization for Better Workflow
-**Moved sections to appropriate tabs based on admin workflow.**
-
-**Overview Tab → Workloads Tab:**
-- 📊 Workload Velocity Tracking - Monitor workload transition speed
-- 📋 Workload Status - Individual workload migration status with actions
-
-**Overview Tab → Executive Tab:**
-- 📊 Overall Migration Status - High-level completion metrics
-- 📈 Peer Benchmarking - Compare against similar organizations
-- 💰 ROI & Savings Projection - Financial impact estimates
-- 🎯 Recent Milestones - Achievement tracking
-
-**Why This Matters:**
-- **Overview** remains focused on operational metrics and daily actions
-- **Workloads** tab becomes the workload transition command center
-- **Executive** tab provides business-focused KPIs for leadership
-
-### Version 2.4.2 (December 22, 2025) - Bug Fixes
-- 🐛 Fixed GPT-4 JSON response parsing (markdown code block stripping)
-
-### Version 2.4.0 (December 20, 2025) - Smart Enrollment Management
-- 🔄 Merged Device Readiness + Enrollment Agent into unified section
-- 📊 Progressive disclosure UI (readiness → automation → execution)
-- 🎯 Cross-reference between ready devices and agent configuration
-
-### Version 2.0.0 (December 19, 2025) - Enrollment Agent (AI-Powered Automation)
-- 🤖 **Autonomous Enrollment Agent** - AI agent plans and executes device enrollments
-- 🎯 **Device Readiness Scoring** - Intelligent 0-100 scoring system
-- 📅 **Automated Planning** - GPT-4 generates enrollment plans with specific weekly targets
-- 🚦 **Safety Controls** - Emergency stop, rollback capability, failure thresholds
-- 📊 **Real-Time Progress** - Live monitoring of agent execution
-- 🔄 **Agent Reasoning Panel** - Shows AI decision-making process
-
-### Version 1.7.0 (December 18, 2025) - Tabbed UI & Enrollment Momentum
-- 🎨 **5 Specialized Tabs** - Overview, Enrollment, Workloads, Applications, Executive
-- 📱 **Enrollment Momentum** - GPT-4 velocity analysis and batch recommendations
-- 🚀 **Velocity Analysis** - Compare current vs. recommended enrollment pace
-- 🎯 **Optimal Batch Sizing** - AI calculates ideal batch sizes (25-100 devices)
-- ⚠️ **Infrastructure Checks** - Identifies CMG/bandwidth bottlenecks
-
-### Version 1.6.0 (December, 2025) - App Migration Intelligence
-- 📱 **Application Inventory Analysis** - Analyze ConfigMgr apps for migration
-- 🎯 **Complexity Scoring** - Scores each app 0-100 based on deployment complexity
-- 🛤️ **Migration Path Recommendations** - Suggests optimal migration strategy
-- ⏱️ **Effort Estimation** - Realistic time estimates (hours to weeks)
-- 🔄 **WQL to Azure AD Translation** - Convert ConfigMgr queries to Dynamic Groups
-
-### Version 1.5.0 (December, 2025) - AI-Powered Migration Intelligence
-- 🗓️ **Phased Migration Planner** - Autopatch-style timeline with specific weekly tasks
-- 🎯 **Device Selection Intelligence** - Auto-scores devices (0-100) for enrollment readiness
-- 📊 **Workload Trend Tracking** - Historical velocity analysis with stall detection
-
-[See complete version history in Changelog section below](#-changelog-highlights)
 
 ---
 

@@ -191,6 +191,83 @@ function Get-UnreleasedChangelog {
     }
 }
 
+function Get-LastNVersionsFromChangelog {
+    <#
+    .SYNOPSIS
+        Extract the last N versions from CHANGELOG.md for README What's New section
+    #>
+    param(
+        [string]$ChangelogPath,
+        [int]$Count = 5
+    )
+    
+    $content = Get-Content $ChangelogPath -Raw
+    
+    # Match all versioned entries (not [Unreleased])
+    $versionPattern = '(?s)## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})(.*?)(?=## \[\d+\.\d+\.\d+\]|## \[Unreleased\]|$)'
+    $versionMatches = [regex]::Matches($content, $versionPattern)
+    
+    $versions = @()
+    foreach ($match in $versionMatches) {
+        $version = $match.Groups[1].Value
+        $date = $match.Groups[2].Value
+        $body = $match.Groups[3].Value.Trim()
+        
+        # Skip empty entries (just "### Added/Changed/Fixed" with no real content)
+        $hasRealContent = $body -match '###\s+(Added|Changed|Fixed)\s*\n+\s*-\s+[^\s\n-]'
+        
+        if ($hasRealContent) {
+            $versions += @{
+                Version = $version
+                Date = $date
+                Body = $body
+            }
+        }
+    }
+    
+    # Return the first N versions (most recent)
+    return $versions | Select-Object -First $Count
+}
+
+function ConvertTo-ReadmeWhatsNew {
+    <#
+    .SYNOPSIS
+        Generate README What's New markdown from changelog versions
+    #>
+    param(
+        [array]$Versions
+    )
+    
+    if ($Versions.Count -eq 0) {
+        return "No recent changes documented. See CHANGELOG.md for version history."
+    }
+    
+    $output = @()
+    
+    foreach ($v in $Versions) {
+        # Parse date to friendly format
+        try {
+            $dateObj = [datetime]::ParseExact($v.Date, 'yyyy-MM-dd', $null)
+            $friendlyDate = $dateObj.ToString('MMMM d, yyyy')
+        } catch {
+            $friendlyDate = $v.Date
+        }
+        
+        $output += "### Version $($v.Version) ($friendlyDate)"
+        $output += ""
+        $output += $v.Body
+        $output += ""
+        $output += "---"
+        $output += ""
+    }
+    
+    # Add link to full changelog
+    $output += "> 📋 **[View Complete Changelog](#-changelog-highlights)** for all version history"
+    $output += ""
+    
+    return ($output -join "`n")
+}
+
 function ConvertTo-VersionedChangelog {
     <#
     .SYNOPSIS
@@ -489,16 +566,41 @@ try {
     # 2. README.md
     Write-Host "   [2/7] README.md" -ForegroundColor White
     $readmePath = Join-Path $scriptDir "README.md"
+    $changelogPathForReadme = Join-Path $scriptDir "CHANGELOG.md"
     if (Test-Path $readmePath) {
         $readmeContent = Get-Content $readmePath -Raw
+        
         # Update bold version format: **Version X.X.X** | Date
         $todayDate = (Get-Date).ToString("MMMM d, yyyy")
         $readmeContent = $readmeContent -replace "\*\*Version \d+\.\d+\.\d+\*\* \| [A-Za-z]+ \d+, \d+", "**Version $newVersion** | $todayDate"
+        
         # Also update any plain version references
         $readmeContent = $readmeContent -replace "Version $oldVersion", "Version $newVersion"
         $readmeContent = $readmeContent -replace "v$oldVersion", "v$newVersion"
+        
+        # Update What's New section with last 5 versions from CHANGELOG
+        if (Test-Path $changelogPathForReadme) {
+            $recentVersions = Get-LastNVersionsFromChangelog -ChangelogPath $changelogPathForReadme -Count 5
+            if ($recentVersions -and $recentVersions.Count -gt 0) {
+                $whatsNewContent = ConvertTo-ReadmeWhatsNew -Versions $recentVersions
+                
+                # Replace everything between "## 🆕 What's New" and "## 📊 Dashboard Overview"
+                $whatsNewPattern = '(?s)(## 🆕 What''s New\s*\n+).*?(\n---\s*\n+## 📊 Dashboard Overview)'
+                if ($readmeContent -match $whatsNewPattern) {
+                    $replacement = "`$1`n$whatsNewContent`n`$2"
+                    $readmeContent = $readmeContent -replace $whatsNewPattern, $replacement
+                    Write-Host "      ✅ Updated (version + What's New from last 5 CHANGELOG entries)" -ForegroundColor Green
+                } else {
+                    Write-Host "      ✅ Updated (version only - What's New pattern not found)" -ForegroundColor Green
+                }
+            } else {
+                Write-Host "      ✅ Updated (version only - no CHANGELOG entries with content)" -ForegroundColor Green
+            }
+        } else {
+            Write-Host "      ✅ Updated (version only)" -ForegroundColor Green
+        }
+        
         [System.IO.File]::WriteAllText($readmePath, $readmeContent)
-        Write-Host "      ✅ Updated" -ForegroundColor Green
     } else {
         Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
     }
