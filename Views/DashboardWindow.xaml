@@ -26,6 +26,8 @@
         <converters:RecommendationPriorityConverter x:Key="RecommendationPriorityConverter"/>
         <converters:PercentageToStrokeDashConverter x:Key="PercentageToStrokeDashConverter"/>
         <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
+        <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
 
         <Style x:Key="SectionCard" TargetType="Border">
             <Setter Property="Background" Value="White"/>
@@ -377,23 +379,42 @@
 
                                 <!-- Chart with Legend -->
                                 <TextBlock Text="Enrollment Trend (6 Months)" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                <TextBlock Text="Click legend items to show/hide lines" FontSize="10" Foreground="#888" Margin="0,0,0,8"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                    <Border Background="#107C10" CornerRadius="3" Padding="8,3" Margin="0,0,10,0">
+                                    <!-- Comanaged Toggle -->
+                                    <Border CornerRadius="3" Padding="8,3" Margin="0,0,10,0" Cursor="Hand"
+                                            Background="{Binding IsComanagedSeriesVisible, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#107C10}"
+                                            Opacity="{Binding IsComanagedSeriesVisible, Converter={StaticResource BoolToOpacityConverter}}">
+                                        <Border.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleComanagedSeriesCommand}"/>
+                                        </Border.InputBindings>
                                         <StackPanel Orientation="Horizontal">
                                             <Ellipse Width="8" Height="8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Comanaged (Growing ↑)" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Comanaged" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Background="#0078D4" CornerRadius="3" Padding="8,3" Margin="0,0,10,0">
+                                    <!-- Cloud Native Toggle -->
+                                    <Border CornerRadius="3" Padding="8,3" Margin="0,0,10,0" Cursor="Hand"
+                                            Background="{Binding IsCloudNativeSeriesVisible, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#0078D4}"
+                                            Opacity="{Binding IsCloudNativeSeriesVisible, Converter={StaticResource BoolToOpacityConverter}}">
+                                        <Border.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleCloudNativeSeriesCommand}"/>
+                                        </Border.InputBindings>
                                         <StackPanel Orientation="Horizontal">
                                             <Polygon Points="4,0 8,8 0,8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Cloud Native (Growing ↑)" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Cloud Native" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Background="#D13438" CornerRadius="3" Padding="8,3">
+                                    <!-- ConfigMgr Only Toggle -->
+                                    <Border CornerRadius="3" Padding="8,3" Cursor="Hand"
+                                            Background="{Binding IsConfigMgrOnlySeriesVisible, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#D13438}"
+                                            Opacity="{Binding IsConfigMgrOnlySeriesVisible, Converter={StaticResource BoolToOpacityConverter}}">
+                                        <Border.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleConfigMgrOnlySeriesCommand}"/>
+                                        </Border.InputBindings>
                                         <StackPanel Orientation="Horizontal">
                                             <Rectangle Width="8" Height="8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="ConfigMgr Only (Shrinking ↓)" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                            <TextBlock Text="ConfigMgr Only" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>

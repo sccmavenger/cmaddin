@@ -207,6 +207,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
             SaveAgentConfigCommand = new RelayCommand(OnSaveAgentConfig);
             ViewAgentMemoryCommand = new RelayCommand(OnViewAgentMemory);
             ViewMonitoringStatsCommand = new RelayCommand(OnViewMonitoringStats);
+            
+            // Chart series toggle commands
+            ToggleComanagedSeriesCommand = new RelayCommand(() => IsComanagedSeriesVisible = !IsComanagedSeriesVisible);
+            ToggleCloudNativeSeriesCommand = new RelayCommand(() => IsCloudNativeSeriesVisible = !IsCloudNativeSeriesVisible);
+            ToggleConfigMgrOnlySeriesCommand = new RelayCommand(() => IsConfigMgrOnlySeriesVisible = !IsConfigMgrOnlySeriesVisible);
 
             InitializeCharts();
             WorkloadTrendSeries = new SeriesCollection();
@@ -816,6 +821,57 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         public SeriesCollection EnrollmentTrendSeries { get; set; } = new SeriesCollection();
         public string[] EnrollmentTrendLabels { get; set; } = Array.Empty<string>();
+        
+        // Chart series visibility toggles
+        private bool _isComanagedSeriesVisible = true;
+        private bool _isCloudNativeSeriesVisible = true;
+        private bool _isConfigMgrOnlySeriesVisible = true;
+        
+        public bool IsComanagedSeriesVisible
+        {
+            get => _isComanagedSeriesVisible;
+            set
+            {
+                if (SetProperty(ref _isComanagedSeriesVisible, value))
+                    UpdateSeriesVisibility(0, value);
+            }
+        }
+        
+        public bool IsCloudNativeSeriesVisible
+        {
+            get => _isCloudNativeSeriesVisible;
+            set
+            {
+                if (SetProperty(ref _isCloudNativeSeriesVisible, value))
+                    UpdateSeriesVisibility(1, value);
+            }
+        }
+        
+        public bool IsConfigMgrOnlySeriesVisible
+        {
+            get => _isConfigMgrOnlySeriesVisible;
+            set
+            {
+                if (SetProperty(ref _isConfigMgrOnlySeriesVisible, value))
+                    UpdateSeriesVisibility(2, value);
+            }
+        }
+        
+        private void UpdateSeriesVisibility(int seriesIndex, bool isVisible)
+        {
+            if (EnrollmentTrendSeries != null && EnrollmentTrendSeries.Count > seriesIndex)
+            {
+                var series = EnrollmentTrendSeries[seriesIndex] as LiveCharts.Wpf.LineSeries;
+                if (series != null)
+                {
+                    series.Visibility = isVisible ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
+                }
+            }
+        }
+        
+        public ICommand ToggleComanagedSeriesCommand { get; }
+        public ICommand ToggleCloudNativeSeriesCommand { get; }
+        public ICommand ToggleConfigMgrOnlySeriesCommand { get; }
         
         public SeriesCollection ComplianceComparisonSeries { get; set; } = new SeriesCollection();
         
