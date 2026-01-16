@@ -469,6 +469,13 @@ namespace ZeroTrustMigrationAddin.Views
                         Instance.Info($"[ANALYTICS] Playbooks view refreshed: {newPlaybooksVM.Playbooks?.Count ?? 0} playbooks");
                     }
                     
+                    // Refresh Migration Impact Card with real data
+                    if (MigrationImpactCard != null)
+                    {
+                        await MigrationImpactCard.RefreshAsync(graphDataService);
+                        Instance.Info("[ANALYTICS] Migration Impact card refreshed");
+                    }
+                    
                     Instance.Info("[ANALYTICS] All Enrollment Analytics views refreshed with real data");
                 }
             }
