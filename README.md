@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.16.28** | January 16, 2026
+**Version 3.16.29** | January 16, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -9,7 +9,7 @@
 ## 📋 Table of Contents
 
 ### Getting Started
-- [Quick Start (3 Steps)](#-quick-start-3-steps)
+- [Quick Start (2 Steps)](#-quick-start-2-steps)
 - [What's New](#-whats-new)
 - [Dashboard Overview](#-dashboard-overview)
 - [System Requirements](#-system-requirements)
@@ -43,47 +43,54 @@
 
 ---
 
-## 🚀 Quick Start (3 Steps)
+## 🚀 Quick Start (2 Steps)
 
 ### For ConfigMgr Administrators - Zero Setup Required!
 
-1. **Extract the files** to any folder
-2. **Right-click** `Install-ZeroTrustMigrationAddin.ps1` → **Run with PowerShell**
-3. **Launch ConfigMgr Console** and look for "Zero Trust Migration Journey Progress" in the ribbon
+1. **Download and run** the MSI installer from [GitHub Releases](https://github.com/sccmavenger/cmaddin/releases/latest)
+2. **Launch ConfigMgr Console** and look for "Zero Trust Migration Journey Progress" in the ribbon
 
-**That's it!** The installer automatically:
+**That's it!** The MSI installer automatically:
+- ✅ Installs to the correct ConfigMgr Console location
+- ✅ Registers the add-in with ConfigMgr
+- ✅ Creates Start Menu and Desktop shortcuts
+- ✅ Supports standard Add/Remove Programs uninstall
+
+> **Note:** .NET 8.0 Desktop Runtime is required. Download from [Microsoft](https://dotnet.microsoft.com/download/dotnet/8.0) if not already installed.
+
+### Alternative: PowerShell Script Installation
+
+If you prefer the PowerShell installer (auto-downloads .NET runtime):
+
+1. **Extract the ZIP** to any folder
+2. **Right-click** `Install-ZeroTrustMigrationAddin.ps1` → **Run with PowerShell**
+3. **Launch ConfigMgr Console**
+
+The PowerShell installer:
 - ✅ Checks and elevates to admin if needed
-- ✅ Finds your ConfigMgr Console installation
-- ✅ Downloads and installs .NET 8.0 Runtime if missing (~55MB, one-time)
-- ✅ Deploys all 489 files with dependencies (233MB)
+- ✅ Downloads and installs .NET 8.0 Runtime if missing (~55MB)
 - ✅ Validates the installation
-- ✅ Creates an uninstaller
+- ✅ Creates an uninstaller script
 
 ### What Gets Installed
 
-**Runtime Components (Auto-Downloaded if Missing):**
-- .NET 8.0 Desktop Runtime (windowsdesktop-runtime-8.0.11-win-x64.exe)
-- Downloaded from Microsoft CDN
-- Installed silently without user interaction
-- ~55MB download, installs in ~2 minutes
-
-**Application Files (Self-Contained):**
-- Core .NET 8.0 runtime libraries (217MB of DLLs)
+**Application Files:**
+- Core .NET 8.0 runtime libraries
 - WPF framework components
 - LiveCharts visualization library
 - Microsoft Graph SDK
 - All supporting assemblies
 
-**Total Deployment Size:** 233MB (489 files)
+**Total Deployment Size:** ~72MB (MSI) or 233MB (ZIP with dependencies)
 
-**Installation Locations:**
+**Installation Location:**
 ```
 C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ├── XmlStorage\Extensions\Actions\ZeroTrustMigrationAddin.xml  (manifest)
 └── bin\ZeroTrustMigrationAddin\                               (all app files)
     ├── ZeroTrustMigrationAddin.exe                            (main executable)
     ├── ZeroTrustMigrationAddin.dll                            (app logic)
-    └── ... (487 more files including dependencies)
+    └── ... (additional dependencies)
 ```
 
 ---
@@ -91,6 +98,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ## 🆕 What's New
 
 
+
+
+### Version 3.16.28 (January 16, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
 
 ### Version 3.16.27 (January 16, 2026)
 
@@ -144,19 +165,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Changed
 - Updated Graph API permissions table with actual required permissions
 - Updated FAQ with new questions about health tiers, blocked devices, agent safety
-
----
-
-### Version 3.16.23 (January 16, 2026)
-
-### Changed
-- "INTUNE DEVICES" label changed to "CO-MANAGED DEVICES" in Enrollment Momentum
-- Hidden Enrollment Playbooks section (not functional)
-- Removed "📈 Enrollment Momentum & Analytics" title for cleaner UI
-
-### Fixed
-- HighRiskDeviceCount now uses actual PoorReadinessCount instead of 10% estimate
-- Analytics views (Enrollment Confidence, Playbooks) now refresh after Graph authentication
 
 ---
 
