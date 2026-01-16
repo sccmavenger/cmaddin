@@ -399,4 +399,62 @@ namespace ZeroTrustMigrationAddin.Converters
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Converts bool to color - returns the color parameter when true, gray when false
+    /// Used for chart legend toggle visibility
+    /// </summary>
+    public class BoolToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool isVisible = value is bool b && b;
+            string colorHex = parameter as string ?? "#888888";
+            
+            if (isVisible)
+            {
+                // Parse hex color
+                try
+                {
+                    colorHex = colorHex.TrimStart('#');
+                    byte r = System.Convert.ToByte(colorHex.Substring(0, 2), 16);
+                    byte g = System.Convert.ToByte(colorHex.Substring(2, 2), 16);
+                    byte b2 = System.Convert.ToByte(colorHex.Substring(4, 2), 16);
+                    return new SolidColorBrush(Color.FromRgb(r, g, b2));
+                }
+                catch
+                {
+                    return new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88));
+                }
+            }
+            else
+            {
+                // Return gray when hidden
+                return new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA));
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts bool to opacity - 1.0 when true, 0.5 when false
+    /// Used for chart legend toggle visibility
+    /// </summary>
+    public class BoolToOpacityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool isVisible = value is bool b && b;
+            return isVisible ? 1.0 : 0.5;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
