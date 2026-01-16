@@ -37,6 +37,7 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     Month = baseDate.AddMonths(i),
                     IntuneDevices = 23000 + (i * 6900) + _random.Next(-2300, 2300),
+                    CloudNativeDevices = 3500 + (i * 850) + _random.Next(-300, 300), // Growing cloud native
                     ConfigMgrDevices = 92000 - (i * 5520)
                 });
             }

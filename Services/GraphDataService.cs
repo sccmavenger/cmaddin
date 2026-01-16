@@ -845,6 +845,9 @@ namespace ZeroTrustMigrationAddin.Services
             // ConfigMgr-only = devices not yet moved to cloud
             var trends = new List<EnrollmentTrend>();
             var baseDate = DateTime.Now.AddMonths(-6);
+            
+            // Estimate current cloud native devices (roughly 10-15% of cloud managed)
+            int currentCloudNative = (int)(currentCloudManaged * 0.12);
 
             for (int i = 0; i <= 6; i++)
             {
@@ -852,6 +855,9 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 // Cloud-managed devices grow over time (co-management progress)
                 int cloudManagedAtMonth = (int)(currentCloudManaged * progress);
+                
+                // Cloud native grows faster (newer devices)
+                int cloudNativeAtMonth = (int)(currentCloudNative * (0.3 + progress * 0.7));
                 
                 // ConfigMgr-only decreases as devices become co-managed
                 // Start from total devices (all were ConfigMgr-only) and decrease to current
@@ -862,6 +868,7 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     Month = baseDate.AddMonths(i),
                     IntuneDevices = cloudManagedAtMonth, // Co-managed/cloud-managed (progress)
+                    CloudNativeDevices = cloudNativeAtMonth, // Entra joined, Intune only
                     ConfigMgrDevices = configMgrAtMonth  // Not yet co-managed
                 });
             }
