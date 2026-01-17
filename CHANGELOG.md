@@ -3,6 +3,18 @@
 ## [Unreleased]
 
 ### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.32] - 2026-01-17
+
+### Added
 - **Phase 1 Assignment Awareness** for Enrollment Impact Simulator
   - Only simulates with policies that are actually assigned (not just created)
   - Shows assignment status for each policy (All Devices, specific groups, or unassigned)
