@@ -984,6 +984,31 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                 <li>Click "Connect to Microsoft Graph" to re-authenticate</li>
             </ol>
 
+            <h4>Issue: "Need admin approval" or "Authorization_RequestDenied"</h4>
+            <p><strong>Cause:</strong> The app uses Microsoft Graph permissions that require <strong>admin consent</strong> before any user in your tenant can use them. This is a one-time setup step.</p>
+            <p><strong>Solutions:</strong></p>
+            <ol>
+                <li><strong>Option 1 - Sign in as Global Admin:</strong>
+                    <ul>
+                        <li>Click "Have an admin account? Sign in with that account"</li>
+                        <li>Sign in with a Global Administrator account</li>
+                        <li>Grant consent when prompted ("Consent on behalf of your organization")</li>
+                        <li>After consent is granted, you can use your regular Intune admin account</li>
+                    </ul>
+                </li>
+                <li><strong>Option 2 - Pre-approve in Azure Portal:</strong>
+                    <ul>
+                        <li>Go to <a href="https://portal.azure.com">Azure Portal</a> → <strong>Enterprise Applications</strong></li>
+                        <li>Search for <strong>"Microsoft Graph Command Line Tools"</strong></li>
+                        <li>Click <strong>Permissions</strong> → <strong>Grant admin consent for [Your Tenant]</strong></li>
+                        <li>All users with Intune roles can now use the app</li>
+                    </ul>
+                </li>
+            </ol>
+            <div class="alert alert-info">
+                <strong>💡 Note:</strong> Admin consent only needs to be granted <strong>once per tenant</strong>. After consent, all users with appropriate Intune roles (Intune Administrator, Global Administrator, etc.) can sign in without seeing this error.
+            </div>
+
             <h4>Issue: App won't launch</h4>
             <p><strong>Solutions:</strong></p>
             <ol>
@@ -1067,6 +1092,9 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
 
             <h4>Q: Where are my Graph tokens stored?</h4>
             <p><strong>A:</strong> Authentication tokens are managed by MSAL (Microsoft Authentication Library) and stored securely in Windows Credential Manager. They're never written to log files.</p>
+
+            <h4>Q: Why do I see "Need admin approval" when signing in?</h4>
+            <p><strong>A:</strong> This app uses Microsoft Graph API permissions that require <strong>admin consent</strong> before any user can authenticate. A Global Administrator needs to grant consent once for your entire tenant. Either sign in with a Global Admin account and approve, or ask your Azure AD admin to pre-approve the "Microsoft Graph Command Line Tools" app in Azure Portal → Enterprise Applications → Permissions. Once consented, all users with Intune roles can sign in normally.</p>
 
             <h4>Q: Can I deploy this via Intune/SCCM?</h4>
             <p><strong>A:</strong> Yes, but it's not required. The tool updates itself automatically from GitHub. You can deploy the initial install via Intune/SCCM, and users will receive automatic updates going forward.</p>
