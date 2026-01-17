@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.16.30** | January 16, 2026
+**Version 3.16.31** | January 16, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -101,6 +101,34 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.16.30 (January 16, 2026)
+
+### Added
+- **Query Logging** 🔍 Comprehensive query logging for transparency
+  - FileLogger now logs all Graph API, Admin Service, and WMI queries
+  - Query Log viewer added to DiagnosticsWindow
+  - Export and copy query log capabilities
+- **Migration Impact Analysis** 📊 New 6-category impact analysis feature
+  - Security, Operations, UX, Cost, Compliance, Modernization categories
+  - Before/After projections with 30+ metrics
+  - MigrationImpactCard dashboard component
+  - Full MigrationImpactReportWindow with detailed breakdowns
+- **Fixed Enrollment Confidence Buttons** - View Full Analysis and Get Recommendations now functional
+  - ConfidenceDetailsWindow shows score breakdown with drivers/detractors
+  - RecommendationsWindow shows prioritized remediation actions
+- **Realistic Mock Data** - Demo mode now shows meaningful sample data instead of empty placeholders
+
+### Changed
+- **Log Consolidation** - All logs now in `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\`
+  - Update.log moved from %TEMP% to consolidated location
+  - QueryLog.txt added for API query history
+
+### Fixed
+- **Auto-Update** - Uploaded missing manifest.json to GitHub release
+
+---
+
 ### Version 3.16.29 (January 16, 2026)
 
 ### Added
@@ -151,19 +179,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 - README version not updating (was stuck at 3.16.3)
-
----
-
-### Version 3.16.25 (January 16, 2026)
-
-### Added
-- AdminUserGuide.html comprehensive documentation overhaul
-
-### Changed
-- Autonomous Enrollment Agent section marked as "NOT YET FUNCTIONAL" with prominent warning
-
-### Fixed
-- Device health score thresholds documented correctly (≥85/60-84/40-59/<40)
 
 ---
 
