@@ -607,6 +607,11 @@ try {
         $readmeContent = $readmeContent -replace "Version $oldVersion", "Version $newVersion"
         $readmeContent = $readmeContent -replace "v$oldVersion", "v$newVersion"
         
+        # Update footer Last Updated and Version (ISO date format)
+        $isoDate = (Get-Date).ToString("yyyy-MM-dd")
+        $readmeContent = $readmeContent -replace '\*\*Last Updated\*\*:\s*\d{4}-\d{2}-\d{2}', "**Last Updated**: $isoDate"
+        $readmeContent = $readmeContent -replace '\*\*Version\*\*:\s*\d+\.\d+\.\d+', "**Version**: $newVersion"
+        
         # Update What's New section with last 5 versions from CHANGELOG
         if (Test-Path $changelogPathForReadme) {
             $recentVersions = Get-LastNVersionsFromChangelog -ChangelogPath $changelogPathForReadme -Count 5
