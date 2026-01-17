@@ -229,8 +229,7 @@ The Zero Trust Migration Journey Dashboard is your intelligent command center fo
 - ✅ Workload migration status
 - ✅ Device health alerts
 - ✅ Application migration analysis
-- ⏳ ROI calculations (industry estimates)
-- ⏳ Peer benchmarking (industry statistics)
+- ✅ Enrollment Impact Simulator (100% data-driven predictions)
 
 ---
 
@@ -626,8 +625,8 @@ What you'll find here:
 
 What you'll find here:
 - **Overall completion %** - How far along you are
-- **Cost savings** - Estimated money saved by migrating
-- **Peer comparison** - How you compare to similar organizations
+- **Enrollment progress** - Devices migrated over time
+- **Workload status** - Which management workloads are complete
 - **Milestones** - Major achievements you've completed
 
 **What to do:** Use this for status reports to management. Shows the big picture.
@@ -741,8 +740,7 @@ Alerts show different colors based on urgency:
 1. Go to **Executive tab**
 2. Look at **Overall Migration Status**
 3. See your completion % and projected finish date
-4. Compare to **Peer Benchmarking** to see how you stack up
-5. If you're behind schedule, go back to Overview tab and check alerts for guidance
+4. If you're behind schedule, go back to Overview tab and check alerts for guidance
 
 ### Task 4: Handle an Alert
 
@@ -791,13 +789,6 @@ Alerts show different colors based on urgency:
 - **Click 🔄 Refresh** - Sometimes data just needs to update
 - **Check alerts** - They often tell you exactly what's wrong
 
-### Understanding the Data
-
-**✅ Real data** - Comes from YOUR ConfigMgr and Intune (device counts, compliance, alerts)  
-**⏳ Estimates** - Industry averages (ROI savings, peer benchmarking) - useful but not YOUR exact numbers  
-
-If something shows "⚠️ ESTIMATED DATA" badge, it's a calculation based on typical organizations, not your actual costs.
-
 ---
 
 ## ❓ Quick Questions Answered
@@ -812,7 +803,7 @@ A: Only aggregated migration metrics (device counts, percentages, workload names
 A: No - it has multiple safety checks. It only enrolls "ready" devices, does small batches, requires your approval, pauses on failures, and you can stop it anytime.
 
 **Q: How do I know if my data is real or fake?**  
-A: After you connect to Graph and ConfigMgr, device counts, compliance, workload status, and alerts are real from YOUR environment. ROI and Peer Benchmarking show "⚠️ ESTIMATED DATA" because they use industry averages.
+A: After you connect to Graph and ConfigMgr, all data is real from YOUR environment - device counts, compliance, workload status, alerts, and the Enrollment Impact Simulator results. The status bar shows your current data source (Graph, ConfigMgr, or Demo mode).
 
 **Q: What if I don't have ConfigMgr Admin Service?**  
 A: The tool automatically falls back to Graph API only. You'll see devices already enrolled in Intune, but won't see the complete count of devices still on ConfigMgr. Still useful, just less complete.
@@ -1408,39 +1399,6 @@ ComplianceRate = (CompliantDevices / TotalDevices) * 100
 - Policy deployment status
 - ConfigMgr-only devices needing enrollment
 
-### Estimated Data (Industry Averages)
-
-#### 5. ROI Calculator
-
-**Source:** Industry studies (Forrester TEI, IDC)
-
-**Metrics:**
-- Annual Savings: ~$285,000 (enterprise average)
-- Infrastructure Reduction: ~$180,000 (ConfigMgr costs)
-- Patch Cycle: 12 days reduced (typical)
-- Admin Time: 35.5% reduction
-
-**Badge:** "⚠️ ESTIMATED DATA"
-
-#### 6. Peer Benchmarking
-
-**Source:** Microsoft published statistics
-
-**Metrics:**
-- Peer averages by organization size
-- Percentile rankings
-- Industry completion rates
-
-**No live API available** for industry comparison
-
-#### 7. Recent Milestones
-
-**Source:** Predefined examples
-
-**Current:** Shows common milestones with placeholder dates
-
-**Future:** Will detect based on actual workload completions
-
 ### Data Access Permissions
 
 **Microsoft Graph API:**
@@ -1516,7 +1474,7 @@ ComplianceRate = (CompliantDevices / TotalDevices) * 100
 ### Version 1.3.8 (December, 2025)
 - Zero tolerance for mock data after authentication
 - Honest empty states
-- Clear "ESTIMATED" labeling
+- Data source transparency
 
 ### Version 1.2.2 (December, 2025)
 - Windows 10/11 only filtering
