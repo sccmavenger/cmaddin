@@ -191,6 +191,34 @@ function Get-UnreleasedChangelog {
     }
 }
 
+function Update-ContextFile {
+    <#
+    .SYNOPSIS
+        Update CONTEXT.md with current version and build date
+    #>
+    param(
+        [string]$ContextPath,
+        [string]$Version,
+        [string]$Date
+    )
+    
+    if (-not (Test-Path $ContextPath)) {
+        Write-Host "   ⚠ CONTEXT.md not found, skipping update" -ForegroundColor Yellow
+        return
+    }
+    
+    $content = Get-Content $ContextPath -Raw
+    
+    # Update version
+    $content = $content -replace '(?m)^\*\*Version\*\*:\s*\d+\.\d+\.\d+', "**Version**: $Version"
+    
+    # Update last updated date
+    $content = $content -replace '(?m)^\*\*Last Updated\*\*:\s*\d{4}-\d{2}-\d{2}', "**Last Updated**: $Date"
+    
+    [System.IO.File]::WriteAllText($ContextPath, $content)
+    Write-Host "   ✓ CONTEXT.md updated with version $Version" -ForegroundColor Green
+}
+
 function Get-LastNVersionsFromChangelog {
     <#
     .SYNOPSIS
@@ -1262,6 +1290,11 @@ if ($BuildMsi -and -not $DryRun) {
 # ============================================
 
 $buildDuration = (Get-Date) - $buildStartTime
+
+# Update CONTEXT.md with new version
+$contextPath = Join-Path $scriptDir "CONTEXT.md"
+$buildDate = Get-Date -Format 'yyyy-MM-dd'
+Update-ContextFile -ContextPath $contextPath -Version $newVersion -Date $buildDate
 
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Green

@@ -3,7 +3,12 @@
 ## [Unreleased]
 
 ### Added
-- 
+- **Documentation Automation** 📋 Added three-part documentation system:
+  - `.github/copilot-instructions.md` - AI assistant guidance for automatic documentation updates
+  - `.gitmessage` - Commit message template with conventional commits format and DECISION markers
+  - `DECISIONS.md` - Architectural Decision Record (ADR) log
+  - `CONTEXT.md` - Current project state and quick reference
+- **Build Script Enhancement** - Build-And-Distribute.ps1 now auto-updates CONTEXT.md with version and date
 
 ### Changed
 - 
@@ -15,13 +20,27 @@
 ## [3.16.30] - 2026-01-16
 
 ### Added
-- 
+- **Query Logging** 🔍 Comprehensive query logging for transparency
+  - FileLogger now logs all Graph API, Admin Service, and WMI queries
+  - Query Log viewer added to DiagnosticsWindow
+  - Export and copy query log capabilities
+- **Migration Impact Analysis** 📊 New 6-category impact analysis feature
+  - Security, Operations, UX, Cost, Compliance, Modernization categories
+  - Before/After projections with 30+ metrics
+  - MigrationImpactCard dashboard component
+  - Full MigrationImpactReportWindow with detailed breakdowns
+- **Fixed Enrollment Confidence Buttons** - View Full Analysis and Get Recommendations now functional
+  - ConfidenceDetailsWindow shows score breakdown with drivers/detractors
+  - RecommendationsWindow shows prioritized remediation actions
+- **Realistic Mock Data** - Demo mode now shows meaningful sample data instead of empty placeholders
 
 ### Changed
-- 
+- **Log Consolidation** - All logs now in `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\`
+  - Update.log moved from %TEMP% to consolidated location
+  - QueryLog.txt added for API query history
 
 ### Fixed
-- 
+- **Auto-Update** - Uploaded missing manifest.json to GitHub release
 
 
 ## [3.16.29] - 2026-01-16
