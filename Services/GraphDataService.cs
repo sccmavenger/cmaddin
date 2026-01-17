@@ -211,29 +211,39 @@ namespace ZeroTrustMigrationAddin.Services
             // Return cached devices if still valid
             if (_cachedManagedDevices != null && DateTime.Now < _cacheExpiration)
             {
+                Instance.LogGraphQuery("GetCachedManagedDevices", "/deviceManagement/managedDevices", 
+                    new[] { "id", "deviceName", "operatingSystem", "managementAgent", "enrolledDateTime", "lastSyncDateTime", "complianceState", "azureADDeviceId" },
+                    null, _cachedManagedDevices.Count);
                 return _cachedManagedDevices;
             }
 
             // Refresh cache
             try
             {
+                var selectFields = new[] { 
+                    "id", 
+                    "deviceName", 
+                    "operatingSystem", 
+                    "managementAgent",
+                    "enrolledDateTime",
+                    "lastSyncDateTime",
+                    "complianceState",
+                    "azureADDeviceId"
+                };
+                
+                Instance.LogGraphQuery("GetCachedManagedDevices", "/deviceManagement/managedDevices", selectFields);
+                
                 var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
-                    config => config.QueryParameters.Select = new[] { 
-                        "id", 
-                        "deviceName", 
-                        "operatingSystem", 
-                        "managementAgent",
-                        "enrolledDateTime",
-                        "lastSyncDateTime",
-                        "complianceState",
-                        "azureADDeviceId"
-                    }
+                    config => config.QueryParameters.Select = selectFields
                 );
 
                 if (devices?.Value != null)
                 {
                     _cachedManagedDevices = devices.Value.ToList();
                     _cacheExpiration = DateTime.Now.Add(_cacheLifetime);
+                    
+                    Instance.LogGraphQuery("GetCachedManagedDevices (Result)", "/deviceManagement/managedDevices", selectFields, null, _cachedManagedDevices.Count);
+                    
                     return _cachedManagedDevices;
                 }
                 
@@ -811,12 +821,18 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
+                // Log the compliance policies query
+                Instance.LogGraphQuery("GetComplianceDashboard", "/deviceManagement/deviceCompliancePolicies");
+                
                 // Get device compliance policies
                 var policies = await _graphClient.DeviceManagement.DeviceCompliancePolicies.GetAsync();
                 
+                var selectFields = new[] { "id", "complianceState", "operatingSystem" };
+                Instance.LogGraphQuery("GetComplianceDashboard", "/deviceManagement/managedDevices", selectFields);
+                
                 // Get device compliance status
                 var complianceStatus = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
-                    config => config.QueryParameters.Select = new[] { "id", "complianceState", "operatingSystem" }
+                    config => config.QueryParameters.Select = selectFields
                 );
 
                 var allDevices = complianceStatus?.Value ?? new List<Microsoft.Graph.Models.ManagedDevice>();
@@ -830,6 +846,9 @@ namespace ZeroTrustMigrationAddin.Services
                     ) &&
                     !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
                 ).ToList();
+                
+                Instance.LogGraphQuery("GetComplianceDashboard (Result)", "/deviceManagement/managedDevices", selectFields, 
+                    "Windows 10/11 workstations only", devices.Count);
                 
                 int totalDevices = devices.Count;
                 int compliantDevices = devices.Count(d => 

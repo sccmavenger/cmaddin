@@ -203,7 +203,13 @@ namespace ZeroTrustMigrationAddin.Services
 # Version: {newManifest.Version}
 
 $ErrorActionPreference = 'Stop'
-$logFile = Join-Path $env:TEMP 'CloudJourneyAddin-Update.log'
+
+# Use the same log directory as the main application for consistency
+$logDir = Join-Path $env:LOCALAPPDATA 'ZeroTrustMigrationAddin\Logs'
+if (-not (Test-Path $logDir)) {{
+    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+}}
+$logFile = Join-Path $logDir 'Update.log'
 
 function Write-Log {{
     param([string]$Message)
