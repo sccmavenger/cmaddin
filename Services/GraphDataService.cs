@@ -14,11 +14,19 @@ namespace ZeroTrustMigrationAddin.Services
         private GraphServiceClient? _graphClient;
         private readonly ConfigMgrAdminService _configMgrService;
         private readonly string[] _scopes = new[] { 
-            "DeviceManagementManagedDevices.Read.All",
-            "DeviceManagementConfiguration.Read.All",
-            "DeviceManagementApps.Read.All",
-            "Directory.Read.All",
-            "User.Read"
+            // Core Device Management (Required)
+            "DeviceManagementManagedDevices.Read.All",      // Read Intune devices, compliance state
+            "DeviceManagementConfiguration.Read.All",       // Read compliance policies, device configs
+            "DeviceManagementApps.Read.All",                // Read mobile apps, app protection policies
+            "DeviceManagementServiceConfig.Read.All",       // Read Autopilot devices, enrollment config
+            
+            // Directory & Groups (Required for policy assignment resolution)
+            "Directory.Read.All",                           // Read Azure AD devices, directory info
+            "Group.Read.All",                               // Resolve group names in policy assignments
+            "Organization.Read.All",                        // Read tenant/organization info
+            
+            // User (Required for sign-in)
+            "User.Read"                                     // Sign in and read user profile
         };
         
         // Cache for managed devices to avoid repeated API calls

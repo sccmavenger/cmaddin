@@ -459,46 +459,116 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                     <tr>
                         <th>Permission</th>
                         <th>Purpose</th>
+                        <th>Required?</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><code>DeviceManagementManagedDevices.Read.All</code></td>
                         <td>Read Intune enrolled devices, compliance state, sync status</td>
+                        <td>✅ Required</td>
                     </tr>
                     <tr>
                         <td><code>DeviceManagementConfiguration.Read.All</code></td>
                         <td>Read device configuration profiles and compliance policies</td>
+                        <td>✅ Required</td>
                     </tr>
                     <tr>
                         <td><code>DeviceManagementApps.Read.All</code></td>
                         <td>Read mobile apps and app protection policies</td>
+                        <td>✅ Required</td>
+                    </tr>
+                    <tr>
+                        <td><code>DeviceManagementServiceConfig.Read.All</code></td>
+                        <td>Read Windows Autopilot devices and enrollment configuration</td>
+                        <td>✅ Required</td>
                     </tr>
                     <tr>
                         <td><code>Directory.Read.All</code></td>
                         <td>Read Azure AD devices and directory information</td>
+                        <td>✅ Required</td>
+                    </tr>
+                    <tr>
+                        <td><code>Group.Read.All</code></td>
+                        <td>Resolve group names for policy assignments (Enrollment Simulator)</td>
+                        <td>✅ Required</td>
+                    </tr>
+                    <tr>
+                        <td><code>Organization.Read.All</code></td>
+                        <td>Read tenant/organization information</td>
+                        <td>✅ Required</td>
                     </tr>
                     <tr>
                         <td><code>User.Read</code></td>
                         <td>Sign in and read your profile</td>
+                        <td>✅ Required</td>
                     </tr>
                 </tbody>
             </table>
 
+            <div class="alert alert-danger">
+                <strong>⚠️ Admin Consent Required</strong><br>
+                The permissions above require <strong>admin consent</strong> before any user can sign in. If you see a "Need admin approval" message:
+                <ul style="margin-top: 10px; margin-bottom: 10px;">
+                    <li><strong>Option 1:</strong> Click "Have an admin account? Sign in with that account" and authenticate with a Global Administrator to grant consent for your organization</li>
+                    <li><strong>Option 2:</strong> Ask your Azure AD administrator to pre-approve the app in <strong>Azure Portal → Enterprise Applications → Microsoft Graph Command Line Tools → Permissions → Grant admin consent</strong></li>
+                </ul>
+                Admin consent only needs to be granted <strong>once per tenant</strong>. After consent is granted, all users with the appropriate Intune roles can use the app.
+            </div>
+
             <div class="alert alert-info">
-                <strong>💡 Tip:</strong> If you can access the Intune portal at <code>intune.microsoft.com</code>, you likely have the required permissions to use this tool.
+                <strong>💡 Tip:</strong> If you can access the Intune portal at <code>intune.microsoft.com</code> AND admin consent has been granted, you have the required permissions to use this tool.
             </div>
 
             <h3>ConfigMgr Admin Service (Optional)</h3>
             <p>For ConfigMgr integration, you need:</p>
+            
+            <h4>Admin Service Setup</h4>
             <ul>
-                <li><strong>ConfigMgr Admin Service enabled</strong> on your site server</li>
-                <li><strong>Full Administrator</strong> role in ConfigMgr (or equivalent read permissions)</li>
-                <li><strong>Network access</strong> to your ConfigMgr Admin Service endpoint</li>
+                <li><strong>ConfigMgr Admin Service enabled</strong> on your site server (enabled by default in CB 1906+)</li>
+                <li><strong>HTTPS endpoint accessible</strong> from your workstation (typically <code>https://&lt;SMSProvider&gt;/AdminService</code>)</li>
+                <li><strong>Windows Authentication enabled</strong> on Admin Service</li>
+            </ul>
+
+            <h4>Required RBAC Permissions</h4>
+            <p>Your ConfigMgr account needs these minimum permissions:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Object Class</th>
+                        <th>Permission</th>
+                        <th>Scope</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Collection</td>
+                        <td>Read, Read Resource</td>
+                        <td>All collections or specific device collections</td>
+                    </tr>
+                    <tr>
+                        <td>Site</td>
+                        <td>Read</td>
+                        <td>Site-level</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>Recommended:</strong> Use the built-in <code>Read-only Analyst</code> security role, or create a custom role with the permissions above.</p>
+
+            <h4>WMI Classes Accessed</h4>
+            <p>The tool queries these ConfigMgr classes via Admin Service for the Enrollment Impact Simulator:</p>
+            <ul>
+                <li><code>SMS_R_System</code> - Device inventory</li>
+                <li><code>SMS_G_System_ENCRYPTABLE_VOLUME</code> - BitLocker encryption status</li>
+                <li><code>SMS_G_System_FIREWALL_PRODUCT</code> - Windows Firewall status</li>
+                <li><code>SMS_G_System_AntimalwareHealthStatus</code> - Microsoft Defender status</li>
+                <li><code>SMS_G_System_TPM</code> - TPM chip status</li>
+                <li><code>SMS_G_System_FIRMWARE</code> - Secure Boot status</li>
+                <li><code>SMS_G_System_OPERATING_SYSTEM</code> - OS version details</li>
             </ul>
 
             <div class="alert alert-warning">
-                <strong>Note:</strong> If you don't have ConfigMgr access, you can use the tool with Microsoft Graph only or switch to Mock Data mode for testing.
+                <strong>Note:</strong> If you don't have ConfigMgr access, you can use the tool with Microsoft Graph only. The Enrollment Impact Simulator will show demo data to demonstrate functionality.
             </div>
         </section>
 

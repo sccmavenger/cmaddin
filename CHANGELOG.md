@@ -3,13 +3,24 @@
 ## [Unreleased]
 
 ### Added
-- 
+- **Phase 1 Assignment Awareness** for Enrollment Impact Simulator
+  - Only simulates with policies that are actually assigned (not just created)
+  - Shows assignment status for each policy (All Devices, specific groups, or unassigned)
+  - Warns about unassigned policies that won't affect devices
+  - Warns about assignment filters (beta API limitation)
 
 ### Changed
-- 
+- **Graph API Permissions** - Added 3 new required scopes:
+  - `Group.Read.All` - Resolve group names for policy assignments
+  - `DeviceManagementServiceConfig.Read.All` - Read Autopilot devices and enrollment config
+  - `Organization.Read.All` - Read tenant/organization information
 
 ### Fixed
-- 
+- **Admin User Guide** - Comprehensive permissions documentation update:
+  - Added all 8 required Graph API permissions with descriptions
+  - Added Admin Consent requirement warning (explains "Need admin approval" popup)
+  - Added detailed ConfigMgr RBAC requirements with specific WMI classes
+  - Added step-by-step instructions for granting admin consent
 
 
 ## [3.16.31] - 2026-01-16
