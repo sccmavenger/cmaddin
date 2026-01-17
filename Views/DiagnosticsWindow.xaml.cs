@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using ZeroTrustMigrationAddin.Services;
 
 namespace ZeroTrustMigrationAddin.Views
 {
@@ -10,11 +11,76 @@ namespace ZeroTrustMigrationAddin.Views
         public DiagnosticsWindow()
         {
             InitializeComponent();
+            LoadQueryLog();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void LoadQueryLog()
+        {
+            try
+            {
+                var queries = FileLogger.Instance.GetRecentQueries();
+                QueryLogGrid.ItemsSource = queries;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load query log: {ex.Message}");
+            }
+        }
+
+        private void RefreshQueryLog_Click(object sender, RoutedEventArgs e)
+        {
+            LoadQueryLog();
+        }
+
+        private void CopyQuery_Click(object sender, RoutedEventArgs e)
+        {
+            if (QueryLogGrid.SelectedItem is QueryLogEntry entry)
+            {
+                Clipboard.SetText(entry.CopyableQuery);
+                MessageBox.Show($"Query copied to clipboard:\n\n{entry.CopyableQuery}", 
+                    "Copied", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Please select a query from the list first.", 
+                    "No Selection", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void ExportQueryLog_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var exportPath = FileLogger.Instance.ExportQueryLog();
+                if (!string.IsNullOrEmpty(exportPath))
+                {
+                    var result = MessageBox.Show(
+                        $"Query log exported to:\n{exportPath}\n\nOpen in Notepad?",
+                        "Export Complete",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Information);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start("notepad.exe", exportPath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to export query log: {ex.Message}",
+                    "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void OpenLogFolder_Click(object sender, RoutedEventArgs e)
+        {
+            FileLogger.Instance.OpenLogDirectory();
         }
 
         private async void ManualConfigMgrButton_Click(object sender, RoutedEventArgs e)

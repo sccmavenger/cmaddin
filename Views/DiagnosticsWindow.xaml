@@ -75,6 +75,46 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Query Log (NEW) -->
+                <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <TextBlock Text="📊 Data Query Log" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text=" - See exactly what queries are being executed" FontSize="12" Foreground="#666" VerticalAlignment="Bottom" Margin="10,0,0,2"/>
+                        </StackPanel>
+                        <TextBlock Text="These are the actual Graph API, WMI, and Admin Service queries used to retrieve data. Copy and paste into Graph Explorer or PowerShell to reproduce." 
+                                   FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                        <DataGrid x:Name="QueryLogGrid" 
+                                  AutoGenerateColumns="False" 
+                                  IsReadOnly="True"
+                                  Height="250"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderThickness="1"
+                                  BorderBrush="#E0E0E0">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat=HH:mm:ss}" Width="70"/>
+                                <DataGridTextColumn Header="Source" Binding="{Binding SourceDisplay}" Width="100"/>
+                                <DataGridTextColumn Header="Operation" Binding="{Binding Operation}" Width="180"/>
+                                <DataGridTextColumn Header="Query" Binding="{Binding Query}" Width="*"/>
+                                <DataGridTextColumn Header="Results" Binding="{Binding ResultCount}" Width="60"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="🔄 Refresh" Click="RefreshQueryLog_Click" 
+                                    Background="#E8E8E8" Padding="10,5" Margin="0,0,10,0"/>
+                            <Button Content="📋 Copy Selected" Click="CopyQuery_Click"
+                                    Background="#E8E8E8" Padding="10,5" Margin="0,0,10,0"/>
+                            <Button Content="💾 Export All" Click="ExportQueryLog_Click"
+                                    Background="#E8E8E8" Padding="10,5" Margin="0,0,10,0"/>
+                            <Button Content="📂 Open Log Folder" Click="OpenLogFolder_Click"
+                                    Background="#E8E8E8" Padding="10,5"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- Debug Log -->
                 <Border Background="White" CornerRadius="8" Padding="15">
                     <StackPanel>

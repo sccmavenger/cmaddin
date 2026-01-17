@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Management;
 using Azure.Identity;
 using Azure.Core;
+using static ZeroTrustMigrationAddin.Services.FileLogger;
 
 namespace ZeroTrustMigrationAddin.Services
 {
@@ -430,11 +431,16 @@ namespace ZeroTrustMigrationAddin.Services
                         return false;
                     }
 
-                    var query = new ObjectQuery("SELECT SiteCode FROM SMS_ProviderLocation WHERE ProviderForLocalSite = true");
+                    var wqlQuery = "SELECT SiteCode FROM SMS_ProviderLocation WHERE ProviderForLocalSite = true";
+                    Instance.LogWmiQuery("GetSiteCode", wqlQuery, $"\\\\{_siteServer}\\root\\sms");
+                    
+                    var query = new ObjectQuery(wqlQuery);
                     var searcher = new ManagementObjectSearcher(scope, query);
                     
                     System.Diagnostics.Debug.WriteLine($"Querying for site code...");
                     var results = searcher.Get();
+                    
+                    Instance.LogWmiQuery("GetSiteCode (Result)", wqlQuery, $"\\\\{_siteServer}\\root\\sms", results.Count);
                     
                     if (results.Count == 0)
                     {
@@ -457,9 +463,14 @@ namespace ZeroTrustMigrationAddin.Services
                             scope.Connect();
                             
                             // Test query to verify access
-                            var testQuery = new ObjectQuery("SELECT TOP 1 ResourceID FROM SMS_R_System");
+                            var testWql = "SELECT TOP 1 ResourceID FROM SMS_R_System";
+                            Instance.LogWmiQuery("TestConnection", testWql, $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                            
+                            var testQuery = new ObjectQuery(testWql);
                             var testSearcher = new ManagementObjectSearcher(scope, testQuery);
                             var testResults = testSearcher.Get();
+                            
+                            Instance.LogWmiQuery("TestConnection (Result)", testWql, $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}", testResults.Count);
                             System.Diagnostics.Debug.WriteLine($"✓ Successfully queried SMS_R_System, found {testResults.Count} devices");
                             
                             _isAuthenticated = true;
@@ -521,40 +532,43 @@ namespace ZeroTrustMigrationAddin.Services
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')" +
                     "&$select=ResourceId,Name,OperatingSystemNameandVersion,LastActiveTime,ClientVersion,ResourceDomainORWorkgroup";
 
-                FileLogger.Instance.Info("=== ConfigMgr Admin Service REST API Query ===");
-                FileLogger.Instance.Info($"   Query URL: {query}");
-                FileLogger.Instance.Info($"   Method: GET");
-                FileLogger.Instance.Info($"   Authentication: Windows Integrated (UseDefaultCredentials)");
+                Instance.LogAdminServiceQuery("GetWindows1011Devices", query);
+                Instance.Info("=== ConfigMgr Admin Service REST API Query ===");
+                Instance.Info($"   Query URL: {query}");
+                Instance.Info($"   Method: GET");
+                Instance.Info($"   Authentication: Windows Integrated (UseDefaultCredentials)");
                 
                 response = await _httpClient.GetAsync(query);
                 
-                FileLogger.Instance.Info($"   Response Status: {(int)response.StatusCode} {response.StatusCode}");
+                Instance.Info($"   Response Status: {(int)response.StatusCode} {response.StatusCode}");
                 
                 // If 404, try without $select (field might not exist)
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    FileLogger.Instance.Warning("   ⚠️ Query with $select failed (404), trying without $select parameter...");
+                    Instance.Warning("   ⚠️ Query with $select failed (404), trying without $select parameter...");
                     query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
                         "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
                         "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')";
                     
-                    FileLogger.Instance.Info($"   Retry Query URL: {query}");
+                    Instance.LogAdminServiceQuery("GetWindows1011Devices (Retry)", query);
+                    Instance.Info($"   Retry Query URL: {query}");
                     response = await _httpClient.GetAsync(query);
-                    FileLogger.Instance.Info($"   Retry Response Status: {(int)response.StatusCode} {response.StatusCode}");
+                    Instance.Info($"   Retry Response Status: {(int)response.StatusCode} {response.StatusCode}");
                 }
                 
                 // If still 404, try simple query without filter (get all devices, filter client-side)
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    FileLogger.Instance.Warning("   ⚠️ Query with contains() failed (404), trying simple query with $top limit...");
+                    Instance.Warning("   ⚠️ Query with contains() failed (404), trying simple query with $top limit...");
                     query = $"{_adminServiceUrl}/wmi/SMS_R_System?$top=5000";
                     
-                    FileLogger.Instance.Info($"   Fallback Query URL: {query}");
+                    Instance.LogAdminServiceQuery("GetWindows1011Devices (Fallback)", query);
+                    Instance.Info($"   Fallback Query URL: {query}");
                     response = await _httpClient.GetAsync(query);
-                    FileLogger.Instance.Info($"   Fallback Response Status: {(int)response.StatusCode} {response.StatusCode}");
+                    Instance.Info($"   Fallback Response Status: {(int)response.StatusCode} {response.StatusCode}");
                 }
                 
-                FileLogger.Instance.Info($"   Response Headers: {response.Headers}");
+                Instance.Info($"   Response Headers: {response.Headers}");
                 
                 response.EnsureSuccessStatusCode();
 
