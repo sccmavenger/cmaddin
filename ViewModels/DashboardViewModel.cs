@@ -325,6 +325,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
         /// </summary>
         public GraphDataService GraphDataService => _graphDataService;
 
+        /// <summary>
+        /// Exposes the ConfigMgrAdminService for ConfigMgr queries
+        /// </summary>
+        public ConfigMgrAdminService ConfigMgrAdminService => _configMgrService;
+
         public MigrationStatus? MigrationStatus
         {
             get => _migrationStatus;

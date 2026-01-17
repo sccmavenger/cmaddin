@@ -3,6 +3,18 @@
 ## [Unreleased]
 
 ### Added
+- **Enrollment Impact Simulator** 🔬 100% data-driven compliance prediction feature
+  - Queries actual Intune compliance policies via Graph API for requirements
+  - Queries actual ConfigMgr device security inventory (BitLocker, Firewall, Defender, TPM, Secure Boot, OS version)
+  - Simulates compliance evaluation for unenrolled devices against Intune policies
+  - Shows ready-to-enroll count, remediation-needed count, and projected compliance rate
+  - Gap analysis with prioritized remediation actions and effort levels
+  - Export remediation plan to CSV
+  - **No hardcoded estimates** - all metrics calculated from customer data
+  - New files: `Models/EnrollmentSimulatorModels.cs`, `Services/EnrollmentSimulatorService.cs`
+  - New views: `Views/EnrollmentSimulatorCard.xaml`, `Views/EnrollmentSimulatorWindow.xaml`
+  - Enhanced: `Services/ConfigMgrAdminService.cs` (security inventory methods)
+  - Enhanced: `Services/GraphDataService.cs` (compliance policy settings methods)
 - **Documentation Automation** 📋 Added three-part documentation system:
   - `.github/copilot-instructions.md` - AI assistant guidance for automatic documentation updates
   - `.gitmessage` - Commit message template with conventional commits format and DECISION markers

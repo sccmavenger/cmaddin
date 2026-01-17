@@ -5,13 +5,33 @@ This document provides current project state for developers and AI assistants. U
 ---
 
 ## Current Version
-**Version**: 3.16.30  
-**Last Updated**: 2025-01-16  
+**Version**: 3.16.30 (Unreleased: 3.16.31)  
+**Last Updated**: 2025-01-17  
 **Branch**: main
 
 ---
 
 ## Recent Changes (Last 5 Sessions)
+
+### Session: 2025-01-17
+**Focus**: Enrollment Impact Simulator - Credibility-first feature design
+- ✅ Created 100% data-driven Enrollment Impact Simulator
+- ✅ Added ConfigMgr security inventory methods (BitLocker, Firewall, Defender, TPM, OS)
+- ✅ Added Graph API compliance policy extraction
+- ✅ Created EnrollmentSimulatorCard (dashboard summary)
+- ✅ Created EnrollmentSimulatorWindow (detailed results)
+
+**Key Decision**: Rejected hardcoded estimates in favor of data-driven calculations. See ADR-007 in DECISIONS.md.
+
+**Files Created**:
+- Models/EnrollmentSimulatorModels.cs
+- Services/EnrollmentSimulatorService.cs
+- Views/EnrollmentSimulatorCard.xaml/.cs
+- Views/EnrollmentSimulatorWindow.xaml/.cs
+
+**Files Modified**:
+- Services/ConfigMgrAdminService.cs - Security inventory methods
+- Services/GraphDataService.cs - Compliance policy settings methods
 
 ### Session: 2025-01-15/16
 **Focus**: Feature Development & Infrastructure
@@ -36,19 +56,20 @@ This document provides current project state for developers and AI assistants. U
 ## Active Development
 
 ### In Progress
-- None currently
+- Enrollment Impact Simulator - Wire up to dashboard
 
 ### Planned Next
+- Integrate EnrollmentSimulatorCard into dashboard
+- Review Migration Impact Analysis for similar credibility issues
 - Documentation automation testing
-- Consider GitHub Action for changelog validation
-- Explore automated testing framework
 
 ---
 
 ## Known Issues
 
-1. **Empty CHANGELOG entries** - Versions 3.16.28-3.16.30 have placeholder entries that need filling
-2. **Query logging overhead** - Not measured, likely negligible but should verify
+1. **Migration Impact Analysis has hardcoded estimates** - May need revision per ADR-007 principles
+2. **Empty CHANGELOG entries** - Versions 3.16.28-3.16.30 have placeholder entries that need filling
+3. **Query logging overhead** - Not measured, likely negligible but should verify
 
 ---
 
@@ -61,6 +82,9 @@ This document provides current project state for developers and AI assistants. U
 │  │ Dashboard   │ │ Enrollment  │ │ Migration   │       │
 │  │ View        │ │ Cards       │ │ Impact      │       │
 │  └─────────────┘ └─────────────┘ └─────────────┘       │
+│  ┌─────────────────────────────────────────────┐       │
+│  │ Enrollment Simulator Card (NEW)              │       │
+│  └─────────────────────────────────────────────┘       │
 ├─────────────────────────────────────────────────────────┤
 │                  ViewModel Layer                        │
 │  ┌─────────────────────────────────────────────┐       │
@@ -69,13 +93,13 @@ This document provides current project state for developers and AI assistants. U
 ├─────────────────────────────────────────────────────────┤
 │                   Services Layer                        │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
-│  │ GraphData    │ │ ConfigMgr    │ │ Migration    │    │
-│  │ Service      │ │ AdminService │ │ ImpactService│    │
+│  │ GraphData    │ │ ConfigMgr    │ │ Enrollment   │    │
+│  │ Service      │ │ AdminService │ │ Simulator    │    │
 │  └──────────────┘ └──────────────┘ └──────────────┘    │
-│  ┌──────────────┐ ┌──────────────┐                     │
-│  │ FileLogger   │ │ UpdateService│                     │
-│  │ (Singleton)  │ │              │                     │
-│  └──────────────┘ └──────────────┘                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
+│  │ FileLogger   │ │ UpdateService│ │ Migration    │    │
+│  │ (Singleton)  │ │              │ │ Impact       │    │
+│  └──────────────┘ └──────────────┘ └──────────────┘    │
 ├─────────────────────────────────────────────────────────┤
 │                  External APIs                          │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │

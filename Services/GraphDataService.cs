@@ -887,6 +887,424 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
+        #region Compliance Policy Settings for Enrollment Simulator
+
+        /// <summary>
+        /// Get compliance policy settings (requirements) for all Windows compliance policies.
+        /// Used by Enrollment Simulator to evaluate ConfigMgr devices against Intune policies.
+        /// </summary>
+        public async Task<List<Models.CompliancePolicyRequirements>> GetCompliancePolicySettingsAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            var results = new List<Models.CompliancePolicyRequirements>();
+
+            try
+            {
+                Instance.LogGraphQuery("GetCompliancePolicySettings", "/deviceManagement/deviceCompliancePolicies");
+
+                var policies = await _graphClient.DeviceManagement.DeviceCompliancePolicies.GetAsync();
+
+                if (policies?.Value == null || !policies.Value.Any())
+                {
+                    Instance.Warning("[GRAPH] No compliance policies found in tenant.");
+                    return results;
+                }
+
+                Instance.Info($"[GRAPH] Found {policies.Value.Count} compliance policies, extracting settings...");
+
+                foreach (var policy in policies.Value)
+                {
+                    // Check OData type to determine policy type
+                    var odataType = policy.OdataType;
+                    
+                    // Only process Windows 10/11 compliance policies
+                    if (odataType == "#microsoft.graph.windows10CompliancePolicy" ||
+                        odataType == "#microsoft.graph.windows81CompliancePolicy")
+                    {
+                        var requirements = ExtractWindows10ComplianceRequirements(policy);
+                        if (requirements != null)
+                        {
+                            // Phase 1: Fetch assignment information for this policy
+                            await PopulatePolicyAssignmentsAsync(requirements);
+                            
+                            results.Add(requirements);
+                            Instance.Info($"[GRAPH] Policy '{requirements.PolicyName}': {requirements.RequirementsSummary} | {requirements.AssignmentSummary}");
+                        }
+                    }
+                    else
+                    {
+                        Instance.Debug($"[GRAPH] Skipping non-Windows policy: {policy.DisplayName} ({odataType})");
+                    }
+                }
+
+                Instance.Info($"[GRAPH] Extracted requirements from {results.Count} Windows compliance policies");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Failed to get compliance policy settings: {ex.Message}");
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Extract requirements from a Windows 10 compliance policy.
+        /// Uses reflection to access the properties since Graph SDK returns base type.
+        /// </summary>
+        private Models.CompliancePolicyRequirements? ExtractWindows10ComplianceRequirements(
+            Microsoft.Graph.Models.DeviceCompliancePolicy policy)
+        {
+            try
+            {
+                var requirements = new Models.CompliancePolicyRequirements
+                {
+                    PolicyId = policy.Id ?? "",
+                    PolicyName = policy.DisplayName ?? "Unnamed Policy",
+                    Description = policy.Description,
+                    Platform = "Windows10"
+                };
+
+                // Use reflection to get Windows 10 specific properties
+                // These properties exist on Windows10CompliancePolicy but not on base class
+                var policyType = policy.GetType();
+
+                // BitLocker
+                var bitLockerProp = policyType.GetProperty("BitLockerEnabled");
+                if (bitLockerProp != null)
+                {
+                    var value = bitLockerProp.GetValue(policy);
+                    requirements.RequiresBitLocker = value != null && (bool)value;
+                }
+
+                // Secure Boot
+                var secureBootProp = policyType.GetProperty("SecureBootEnabled");
+                if (secureBootProp != null)
+                {
+                    var value = secureBootProp.GetValue(policy);
+                    requirements.RequiresSecureBoot = value != null && (bool)value;
+                }
+
+                // Code Integrity (part of Secure Boot requirements)
+                var codeIntegrityProp = policyType.GetProperty("CodeIntegrityEnabled");
+                if (codeIntegrityProp != null)
+                {
+                    var value = codeIntegrityProp.GetValue(policy);
+                    if (value != null && (bool)value)
+                    {
+                        requirements.RequiresSecureBoot = true; // Code integrity requires secure boot
+                    }
+                }
+
+                // Defender Enabled
+                var defenderProp = policyType.GetProperty("DefenderEnabled");
+                if (defenderProp != null)
+                {
+                    var value = defenderProp.GetValue(policy);
+                    requirements.RequiresDefender = value != null && (bool)value;
+                }
+
+                // Real-Time Protection
+                var rtpProp = policyType.GetProperty("RtpEnabled");
+                if (rtpProp != null)
+                {
+                    var value = rtpProp.GetValue(policy);
+                    requirements.RequiresRealTimeProtection = value != null && (bool)value;
+                }
+
+                // Antivirus Required (alternative property name)
+                var antivirusProp = policyType.GetProperty("AntivirusRequired");
+                if (antivirusProp != null)
+                {
+                    var value = antivirusProp.GetValue(policy);
+                    if (value != null && (bool)value)
+                    {
+                        requirements.RequiresDefender = true;
+                    }
+                }
+
+                // Signature Up To Date
+                var signatureProp = policyType.GetProperty("SignatureOutOfDate");
+                if (signatureProp != null)
+                {
+                    // Note: This property is "out of date" so we invert it
+                    var value = signatureProp.GetValue(policy);
+                    requirements.RequiresUpToDateSignatures = value != null && !(bool)value;
+                }
+
+                // Firewall
+                var firewallProp = policyType.GetProperty("ActiveFirewallRequired");
+                if (firewallProp != null)
+                {
+                    var value = firewallProp.GetValue(policy);
+                    requirements.RequiresFirewall = value != null && (bool)value;
+                }
+
+                // Alternative firewall property
+                var firewallProp2 = policyType.GetProperty("FirewallEnabled");
+                if (firewallProp2 != null)
+                {
+                    var value = firewallProp2.GetValue(policy);
+                    if (value != null && (bool)value)
+                    {
+                        requirements.RequiresFirewall = true;
+                    }
+                }
+
+                // TPM Required
+                var tpmProp = policyType.GetProperty("TpmRequired");
+                if (tpmProp != null)
+                {
+                    var value = tpmProp.GetValue(policy);
+                    requirements.RequiresTpm = value != null && (bool)value;
+                }
+
+                // OS Minimum Version
+                var osMinProp = policyType.GetProperty("OsMinimumVersion");
+                if (osMinProp != null)
+                {
+                    var value = osMinProp.GetValue(policy) as string;
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        requirements.MinimumOSVersion = value;
+                    }
+                }
+
+                // OS Maximum Version
+                var osMaxProp = policyType.GetProperty("OsMaximumVersion");
+                if (osMaxProp != null)
+                {
+                    var value = osMaxProp.GetValue(policy) as string;
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        requirements.MaximumOSVersion = value;
+                    }
+                }
+
+                return requirements;
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"Failed to extract requirements from policy '{policy.DisplayName}': {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Phase 1: Get assignments for a compliance policy and populate assignment properties.
+        /// </summary>
+        private async Task PopulatePolicyAssignmentsAsync(Models.CompliancePolicyRequirements requirements)
+        {
+            if (_graphClient == null || string.IsNullOrEmpty(requirements.PolicyId))
+            {
+                return;
+            }
+
+            try
+            {
+                Instance.LogGraphQuery("GetPolicyAssignments", 
+                    $"/deviceManagement/deviceCompliancePolicies/{requirements.PolicyId}/assignments");
+
+                var assignments = await _graphClient.DeviceManagement
+                    .DeviceCompliancePolicies[requirements.PolicyId]
+                    .Assignments.GetAsync();
+
+                if (assignments?.Value == null || !assignments.Value.Any())
+                {
+                    requirements.HasAssignments = false;
+                    Instance.Info($"[GRAPH] Policy '{requirements.PolicyName}' has NO assignments - will not apply to any devices");
+                    return;
+                }
+
+                requirements.HasAssignments = true;
+                var groupIds = new List<string>();
+
+                foreach (var assignment in assignments.Value)
+                {
+                    var targetType = assignment.Target?.OdataType;
+
+                    if (targetType == "#microsoft.graph.allDevicesAssignmentTarget")
+                    {
+                        requirements.IsAssignedToAllDevices = true;
+                        Instance.Info($"[GRAPH] Policy '{requirements.PolicyName}' assigned to ALL DEVICES");
+                    }
+                    else if (targetType == "#microsoft.graph.groupAssignmentTarget")
+                    {
+                        requirements.AssignedGroupCount++;
+                        
+                        // Try to get the groupId from the target using reflection
+                        var targetObj = assignment.Target;
+                        if (targetObj != null)
+                        {
+                            var groupIdProp = targetObj.GetType().GetProperty("GroupId");
+                            if (groupIdProp != null)
+                            {
+                                var groupId = groupIdProp.GetValue(targetObj) as string;
+                                if (!string.IsNullOrEmpty(groupId))
+                                {
+                                    groupIds.Add(groupId);
+                                }
+                            }
+                        }
+                    }
+                    else if (targetType == "#microsoft.graph.allLicensedUsersAssignmentTarget")
+                    {
+                        // All licensed users - treat similar to All Devices for device policies
+                        requirements.HasAssignments = true;
+                        Instance.Info($"[GRAPH] Policy '{requirements.PolicyName}' assigned to All Licensed Users");
+                    }
+                    else if (targetType == "#microsoft.graph.exclusionGroupAssignmentTarget")
+                    {
+                        // Exclusion group - policy still has assignments, just with exclusions
+                        Instance.Debug($"[GRAPH] Policy '{requirements.PolicyName}' has exclusion group assignment");
+                    }
+
+                    // Check for assignment filters (beta API limitation)
+                    if (assignment.Target != null)
+                    {
+                        var filterIdProp = assignment.Target.GetType().GetProperty("DeviceAndAppManagementAssignmentFilterId");
+                        if (filterIdProp != null)
+                        {
+                            var filterId = filterIdProp.GetValue(assignment.Target) as string;
+                            if (!string.IsNullOrEmpty(filterId))
+                            {
+                                requirements.HasAssignmentFilters = true;
+                                Instance.Warning($"[GRAPH] Policy '{requirements.PolicyName}' has assignment filter - simulation may not be accurate");
+                            }
+                        }
+                    }
+                }
+
+                // Try to resolve group names (fail gracefully)
+                if (groupIds.Any())
+                {
+                    await ResolveGroupNamesAsync(groupIds, requirements);
+                }
+
+                Instance.Info($"[GRAPH] Policy '{requirements.PolicyName}' assignment summary: " +
+                    $"AllDevices={requirements.IsAssignedToAllDevices}, " +
+                    $"Groups={requirements.AssignedGroupCount}, " +
+                    $"HasFilters={requirements.HasAssignmentFilters}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[GRAPH] Failed to get assignments for policy '{requirements.PolicyName}': {ex.Message}");
+                // Don't fail - assume policy has assignments if we can't check
+                requirements.HasAssignments = true;
+            }
+        }
+
+        /// <summary>
+        /// Resolve group IDs to display names (fails gracefully).
+        /// </summary>
+        private async Task ResolveGroupNamesAsync(List<string> groupIds, Models.CompliancePolicyRequirements requirements)
+        {
+            if (_graphClient == null) return;
+
+            foreach (var groupId in groupIds.Take(5)) // Limit to 5 groups to avoid too many API calls
+            {
+                try
+                {
+                    Instance.LogGraphQuery("GetGroupName", $"/groups/{groupId}?$select=displayName");
+
+                    var group = await _graphClient.Groups[groupId].GetAsync(config =>
+                    {
+                        config.QueryParameters.Select = new[] { "displayName" };
+                    });
+
+                    if (!string.IsNullOrEmpty(group?.DisplayName))
+                    {
+                        requirements.AssignedGroupNames.Add(group.DisplayName);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Instance.Debug($"[GRAPH] Could not resolve group name for {groupId}: {ex.Message}");
+                    // Continue without the name - not critical
+                }
+            }
+
+            // If we have more groups than we resolved, add placeholders
+            if (requirements.AssignedGroupCount > requirements.AssignedGroupNames.Count)
+            {
+                int remaining = requirements.AssignedGroupCount - requirements.AssignedGroupNames.Count;
+                Instance.Debug($"[GRAPH] {remaining} additional group names not resolved");
+            }
+        }
+
+        /// <summary>
+        /// Get the most restrictive compliance policy (combines all requirements).
+        /// Used as the default policy for simulation when multiple policies exist.
+        /// </summary>
+        public async Task<Models.CompliancePolicyRequirements?> GetMostRestrictivePolicyAsync()
+        {
+            var policies = await GetCompliancePolicySettingsAsync();
+
+            if (!policies.Any())
+            {
+                return null;
+            }
+
+            // Create a combined policy with all requirements from all policies
+            var combined = new Models.CompliancePolicyRequirements
+            {
+                PolicyId = "combined",
+                PolicyName = "Combined Requirements (Most Restrictive)",
+                Description = $"Union of requirements from {policies.Count} policies",
+                Platform = "Windows10"
+            };
+
+            string? highestOsVersion = null;
+
+            foreach (var policy in policies)
+            {
+                if (policy.RequiresBitLocker) combined.RequiresBitLocker = true;
+                if (policy.RequiresDefender) combined.RequiresDefender = true;
+                if (policy.RequiresFirewall) combined.RequiresFirewall = true;
+                if (policy.RequiresSecureBoot) combined.RequiresSecureBoot = true;
+                if (policy.RequiresTpm) combined.RequiresTpm = true;
+                if (policy.RequiresRealTimeProtection) combined.RequiresRealTimeProtection = true;
+                if (policy.RequiresUpToDateSignatures) combined.RequiresUpToDateSignatures = true;
+
+                // Take the highest minimum OS version
+                if (!string.IsNullOrEmpty(policy.MinimumOSVersion))
+                {
+                    if (highestOsVersion == null || 
+                        CompareVersions(policy.MinimumOSVersion, highestOsVersion) > 0)
+                    {
+                        highestOsVersion = policy.MinimumOSVersion;
+                    }
+                }
+            }
+
+            combined.MinimumOSVersion = highestOsVersion;
+
+            Instance.Info($"[GRAPH] Combined policy requirements: {combined.RequirementsSummary}");
+            return combined;
+        }
+
+        /// <summary>
+        /// Compare two version strings.
+        /// </summary>
+        private int CompareVersions(string v1, string v2)
+        {
+            try
+            {
+                var version1 = new Version(v1);
+                var version2 = new Version(v2);
+                return version1.CompareTo(version2);
+            }
+            catch
+            {
+                return string.Compare(v1, v2, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// Detect device join type based on domain and Azure AD presence
         /// </summary>
