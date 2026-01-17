@@ -3,6 +3,18 @@
 ## [Unreleased]
 
 ### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.31] - 2026-01-16
+
+### Added
 - **Enrollment Impact Simulator** 🔬 100% data-driven compliance prediction feature
   - Queries actual Intune compliance policies via Graph API for requirements
   - Queries actual ConfigMgr device security inventory (BitLocker, Firewall, Defender, TPM, Secure Boot, OS version)
