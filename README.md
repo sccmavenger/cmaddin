@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.16.31** | January 16, 2026
+**Version 3.16.32** | January 17, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -102,6 +102,37 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.16.31 (January 16, 2026)
+
+### Added
+- **Enrollment Impact Simulator** 🔬 100% data-driven compliance prediction feature
+  - Queries actual Intune compliance policies via Graph API for requirements
+  - Queries actual ConfigMgr device security inventory (BitLocker, Firewall, Defender, TPM, Secure Boot, OS version)
+  - Simulates compliance evaluation for unenrolled devices against Intune policies
+  - Shows ready-to-enroll count, remediation-needed count, and projected compliance rate
+  - Gap analysis with prioritized remediation actions and effort levels
+  - Export remediation plan to CSV
+  - **No hardcoded estimates** - all metrics calculated from customer data
+  - New files: `Models/EnrollmentSimulatorModels.cs`, `Services/EnrollmentSimulatorService.cs`
+  - New views: `Views/EnrollmentSimulatorCard.xaml`, `Views/EnrollmentSimulatorWindow.xaml`
+  - Enhanced: `Services/ConfigMgrAdminService.cs` (security inventory methods)
+  - Enhanced: `Services/GraphDataService.cs` (compliance policy settings methods)
+- **Documentation Automation** 📋 Added three-part documentation system:
+  - `.github/copilot-instructions.md` - AI assistant guidance for automatic documentation updates
+  - `.gitmessage` - Commit message template with conventional commits format and DECISION markers
+  - `DECISIONS.md` - Architectural Decision Record (ADR) log
+  - `CONTEXT.md` - Current project state and quick reference
+- **Build Script Enhancement** - Build-And-Distribute.ps1 now auto-updates CONTEXT.md with version and date
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.16.30 (January 16, 2026)
 
 ### Added
@@ -166,19 +197,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 - README version pattern matching for bold markdown format
-
----
-
-### Version 3.16.26 (January 16, 2026)
-
-### Added
-- MSI installer support (WiX v6 toolset)
-
-### Changed
-- Build script README update pattern now handles bold markdown and dates
-
-### Fixed
-- README version not updating (was stuck at 3.16.3)
 
 ---
 
