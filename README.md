@@ -1566,6 +1566,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated:** December 22, 2025  
-**Version:** 2.5.0  
+**Last Updated**: 2026-01-17  
+**Version**: 3.16.32  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
