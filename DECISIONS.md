@@ -123,6 +123,41 @@ This document captures key architectural and design decisions made during develo
 
 ---
 
+## ADR-007: Data-Driven Enrollment Impact Simulator vs Hardcoded Estimates
+**Date**: 2025-01-17  
+**Status**: Implemented  
+**Context**: Migration Impact Analysis feature (v3.16.30) included hardcoded percentage estimates for before/after projections (e.g., "Security: 65% → 92%"). Concern raised about credibility - no citable source for these numbers puts Microsoft and app credibility at risk.
+
+**Decision**: Build a new "Enrollment Impact Simulator" feature that is 100% data-driven:
+- Query actual Intune compliance policies via Graph API for requirements
+- Query actual ConfigMgr device security inventory via Admin Service/WMI
+- Simulate compliance evaluation: compare device state against policy requirements
+- Show only verifiable metrics calculated from customer data
+
+**Alternatives Considered**:
+1. **Add citations/sources to existing estimates** - Rejected: Industry averages don't apply to specific customer environments
+2. **Make estimates user-adjustable** - Rejected: Users could still perceive the defaults as authoritative
+3. **Use ML/AI to generate estimates** - Rejected: Would require training data we don't have; still generates estimates
+4. **Enhance existing feature with data-driven option** - Rejected: Would perpetuate the "estimate" mindset
+5. **Remove the feature entirely** - Rejected: Valuable use case, just needs credible implementation
+
+**Key Principle Established**: "For metrics we can't cite, we should either find a real source, mark as estimate, make adjustable, or replace with data-driven calculation (best option)."
+
+**Implementation Details**:
+- `EnrollmentSimulatorService.cs` - Orchestrates simulation with demo data fallback
+- `ConfigMgrAdminService.cs` - New methods for BitLocker, Firewall, Defender, TPM, OS inventory
+- `GraphDataService.cs` - New methods for compliance policy settings extraction
+- `EnrollmentSimulatorCard.xaml` - Dashboard card with headline metrics
+- `EnrollmentSimulatorWindow.xaml` - Detailed results with device lists and gap analysis
+
+**Consequences**:
+- ✅ All displayed metrics can be explained: "This came from your Intune policy" / "This came from your ConfigMgr inventory"
+- ✅ Feature demonstrates actual value proposition without legal/credibility risk
+- ✅ Demo mode shows realistic mock data with clear labeling
+- ⚠️ Migration Impact Analysis feature (v3.16.30) should be reviewed for similar issues
+
+---
+
 ## Template for New Decisions
 
 ```markdown

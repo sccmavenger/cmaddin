@@ -1190,6 +1190,657 @@ namespace ZeroTrustMigrationAddin.Services
             });
         }
 
+        #region Security Inventory for Enrollment Simulator
+
+        /// <summary>
+        /// Get BitLocker encryption status for all devices.
+        /// Uses SMS_G_System_ENCRYPTABLE_VOLUME for drive-level encryption info.
+        /// </summary>
+        public async Task<List<BitLockerStatus>> GetBitLockerStatusAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
+            }
+
+            Instance.LogAdminServiceQuery("BitLocker Status", "SMS_G_System_ENCRYPTABLE_VOLUME - Drive encryption status");
+
+            if (_useWmiFallback)
+            {
+                return await GetBitLockerStatusViaWmiAsync();
+            }
+            else
+            {
+                return await GetBitLockerStatusViaRestApiAsync();
+            }
+        }
+
+        private async Task<List<BitLockerStatus>> GetBitLockerStatusViaRestApiAsync()
+        {
+            try
+            {
+                // Query ENCRYPTABLE_VOLUME for BitLocker status per drive
+                var query = $"{_adminServiceUrl}/wmi/SMS_G_System_ENCRYPTABLE_VOLUME?$select=ResourceID,DriveLetter,ProtectionStatus,ConversionStatus,EncryptionMethod";
+                var response = await _httpClient.GetAsync(query);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Instance.Warning($"BitLocker query failed: {response.StatusCode}. This class may not be inventoried.");
+                    return new List<BitLockerStatus>();
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<BitLockerResponse>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                var statuses = new List<BitLockerStatus>();
+                if (result?.Value != null)
+                {
+                    // Group by ResourceID, focus on OS drive (usually C:)
+                    var grouped = result.Value.GroupBy(v => v.ResourceID);
+                    foreach (var group in grouped)
+                    {
+                        var osDrive = group.FirstOrDefault(d => d.DriveLetter == "C:") ?? group.First();
+                        statuses.Add(new BitLockerStatus
+                        {
+                            ResourceId = group.Key,
+                            DriveLetter = osDrive.DriveLetter ?? "C:",
+                            ProtectionStatus = osDrive.ProtectionStatus,
+                            ConversionStatus = osDrive.ConversionStatus,
+                            EncryptionMethod = osDrive.EncryptionMethod,
+                            IsProtected = osDrive.ProtectionStatus == 1 || osDrive.ProtectionStatus == 2
+                        });
+                    }
+                }
+
+                Instance.Info($"[CONFIGMGR] Retrieved BitLocker status for {statuses.Count} devices");
+                return statuses;
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"Failed to get BitLocker status via REST: {ex.Message}");
+                return new List<BitLockerStatus>();
+            }
+        }
+
+        private async Task<List<BitLockerStatus>> GetBitLockerStatusViaWmiAsync()
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var statuses = new List<BitLockerStatus>();
+                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    scope.Connect();
+
+                    var query = new SelectQuery("SMS_G_System_ENCRYPTABLE_VOLUME", "", 
+                        new[] { "ResourceID", "DriveLetter", "ProtectionStatus", "ConversionStatus", "EncryptionMethod" });
+                    var searcher = new ManagementObjectSearcher(scope, query);
+
+                    var grouped = new Dictionary<int, BitLockerStatus>();
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        var resourceId = Convert.ToInt32(obj["ResourceID"]);
+                        var driveLetter = obj["DriveLetter"]?.ToString() ?? "";
+                        
+                        // Only take C: drive or first drive if C: not found
+                        if (!grouped.ContainsKey(resourceId) || driveLetter == "C:")
+                        {
+                            var protectionStatus = obj["ProtectionStatus"] != null ? Convert.ToInt32(obj["ProtectionStatus"]) : 0;
+                            grouped[resourceId] = new BitLockerStatus
+                            {
+                                ResourceId = resourceId,
+                                DriveLetter = driveLetter,
+                                ProtectionStatus = protectionStatus,
+                                ConversionStatus = obj["ConversionStatus"] != null ? Convert.ToInt32(obj["ConversionStatus"]) : 0,
+                                EncryptionMethod = obj["EncryptionMethod"]?.ToString(),
+                                IsProtected = protectionStatus == 1 || protectionStatus == 2
+                            };
+                        }
+                    }
+
+                    return grouped.Values.ToList();
+                }
+                catch (Exception ex)
+                {
+                    Instance.Warning($"Failed to get BitLocker status via WMI: {ex.Message}");
+                    return new List<BitLockerStatus>();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get Windows Firewall status for all devices.
+        /// </summary>
+        public async Task<List<FirewallStatus>> GetFirewallStatusAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
+            }
+
+            Instance.LogAdminServiceQuery("Firewall Status", "SMS_G_System_FIREWALL_PRODUCT - Windows Firewall state");
+
+            if (_useWmiFallback)
+            {
+                return await GetFirewallStatusViaWmiAsync();
+            }
+            else
+            {
+                return await GetFirewallStatusViaRestApiAsync();
+            }
+        }
+
+        private async Task<List<FirewallStatus>> GetFirewallStatusViaRestApiAsync()
+        {
+            try
+            {
+                // Try FIREWALL_PRODUCT first
+                var query = $"{_adminServiceUrl}/wmi/SMS_G_System_FIREWALL_PRODUCT?$select=ResourceID,ProductState";
+                var response = await _httpClient.GetAsync(query);
+
+                var statuses = new List<FirewallStatus>();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<FirewallResponse>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    if (result?.Value != null)
+                    {
+                        var grouped = result.Value.GroupBy(f => f.ResourceID);
+                        foreach (var group in grouped)
+                        {
+                            var first = group.First();
+                            // ProductState bit 4 (0x10) indicates firewall is on
+                            var isEnabled = (first.ProductState & 0x10) != 0 || first.ProductState >= 262144;
+                            statuses.Add(new FirewallStatus
+                            {
+                                ResourceId = group.Key,
+                                ProductState = first.ProductState,
+                                IsEnabled = isEnabled
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    Instance.Warning($"Firewall query failed: {response.StatusCode}. Trying alternate class.");
+                }
+
+                Instance.Info($"[CONFIGMGR] Retrieved Firewall status for {statuses.Count} devices");
+                return statuses;
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"Failed to get Firewall status via REST: {ex.Message}");
+                return new List<FirewallStatus>();
+            }
+        }
+
+        private async Task<List<FirewallStatus>> GetFirewallStatusViaWmiAsync()
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var statuses = new List<FirewallStatus>();
+                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    scope.Connect();
+
+                    var query = new SelectQuery("SMS_G_System_FIREWALL_PRODUCT", "", new[] { "ResourceID", "ProductState" });
+                    var searcher = new ManagementObjectSearcher(scope, query);
+
+                    var grouped = new Dictionary<int, FirewallStatus>();
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        var resourceId = Convert.ToInt32(obj["ResourceID"]);
+                        if (!grouped.ContainsKey(resourceId))
+                        {
+                            var productState = obj["ProductState"] != null ? Convert.ToInt32(obj["ProductState"]) : 0;
+                            grouped[resourceId] = new FirewallStatus
+                            {
+                                ResourceId = resourceId,
+                                ProductState = productState,
+                                IsEnabled = (productState & 0x10) != 0 || productState >= 262144
+                            };
+                        }
+                    }
+
+                    return grouped.Values.ToList();
+                }
+                catch (Exception ex)
+                {
+                    Instance.Warning($"Failed to get Firewall status via WMI: {ex.Message}");
+                    return new List<FirewallStatus>();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get Antivirus/Defender status for all devices.
+        /// </summary>
+        public async Task<List<AntivirusStatus>> GetAntivirusStatusAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
+            }
+
+            Instance.LogAdminServiceQuery("Antivirus Status", "SMS_G_System_AntimalwareHealthStatus - Defender/AV status");
+
+            if (_useWmiFallback)
+            {
+                return await GetAntivirusStatusViaWmiAsync();
+            }
+            else
+            {
+                return await GetAntivirusStatusViaRestApiAsync();
+            }
+        }
+
+        private async Task<List<AntivirusStatus>> GetAntivirusStatusViaRestApiAsync()
+        {
+            try
+            {
+                var query = $"{_adminServiceUrl}/wmi/SMS_G_System_AntimalwareHealthStatus?$select=ResourceID,ProtectionEnabled,RealTimeProtectionEnabled,AntispywareEnabled,LastQuickScanDateTimeStart,SignatureUpToDate,SignatureAge";
+                var response = await _httpClient.GetAsync(query);
+
+                var statuses = new List<AntivirusStatus>();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<AntivirusResponse>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    if (result?.Value != null)
+                    {
+                        foreach (var av in result.Value)
+                        {
+                            statuses.Add(new AntivirusStatus
+                            {
+                                ResourceId = av.ResourceID,
+                                ProtectionEnabled = av.ProtectionEnabled,
+                                RealTimeProtectionEnabled = av.RealTimeProtectionEnabled,
+                                AntispywareEnabled = av.AntispywareEnabled,
+                                LastQuickScanDate = av.LastQuickScanDateTimeStart,
+                                SignaturesUpToDate = av.SignatureUpToDate,
+                                SignatureAgeDays = av.SignatureAge
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    Instance.Warning($"Antivirus query failed: {response.StatusCode}");
+                }
+
+                Instance.Info($"[CONFIGMGR] Retrieved Antivirus status for {statuses.Count} devices");
+                return statuses;
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"Failed to get Antivirus status via REST: {ex.Message}");
+                return new List<AntivirusStatus>();
+            }
+        }
+
+        private async Task<List<AntivirusStatus>> GetAntivirusStatusViaWmiAsync()
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var statuses = new List<AntivirusStatus>();
+                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    scope.Connect();
+
+                    var query = new SelectQuery("SMS_G_System_AntimalwareHealthStatus");
+                    var searcher = new ManagementObjectSearcher(scope, query);
+
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        statuses.Add(new AntivirusStatus
+                        {
+                            ResourceId = Convert.ToInt32(obj["ResourceID"]),
+                            ProtectionEnabled = obj["ProtectionEnabled"] != null && Convert.ToBoolean(obj["ProtectionEnabled"]),
+                            RealTimeProtectionEnabled = obj["RealTimeProtectionEnabled"] != null && Convert.ToBoolean(obj["RealTimeProtectionEnabled"]),
+                            AntispywareEnabled = obj["AntispywareEnabled"] != null && Convert.ToBoolean(obj["AntispywareEnabled"]),
+                            LastQuickScanDate = obj["LastQuickScanDateTimeStart"] != null 
+                                ? ManagementDateTimeConverter.ToDateTime(obj["LastQuickScanDateTimeStart"].ToString()) 
+                                : null,
+                            SignaturesUpToDate = obj["SignatureUpToDate"] != null && Convert.ToBoolean(obj["SignatureUpToDate"]),
+                            SignatureAgeDays = obj["SignatureAge"] != null ? Convert.ToInt32(obj["SignatureAge"]) : null
+                        });
+                    }
+
+                    return statuses;
+                }
+                catch (Exception ex)
+                {
+                    Instance.Warning($"Failed to get Antivirus status via WMI: {ex.Message}");
+                    return new List<AntivirusStatus>();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get TPM status for all devices.
+        /// </summary>
+        public async Task<List<TpmStatus>> GetTpmStatusAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
+            }
+
+            Instance.LogAdminServiceQuery("TPM Status", "SMS_G_System_TPM - Trusted Platform Module status");
+
+            if (_useWmiFallback)
+            {
+                return await GetTpmStatusViaWmiAsync();
+            }
+            else
+            {
+                return await GetTpmStatusViaRestApiAsync();
+            }
+        }
+
+        private async Task<List<TpmStatus>> GetTpmStatusViaRestApiAsync()
+        {
+            try
+            {
+                var query = $"{_adminServiceUrl}/wmi/SMS_G_System_TPM?$select=ResourceID,IsEnabled_InitialValue,IsActivated_InitialValue,IsOwned_InitialValue,SpecVersion";
+                var response = await _httpClient.GetAsync(query);
+
+                var statuses = new List<TpmStatus>();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<TpmResponse>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    if (result?.Value != null)
+                    {
+                        foreach (var tpm in result.Value)
+                        {
+                            statuses.Add(new TpmStatus
+                            {
+                                ResourceId = tpm.ResourceID,
+                                IsPresent = true, // If we have a record, TPM is present
+                                IsEnabled = tpm.IsEnabled_InitialValue,
+                                IsActivated = tpm.IsActivated_InitialValue,
+                                IsOwned = tpm.IsOwned_InitialValue,
+                                SpecVersion = tpm.SpecVersion
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    Instance.Warning($"TPM query failed: {response.StatusCode}");
+                }
+
+                Instance.Info($"[CONFIGMGR] Retrieved TPM status for {statuses.Count} devices");
+                return statuses;
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"Failed to get TPM status via REST: {ex.Message}");
+                return new List<TpmStatus>();
+            }
+        }
+
+        private async Task<List<TpmStatus>> GetTpmStatusViaWmiAsync()
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var statuses = new List<TpmStatus>();
+                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    scope.Connect();
+
+                    var query = new SelectQuery("SMS_G_System_TPM");
+                    var searcher = new ManagementObjectSearcher(scope, query);
+
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        statuses.Add(new TpmStatus
+                        {
+                            ResourceId = Convert.ToInt32(obj["ResourceID"]),
+                            IsPresent = true,
+                            IsEnabled = obj["IsEnabled_InitialValue"] != null && Convert.ToBoolean(obj["IsEnabled_InitialValue"]),
+                            IsActivated = obj["IsActivated_InitialValue"] != null && Convert.ToBoolean(obj["IsActivated_InitialValue"]),
+                            IsOwned = obj["IsOwned_InitialValue"] != null && Convert.ToBoolean(obj["IsOwned_InitialValue"]),
+                            SpecVersion = obj["SpecVersion"]?.ToString()
+                        });
+                    }
+
+                    return statuses;
+                }
+                catch (Exception ex)
+                {
+                    Instance.Warning($"Failed to get TPM status via WMI: {ex.Message}");
+                    return new List<TpmStatus>();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get detailed OS information for all devices.
+        /// </summary>
+        public async Task<List<OSDetails>> GetOSDetailsAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
+            }
+
+            Instance.LogAdminServiceQuery("OS Details", "SMS_G_System_OPERATING_SYSTEM - Detailed OS version info");
+
+            if (_useWmiFallback)
+            {
+                return await GetOSDetailsViaWmiAsync();
+            }
+            else
+            {
+                return await GetOSDetailsViaRestApiAsync();
+            }
+        }
+
+        private async Task<List<OSDetails>> GetOSDetailsViaRestApiAsync()
+        {
+            try
+            {
+                var query = $"{_adminServiceUrl}/wmi/SMS_G_System_OPERATING_SYSTEM?$select=ResourceID,Caption,Version,BuildNumber,OSArchitecture";
+                var response = await _httpClient.GetAsync(query);
+
+                var statuses = new List<OSDetails>();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<OSDetailsResponse>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    if (result?.Value != null)
+                    {
+                        foreach (var os in result.Value)
+                        {
+                            statuses.Add(new OSDetails
+                            {
+                                ResourceId = os.ResourceID,
+                                Caption = os.Caption,
+                                Version = os.Version,
+                                BuildNumber = os.BuildNumber,
+                                Architecture = os.OSArchitecture
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    Instance.Warning($"OS Details query failed: {response.StatusCode}");
+                }
+
+                Instance.Info($"[CONFIGMGR] Retrieved OS details for {statuses.Count} devices");
+                return statuses;
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"Failed to get OS details via REST: {ex.Message}");
+                return new List<OSDetails>();
+            }
+        }
+
+        private async Task<List<OSDetails>> GetOSDetailsViaWmiAsync()
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var statuses = new List<OSDetails>();
+                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    scope.Connect();
+
+                    var query = new SelectQuery("SMS_G_System_OPERATING_SYSTEM");
+                    var searcher = new ManagementObjectSearcher(scope, query);
+
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        statuses.Add(new OSDetails
+                        {
+                            ResourceId = Convert.ToInt32(obj["ResourceID"]),
+                            Caption = obj["Caption"]?.ToString(),
+                            Version = obj["Version"]?.ToString(),
+                            BuildNumber = obj["BuildNumber"]?.ToString(),
+                            Architecture = obj["OSArchitecture"]?.ToString()
+                        });
+                    }
+
+                    return statuses;
+                }
+                catch (Exception ex)
+                {
+                    Instance.Warning($"Failed to get OS details via WMI: {ex.Message}");
+                    return new List<OSDetails>();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get combined security inventory for all devices (for Enrollment Simulator).
+        /// This combines BitLocker, Firewall, AV, TPM, and OS data into a single view.
+        /// </summary>
+        public async Task<List<Models.DeviceSecurityStatus>> GetDeviceSecurityInventoryAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
+            }
+
+            Instance.Info("[CONFIGMGR] Gathering comprehensive security inventory for enrollment simulation...");
+
+            // Gather all data in parallel
+            var devicesTask = GetWindows1011DevicesAsync();
+            var bitlockerTask = GetBitLockerStatusAsync();
+            var firewallTask = GetFirewallStatusAsync();
+            var antivirusTask = GetAntivirusStatusAsync();
+            var tpmTask = GetTpmStatusAsync();
+            var osTask = GetOSDetailsAsync();
+            var healthTask = GetClientHealthMetricsAsync();
+
+            await Task.WhenAll(devicesTask, bitlockerTask, firewallTask, antivirusTask, tpmTask, osTask, healthTask);
+
+            var devices = await devicesTask;
+            var bitlocker = (await bitlockerTask).ToDictionary(b => b.ResourceId, b => b);
+            var firewall = (await firewallTask).ToDictionary(f => f.ResourceId, f => f);
+            var antivirus = (await antivirusTask).ToDictionary(a => a.ResourceId, a => a);
+            var tpm = (await tpmTask).ToDictionary(t => t.ResourceId, t => t);
+            var os = (await osTask).ToDictionary(o => o.ResourceId, o => o);
+            var health = (await healthTask).ToDictionary(h => h.ResourceId, h => h);
+
+            var results = new List<Models.DeviceSecurityStatus>();
+
+            foreach (var device in devices)
+            {
+                var status = new Models.DeviceSecurityStatus
+                {
+                    ResourceId = device.ResourceId,
+                    DeviceName = device.Name,
+                    IsCoManaged = device.IsCoManaged,
+                    OperatingSystem = device.OperatingSystem
+                };
+
+                // BitLocker
+                if (bitlocker.TryGetValue(device.ResourceId, out var bl))
+                {
+                    status.BitLockerEnabled = bl.IsProtected;
+                    status.BitLockerProtectionStatus = bl.ProtectionStatus;
+                    status.EncryptionMethod = bl.EncryptionMethod;
+                }
+
+                // Firewall
+                if (firewall.TryGetValue(device.ResourceId, out var fw))
+                {
+                    status.FirewallEnabled = fw.IsEnabled;
+                }
+
+                // Antivirus
+                if (antivirus.TryGetValue(device.ResourceId, out var av))
+                {
+                    status.DefenderEnabled = av.ProtectionEnabled;
+                    status.RealTimeProtectionEnabled = av.RealTimeProtectionEnabled;
+                    status.SignaturesUpToDate = av.SignaturesUpToDate;
+                    status.SignatureAgeDays = av.SignatureAgeDays;
+                    status.LastScanDate = av.LastQuickScanDate;
+                }
+
+                // TPM
+                if (tpm.TryGetValue(device.ResourceId, out var tp))
+                {
+                    status.TpmPresent = tp.IsPresent;
+                    status.TpmEnabled = tp.IsEnabled;
+                    status.TpmActivated = tp.IsActivated;
+                    status.TpmVersion = tp.SpecVersion;
+                }
+
+                // OS Details
+                if (os.TryGetValue(device.ResourceId, out var osInfo))
+                {
+                    status.OSVersion = osInfo.Version;
+                    status.OSBuild = osInfo.BuildNumber;
+                }
+
+                // Health / Last Scan
+                if (health.TryGetValue(device.ResourceId, out var h))
+                {
+                    status.LastHardwareScan = h.LastHardwareScan;
+                }
+
+                results.Add(status);
+            }
+
+            Instance.Info($"[CONFIGMGR] Compiled security inventory for {results.Count} devices");
+            return results;
+        }
+
+        #endregion
+
         public bool IsConfigured => _isAuthenticated && !string.IsNullOrEmpty(_adminServiceUrl);
     }
 
@@ -1370,4 +2021,126 @@ namespace ZeroTrustMigrationAddin.Services
         public DateTime? LastHardwareScan { get; set; }
         public DateTime? LastSoftwareScan { get; set; }
     }
+
+    #region Security Inventory Models
+
+    // Response classes for JSON deserialization
+    public class BitLockerResponse
+    {
+        public List<BitLockerResource> Value { get; set; } = new();
+    }
+
+    public class BitLockerResource
+    {
+        public int ResourceID { get; set; }
+        public string? DriveLetter { get; set; }
+        public int ProtectionStatus { get; set; }
+        public int ConversionStatus { get; set; }
+        public string? EncryptionMethod { get; set; }
+    }
+
+    public class FirewallResponse
+    {
+        public List<FirewallResource> Value { get; set; } = new();
+    }
+
+    public class FirewallResource
+    {
+        public int ResourceID { get; set; }
+        public int ProductState { get; set; }
+    }
+
+    public class AntivirusResponse
+    {
+        public List<AntivirusResource> Value { get; set; } = new();
+    }
+
+    public class AntivirusResource
+    {
+        public int ResourceID { get; set; }
+        public bool ProtectionEnabled { get; set; }
+        public bool RealTimeProtectionEnabled { get; set; }
+        public bool AntispywareEnabled { get; set; }
+        public DateTime? LastQuickScanDateTimeStart { get; set; }
+        public bool SignatureUpToDate { get; set; }
+        public int? SignatureAge { get; set; }
+    }
+
+    public class TpmResponse
+    {
+        public List<TpmResource> Value { get; set; } = new();
+    }
+
+    public class TpmResource
+    {
+        public int ResourceID { get; set; }
+        public bool IsEnabled_InitialValue { get; set; }
+        public bool IsActivated_InitialValue { get; set; }
+        public bool IsOwned_InitialValue { get; set; }
+        public string? SpecVersion { get; set; }
+    }
+
+    public class OSDetailsResponse
+    {
+        public List<OSDetailsResource> Value { get; set; } = new();
+    }
+
+    public class OSDetailsResource
+    {
+        public int ResourceID { get; set; }
+        public string? Caption { get; set; }
+        public string? Version { get; set; }
+        public string? BuildNumber { get; set; }
+        public string? OSArchitecture { get; set; }
+    }
+
+    // Data models for security inventory
+    public class BitLockerStatus
+    {
+        public int ResourceId { get; set; }
+        public string DriveLetter { get; set; } = "C:";
+        public int ProtectionStatus { get; set; }
+        public int ConversionStatus { get; set; }
+        public string? EncryptionMethod { get; set; }
+        public bool IsProtected { get; set; }
+    }
+
+    public class FirewallStatus
+    {
+        public int ResourceId { get; set; }
+        public int ProductState { get; set; }
+        public bool IsEnabled { get; set; }
+    }
+
+    public class AntivirusStatus
+    {
+        public int ResourceId { get; set; }
+        public bool ProtectionEnabled { get; set; }
+        public bool RealTimeProtectionEnabled { get; set; }
+        public bool AntispywareEnabled { get; set; }
+        public DateTime? LastQuickScanDate { get; set; }
+        public bool SignaturesUpToDate { get; set; }
+        public int? SignatureAgeDays { get; set; }
+    }
+
+    public class TpmStatus
+    {
+        public int ResourceId { get; set; }
+        public bool IsPresent { get; set; }
+        public bool IsEnabled { get; set; }
+        public bool IsActivated { get; set; }
+        public bool IsOwned { get; set; }
+        public string? SpecVersion { get; set; }
+    }
+
+    public class OSDetails
+    {
+        public int ResourceId { get; set; }
+        public string? Caption { get; set; }
+        public string? Version { get; set; }
+        public string? BuildNumber { get; set; }
+        public string? Architecture { get; set; }
+    }
+
+    #endregion
 }
