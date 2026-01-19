@@ -14,6 +14,18 @@
 
 ## [3.16.38] - 2026-01-19
 
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.16.38] - 2026-01-19
+
 ### Fixed - Enrollment Impact Simulator Not Auto-Running
 **Root Cause Analysis from v3.16.37 logs:**
 - User expected simulator to show analysis/forecast after connection
