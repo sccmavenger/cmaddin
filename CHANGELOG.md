@@ -1,5 +1,17 @@
 # Zero Trust Migration Journey - Change Log
 
+## [Unreleased]
+
+### Changed - Moved Migration Impact Forecast to Overview Tab
+- Relocated the Migration Impact Forecast card from the Enrollment tab to the Overview tab
+- Now appears after the Device Identity State Analysis section for better visibility
+- Provides executive-level impact analysis on the main dashboard view
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Moved MigrationImpactCard element
+
+---
+
 ## [3.16.47] - 2026-01-19
 
 ### Changed - Enrollment Readiness Analyzer: Removed Firewall and Antivirus Checks
