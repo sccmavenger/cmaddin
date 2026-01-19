@@ -453,6 +453,12 @@ namespace ZeroTrustMigrationAddin.Views
         /// </summary>
         private void GapFilter_Changed(object sender, SelectionChangedEventArgs e)
         {
+            // Guard against event firing during initialization before _result is set
+            if (_result == null || _result.GapSummaries == null)
+            {
+                return;
+            }
+            
             if (GapFilterCombo.SelectedIndex == 0)
             {
                 // Show all
@@ -460,12 +466,21 @@ namespace ZeroTrustMigrationAddin.Views
             }
             else
             {
-                // Filter by selected gap
-                var selectedGap = _result.GapSummaries[GapFilterCombo.SelectedIndex - 1];
-                var filtered = _allRemediationDevices
-                    .Where(d => d.Gaps.Contains(selectedGap.Requirement))
-                    .ToList();
-                RemediationDevicesGrid.ItemsSource = filtered;
+                // Filter by selected gap - bounds check
+                var gapIndex = GapFilterCombo.SelectedIndex - 1;
+                if (gapIndex >= 0 && gapIndex < _result.GapSummaries.Count)
+                {
+                    var selectedGap = _result.GapSummaries[gapIndex];
+                    var filtered = _allRemediationDevices
+                        .Where(d => d.Gaps != null && d.Gaps.Contains(selectedGap?.Requirement ?? ""))
+                        .ToList();
+                    RemediationDevicesGrid.ItemsSource = filtered;
+                }
+                else
+                {
+                    // Fallback to show all if index is invalid
+                    RemediationDevicesGrid.ItemsSource = _allRemediationDevices;
+                }
             }
         }
 
@@ -534,29 +549,30 @@ namespace ZeroTrustMigrationAddin.Views
                 "Requirement,Affected Devices,Percentage,Remediation,Effort,Auto-Remediate"
             };
 
-            foreach (var gap in _result.GapSummaries)
+            foreach (var gap in _result.GapSummaries ?? Enumerable.Empty<GapSummary>())
             {
-                lines.Add($"\"{gap.Requirement}\",{gap.DeviceCount},{gap.Percentage:F1}%,\"{gap.RemediationAction}\",{gap.RemediationEffort},{(gap.CanAutoRemediate ? "Yes" : "No")}");
+                lines.Add($"\"{gap?.Requirement ?? ""}\",{gap?.DeviceCount ?? 0},{gap?.Percentage ?? 0:F1}%,\"{gap?.RemediationAction ?? ""}\",{gap?.RemediationEffort ?? ""},{(gap?.CanAutoRemediate == true ? "Yes" : "No")}");
             }
 
             lines.Add("");
             lines.Add("DEVICES NEEDING REMEDIATION");
             lines.Add("Device Name,Gap Count,Compliance Gaps,Max Effort");
 
-            foreach (var device in _result.DeviceResults.Where(d => !d.WouldBeCompliant))
+            foreach (var device in (_result.DeviceResults ?? Enumerable.Empty<DeviceSimulationResult>()).Where(d => !d.WouldBeCompliant))
             {
-                var gaps = string.Join("; ", device.Gaps.Select(g => g.Requirement));
-                var maxEffort = GetMaxEffort(device.Gaps.Select(g => g.RemediationEffort));
-                lines.Add($"\"{device.DeviceName}\",{device.Gaps.Count},\"{gaps}\",{maxEffort}");
+                var deviceGaps = device.Gaps ?? new List<ComplianceGap>();
+                var gaps = string.Join("; ", deviceGaps.Select(g => g?.Requirement ?? ""));
+                var maxEffort = GetMaxEffort(deviceGaps.Select(g => g?.RemediationEffort ?? ""));
+                lines.Add($"\"{device.DeviceName ?? ""}\",{deviceGaps.Count},\"{gaps}\",{maxEffort}");
             }
 
             lines.Add("");
             lines.Add("READY DEVICES");
             lines.Add("Device Name");
 
-            foreach (var device in _result.DeviceResults.Where(d => d.WouldBeCompliant))
+            foreach (var device in (_result.DeviceResults ?? Enumerable.Empty<DeviceSimulationResult>()).Where(d => d.WouldBeCompliant))
             {
-                lines.Add($"\"{device.DeviceName}\"");
+                lines.Add($"\"{device.DeviceName ?? ""}\"");
             }
 
             System.IO.File.WriteAllLines(filePath, lines);
