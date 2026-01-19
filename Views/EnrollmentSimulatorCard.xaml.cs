@@ -40,21 +40,41 @@ namespace ZeroTrustMigrationAddin.Views
             // Update data source badge based on connection status
             UpdateDataSourceBadge();
             
-            // Check if we have REAL services (not initial null call)
-            bool hasRealServices = graphService != null && configMgrService != null && configMgrService.IsConfigured;
+            // Check service availability
+            bool hasGraph = graphService != null;
+            bool hasConfigMgr = configMgrService != null;
+            bool configMgrReady = configMgrService?.IsConfigured ?? false;
             
-            Instance.Info($"[SIMULATOR CARD] Initialize called - Graph: {graphService != null}, ConfigMgr: {configMgrService != null}, ConfigMgr.IsConfigured: {configMgrService?.IsConfigured ?? false}");
+            Instance.Info($"[SIMULATOR CARD] Initialize called:");
+            Instance.Info($"[SIMULATOR CARD]    Graph service: {(hasGraph ? "✅ Available" : "❌ NULL")}");
+            Instance.Info($"[SIMULATOR CARD]    ConfigMgr service: {(hasConfigMgr ? "✅ Available" : "❌ NULL")}");
+            Instance.Info($"[SIMULATOR CARD]    ConfigMgr.IsConfigured: {(configMgrReady ? "✅ Ready" : "⚠️ Not configured")}");
             
-            // Auto-run simulation when real services are connected
-            if (hasRealServices)
+            // We need at least ONE service to run simulation
+            // Graph = compliance policies, ConfigMgr = device inventory
+            bool canRunSimulation = hasGraph || configMgrReady;
+            
+            if (canRunSimulation)
             {
-                Instance.Info("[SIMULATOR CARD] ✅ Real services detected - AUTO-RUNNING simulation...");
-                await RunSimulationAsync();
+                // Enable button and auto-run if we have BOTH services fully ready
+                RunSimulationButton.IsEnabled = true;
+                ButtonText.Text = "Run Simulation";
+                ButtonIcon.Text = "▶";
+                
+                if (hasGraph && configMgrReady)
+                {
+                    Instance.Info("[SIMULATOR CARD] ✅ Both services ready - AUTO-RUNNING simulation...");
+                    await RunSimulationAsync();
+                }
+                else
+                {
+                    Instance.Info("[SIMULATOR CARD] ⚡ Partial services available - button enabled for manual run");
+                    // Don't auto-run with partial data, but allow manual trigger
+                }
             }
             else
             {
-                Instance.Info("[SIMULATOR CARD] ⏳ Waiting for services - simulation requires manual trigger or connection");
-                // Disable button until services are ready
+                Instance.Info("[SIMULATOR CARD] ⏳ No services available yet - waiting for connection");
                 RunSimulationButton.IsEnabled = false;
                 ButtonText.Text = "Connect First";
                 ButtonIcon.Text = "⏳";
