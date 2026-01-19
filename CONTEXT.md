@@ -5,7 +5,7 @@ This document provides current project state for developers and AI assistants. U
 ---
 
 ## Current Version
-**Version**: 3.16.37 (Unreleased: 3.16.31)  
+**Version**: 3.16.38 (Unreleased: 3.16.31)  
 **Last Updated**: 2026-01-19  
 **Branch**: main
 
