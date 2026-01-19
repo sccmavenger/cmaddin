@@ -9,6 +9,7 @@ namespace ZeroTrustMigrationAddin.Services
     /// <summary>
     /// Phase 2 Feature: Application Migration Intelligence
     /// Analyzes ConfigMgr applications and provides migration guidance for Intune
+    /// NEVER uses demo data when ConfigMgr is connected.
     /// </summary>
     public class AppMigrationService
     {
@@ -22,157 +23,196 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Analyzes ConfigMgr applications and scores migration complexity
+        /// Analyzes ConfigMgr applications and scores migration complexity.
+        /// NEVER falls back to demo data - logs detailed errors for troubleshooting.
         /// </summary>
         public async Task<List<ApplicationMigrationAnalysis>> AnalyzeApplicationsAsync()
         {
             var apps = new List<ApplicationMigrationAnalysis>();
 
+            FileLogger.Instance.Info("[APPMIGRATION] ========================================");
+            FileLogger.Instance.Info("[APPMIGRATION] Application Migration Analysis - Starting");
+            FileLogger.Instance.Info("[APPMIGRATION] ========================================");
+
+            // Check ConfigMgr availability
+            if (_configMgrService == null)
+            {
+                FileLogger.Instance.Error("[APPMIGRATION] ❌ CONFIGURATION ERROR: ConfigMgr service is NULL");
+                FileLogger.Instance.Error("[APPMIGRATION]    Cannot analyze applications without ConfigMgr connection");
+                FileLogger.Instance.Error("[APPMIGRATION]    Connect to ConfigMgr first to see real application data");
+                return apps;
+            }
+
+            if (!_configMgrService.IsConfigured)
+            {
+                FileLogger.Instance.Error("[APPMIGRATION] ❌ CONNECTION ERROR: ConfigMgr is not configured");
+                FileLogger.Instance.Error("[APPMIGRATION]    IsConfigured=false - check ConfigMgr connection status");
+                return apps;
+            }
+
+            FileLogger.Instance.Info("[APPMIGRATION] ✅ ConfigMgr is configured, querying applications...");
+
             try
             {
-                FileLogger.Instance.Info("[APPMIGRATION] Starting application analysis");
+                var configMgrApps = await _configMgrService.GetApplicationsAsync();
                 
-                // Check if we have real ConfigMgr data
-                bool hasRealData = false;
-                if (_configMgrService != null)
+                if (configMgrApps == null || configMgrApps.Count == 0)
+                {
+                    FileLogger.Instance.Warning("[APPMIGRATION] ⚠️ ConfigMgr returned 0 applications");
+                    FileLogger.Instance.Warning("[APPMIGRATION]    Possible causes:");
+                    FileLogger.Instance.Warning("[APPMIGRATION]    1. No applications created in ConfigMgr");
+                    FileLogger.Instance.Warning("[APPMIGRATION]    2. Query permissions issue");
+                    FileLogger.Instance.Warning("[APPMIGRATION]    3. SMS_Application class query failed");
+                    return apps;
+                }
+
+                FileLogger.Instance.Info($"[APPMIGRATION] ✅ Retrieved {configMgrApps.Count} applications from ConfigMgr");
+                FileLogger.Instance.Info("[APPMIGRATION] Analyzing each application for Intune migration...");
+
+                foreach (var configMgrApp in configMgrApps)
                 {
                     try
                     {
-                        var realApps = await _configMgrService.GetApplicationsAsync();
-                        hasRealData = realApps != null && realApps.Count > 0;
-                        FileLogger.Instance.Debug($"[APPMIGRATION] ConfigMgr query returned {realApps?.Count ?? 0} applications");
+                        var analysis = AnalyzeApplication(configMgrApp);
+                        apps.Add(analysis);
                     }
                     catch (Exception ex)
                     {
-                        FileLogger.Instance.Warning($"[APPMIGRATION] ConfigMgr query failed: {ex.Message}");
+                        FileLogger.Instance.Warning($"[APPMIGRATION] Failed to analyze app '{configMgrApp.Name}': {ex.Message}");
                     }
                 }
 
-                if (!hasRealData)
+                // Log summary
+                var byPath = apps.GroupBy(a => a.MigrationPath);
+                FileLogger.Instance.Info("[APPMIGRATION] ----------------------------------------");
+                FileLogger.Instance.Info("[APPMIGRATION] Application Analysis Complete:");
+                FileLogger.Instance.Info($"[APPMIGRATION]    Total analyzed: {apps.Count}");
+                foreach (var group in byPath.OrderBy(g => g.Key))
                 {
-                    FileLogger.Instance.Info("[APPMIGRATION] Using DEMO data - no ConfigMgr connection or no applications found");
+                    FileLogger.Instance.Info($"[APPMIGRATION]    - {group.Key}: {group.Count()} apps");
                 }
-                
-                // TODO: Query ConfigMgr for application inventory
-                // For now, return demo data showing the structure
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "Microsoft Office 365 ProPlus",
-                    DeploymentType = "MSI",
-                    TargetedDevices = 1850,
-                    ComplexityScore = 15,
-                    MigrationPath = MigrationPath.Recommended,
-                    Recommendation = "Use Intune's built-in Office 365 deployment. No custom packaging needed.",
-                    EstimatedEffort = "1-2 hours"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "Adobe Acrobat Reader DC",
-                    DeploymentType = "EXE",
-                    TargetedDevices = 1620,
-                    ComplexityScore = 25,
-                    MigrationPath = MigrationPath.IntuneWin,
-                    Recommendation = "Convert to .intunewin package using Intune Content Prep Tool. Silent install parameters: /sAll /rs",
-                    EstimatedEffort = "2-3 hours"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "Google Chrome Enterprise",
-                    DeploymentType = "MSI",
-                    TargetedDevices = 2100,
-                    ComplexityScore = 20,
-                    MigrationPath = MigrationPath.Recommended,
-                    Recommendation = "Deploy via Intune Win32 app or use Microsoft Edge instead for better integration.",
-                    EstimatedEffort = "2-3 hours"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "7-Zip File Archiver",
-                    DeploymentType = "MSI",
-                    TargetedDevices = 980,
-                    ComplexityScore = 18,
-                    MigrationPath = MigrationPath.IntuneWin,
-                    Recommendation = "Simple MSI deployment. Convert to .intunewin and deploy with silent parameters.",
-                    EstimatedEffort = "1-2 hours"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "Microsoft Teams",
-                    DeploymentType = "EXE",
-                    TargetedDevices = 2450,
-                    ComplexityScore = 12,
-                    MigrationPath = MigrationPath.Recommended,
-                    Recommendation = "Use Intune's built-in Teams deployment or deploy new Teams 2.0 client.",
-                    EstimatedEffort = "1-2 hours"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "VLC Media Player",
-                    DeploymentType = "EXE",
-                    TargetedDevices = 450,
-                    ComplexityScore = 22,
-                    MigrationPath = MigrationPath.IntuneWin,
-                    Recommendation = "Package as Win32 app with silent install: /S /L=%TEMP%\\vlc_install.log",
-                    EstimatedEffort = "2 hours"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "Custom LOB Application",
-                    DeploymentType = "Script",
-                    TargetedDevices = 320,
-                    ComplexityScore = 75,
-                    MigrationPath = MigrationPath.RequiresReengineering,
-                    Recommendation = "Application uses complex ConfigMgr Task Sequence. Consider PowerShell deployment script or Azure Arc for device management.",
-                    EstimatedEffort = "2-3 weeks"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "SAP GUI Client",
-                    DeploymentType = "EXE",
-                    TargetedDevices = 180,
-                    ComplexityScore = 68,
-                    MigrationPath = MigrationPath.RequiresReengineering,
-                    Recommendation = "Complex enterprise app with multiple dependencies. Test thoroughly in Intune sandbox before production.",
-                    EstimatedEffort = "1-2 weeks"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "Notepad++",
-                    DeploymentType = "EXE",
-                    TargetedDevices = 680,
-                    ComplexityScore = 20,
-                    MigrationPath = MigrationPath.IntuneWin,
-                    Recommendation = "Straightforward Win32 app deployment. Use silent install: /S",
-                    EstimatedEffort = "1-2 hours"
-                });
-
-                apps.Add(new ApplicationMigrationAnalysis
-                {
-                    ApplicationName = "Cisco AnyConnect VPN",
-                    DeploymentType = "MSI",
-                    TargetedDevices = 1450,
-                    ComplexityScore = 45,
-                    MigrationPath = MigrationPath.IntuneWin,
-                    Recommendation = "Deploy as Win32 app. Consider migrating to Azure VPN or Always On VPN for better cloud integration.",
-                    EstimatedEffort = "4-6 hours"
-                });
-
-                FileLogger.Instance.Info($"Analyzed {apps.Count} applications for migration");
+                FileLogger.Instance.Info("[APPMIGRATION] ========================================");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Error($"Error analyzing applications: {ex.Message}");
+                FileLogger.Instance.Error($"[APPMIGRATION] ❌ QUERY FAILED: {ex.Message}");
+                FileLogger.Instance.Error($"[APPMIGRATION]    Exception Type: {ex.GetType().Name}");
+                if (ex.InnerException != null)
+                {
+                    FileLogger.Instance.Error($"[APPMIGRATION]    Inner Exception: {ex.InnerException.Message}");
+                }
             }
 
             return apps;
+        }
+
+        /// <summary>
+        /// Analyze a single ConfigMgr application for Intune migration
+        /// </summary>
+        private ApplicationMigrationAnalysis AnalyzeApplication(ConfigMgrApplication configMgrApp)
+        {
+            var analysis = new ApplicationMigrationAnalysis
+            {
+                ApplicationName = configMgrApp.Name ?? "Unknown Application",
+                DeploymentType = DetermineDeploymentType(configMgrApp),
+                TargetedDevices = 0, // Would need deployment data
+            };
+
+            // Calculate complexity based on application characteristics
+            bool hasCustomScripts = !string.IsNullOrEmpty(configMgrApp.Name) && 
+                (configMgrApp.Name.Contains("Script", StringComparison.OrdinalIgnoreCase) ||
+                 configMgrApp.Name.Contains("Custom", StringComparison.OrdinalIgnoreCase));
+            
+            analysis.ComplexityScore = CalculateComplexityScore(
+                analysis.DeploymentType,
+                hasCustomScripts,
+                false, // Can't determine user interaction requirement
+                0);    // Can't determine dependency count from basic query
+
+            // Determine migration path and recommendation
+            (analysis.MigrationPath, analysis.Recommendation, analysis.EstimatedEffort) = 
+                DetermineMigrationStrategy(analysis.ApplicationName, analysis.DeploymentType, analysis.ComplexityScore);
+
+            return analysis;
+        }
+
+        /// <summary>
+        /// Determine deployment type from application name/metadata
+        /// </summary>
+        private string DetermineDeploymentType(ConfigMgrApplication app)
+        {
+            var name = app.Name?.ToLower() ?? "";
+            
+            // Common patterns
+            if (name.Contains("msi")) return "MSI";
+            if (name.Contains("appx") || name.Contains("msix")) return "APPX/MSIX";
+            if (name.Contains("script") || name.Contains("powershell")) return "Script";
+            
+            // Default to EXE as most common
+            return "EXE";
+        }
+
+        /// <summary>
+        /// Determine migration strategy based on application characteristics
+        /// </summary>
+        private (MigrationPath path, string recommendation, string effort) DetermineMigrationStrategy(
+            string appName, string deploymentType, int complexity)
+        {
+            var nameLower = appName.ToLower();
+
+            // Check for apps with built-in Intune support
+            if (nameLower.Contains("office") || nameLower.Contains("microsoft 365") || nameLower.Contains("m365"))
+            {
+                return (MigrationPath.Recommended, 
+                    "Use Intune's built-in Microsoft 365 Apps deployment. No custom packaging needed.",
+                    "1-2 hours");
+            }
+
+            if (nameLower.Contains("teams"))
+            {
+                return (MigrationPath.Recommended,
+                    "Use Intune's built-in Teams deployment or new Teams 2.0 client.",
+                    "1-2 hours");
+            }
+
+            if (nameLower.Contains("edge"))
+            {
+                return (MigrationPath.Recommended,
+                    "Use Intune's built-in Microsoft Edge deployment.",
+                    "30 minutes");
+            }
+
+            // Complexity-based recommendations
+            if (complexity >= 70)
+            {
+                return (MigrationPath.RequiresReengineering,
+                    "Complex application requiring significant re-engineering for Intune deployment. Consider PowerShell deployment scripts or Azure Arc.",
+                    "1-3 weeks");
+            }
+
+            if (complexity >= 50)
+            {
+                return (MigrationPath.IntuneWin,
+                    "Moderate complexity. Convert to .intunewin package. Thoroughly test silent install parameters before deployment.",
+                    "4-8 hours");
+            }
+
+            // Standard apps
+            return deploymentType switch
+            {
+                "MSI" => (MigrationPath.IntuneWin,
+                    "Simple MSI deployment. Convert to .intunewin using Intune Content Prep Tool.",
+                    "1-2 hours"),
+                "APPX/MSIX" => (MigrationPath.Recommended,
+                    "Modern package format. Deploy directly through Intune as LOB app.",
+                    "1 hour"),
+                "Script" => (MigrationPath.IntuneWin,
+                    "Convert script-based deployment to Win32 app with PowerShell wrapper.",
+                    "2-4 hours"),
+                _ => (MigrationPath.IntuneWin,
+                    "Package as Win32 app with appropriate silent install parameters.",
+                    "2-3 hours")
+            };
         }
 
         /// <summary>

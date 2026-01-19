@@ -1266,6 +1266,32 @@ namespace ZeroTrustMigrationAddin.Services
         #region Security Inventory for Enrollment Simulator
 
         /// <summary>
+        /// Helper method to safely execute queries with detailed error logging.
+        /// Returns empty list on failure instead of throwing.
+        /// </summary>
+        private async Task<List<T>> SafeQueryAsync<T>(string queryName, Func<Task<List<T>>> queryFunc)
+        {
+            try
+            {
+                Instance.Debug($"[CONFIGMGR] Starting query: {queryName}...");
+                var result = await queryFunc();
+                Instance.Debug($"[CONFIGMGR] Query '{queryName}' completed: {result.Count} records");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CONFIGMGR] ❌ Query FAILED: {queryName}");
+                Instance.Error($"[CONFIGMGR]    Error: {ex.Message}");
+                Instance.Error($"[CONFIGMGR]    Type: {ex.GetType().Name}");
+                if (ex.InnerException != null)
+                {
+                    Instance.Error($"[CONFIGMGR]    Inner: {ex.InnerException.Message}");
+                }
+                return new List<T>();
+            }
+        }
+
+        /// <summary>
         /// Get BitLocker encryption status for all devices.
         /// Uses SMS_G_System_ENCRYPTABLE_VOLUME for drive-level encryption info.
         /// </summary>
@@ -1826,26 +1852,69 @@ namespace ZeroTrustMigrationAddin.Services
                 throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
             }
 
-            Instance.Info("[CONFIGMGR] Gathering comprehensive security inventory for enrollment simulation...");
+            Instance.Info("================================================================================");
+            Instance.Info("[CONFIGMGR] SECURITY INVENTORY COLLECTION - Starting comprehensive data gathering");
+            Instance.Info("================================================================================");
+            Instance.Info($"[CONFIGMGR]    Admin Service URL: {_adminServiceUrl}");
+            Instance.Info($"[CONFIGMGR]    Using WMI Fallback: {_useWmiFallback}");
+            Instance.Info($"[CONFIGMGR]    Site Code: {_siteCode}");
+            Instance.Info("[CONFIGMGR] Querying 7 data sources in parallel...");
 
-            // Gather all data in parallel
-            var devicesTask = GetWindows1011DevicesAsync();
-            var bitlockerTask = GetBitLockerStatusAsync();
-            var firewallTask = GetFirewallStatusAsync();
-            var antivirusTask = GetAntivirusStatusAsync();
-            var tpmTask = GetTpmStatusAsync();
-            var osTask = GetOSDetailsAsync();
-            var healthTask = GetClientHealthMetricsAsync();
+            // Gather all data in parallel with individual error handling
+            var devicesTask = SafeQueryAsync("Windows 10/11 Devices", GetWindows1011DevicesAsync);
+            var bitlockerTask = SafeQueryAsync("BitLocker Status (SMS_G_System_ENCRYPTABLE_VOLUME)", GetBitLockerStatusAsync);
+            var firewallTask = SafeQueryAsync("Firewall Status (SMS_G_System_FIREWALL_PRODUCT)", GetFirewallStatusAsync);
+            var antivirusTask = SafeQueryAsync("Antivirus Status (SMS_G_System_AntimalwareHealthStatus)", GetAntivirusStatusAsync);
+            var tpmTask = SafeQueryAsync("TPM Status (SMS_G_System_TPM)", GetTpmStatusAsync);
+            var osTask = SafeQueryAsync("OS Details (SMS_G_System_OPERATING_SYSTEM)", GetOSDetailsAsync);
+            var healthTask = SafeQueryAsync("Client Health Metrics", GetClientHealthMetricsAsync);
 
             await Task.WhenAll(devicesTask, bitlockerTask, firewallTask, antivirusTask, tpmTask, osTask, healthTask);
 
             var devices = await devicesTask;
-            var bitlocker = (await bitlockerTask).ToDictionary(b => b.ResourceId, b => b);
-            var firewall = (await firewallTask).ToDictionary(f => f.ResourceId, f => f);
-            var antivirus = (await antivirusTask).ToDictionary(a => a.ResourceId, a => a);
-            var tpm = (await tpmTask).ToDictionary(t => t.ResourceId, t => t);
-            var os = (await osTask).ToDictionary(o => o.ResourceId, o => o);
-            var health = (await healthTask).ToDictionary(h => h.ResourceId, h => h);
+            var bitlockerList = await bitlockerTask;
+            var firewallList = await firewallTask;
+            var antivirusList = await antivirusTask;
+            var tpmList = await tpmTask;
+            var osList = await osTask;
+            var healthList = await healthTask;
+
+            // Log detailed summary of what we got
+            Instance.Info("--------------------------------------------------------------------------------");
+            Instance.Info("[CONFIGMGR] SECURITY INVENTORY RESULTS SUMMARY:");
+            Instance.Info($"[CONFIGMGR]    ✓ Windows 10/11 Devices:     {devices.Count} records");
+            Instance.Info($"[CONFIGMGR]    ✓ BitLocker Status:          {bitlockerList.Count} records {(bitlockerList.Count == 0 ? "⚠️ EMPTY - Is hardware inventory enabled?" : "")}");
+            Instance.Info($"[CONFIGMGR]    ✓ Firewall Status:           {firewallList.Count} records {(firewallList.Count == 0 ? "⚠️ EMPTY - Is hardware inventory enabled?" : "")}");
+            Instance.Info($"[CONFIGMGR]    ✓ Antivirus/Defender Status: {antivirusList.Count} records {(antivirusList.Count == 0 ? "⚠️ EMPTY - Is Endpoint Protection reporting enabled?" : "")}");
+            Instance.Info($"[CONFIGMGR]    ✓ TPM Status:                {tpmList.Count} records {(tpmList.Count == 0 ? "⚠️ EMPTY - Is TPM inventory class enabled?" : "")}");
+            Instance.Info($"[CONFIGMGR]    ✓ OS Details:                {osList.Count} records {(osList.Count == 0 ? "⚠️ EMPTY - Check SMS_G_System_OPERATING_SYSTEM" : "")}");
+            Instance.Info($"[CONFIGMGR]    ✓ Client Health:             {healthList.Count} records");
+            Instance.Info("--------------------------------------------------------------------------------");
+
+            // Check for potential issues
+            if (devices.Count > 0 && bitlockerList.Count == 0)
+            {
+                Instance.Warning("[CONFIGMGR] ⚠️ POTENTIAL ISSUE: Have devices but NO BitLocker data");
+                Instance.Warning("[CONFIGMGR]    → Enable 'Encrytable Volume (SMS_EncryptableVolume)' in Client Settings > Hardware Inventory");
+                Instance.Warning("[CONFIGMGR]    → Ensure hardware inventory cycle has run on clients");
+            }
+            if (devices.Count > 0 && tpmList.Count == 0)
+            {
+                Instance.Warning("[CONFIGMGR] ⚠️ POTENTIAL ISSUE: Have devices but NO TPM data");
+                Instance.Warning("[CONFIGMGR]    → Enable 'TPM (SMS_TPM)' class in Client Settings > Hardware Inventory");
+            }
+            if (devices.Count > 0 && antivirusList.Count == 0)
+            {
+                Instance.Warning("[CONFIGMGR] ⚠️ POTENTIAL ISSUE: Have devices but NO Antivirus/Defender data");
+                Instance.Warning("[CONFIGMGR]    → This requires Endpoint Protection role or Windows Security app reporting");
+            }
+
+            var bitlocker = bitlockerList.ToDictionary(b => b.ResourceId, b => b);
+            var firewall = firewallList.ToDictionary(f => f.ResourceId, f => f);
+            var antivirus = antivirusList.ToDictionary(a => a.ResourceId, a => a);
+            var tpm = tpmList.ToDictionary(t => t.ResourceId, t => t);
+            var os = osList.ToDictionary(o => o.ResourceId, o => o);
+            var health = healthList.ToDictionary(h => h.ResourceId, h => h);
 
             var results = new List<Models.DeviceSecurityStatus>();
 
@@ -1908,7 +1977,36 @@ namespace ZeroTrustMigrationAddin.Services
                 results.Add(status);
             }
 
-            Instance.Info($"[CONFIGMGR] Compiled security inventory for {results.Count} devices");
+            // Log data completeness summary
+            // Check which devices have non-default security data populated
+            var withBitLocker = results.Count(r => r.BitLockerEnabled || r.BitLockerProtectionStatus > 0);
+            var withFirewall = results.Count(r => r.FirewallEnabled);
+            var withDefender = results.Count(r => r.DefenderEnabled);
+            var withTpm = results.Count(r => r.TpmPresent);
+            var withOs = results.Count(r => !string.IsNullOrEmpty(r.OSVersion));
+
+            Instance.Info("================================================================================");
+            Instance.Info("[CONFIGMGR] SECURITY INVENTORY COLLECTION - Complete");
+            Instance.Info($"[CONFIGMGR]    Total devices compiled: {results.Count}");
+            Instance.Info($"[CONFIGMGR]    Data completeness:");
+            Instance.Info($"[CONFIGMGR]       - With BitLocker data: {withBitLocker}/{results.Count} ({(results.Count > 0 ? withBitLocker * 100.0 / results.Count : 0):F0}%)");
+            Instance.Info($"[CONFIGMGR]       - With Firewall data:  {withFirewall}/{results.Count} ({(results.Count > 0 ? withFirewall * 100.0 / results.Count : 0):F0}%)");
+            Instance.Info($"[CONFIGMGR]       - With Defender data:  {withDefender}/{results.Count} ({(results.Count > 0 ? withDefender * 100.0 / results.Count : 0):F0}%)");
+            Instance.Info($"[CONFIGMGR]       - With TPM data:       {withTpm}/{results.Count} ({(results.Count > 0 ? withTpm * 100.0 / results.Count : 0):F0}%)");
+            Instance.Info($"[CONFIGMGR]       - With OS Version:     {withOs}/{results.Count} ({(results.Count > 0 ? withOs * 100.0 / results.Count : 0):F0}%)");
+            Instance.Info("================================================================================");
+
+            if (results.Count == 0)
+            {
+                Instance.Warning("[CONFIGMGR] ⚠️ NO DEVICES IN SECURITY INVENTORY - Check queries above for errors");
+            }
+            else if (withBitLocker == 0 && withTpm == 0 && withDefender == 0)
+            {
+                Instance.Warning("[CONFIGMGR] ⚠️ DEVICES FOUND BUT NO SECURITY DATA - Hardware inventory may not be configured");
+                Instance.Warning("[CONFIGMGR]    → In ConfigMgr Console: Administration > Client Settings > Default Client Settings");
+                Instance.Warning("[CONFIGMGR]    → Hardware Inventory > Set Classes > Enable security-related classes");
+            }
+
             return results;
         }
 
