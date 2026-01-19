@@ -31,34 +31,10 @@ namespace ZeroTrustMigrationAddin.Models
         /// <summary>Encryption method used (AES128, AES256, etc.).</summary>
         public string? EncryptionMethod { get; set; }
 
-        // Firewall Status
-        /// <summary>Whether Windows Firewall is enabled.</summary>
-        public bool FirewallEnabled { get; set; }
-
-        /// <summary>Firewall domain profile enabled.</summary>
-        public bool FirewallDomainEnabled { get; set; }
-
-        /// <summary>Firewall private profile enabled.</summary>
-        public bool FirewallPrivateEnabled { get; set; }
-
-        /// <summary>Firewall public profile enabled.</summary>
-        public bool FirewallPublicEnabled { get; set; }
-
-        // Antivirus/Defender Status
-        /// <summary>Whether Defender/Antivirus is enabled.</summary>
-        public bool DefenderEnabled { get; set; }
-
-        /// <summary>Whether real-time protection is on.</summary>
-        public bool RealTimeProtectionEnabled { get; set; }
-
-        /// <summary>Last scan date.</summary>
-        public DateTime? LastScanDate { get; set; }
-
-        /// <summary>Whether antivirus signatures are up to date.</summary>
-        public bool SignaturesUpToDate { get; set; }
-
-        /// <summary>Signature age in days.</summary>
-        public int? SignatureAgeDays { get; set; }
+        // NOTE: Firewall and Antivirus/Defender properties removed in v3.16.47
+        // - SMS_G_System_FIREWALL_PRODUCT doesn't exist in ConfigMgr standard inventory
+        // - SMS_G_System_AntimalwareHealthStatus requires Endpoint Protection role
+        // Both are enforced by Intune Endpoint Security policies post-enrollment
 
         // TPM Status
         /// <summary>Whether TPM is present.</summary>
@@ -124,11 +100,8 @@ namespace ZeroTrustMigrationAddin.Models
         /// <summary>Whether BitLocker encryption is required.</summary>
         public bool RequiresBitLocker { get; set; }
 
-        /// <summary>Whether Windows Defender is required.</summary>
-        public bool RequiresDefender { get; set; }
-
-        /// <summary>Whether Windows Firewall is required.</summary>
-        public bool RequiresFirewall { get; set; }
+        // NOTE: RequiresDefender and RequiresFirewall removed in v3.16.47
+        // These are enforced by Intune post-enrollment, not checked pre-enrollment
 
         /// <summary>Whether Secure Boot is required.</summary>
         public bool RequiresSecureBoot { get; set; }
@@ -136,11 +109,7 @@ namespace ZeroTrustMigrationAddin.Models
         /// <summary>Whether TPM is required.</summary>
         public bool RequiresTpm { get; set; }
 
-        /// <summary>Whether real-time protection is required.</summary>
-        public bool RequiresRealTimeProtection { get; set; }
-
-        /// <summary>Whether up-to-date signatures are required.</summary>
-        public bool RequiresUpToDateSignatures { get; set; }
+        // NOTE: RequiresRealTimeProtection and RequiresUpToDateSignatures removed in v3.16.47
 
         // OS Requirements
         /// <summary>Minimum OS version required (e.g., "10.0.19041").</summary>
@@ -161,12 +130,8 @@ namespace ZeroTrustMigrationAddin.Models
             {
                 int count = 0;
                 if (RequiresBitLocker) count++;
-                if (RequiresDefender) count++;
-                if (RequiresFirewall) count++;
                 if (RequiresSecureBoot) count++;
                 if (RequiresTpm) count++;
-                if (RequiresRealTimeProtection) count++;
-                if (RequiresUpToDateSignatures) count++;
                 if (!string.IsNullOrEmpty(MinimumOSVersion)) count++;
                 return count;
             }
@@ -179,8 +144,6 @@ namespace ZeroTrustMigrationAddin.Models
             {
                 var items = new List<string>();
                 if (RequiresBitLocker) items.Add("BitLocker");
-                if (RequiresDefender) items.Add("Defender");
-                if (RequiresFirewall) items.Add("Firewall");
                 if (RequiresSecureBoot) items.Add("Secure Boot");
                 if (RequiresTpm) items.Add("TPM");
                 if (!string.IsNullOrEmpty(MinimumOSVersion)) items.Add($"OS {MinimumOSVersion}+");
