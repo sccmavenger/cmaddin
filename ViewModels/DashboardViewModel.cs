@@ -2169,28 +2169,9 @@ namespace ZeroTrustMigrationAddin.ViewModels
             ProgressTargets.Clear();
             Milestones.Clear();
 
-            // Mock AI Action Summary for authenticated users
-            AIActionSummary = new AIActionSummary
-            {
-                PrimaryEnrollmentAction = "Enroll the 425 'Good' readiness devices (scores 60-79) using Phase 3 Autonomous Agent",
-                EnrollmentActionImpact = 425,
-                PrimaryWorkloadAction = "Transition Conditional Access workload to unlock modern security policies",
-                WorkloadActionImpact = "Unlock Zero Trust security and app protection policies",
-                EnrollmentBlockers = new List<string>
-                {
-                    "132 devices have insufficient disk space (<20GB free)",
-                    "48 devices running Windows 7 (OS upgrade required)",
-                    "25 devices have outdated TPM firmware (blocks BitLocker)"
-                },
-                WorkloadBlockers = new List<string>
-                {
-                    "Conditional Access policies not yet configured in Intune",
-                    "75% enrollment threshold not yet met (currently 58%)"
-                },
-                AIRecommendation = "Focus on device enrollment first. Use Phase 3 agent to auto-enroll 100 devices/week targeting 'Good' readiness scores. Once you reach 75% enrollment (3 weeks at current velocity), transition Conditional Access workload to unlock $105K annual savings from reduced infrastructure costs.",
-                WeeksToNextMilestone = 3,
-                IsAIPowered = false
-            };
+            // v3.16.33 - Generate REAL AI Action Summary from actual data
+            Instance.Info("Generating AI Action Summary from real data...");
+            await GenerateRealAIActionSummaryAsync();
             OnPropertyChanged(nameof(AIActionSummary));
 
             // REAL ENROLLMENT BLOCKER DETECTION (only true prerequisites)
@@ -2630,7 +2611,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         {
             try
             {
-                Instance.Info("Loading device selection intelligence...");
+                Instance.Info("=== LOADING DEVICE SELECTION DATA ===");
 
                 int unenrolledCount;
 
@@ -2638,12 +2619,22 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 {
                     // Use real data
                     unenrolledCount = DeviceEnrollment.ConfigMgrOnlyDevices;
+                    Instance.Info($"   Using REAL unenrolled count: {unenrolledCount} devices");
                 }
                 else
                 {
-                    // Use mock data (when not authenticated or no devices)
-                    unenrolledCount = 50600; // Mock: 50,600 unenrolled devices (matches ConfigMgrOnlyDevices)
-                    Instance.Info("Using MOCK device selection data (not authenticated)");
+                    // v3.16.33 - Only use mock data when NOT connected
+                    if (!UseRealData)
+                    {
+                        unenrolledCount = 50600; // Mock: 50,600 unenrolled devices (matches ConfigMgrOnlyDevices)
+                        Instance.Info("   Using MOCK device selection data (not authenticated)");
+                    }
+                    else
+                    {
+                        // Connected but no devices - this is real data showing 0
+                        unenrolledCount = 0;
+                        Instance.Info("   Connected but ConfigMgrOnlyDevices is 0 - showing real (empty) data");
+                    }
                 }
 
                 // Get AI guidance if available
@@ -2655,22 +2646,38 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 // Calculate readiness counts using real device health analysis
                 // If DeviceReadiness data is available (from LoadRealDataAsync), use it
                 // Otherwise fall back to estimates for demo/mock mode
+                Instance.Info($"   DeviceReadiness object: {(DeviceReadiness != null ? "EXISTS" : "NULL")}");
                 if (DeviceReadiness != null)
+                {
+                    Instance.Info($"   DeviceReadiness values: Excellent={DeviceReadiness.ExcellentDevices}, Good={DeviceReadiness.GoodDevices}, Fair={DeviceReadiness.FairDevices}, Poor={DeviceReadiness.PoorDevices}");
+                }
+                
+                if (DeviceReadiness != null && (DeviceReadiness.ExcellentDevices > 0 || DeviceReadiness.GoodDevices > 0 || DeviceReadiness.FairDevices > 0 || DeviceReadiness.PoorDevices > 0))
                 {
                     ExcellentReadinessCount = DeviceReadiness.ExcellentDevices;
                     GoodReadinessCount = DeviceReadiness.GoodDevices;
                     FairReadinessCount = DeviceReadiness.FairDevices;
                     PoorReadinessCount = DeviceReadiness.PoorDevices;
-                    Instance.Info($"✅ Using real device readiness: {ExcellentReadinessCount} Excellent, {GoodReadinessCount} Good, {FairReadinessCount} Fair, {PoorReadinessCount} Poor");
+                    Instance.Info($"   Using REAL device readiness: {ExcellentReadinessCount} Excellent, {GoodReadinessCount} Good, {FairReadinessCount} Fair, {PoorReadinessCount} Poor");
                 }
-                else
+                else if (!UseRealData)
                 {
-                    // Fallback estimates for mock/demo mode
+                    // Fallback estimates for mock/demo mode (NOT connected)
                     ExcellentReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.35)); // ~35% excellent
                     GoodReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.30)); // ~30% good
                     FairReadinessCount = Math.Max(0, (int)(unenrolledCount * 0.25)); // ~25% fair
                     PoorReadinessCount = unenrolledCount - ExcellentReadinessCount - GoodReadinessCount - FairReadinessCount;
-                    Instance.Info($"ℹ️ Using estimated readiness (real data not available)");
+                    Instance.Info($"   Using MOCK estimated readiness (not authenticated): {ExcellentReadinessCount} Excellent, {GoodReadinessCount} Good");
+                }
+                else
+                {
+                    // v3.16.33 - Connected but DeviceReadiness returned 0's - show actual 0's, not estimates
+                    ExcellentReadinessCount = DeviceReadiness?.ExcellentDevices ?? 0;
+                    GoodReadinessCount = DeviceReadiness?.GoodDevices ?? 0;
+                    FairReadinessCount = DeviceReadiness?.FairDevices ?? 0;
+                    PoorReadinessCount = DeviceReadiness?.PoorDevices ?? 0;
+                    Instance.Warning("   Connected but readiness counts are 0 - check ConfigMgr device query logs above");
+                    Instance.Info($"   Raw values: {ExcellentReadinessCount} Excellent, {GoodReadinessCount} Good, {FairReadinessCount} Fair, {PoorReadinessCount} Poor");
                 }
 
                 DevicesNeedingPreparation = FairReadinessCount;
@@ -2713,10 +2720,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
                 Instance.Info("Loading workload velocity trends...");
 
-                // If no workloads exist, create mock workloads for demo
-                if (Workloads.Count == 0)
+                // If no workloads exist AND not connected, show mock data
+                // v3.16.33 - Only use mock if not using real data
+                if (Workloads.Count == 0 && !UseRealData)
                 {
-                    Instance.Info("No workloads available, using MOCK velocity data");
+                    Instance.Info("No workloads available and not connected - using MOCK velocity data");
                     
                     // Create mock velocity data for 3 categories
                     ExcellentVelocityCount = 2; // Mock: 2 workloads with excellent velocity
@@ -3004,6 +3012,155 @@ namespace ZeroTrustMigrationAddin.ViewModels
             catch (Exception ex)
             {
                 Instance.LogException(ex, "LoadApplicationMigrationDataAsync");
+            }
+        }
+
+        /// <summary>
+        /// v3.16.33 - Generate AI Action Summary from REAL data instead of hardcoded mock values
+        /// </summary>
+        private async Task GenerateRealAIActionSummaryAsync()
+        {
+            try
+            {
+                // Get real device readiness counts
+                int excellentCount = DeviceReadiness?.ExcellentDevices ?? ExcellentReadinessCount;
+                int goodCount = DeviceReadiness?.GoodDevices ?? GoodReadinessCount;
+                int fairCount = DeviceReadiness?.FairDevices ?? FairReadinessCount;
+                int poorCount = DeviceReadiness?.PoorDevices ?? PoorReadinessCount;
+                
+                // Get enrollment progress
+                int enrolledDevices = DeviceEnrollment?.IntuneEnrolledDevices ?? 0;
+                int totalDevices = DeviceEnrollment?.TotalDevices ?? 1;
+                double enrollmentPercent = totalDevices > 0 ? (enrolledDevices * 100.0 / totalDevices) : 0;
+                
+                // Determine primary enrollment action based on real data
+                string enrollmentAction;
+                int enrollmentImpact;
+                if (excellentCount > 0)
+                {
+                    enrollmentAction = $"Enroll the {excellentCount} 'Excellent' readiness devices (scores ≥85) - highest success probability";
+                    enrollmentImpact = excellentCount;
+                }
+                else if (goodCount > 0)
+                {
+                    enrollmentAction = $"Enroll the {goodCount} 'Good' readiness devices (scores 60-84) for steady progress";
+                    enrollmentImpact = goodCount;
+                }
+                else if (fairCount > 0)
+                {
+                    enrollmentAction = $"Remediate the {fairCount} 'Fair' readiness devices (scores 40-59) before enrollment";
+                    enrollmentImpact = fairCount;
+                }
+                else
+                {
+                    enrollmentAction = "No devices available for enrollment - check ConfigMgr connectivity";
+                    enrollmentImpact = 0;
+                }
+                
+                // Determine workload action based on incomplete workloads
+                var notStartedWorkloads = Workloads.Where(w => w.Status == WorkloadStatus.NotStarted).ToList();
+                var inProgressWorkloads = Workloads.Where(w => w.Status == WorkloadStatus.InProgress).ToList();
+                
+                string workloadAction;
+                string workloadImpact;
+                if (inProgressWorkloads.Any())
+                {
+                    var nextWorkload = inProgressWorkloads.First();
+                    workloadAction = $"Complete '{nextWorkload.Name}' workload transition (in progress)";
+                    workloadImpact = $"Unlock {nextWorkload.Name} cloud benefits";
+                }
+                else if (notStartedWorkloads.Any())
+                {
+                    var nextWorkload = notStartedWorkloads.First();
+                    workloadAction = $"Start '{nextWorkload.Name}' workload transition";
+                    workloadImpact = $"Begin transition to unlock cloud-native {nextWorkload.Name}";
+                }
+                else
+                {
+                    workloadAction = "All workloads transitioned - monitor and optimize";
+                    workloadImpact = "Maintain cloud-native posture";
+                }
+                
+                // Generate real enrollment blockers from data
+                var realEnrollmentBlockers = new List<string>();
+                if (EnrollmentBlockers?.BlockerCategories != null)
+                {
+                    foreach (var category in EnrollmentBlockers.BlockerCategories.Take(3))
+                    {
+                        realEnrollmentBlockers.Add($"{category.DeviceCount} devices: {category.Description}");
+                    }
+                }
+                if (!realEnrollmentBlockers.Any())
+                {
+                    realEnrollmentBlockers.Add("No critical enrollment blockers detected");
+                }
+                
+                // Generate workload blockers from data
+                var realWorkloadBlockers = new List<string>();
+                if (enrollmentPercent < 75)
+                {
+                    realWorkloadBlockers.Add($"75% enrollment threshold not yet met (currently {enrollmentPercent:F0}%)");
+                }
+                foreach (var workload in notStartedWorkloads.Take(2))
+                {
+                    realWorkloadBlockers.Add($"'{workload.Name}' workload not yet configured in Intune");
+                }
+                if (!realWorkloadBlockers.Any())
+                {
+                    realWorkloadBlockers.Add("No workload blockers detected");
+                }
+                
+                // Calculate weeks to next milestone (75% enrollment)
+                double weeklyVelocity = EnrollmentAccelerationInsight?.YourWeeklyEnrollmentRate ?? 10;
+                int devicesToMilestone = Math.Max(0, (int)(totalDevices * 0.75) - enrolledDevices);
+                int weeksToMilestone = weeklyVelocity > 0 ? (int)Math.Ceiling(devicesToMilestone / weeklyVelocity) : 52;
+                
+                // Build AI recommendation
+                string aiReco = $"Focus on enrolling {excellentCount + goodCount} ready devices first. ";
+                if (weeklyVelocity > 0)
+                {
+                    aiReco += $"At current velocity ({weeklyVelocity:F0}/week), you'll reach 75% enrollment in ~{weeksToMilestone} weeks. ";
+                }
+                if (notStartedWorkloads.Any())
+                {
+                    aiReco += $"Then transition {notStartedWorkloads.First().Name} to unlock cloud benefits.";
+                }
+                
+                AIActionSummary = new AIActionSummary
+                {
+                    PrimaryEnrollmentAction = enrollmentAction,
+                    EnrollmentActionImpact = enrollmentImpact,
+                    PrimaryWorkloadAction = workloadAction,
+                    WorkloadActionImpact = workloadImpact,
+                    EnrollmentBlockers = realEnrollmentBlockers,
+                    WorkloadBlockers = realWorkloadBlockers,
+                    AIRecommendation = aiReco,
+                    WeeksToNextMilestone = weeksToMilestone,
+                    IsAIPowered = _aiRecommendationService?.IsConfigured ?? false
+                };
+                
+                Instance.Info($"✅ Generated REAL AI Action Summary:");
+                Instance.Info($"   Primary action: Enroll {enrollmentImpact} devices");
+                Instance.Info($"   Enrollment blockers: {realEnrollmentBlockers.Count}");
+                Instance.Info($"   Workload blockers: {realWorkloadBlockers.Count}");
+                Instance.Info($"   Weeks to 75% milestone: {weeksToMilestone}");
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GenerateRealAIActionSummaryAsync");
+                // Fall back to minimal summary on error
+                AIActionSummary = new AIActionSummary
+                {
+                    PrimaryEnrollmentAction = "Unable to generate recommendations - check data connections",
+                    EnrollmentActionImpact = 0,
+                    PrimaryWorkloadAction = "Check Graph and ConfigMgr connectivity",
+                    WorkloadActionImpact = "Data required for recommendations",
+                    EnrollmentBlockers = new List<string> { "Error loading blocker data" },
+                    WorkloadBlockers = new List<string> { "Error loading workload data" },
+                    AIRecommendation = "Please verify data source connections and try again.",
+                    WeeksToNextMilestone = 0,
+                    IsAIPowered = false
+                };
             }
         }
 

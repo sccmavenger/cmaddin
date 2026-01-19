@@ -31,19 +31,29 @@ namespace ZeroTrustMigrationAddin.Services
         {
             try
             {
-                FileLogger.Instance.Info("Starting device readiness analysis...");
+                FileLogger.Instance.Info("=== DEVICE READINESS ANALYSIS START ===");
+                FileLogger.Instance.Info($"   ConfigMgr Service Configured: {_configMgrService?.IsConfigured ?? false}");
+                FileLogger.Instance.Info($"   Graph Service Authenticated: {_graphService?.IsAuthenticated ?? false}");
 
                 // Get ConfigMgr-only devices (unenrolled)
+                FileLogger.Instance.Info("   Querying ConfigMgr for Windows 10/11 devices...");
                 var allDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                FileLogger.Instance.Info($"   ✅ ConfigMgr returned {allDevices?.Count ?? 0} Windows 10/11 devices");
+                
                 var enrollmentStatus = await _graphService.GetDeviceEnrollmentAsync();
                 
                 // Filter to unenrolled devices (ConfigMgr only)
                 var unenrolledCount = enrollmentStatus?.ConfigMgrOnlyDevices ?? 0;
-                FileLogger.Instance.Info($"Found {unenrolledCount} unenrolled devices for readiness analysis");
+                FileLogger.Instance.Info($"   Unenrolled (ConfigMgr-only): {unenrolledCount} devices");
 
                 // Get health metrics for all devices
+                FileLogger.Instance.Info("   Querying ConfigMgr for client health metrics...");
                 var healthMetrics = await _configMgrService.GetClientHealthMetricsAsync();
+                FileLogger.Instance.Info($"   ✅ Health metrics returned: {healthMetrics?.Count ?? 0} records");
+                
+                FileLogger.Instance.Info("   Querying ConfigMgr for hardware inventory...");
                 var hardwareInventory = await _configMgrService.GetHardwareInventoryAsync();
+                FileLogger.Instance.Info($"   ✅ Hardware inventory returned: {hardwareInventory?.Count ?? 0} records");
 
                 // Calculate health score for each device
                 var deviceReadinessList = new List<DeviceReadinessDetail>();
@@ -80,7 +90,17 @@ namespace ZeroTrustMigrationAddin.Services
                 // Poor: <40 (critical issues, high enrollment failure risk)
                 var poor = deviceReadinessList.Where(d => d.HealthScore < 40).OrderBy(d => d.HealthScore).ToList();
 
-                FileLogger.Instance.Info($"Categorized: {excellent.Count} Excellent, {good.Count} Good, {fair.Count} Fair, {poor.Count} Poor");
+                FileLogger.Instance.Info($"=== DEVICE READINESS ANALYSIS COMPLETE ===");
+                FileLogger.Instance.Info($"   Total devices analyzed: {deviceReadinessList.Count}");
+                FileLogger.Instance.Info($"   Excellent (≥85): {excellent.Count} devices");
+                FileLogger.Instance.Info($"   Good (60-84): {good.Count} devices");
+                FileLogger.Instance.Info($"   Fair (40-59): {fair.Count} devices");
+                FileLogger.Instance.Info($"   Poor (<40): {poor.Count} devices");
+                
+                if (deviceReadinessList.Count == 0)
+                {
+                    FileLogger.Instance.Warning("   ⚠️ NO DEVICES ANALYZED - Check ConfigMgr query results above");
+                }
 
                 return new DeviceReadinessBreakdown
                 {
