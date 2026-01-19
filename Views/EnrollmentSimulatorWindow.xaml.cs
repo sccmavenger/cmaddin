@@ -20,9 +20,44 @@ namespace ZeroTrustMigrationAddin.Views
 
         public EnrollmentSimulatorWindow(EnrollmentSimulationResult result)
         {
+            Instance.Info("[SIMULATOR WINDOW] ═══════════════════════════════════════════════════");
+            Instance.Info("[SIMULATOR WINDOW] Initializing EnrollmentSimulatorWindow...");
+            
+            if (result == null)
+            {
+                Instance.Error("[SIMULATOR WINDOW] ❌ CRITICAL: result parameter is NULL!");
+                throw new ArgumentNullException(nameof(result), "Simulation result cannot be null");
+            }
+            
+            Instance.Info($"[SIMULATOR WINDOW] Result received:");
+            Instance.Info($"[SIMULATOR WINDOW]    Total Devices: {result.TotalDevices}");
+            Instance.Info($"[SIMULATOR WINDOW]    Enrolled: {result.EnrolledDevices}, Unenrolled: {result.UnenrolledDevices}");
+            Instance.Info($"[SIMULATOR WINDOW]    Would Pass: {result.WouldBeCompliantCount}, Would Fail: {result.WouldFailCount}");
+            Instance.Info($"[SIMULATOR WINDOW]    DeviceResults count: {result.DeviceResults?.Count ?? -1}");
+            Instance.Info($"[SIMULATOR WINDOW]    GapSummaries count: {result.GapSummaries?.Count ?? -1}");
+            Instance.Info($"[SIMULATOR WINDOW]    PrimaryPolicy: {(result.PrimaryPolicy != null ? result.PrimaryPolicy.PolicyName : "NULL")}");
+            Instance.Info($"[SIMULATOR WINDOW]    PoliciesUsed count: {result.PoliciesUsed?.Count ?? -1}");
+            
             InitializeComponent();
             _result = result;
-            LoadData();
+            
+            try
+            {
+                LoadData();
+                Instance.Info("[SIMULATOR WINDOW] ✅ Window initialized successfully");
+                Instance.Info("[SIMULATOR WINDOW] ═══════════════════════════════════════════════════");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[SIMULATOR WINDOW] ❌ LoadData failed: {ex.Message}");
+                Instance.Error($"[SIMULATOR WINDOW]    Exception Type: {ex.GetType().Name}");
+                Instance.Error($"[SIMULATOR WINDOW]    Stack Trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Instance.Error($"[SIMULATOR WINDOW]    Inner Exception: {ex.InnerException.Message}");
+                }
+                throw;
+            }
         }
 
         /// <summary>
@@ -30,10 +65,23 @@ namespace ZeroTrustMigrationAddin.Views
         /// </summary>
         private void LoadData()
         {
+            Instance.Debug("[SIMULATOR WINDOW] LoadData starting...");
+            
+            // Ensure collections are not null
+            _result.DeviceResults ??= new List<DeviceSimulationResult>();
+            _result.GapSummaries ??= new List<GapSummary>();
+            _result.PoliciesUsed ??= new List<CompliancePolicyRequirements>();
+            _result.UnassignedPolicyNames ??= new List<string>();
+            
             // Header info
             if (_result.PrimaryPolicy != null)
             {
                 PolicySummary.Text = $"Evaluated against: {_result.PrimaryPolicy.PolicyName}";
+            }
+            else
+            {
+                PolicySummary.Text = "No compliance policy found - using default requirements";
+                Instance.Warning("[SIMULATOR WINDOW] PrimaryPolicy is null - no Intune compliance policies?");
             }
             FreshnessValue.Text = $"{_result.DataFreshnessScore:F0}%";
 
