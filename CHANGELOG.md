@@ -12,6 +12,61 @@
 - 
 
 
+## [3.16.36] - 2026-01-19
+
+### CRITICAL - No Demo Data Fallback
+- **NEVER falls back to demo data** after successful Graph and ConfigMgr connection
+- All data shown is REAL data from your environment
+- Empty results now indicate configuration or connectivity issues, NOT silently hidden behind demo data
+
+### Enhanced - Enrollment Simulator Service (EnrollmentSimulatorService.cs)
+- **GetDeviceSecurityInventoryAsync** - No longer falls back to demo data
+  - Logs detailed ERROR when ConfigMgr service is null or not configured
+  - Logs WARNING with potential causes when inventory returns empty
+  - Returns empty list for troubleshooting instead of hiding problems with demo data
+- **GetCompliancePolicyRequirementsAsync** - No longer falls back silently
+  - Logs detailed ERROR when Graph service is null
+  - Logs WARNING when no policies found with potential causes
+  - Lists first 5 policies found for verification
+- **REMOVED GenerateDemoDeviceInventory()** - Demo inventory generation completely removed
+
+### Enhanced - ConfigMgr Security Inventory (ConfigMgrAdminService.cs)
+- **GetDeviceSecurityInventoryAsync** - Comprehensive logging added:
+  - Logs Admin Service URL, WMI fallback status, Site Code at start
+  - Queries 7 data sources in parallel with individual error handling
+  - Summary shows record counts for each query:
+    - Windows 10/11 Devices
+    - BitLocker Status (SMS_G_System_ENCRYPTABLE_VOLUME)
+    - Firewall Status (SMS_G_System_FIREWALL_PRODUCT)
+    - Antivirus/Defender Status (SMS_G_System_AntimalwareHealthStatus)
+    - TPM Status (SMS_G_System_TPM)
+    - OS Details (SMS_G_System_OPERATING_SYSTEM)
+    - Client Health Metrics
+  - Flags EMPTY results with ⚠️ warnings and potential fix suggestions
+  - Data completeness summary shows percentage of devices with each data type
+  - Actionable guidance: "Enable hardware inventory class in Client Settings"
+- **SafeQueryAsync<T>** - New helper method for safe query execution with detailed error logging
+
+### Enhanced - Application Migration Service (AppMigrationService.cs)
+- **AnalyzeApplicationsAsync** - Complete rewrite to use REAL ConfigMgr data
+  - No longer returns hardcoded demo applications
+  - Queries ConfigMgr for actual application inventory
+  - Analyzes each real application for Intune migration complexity
+  - Logs detailed errors when ConfigMgr is not available
+  - Returns empty list instead of demo data when not connected
+
+### Why This Matters
+- **Troubleshooting**: Logs now show EXACTLY why data is missing
+- **Trust**: You see real environment state, not fake demo numbers
+- **Diagnosis**: Clear guidance on what ConfigMgr classes need to be enabled
+- **Transparency**: Empty enrollment simulator = real configuration issue to fix
+
+### Files Modified
+- `Services/EnrollmentSimulatorService.cs` - Removed demo fallback, enhanced logging
+- `Services/ConfigMgrAdminService.cs` - Added SafeQueryAsync, comprehensive inventory logging
+- `Services/AppMigrationService.cs` - Complete rewrite for real data only
+
+
 ## [3.16.35] - 2026-01-19
 
 ### Added

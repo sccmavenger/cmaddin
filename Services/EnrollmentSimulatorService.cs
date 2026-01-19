@@ -157,45 +157,113 @@ namespace ZeroTrustMigrationAddin.Services
 
         /// <summary>
         /// Get compliance policy requirements from Intune.
+        /// NEVER falls back - logs detailed errors for troubleshooting.
         /// </summary>
         private async Task<List<CompliancePolicyRequirements>> GetCompliancePolicyRequirementsAsync()
         {
             if (_graphService == null)
             {
-                Instance.Warning("[ENROLLMENT SIMULATOR] Graph service not available, using default policy.");
+                Instance.Error("[ENROLLMENT SIMULATOR] ❌ CONFIGURATION ERROR: Graph service is NULL");
+                Instance.Error("[ENROLLMENT SIMULATOR]    This means Graph authentication was not completed.");
+                Instance.Error("[ENROLLMENT SIMULATOR]    Connect to Microsoft Graph before running simulation.");
                 return new List<CompliancePolicyRequirements>();
             }
 
+            Instance.Info("[ENROLLMENT SIMULATOR] ✅ Graph service available, querying compliance policies...");
+
             try
             {
-                return await _graphService.GetCompliancePolicySettingsAsync();
+                var policies = await _graphService.GetCompliancePolicySettingsAsync();
+                
+                if (policies == null || !policies.Any())
+                {
+                    Instance.Warning("[ENROLLMENT SIMULATOR] ⚠️ No compliance policies found in Intune");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    Possible causes:");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    1. No compliance policies created in Intune");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    2. Policies exist but are not Windows 10/11 platform");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    3. Insufficient Graph API permissions");
+                }
+                else
+                {
+                    Instance.Info($"[ENROLLMENT SIMULATOR] ✅ Retrieved {policies.Count} compliance policies from Intune");
+                    foreach (var policy in policies.Take(5))
+                    {
+                        Instance.Debug($"[ENROLLMENT SIMULATOR]    - {policy.PolicyName} (Assigned: {policy.IsEffectivelyActive})");
+                    }
+                    if (policies.Count > 5)
+                    {
+                        Instance.Debug($"[ENROLLMENT SIMULATOR]    ... and {policies.Count - 5} more policies");
+                    }
+                }
+                
+                return policies ?? new List<CompliancePolicyRequirements>();
             }
             catch (Exception ex)
             {
-                Instance.Warning($"[ENROLLMENT SIMULATOR] Could not get policies from Graph: {ex.Message}");
+                Instance.Error($"[ENROLLMENT SIMULATOR] ❌ GRAPH QUERY FAILED: {ex.Message}");
+                Instance.Error($"[ENROLLMENT SIMULATOR]    Exception Type: {ex.GetType().Name}");
+                if (ex.InnerException != null)
+                {
+                    Instance.Error($"[ENROLLMENT SIMULATOR]    Inner Exception: {ex.InnerException.Message}");
+                }
                 return new List<CompliancePolicyRequirements>();
             }
         }
 
         /// <summary>
         /// Get device security inventory from ConfigMgr.
+        /// NEVER falls back to demo data - logs detailed errors for troubleshooting.
         /// </summary>
         private async Task<List<DeviceSecurityStatus>> GetDeviceSecurityInventoryAsync()
         {
-            if (_configMgrService == null || !_configMgrService.IsConfigured)
+            if (_configMgrService == null)
             {
-                Instance.Warning("[ENROLLMENT SIMULATOR] ConfigMgr not available, using demo data.");
-                return GenerateDemoDeviceInventory();
+                Instance.Error("[ENROLLMENT SIMULATOR] ❌ CONFIGURATION ERROR: ConfigMgr service is NULL");
+                Instance.Error("[ENROLLMENT SIMULATOR]    This means the service was not injected during initialization.");
+                Instance.Error("[ENROLLMENT SIMULATOR]    Check DashboardWindow.xaml.cs - EnrollmentSimulatorCard.Initialize() call");
+                return new List<DeviceSecurityStatus>();
             }
+
+            if (!_configMgrService.IsConfigured)
+            {
+                Instance.Error("[ENROLLMENT SIMULATOR] ❌ CONNECTION ERROR: ConfigMgr service is not configured");
+                Instance.Error("[ENROLLMENT SIMULATOR]    IsConfigured=false means ConfigureAsync() was not called or failed");
+                Instance.Error("[ENROLLMENT SIMULATOR]    Check connection status in the dashboard");
+                return new List<DeviceSecurityStatus>();
+            }
+
+            Instance.Info("[ENROLLMENT SIMULATOR] ✅ ConfigMgr is configured, querying security inventory...");
 
             try
             {
-                return await _configMgrService.GetDeviceSecurityInventoryAsync();
+                var inventory = await _configMgrService.GetDeviceSecurityInventoryAsync();
+                
+                if (inventory == null || !inventory.Any())
+                {
+                    Instance.Warning("[ENROLLMENT SIMULATOR] ⚠️ ConfigMgr returned EMPTY security inventory");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    Possible causes:");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    1. No Windows 10/11 devices in ConfigMgr");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    2. Hardware inventory classes not enabled");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    3. Hardware inventory has not run on clients");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    Check individual query results above for details");
+                }
+                else
+                {
+                    Instance.Info($"[ENROLLMENT SIMULATOR] ✅ Retrieved {inventory.Count} devices from ConfigMgr security inventory");
+                }
+                
+                return inventory ?? new List<DeviceSecurityStatus>();
             }
             catch (Exception ex)
             {
-                Instance.Warning($"[ENROLLMENT SIMULATOR] Could not get inventory from ConfigMgr: {ex.Message}");
-                return GenerateDemoDeviceInventory();
+                Instance.Error($"[ENROLLMENT SIMULATOR] ❌ QUERY FAILED: {ex.Message}");
+                Instance.Error($"[ENROLLMENT SIMULATOR]    Exception Type: {ex.GetType().Name}");
+                if (ex.InnerException != null)
+                {
+                    Instance.Error($"[ENROLLMENT SIMULATOR]    Inner Exception: {ex.InnerException.Message}");
+                }
+                Instance.Error("[ENROLLMENT SIMULATOR]    Returning empty list - check ConfigMgr connectivity");
+                return new List<DeviceSecurityStatus>();
             }
         }
 
@@ -535,77 +603,8 @@ namespace ZeroTrustMigrationAddin.Services
             };
         }
 
-        /// <summary>
-        /// Generate demo device inventory for disconnected/demo scenarios.
-        /// </summary>
-        private List<DeviceSecurityStatus> GenerateDemoDeviceInventory()
-        {
-            var devices = new List<DeviceSecurityStatus>();
-            var random = new Random(42); // Fixed seed for consistent demo
-
-            var names = new[] { 
-                "PC-SALES-", "PC-HR-", "PC-IT-", "PC-ENG-", "PC-MKT-", 
-                "LAPTOP-", "DESKTOP-", "WS-" 
-            };
-
-            for (int i = 1; i <= 650; i++)
-            {
-                var prefix = names[random.Next(names.Length)];
-                var device = new DeviceSecurityStatus
-                {
-                    ResourceId = 16000000 + i,
-                    DeviceName = $"{prefix}{i:D4}",
-                    IsEnrolledInIntune = false,
-                    IsCoManaged = false,
-                    LastHardwareScan = DateTime.Now.AddDays(-random.Next(1, 14)),
-                    OperatingSystem = random.NextDouble() < 0.15 
-                        ? "Microsoft Windows 11 Enterprise" 
-                        : "Microsoft Windows 10 Enterprise"
-                };
-
-                // Vary the compliance state
-                device.BitLockerEnabled = random.NextDouble() < 0.72; // 72% encrypted
-                device.FirewallEnabled = random.NextDouble() < 0.92; // 92% firewall on
-                device.DefenderEnabled = random.NextDouble() < 0.88; // 88% Defender on
-                device.RealTimeProtectionEnabled = device.DefenderEnabled && random.NextDouble() < 0.95;
-                device.SignaturesUpToDate = device.DefenderEnabled && random.NextDouble() < 0.85;
-                device.SignatureAgeDays = device.SignaturesUpToDate ? random.Next(0, 3) : random.Next(7, 30);
-                device.TpmPresent = random.NextDouble() < 0.90; // 90% have TPM
-                device.TpmEnabled = device.TpmPresent && random.NextDouble() < 0.95;
-                device.SecureBootEnabled = random.NextDouble() < 0.75; // 75% Secure Boot
-                device.OSVersion = device.OperatingSystem.Contains("11") 
-                    ? "10.0.22621" 
-                    : random.NextDouble() < 0.85 ? "10.0.19045" : "10.0.18363";
-
-                devices.Add(device);
-            }
-
-            // Also add some enrolled devices for the full picture
-            for (int i = 1; i <= 350; i++)
-            {
-                var prefix = names[random.Next(names.Length)];
-                devices.Add(new DeviceSecurityStatus
-                {
-                    ResourceId = 17000000 + i,
-                    DeviceName = $"{prefix}ENR-{i:D4}",
-                    IsEnrolledInIntune = true,
-                    IsCoManaged = random.NextDouble() < 0.8,
-                    LastHardwareScan = DateTime.Now.AddDays(-random.Next(0, 3)),
-                    OperatingSystem = "Microsoft Windows 10 Enterprise",
-                    BitLockerEnabled = true,
-                    FirewallEnabled = true,
-                    DefenderEnabled = true,
-                    RealTimeProtectionEnabled = true,
-                    SignaturesUpToDate = true,
-                    TpmPresent = true,
-                    TpmEnabled = true,
-                    SecureBootEnabled = true,
-                    OSVersion = "10.0.19045"
-                });
-            }
-
-            Instance.Info($"[ENROLLMENT SIMULATOR] Generated demo inventory: {devices.Count} devices (650 unenrolled, 350 enrolled)");
-            return devices;
-        }
+        // NOTE: GenerateDemoDeviceInventory() has been REMOVED
+        // This service NEVER falls back to demo data after Graph and ConfigMgr are connected.
+        // All data comes from real queries. Empty results indicate configuration or connectivity issues.
     }
 }
