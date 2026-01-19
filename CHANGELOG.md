@@ -1,5 +1,39 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.16.47] - 2026-01-19
+
+### Changed - Enrollment Readiness Analyzer: Removed Firewall and Antivirus Checks
+
+**Rationale:**
+The Firewall and Antivirus checks have been removed from the Enrollment Readiness Analyzer because:
+1. **Firewall**: `SMS_G_System_FIREWALL_PRODUCT` doesn't exist as a standard ConfigMgr hardware inventory class
+2. **Antivirus**: `SMS_G_System_AntimalwareHealthStatus` requires the Endpoint Protection site role, which many customers don't deploy
+3. **Windows defaults**: Both Firewall and Defender are enabled by default on Windows 10/11
+4. **Post-enrollment enforcement**: Intune Endpoint Security policies enforce these settings after enrollment anyway
+
+**What the Analyzer Now Checks:**
+- ✅ BitLocker encryption status
+- ✅ TPM presence and status  
+- ✅ Secure Boot (if required by policy)
+- ✅ OS Version (minimum version requirements)
+
+**Benefits:**
+- Fewer ConfigMgr prerequisites - only need 2 hardware inventory classes enabled
+- More devices will show as "Ready to Enroll" (no longer blocked by missing inventory data)
+- Focuses on actionable pre-enrollment remediation items
+- Encourages migration momentum rather than stalling on data collection
+
+**Files Modified:**
+- `Models/EnrollmentSimulatorModels.cs` - Removed Firewall/Defender properties and requirements
+- `Services/EnrollmentSimulatorService.cs` - Removed Firewall/Defender simulation checks and logging
+- `Services/ConfigMgrAdminService.cs` - Removed Firewall/Antivirus queries from security inventory
+- `AdminUserGuide.html` - Updated documentation to reflect new checks
+
+**Hardware Inventory Prerequisites (simplified):**
+1. Enable "BitLocker (Win32_EncryptableVolume)" in Client Settings → Hardware Inventory
+2. Enable "TPM (Win32_TPM)" in Client Settings → Hardware Inventory
+
+
 ## [3.16.46] - 2026-01-19
 
 ### Fixed - GapFilter_Changed NullReferenceException (Root Cause Found!)

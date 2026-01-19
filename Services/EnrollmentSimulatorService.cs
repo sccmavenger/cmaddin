@@ -301,21 +301,18 @@ namespace ZeroTrustMigrationAddin.Services
             Instance.Info($"[SIMULATOR] ════════════════════════════════════════════════════════════════════════════");
             Instance.Info($"[SIMULATOR] COMPLIANCE SIMULATION - Starting for {devices.Count} devices");
             Instance.Info($"[SIMULATOR] Policy: {policy.PolicyName}");
-            Instance.Info($"[SIMULATOR] Requirements: BitLocker={policy.RequiresBitLocker}, Firewall={policy.RequiresFirewall}, Defender={policy.RequiresDefender}, TPM={policy.RequiresTpm}, SecureBoot={policy.RequiresSecureBoot}, MinOS={policy.MinimumOSVersion ?? "none"}");
+            Instance.Info($"[SIMULATOR] Requirements: BitLocker={policy.RequiresBitLocker}, TPM={policy.RequiresTpm}, SecureBoot={policy.RequiresSecureBoot}, MinOS={policy.MinimumOSVersion ?? "none"}");
+            Instance.Info($"[SIMULATOR] NOTE: Firewall/Defender checks removed - enforced by Intune post-enrollment");
             Instance.Info($"[SIMULATOR] ════════════════════════════════════════════════════════════════════════════");
             
             // First, analyze data availability across all devices
             var withBitLockerData = devices.Count(d => d.BitLockerEnabled || d.BitLockerProtectionStatus > 0);
-            var withFirewallData = devices.Count(d => d.FirewallEnabled);
-            var withDefenderData = devices.Count(d => d.DefenderEnabled);
             var withTpmData = devices.Count(d => d.TpmPresent);
             var withSecureBootData = devices.Count(d => d.SecureBootEnabled);
             var withOsData = devices.Count(d => !string.IsNullOrEmpty(d.OSVersion));
             
             Instance.Info($"[SIMULATOR] DEVICE SECURITY DATA AVAILABILITY:");
             Instance.Info($"[SIMULATOR]    Devices with BitLocker=true:   {withBitLockerData}/{devices.Count} ({(devices.Count > 0 ? withBitLockerData * 100.0 / devices.Count : 0):F0}%)");
-            Instance.Info($"[SIMULATOR]    Devices with Firewall=true:    {withFirewallData}/{devices.Count} ({(devices.Count > 0 ? withFirewallData * 100.0 / devices.Count : 0):F0}%)");
-            Instance.Info($"[SIMULATOR]    Devices with Defender=true:    {withDefenderData}/{devices.Count} ({(devices.Count > 0 ? withDefenderData * 100.0 / devices.Count : 0):F0}%)");
             Instance.Info($"[SIMULATOR]    Devices with TPM=true:         {withTpmData}/{devices.Count} ({(devices.Count > 0 ? withTpmData * 100.0 / devices.Count : 0):F0}%)");
             Instance.Info($"[SIMULATOR]    Devices with SecureBoot=true:  {withSecureBootData}/{devices.Count} ({(devices.Count > 0 ? withSecureBootData * 100.0 / devices.Count : 0):F0}%)");
             Instance.Info($"[SIMULATOR]    Devices with OS Version data:  {withOsData}/{devices.Count} ({(devices.Count > 0 ? withOsData * 100.0 / devices.Count : 0):F0}%)");
@@ -332,13 +329,7 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Instance.Warning($"[SIMULATOR] ⚠️ ALL devices show TPM=false - this likely means:");
                 Instance.Warning($"[SIMULATOR]    1. TPM hardware inventory class not enabled in ConfigMgr");
-                Instance.Warning($"[SIMULATOR]    2. Enable 'SMS_TPM' in Client Settings → Hardware Inventory");
-            }
-            if (devices.Count > 0 && withDefenderData == 0 && policy.RequiresDefender)
-            {
-                Instance.Warning($"[SIMULATOR] ⚠️ ALL devices show Defender=false - this likely means:");
-                Instance.Warning($"[SIMULATOR]    1. Endpoint Protection reporting not enabled");
-                Instance.Warning($"[SIMULATOR]    2. Antimalware health inventory not collecting");
+                Instance.Warning($"[SIMULATOR]    2. Enable 'TPM (Win32_TPM)' in Client Settings → Hardware Inventory");
             }
             
             var results = new List<DeviceSimulationResult>();
@@ -371,70 +362,10 @@ namespace ZeroTrustMigrationAddin.Services
                     });
                 }
 
-                // Check Firewall
-                if (policy.RequiresFirewall && !device.FirewallEnabled)
-                {
-                    gaps.Add(new ComplianceGap
-                    {
-                        Requirement = "Firewall",
-                        Icon = "🛡️",
-                        CurrentState = "Disabled",
-                        RequiredState = "Enabled",
-                        RemediationAction = "Enable Windows Firewall",
-                        RemediationEffort = "Low",
-                        CanAutoRemediate = true,
-                        Notes = "Intune can enforce firewall settings via Endpoint Security policy"
-                    });
-                }
-
-                // Check Defender
-                if (policy.RequiresDefender && !device.DefenderEnabled)
-                {
-                    gaps.Add(new ComplianceGap
-                    {
-                        Requirement = "Defender",
-                        Icon = "🛡️",
-                        CurrentState = "Disabled or not installed",
-                        RequiredState = "Enabled",
-                        RemediationAction = "Enable Microsoft Defender Antivirus",
-                        RemediationEffort = "Low",
-                        CanAutoRemediate = true,
-                        Notes = "Defender is enabled by default on Windows 10/11"
-                    });
-                }
-
-                // Check Real-Time Protection
-                if (policy.RequiresRealTimeProtection && !device.RealTimeProtectionEnabled)
-                {
-                    gaps.Add(new ComplianceGap
-                    {
-                        Requirement = "Real-Time Protection",
-                        Icon = "⚡",
-                        CurrentState = "Disabled",
-                        RequiredState = "Enabled",
-                        RemediationAction = "Enable real-time protection in Defender",
-                        RemediationEffort = "Low",
-                        CanAutoRemediate = true
-                    });
-                }
-
-                // Check Signature Updates
-                if (policy.RequiresUpToDateSignatures && !device.SignaturesUpToDate)
-                {
-                    gaps.Add(new ComplianceGap
-                    {
-                        Requirement = "AV Signatures",
-                        Icon = "📋",
-                        CurrentState = device.SignatureAgeDays.HasValue 
-                            ? $"{device.SignatureAgeDays} days old" 
-                            : "Unknown",
-                        RequiredState = "Up to date",
-                        RemediationAction = "Update antivirus definitions",
-                        RemediationEffort = "Low",
-                        CanAutoRemediate = true,
-                        Notes = "Signatures typically update automatically"
-                    });
-                }
+                // NOTE: Firewall and Defender checks removed in v3.16.47
+                // - SMS_G_System_FIREWALL_PRODUCT doesn't exist in ConfigMgr standard inventory
+                // - SMS_G_System_AntimalwareHealthStatus requires Endpoint Protection role
+                // Both are enforced by Intune Endpoint Security policies post-enrollment
 
                 // Check TPM
                 if (policy.RequiresTpm && (!device.TpmPresent || !device.TpmEnabled))
@@ -600,12 +531,8 @@ namespace ZeroTrustMigrationAddin.Services
             foreach (var policy in policies)
             {
                 if (policy.RequiresBitLocker) combined.RequiresBitLocker = true;
-                if (policy.RequiresDefender) combined.RequiresDefender = true;
-                if (policy.RequiresFirewall) combined.RequiresFirewall = true;
                 if (policy.RequiresSecureBoot) combined.RequiresSecureBoot = true;
                 if (policy.RequiresTpm) combined.RequiresTpm = true;
-                if (policy.RequiresRealTimeProtection) combined.RequiresRealTimeProtection = true;
-                if (policy.RequiresUpToDateSignatures) combined.RequiresUpToDateSignatures = true;
 
                 if (!string.IsNullOrEmpty(policy.MinimumOSVersion))
                 {
@@ -623,22 +550,20 @@ namespace ZeroTrustMigrationAddin.Services
 
         /// <summary>
         /// Get default policy requirements when no policies exist in Intune.
+        /// Focuses on pre-enrollment checks that ConfigMgr can reliably inventory.
+        /// Firewall/Defender are enforced by Intune post-enrollment.
         /// </summary>
         private CompliancePolicyRequirements GetDefaultPolicyRequirements()
         {
             return new CompliancePolicyRequirements
             {
                 PolicyId = "default",
-                PolicyName = "Default Compliance (Microsoft Recommended)",
-                Description = "Standard security requirements based on Microsoft guidance",
+                PolicyName = "Default Compliance (Pre-Enrollment Readiness)",
+                Description = "Pre-enrollment checks using available ConfigMgr inventory. Firewall and Defender are enforced by Intune post-enrollment.",
                 Platform = "Windows10",
                 RequiresBitLocker = true,
-                RequiresDefender = true,
-                RequiresFirewall = true,
-                RequiresRealTimeProtection = true,
-                RequiresSecureBoot = false, // Not enabled by default
-                RequiresTpm = false, // Not enabled by default
-                RequiresUpToDateSignatures = true,
+                RequiresSecureBoot = false, // Not enabled by default - BIOS setting
+                RequiresTpm = false, // Not enabled by default - hardware dependent
                 MinimumOSVersion = "10.0.19041" // Windows 10 2004
             };
         }

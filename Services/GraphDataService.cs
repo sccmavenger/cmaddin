@@ -1007,59 +1007,67 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
-                // Defender Enabled
+                // Defender Enabled - NOTE: Removed from analyzer in v3.16.47, but still parse for logging
                 var defenderProp = policyType.GetProperty("DefenderEnabled");
                 if (defenderProp != null)
                 {
                     var value = defenderProp.GetValue(policy);
-                    requirements.RequiresDefender = value != null && (bool)value;
+                    // Logged but not used for analysis - Intune enforces post-enrollment
+                    if (value != null && (bool)value)
+                    {
+                        Instance.Debug($"[GRAPH] Policy '{policy.DisplayName}' requires Defender (enforced by Intune post-enrollment)");
+                    }
                 }
 
-                // Real-Time Protection
+                // Real-Time Protection - NOTE: Removed from analyzer in v3.16.47
                 var rtpProp = policyType.GetProperty("RtpEnabled");
                 if (rtpProp != null)
                 {
                     var value = rtpProp.GetValue(policy);
-                    requirements.RequiresRealTimeProtection = value != null && (bool)value;
+                    // Logged but not used for analysis
+                    if (value != null && (bool)value)
+                    {
+                        Instance.Debug($"[GRAPH] Policy '{policy.DisplayName}' requires RTP (enforced by Intune post-enrollment)");
+                    }
                 }
 
-                // Antivirus Required (alternative property name)
+                // Antivirus Required - NOTE: Removed from analyzer in v3.16.47
                 var antivirusProp = policyType.GetProperty("AntivirusRequired");
                 if (antivirusProp != null)
                 {
                     var value = antivirusProp.GetValue(policy);
                     if (value != null && (bool)value)
                     {
-                        requirements.RequiresDefender = true;
+                        Instance.Debug($"[GRAPH] Policy '{policy.DisplayName}' requires Antivirus (enforced by Intune post-enrollment)");
                     }
                 }
 
-                // Signature Up To Date
+                // Signature Up To Date - NOTE: Removed from analyzer in v3.16.47
                 var signatureProp = policyType.GetProperty("SignatureOutOfDate");
                 if (signatureProp != null)
                 {
-                    // Note: This property is "out of date" so we invert it
+                    // Note: This property is "out of date" so we would invert it
                     var value = signatureProp.GetValue(policy);
-                    requirements.RequiresUpToDateSignatures = value != null && !(bool)value;
+                    // Logged but not used
                 }
 
-                // Firewall
+                // Firewall - NOTE: Removed from analyzer in v3.16.47
                 var firewallProp = policyType.GetProperty("ActiveFirewallRequired");
                 if (firewallProp != null)
                 {
                     var value = firewallProp.GetValue(policy);
-                    requirements.RequiresFirewall = value != null && (bool)value;
+                    if (value != null && (bool)value)
+                    {
+                        Instance.Debug($"[GRAPH] Policy '{policy.DisplayName}' requires Firewall (enforced by Intune post-enrollment)");
+                    }
                 }
 
-                // Alternative firewall property
+                // Alternative firewall property - NOTE: Removed from analyzer in v3.16.47
                 var firewallProp2 = policyType.GetProperty("FirewallEnabled");
                 if (firewallProp2 != null)
                 {
                     var value = firewallProp2.GetValue(policy);
-                    if (value != null && (bool)value)
-                    {
-                        requirements.RequiresFirewall = true;
-                    }
+                    // Logged but not used
                 }
 
                 // TPM Required
@@ -1270,12 +1278,9 @@ namespace ZeroTrustMigrationAddin.Services
             foreach (var policy in policies)
             {
                 if (policy.RequiresBitLocker) combined.RequiresBitLocker = true;
-                if (policy.RequiresDefender) combined.RequiresDefender = true;
-                if (policy.RequiresFirewall) combined.RequiresFirewall = true;
                 if (policy.RequiresSecureBoot) combined.RequiresSecureBoot = true;
                 if (policy.RequiresTpm) combined.RequiresTpm = true;
-                if (policy.RequiresRealTimeProtection) combined.RequiresRealTimeProtection = true;
-                if (policy.RequiresUpToDateSignatures) combined.RequiresUpToDateSignatures = true;
+                // NOTE: Defender/Firewall/RTP/Signatures removed from analyzer in v3.16.47
 
                 // Take the highest minimum OS version
                 if (!string.IsNullOrEmpty(policy.MinimumOSVersion))

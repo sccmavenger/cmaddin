@@ -556,19 +556,41 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
             <p><strong>Recommended:</strong> Use the built-in <code>Read-only Analyst</code> security role, or create a custom role with the permissions above.</p>
 
             <h4>WMI Classes Accessed</h4>
-            <p>The tool queries these ConfigMgr classes via Admin Service for the Enrollment Impact Simulator:</p>
+            <p>The tool queries these ConfigMgr classes via Admin Service for the Enrollment Readiness Analyzer:</p>
             <ul>
-                <li><code>SMS_R_System</code> - Device inventory</li>
+                <li><code>SMS_R_System</code> - Device inventory (default, always available)</li>
                 <li><code>SMS_G_System_ENCRYPTABLE_VOLUME</code> - BitLocker encryption status</li>
-                <li><code>SMS_G_System_FIREWALL_PRODUCT</code> - Windows Firewall status</li>
-                <li><code>SMS_G_System_AntimalwareHealthStatus</code> - Microsoft Defender status</li>
                 <li><code>SMS_G_System_TPM</code> - TPM chip status</li>
-                <li><code>SMS_G_System_FIRMWARE</code> - Secure Boot status</li>
-                <li><code>SMS_G_System_OPERATING_SYSTEM</code> - OS version details</li>
+                <li><code>SMS_G_System_OPERATING_SYSTEM</code> - OS version details (default, always available)</li>
             </ul>
 
+            <h4>Required Hardware Inventory Classes</h4>
+            <p>For accurate readiness analysis, enable these classes in ConfigMgr Client Settings → Hardware Inventory:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Checkbox Name</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>BitLocker (Win32_EncryptableVolume)</strong></td>
+                        <td>Detects BitLocker encryption status on drives</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TPM (Win32_TPM)</strong></td>
+                        <td>Detects TPM presence and status</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="alert alert-info">
+                <strong>💡 What about Firewall and Antivirus?</strong> The Enrollment Readiness Analyzer focuses on pre-enrollment checks that require remediation planning (BitLocker, TPM, OS version). Windows Firewall and Defender are enabled by default on Windows 10/11 and are enforced by Intune Endpoint Security policies after enrollment - no pre-enrollment check is needed.
+            </div>
+
             <div class="alert alert-warning">
-                <strong>Note:</strong> If you don't have ConfigMgr access, you can use the tool with Microsoft Graph only. The Enrollment Impact Simulator will show demo data to demonstrate functionality.
+                <strong>Note:</strong> If you don't have ConfigMgr access, you can use the tool with Microsoft Graph only. The Enrollment Readiness Analyzer will show demo data to demonstrate functionality.
             </div>
         </section>
 

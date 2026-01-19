@@ -219,12 +219,9 @@ namespace ZeroTrustMigrationAddin.Views
 
             // Requirements
             AddPolicyRequirement("BitLocker Encryption", policy.RequiresBitLocker);
-            AddPolicyRequirement("Windows Firewall", policy.RequiresFirewall);
-            AddPolicyRequirement("Microsoft Defender", policy.RequiresDefender);
-            AddPolicyRequirement("Real-Time Protection", policy.RequiresRealTimeProtection);
-            AddPolicyRequirement("Up-to-Date Signatures", policy.RequiresUpToDateSignatures);
             AddPolicyRequirement("TPM Enabled", policy.RequiresTpm);
             AddPolicyRequirement("Secure Boot", policy.RequiresSecureBoot);
+            // NOTE: Firewall/Defender/RTP/Signatures removed - enforced by Intune post-enrollment
 
             if (!string.IsNullOrEmpty(policy.MinimumOSVersion))
             {
