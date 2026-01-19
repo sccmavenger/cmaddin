@@ -1,15 +1,57 @@
 # Zero Trust Migration Journey - Change Log
 
-## [Unreleased]
+## [3.16.42] - 2026-01-19
 
-### Added
-- 
+### Fixed - Enrollment Simulator Diagnostics & View Details Error
 
-### Changed
-- 
+**Issue 1: "View Details" button error - Object reference not set**
+- Added comprehensive logging to `EnrollmentSimulatorWindow` constructor
+- Added null checks for all collection properties (DeviceResults, GapSummaries, PoliciesUsed)
+- Stack trace now captured in logs for easier debugging
+- Better error messages when simulation data is incomplete
 
-### Fixed
-- 
+**Issue 2: "Ready to Enroll: 0" - Better diagnostics for why devices fail**
+- Added DEVICE SECURITY DATA AVAILABILITY section in logs
+- Shows percentage of devices with BitLocker=true, Firewall=true, Defender=true, TPM=true, etc.
+- Warns when ALL devices show false for a required setting (indicates missing hardware inventory)
+- Provides specific guidance: "Enable 'SMS_EncryptableVolume' in Client Settings → Hardware Inventory"
+
+**Enhanced ConfigMgr Query Logging:**
+- `SafeQueryAsync` now logs ✅ with count or ⚠️ EMPTY for each hardware inventory class
+- Clear visibility into which WMI classes are returning data
+
+**Files Modified:**
+- `Views/EnrollmentSimulatorWindow.xaml.cs` - Null checks, logging, exception handling
+- `Services/EnrollmentSimulatorService.cs` - Data availability analysis before simulation
+- `Services/ConfigMgrAdminService.cs` - Enhanced SafeQueryAsync logging
+
+**Root Cause:** The "Ready to Enroll: 0" is NOT a bug - it correctly shows that 0 devices pass compliance because:
+1. ConfigMgr hardware inventory classes (BitLocker, TPM, etc.) are not enabled or haven't run
+2. Without this data, all security checks return `false`, failing every device
+3. New logging will show exactly which inventory classes are empty
+
+
+## [3.16.41] - 2026-01-19
+
+### Changed - Code Hygiene and Project Cleanup
+Comprehensive cleanup to reduce project size and remove unused code.
+
+**Files Removed:**
+- `Services/IntegrationServices.cs` - Unused placeholder with IntuneService, ConfigMgrService, TenantAttachService stubs
+
+**Folders Cleaned:**
+- `builds/archive/` - Deleted 18 old ZIP archives (~1.56 GB)
+- `builds/manifests/` - Deleted 37 old manifest files
+- `Tests/` - Removed empty directory
+- Root: Deleted 3 temp WPF `*_wpftmp*.csproj` files
+- Root: Deleted old `ZeroTrustMigrationAddin-v3.16.35-COMPLETE.zip` (~88 MB)
+
+**Documentation Updated:**
+- `README.md` - Removed references to deleted IntegrationServices.cs
+
+**Total Space Recovered:** ~1.68 GB
+
+**Build Verification:** ✅ Build succeeded (34 pre-existing warnings unrelated to cleanup)
 
 
 ## [3.16.40] - 2026-01-19

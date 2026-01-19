@@ -298,8 +298,48 @@ namespace ZeroTrustMigrationAddin.Services
             List<DeviceSecurityStatus> devices, 
             CompliancePolicyRequirements policy)
         {
-            Instance.Info($"[SIMULATOR] Simulating compliance for {devices.Count} devices against policy '{policy.PolicyName}'");
-            Instance.Debug($"[SIMULATOR] Policy requirements: BitLocker={policy.RequiresBitLocker}, Firewall={policy.RequiresFirewall}, Defender={policy.RequiresDefender}, TPM={policy.RequiresTpm}, SecureBoot={policy.RequiresSecureBoot}, MinOS={policy.MinimumOSVersion ?? "none"}");
+            Instance.Info($"[SIMULATOR] ════════════════════════════════════════════════════════════════════════════");
+            Instance.Info($"[SIMULATOR] COMPLIANCE SIMULATION - Starting for {devices.Count} devices");
+            Instance.Info($"[SIMULATOR] Policy: {policy.PolicyName}");
+            Instance.Info($"[SIMULATOR] Requirements: BitLocker={policy.RequiresBitLocker}, Firewall={policy.RequiresFirewall}, Defender={policy.RequiresDefender}, TPM={policy.RequiresTpm}, SecureBoot={policy.RequiresSecureBoot}, MinOS={policy.MinimumOSVersion ?? "none"}");
+            Instance.Info($"[SIMULATOR] ════════════════════════════════════════════════════════════════════════════");
+            
+            // First, analyze data availability across all devices
+            var withBitLockerData = devices.Count(d => d.BitLockerEnabled || d.BitLockerProtectionStatus > 0);
+            var withFirewallData = devices.Count(d => d.FirewallEnabled);
+            var withDefenderData = devices.Count(d => d.DefenderEnabled);
+            var withTpmData = devices.Count(d => d.TpmPresent);
+            var withSecureBootData = devices.Count(d => d.SecureBootEnabled);
+            var withOsData = devices.Count(d => !string.IsNullOrEmpty(d.OSVersion));
+            
+            Instance.Info($"[SIMULATOR] DEVICE SECURITY DATA AVAILABILITY:");
+            Instance.Info($"[SIMULATOR]    Devices with BitLocker=true:   {withBitLockerData}/{devices.Count} ({(devices.Count > 0 ? withBitLockerData * 100.0 / devices.Count : 0):F0}%)");
+            Instance.Info($"[SIMULATOR]    Devices with Firewall=true:    {withFirewallData}/{devices.Count} ({(devices.Count > 0 ? withFirewallData * 100.0 / devices.Count : 0):F0}%)");
+            Instance.Info($"[SIMULATOR]    Devices with Defender=true:    {withDefenderData}/{devices.Count} ({(devices.Count > 0 ? withDefenderData * 100.0 / devices.Count : 0):F0}%)");
+            Instance.Info($"[SIMULATOR]    Devices with TPM=true:         {withTpmData}/{devices.Count} ({(devices.Count > 0 ? withTpmData * 100.0 / devices.Count : 0):F0}%)");
+            Instance.Info($"[SIMULATOR]    Devices with SecureBoot=true:  {withSecureBootData}/{devices.Count} ({(devices.Count > 0 ? withSecureBootData * 100.0 / devices.Count : 0):F0}%)");
+            Instance.Info($"[SIMULATOR]    Devices with OS Version data:  {withOsData}/{devices.Count} ({(devices.Count > 0 ? withOsData * 100.0 / devices.Count : 0):F0}%)");
+            
+            // Warning if all devices have false values - likely missing inventory
+            if (devices.Count > 0 && withBitLockerData == 0 && policy.RequiresBitLocker)
+            {
+                Instance.Warning($"[SIMULATOR] ⚠️ ALL devices show BitLocker=false - this likely means:");
+                Instance.Warning($"[SIMULATOR]    1. BitLocker hardware inventory class not enabled in ConfigMgr");
+                Instance.Warning($"[SIMULATOR]    2. Hardware inventory hasn't run on clients");
+                Instance.Warning($"[SIMULATOR]    3. Enable 'SMS_EncryptableVolume' in Client Settings → Hardware Inventory");
+            }
+            if (devices.Count > 0 && withTpmData == 0 && policy.RequiresTpm)
+            {
+                Instance.Warning($"[SIMULATOR] ⚠️ ALL devices show TPM=false - this likely means:");
+                Instance.Warning($"[SIMULATOR]    1. TPM hardware inventory class not enabled in ConfigMgr");
+                Instance.Warning($"[SIMULATOR]    2. Enable 'SMS_TPM' in Client Settings → Hardware Inventory");
+            }
+            if (devices.Count > 0 && withDefenderData == 0 && policy.RequiresDefender)
+            {
+                Instance.Warning($"[SIMULATOR] ⚠️ ALL devices show Defender=false - this likely means:");
+                Instance.Warning($"[SIMULATOR]    1. Endpoint Protection reporting not enabled");
+                Instance.Warning($"[SIMULATOR]    2. Antimalware health inventory not collecting");
+            }
             
             var results = new List<DeviceSimulationResult>();
 

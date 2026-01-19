@@ -1273,9 +1273,18 @@ namespace ZeroTrustMigrationAddin.Services
         {
             try
             {
-                Instance.Debug($"[CONFIGMGR] Starting query: {queryName}...");
+                Instance.Info($"[CONFIGMGR] 🔍 Querying: {queryName}...");
                 var result = await queryFunc();
-                Instance.Debug($"[CONFIGMGR] Query '{queryName}' completed: {result.Count} records");
+                
+                if (result.Count == 0)
+                {
+                    Instance.Warning($"[CONFIGMGR]    ⚠️ {queryName}: EMPTY (0 records returned)");
+                }
+                else
+                {
+                    Instance.Info($"[CONFIGMGR]    ✅ {queryName}: {result.Count} records");
+                }
+                
                 return result;
             }
             catch (Exception ex)
