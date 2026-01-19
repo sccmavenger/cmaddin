@@ -1,5 +1,26 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.16.46] - 2026-01-19
+
+### Fixed - GapFilter_Changed NullReferenceException (Root Cause Found!)
+
+**Root Cause Identified:**
+The `GapFilter_Changed` event handler was being triggered during XAML initialization (via `InitializeComponent()`), 
+BEFORE `_result` was assigned. This caused a NullReferenceException when accessing `_result.GapSummaries`.
+
+**Fixes Applied:**
+- `GapFilter_Changed()`: Added guard clause to return early if `_result` or `_result.GapSummaries` is null
+- `GapFilter_Changed()`: Added bounds checking before accessing GapSummaries by index
+- `ExportFullReport()`: Added null coalescing for all collection accesses (GapSummaries, DeviceResults, Gaps)
+
+**Why Previous Fixes Didn't Work:**
+The logging in v3.16.44/45 never appeared because the exception happened DURING `InitializeComponent()`, 
+before any of the logging code in the constructor could execute.
+
+**Files Modified:**
+- `Views/EnrollmentSimulatorWindow.xaml.cs` - Guard clause in GapFilter_Changed, null-safe exports
+
+
 ## [3.16.44] - 2026-01-19
 
 ### Fixed - View Details NullReferenceException + UX Terminology Rename
