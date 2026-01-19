@@ -30,6 +30,29 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
+                FileLogger.Instance.Info("[APPMIGRATION] Starting application analysis");
+                
+                // Check if we have real ConfigMgr data
+                bool hasRealData = false;
+                if (_configMgrService != null)
+                {
+                    try
+                    {
+                        var realApps = await _configMgrService.GetApplicationsAsync();
+                        hasRealData = realApps != null && realApps.Count > 0;
+                        FileLogger.Instance.Debug($"[APPMIGRATION] ConfigMgr query returned {realApps?.Count ?? 0} applications");
+                    }
+                    catch (Exception ex)
+                    {
+                        FileLogger.Instance.Warning($"[APPMIGRATION] ConfigMgr query failed: {ex.Message}");
+                    }
+                }
+
+                if (!hasRealData)
+                {
+                    FileLogger.Instance.Info("[APPMIGRATION] Using DEMO data - no ConfigMgr connection or no applications found");
+                }
+                
                 // TODO: Query ConfigMgr for application inventory
                 // For now, return demo data showing the structure
                 apps.Add(new ApplicationMigrationAnalysis

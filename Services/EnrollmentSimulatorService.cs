@@ -206,16 +206,19 @@ namespace ZeroTrustMigrationAddin.Services
         {
             if (_graphService == null)
             {
+                Instance.Debug("[SIMULATOR] GetCurrentComplianceAsync - GraphService is null, returning (0,0)");
                 return (0, 0);
             }
 
             try
             {
                 var dashboard = await _graphService.GetComplianceDashboardAsync();
+                Instance.Debug($"[SIMULATOR] Current compliance from Graph: Compliant={dashboard.CompliantDevices}, NonCompliant={dashboard.NonCompliantDevices}");
                 return (dashboard.CompliantDevices, dashboard.NonCompliantDevices);
             }
-            catch
+            catch (Exception ex)
             {
+                Instance.Warning($"[SIMULATOR] GetCurrentComplianceAsync failed: {ex.Message}");
                 return (0, 0);
             }
         }
@@ -227,6 +230,9 @@ namespace ZeroTrustMigrationAddin.Services
             List<DeviceSecurityStatus> devices, 
             CompliancePolicyRequirements policy)
         {
+            Instance.Info($"[SIMULATOR] Simulating compliance for {devices.Count} devices against policy '{policy.PolicyName}'");
+            Instance.Debug($"[SIMULATOR] Policy requirements: BitLocker={policy.RequiresBitLocker}, Firewall={policy.RequiresFirewall}, Defender={policy.RequiresDefender}, TPM={policy.RequiresTpm}, SecureBoot={policy.RequiresSecureBoot}, MinOS={policy.MinimumOSVersion ?? "none"}");
+            
             var results = new List<DeviceSimulationResult>();
 
             foreach (var device in devices)
@@ -380,6 +386,12 @@ namespace ZeroTrustMigrationAddin.Services
                 results.Add(result);
             }
 
+            var compliant = results.Count(r => r.WouldBeCompliant);
+            var nonCompliant = results.Count(r => !r.WouldBeCompliant);
+            var gapCounts = results.SelectMany(r => r.Gaps).GroupBy(g => g.Requirement).Select(g => $"{g.Key}:{g.Count()}");
+            Instance.Info($"[SIMULATOR] Simulation complete: {compliant} compliant, {nonCompliant} non-compliant");
+            Instance.Debug($"[SIMULATOR] Gap breakdown: {string.Join(", ", gapCounts)}");
+
             return results;
         }
 
@@ -419,6 +431,7 @@ namespace ZeroTrustMigrationAddin.Services
             List<DeviceSimulationResult> results, 
             int totalUnenrolled)
         {
+            Instance.Debug($"[SIMULATOR] GenerateGapSummaries - analyzing {results.Count} device results");
             var summaries = new List<GapSummary>();
 
             // Group all gaps by requirement type
@@ -441,6 +454,7 @@ namespace ZeroTrustMigrationAddin.Services
                 });
             }
 
+            Instance.Info($"[SIMULATOR] Gap summaries: {string.Join(", ", summaries.Select(s => $"{s.Requirement}:{s.DeviceCount} ({s.Percentage:F1}%)"))}");
             return summaries;
         }
 

@@ -58,11 +58,24 @@ namespace ZeroTrustMigrationAddin.Services
 
             _fileLogger.Log(FileLogger.LogLevel.Info, 
                 $"Device scoring complete. Avg score: {scoredDevices.Average(d => d.Score.TotalScore):F1}");
+            
+            // Log score distribution for diagnostics
+            var excellent = scoredDevices.Count(d => d.Score.TotalScore >= 80);
+            var good = scoredDevices.Count(d => d.Score.TotalScore >= 60 && d.Score.TotalScore < 80);
+            var fair = scoredDevices.Count(d => d.Score.TotalScore >= 40 && d.Score.TotalScore < 60);
+            var poor = scoredDevices.Count(d => d.Score.TotalScore < 40);
+            _fileLogger.Log(FileLogger.LogLevel.Debug, 
+                $"[SELECTION] Score distribution: Excellent(80+)={excellent}, Good(60-79)={good}, Fair(40-59)={fair}, Poor(<40)={poor}");
+            _fileLogger.Log(FileLogger.LogLevel.Debug, 
+                $"[SELECTION] Score range: Min={scoredDevices.Min(d => d.Score.TotalScore):F0}, Max={scoredDevices.Max(d => d.Score.TotalScore):F0}");
 
             // Top candidates for enrollment
             var topCandidates = scoredDevices.Take(batchSize).ToList();
             var mediumCandidates = scoredDevices.Skip(batchSize).Take(batchSize).ToList();
             var lowPriorityCandidates = scoredDevices.Skip(batchSize * 2).ToList();
+            
+            _fileLogger.Log(FileLogger.LogLevel.Debug, 
+                $"[SELECTION] Batch sizes: TopCandidates={topCandidates.Count}, Medium={mediumCandidates.Count}, LowPriority={lowPriorityCandidates.Count}");
 
             // Recommendation 1: Top batch ready to enroll
             if (topCandidates.Any())
