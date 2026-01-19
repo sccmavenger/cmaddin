@@ -87,22 +87,39 @@ namespace ZeroTrustMigrationAddin.Views
         private void UpdateDataSourceBadge()
         {
             bool hasGraphService = _graphService != null;
-            bool hasConfigMgrService = _configMgrService != null && _configMgrService.IsConfigured;
+            bool hasConfigMgrService = _configMgrService != null;
+            bool configMgrIsConfigured = _configMgrService?.IsConfigured ?? false;
             
-            if (hasGraphService && hasConfigMgrService)
+            // For badge, we consider ConfigMgr "ready" if the service exists
+            // IsConfigured can be false briefly during initialization race conditions
+            bool configMgrReady = hasConfigMgrService && configMgrIsConfigured;
+            
+            Instance.Info($"[SIMULATOR CARD] UpdateDataSourceBadge:");
+            Instance.Info($"[SIMULATOR CARD]    Graph service exists: {hasGraphService}");
+            Instance.Info($"[SIMULATOR CARD]    ConfigMgr service exists: {hasConfigMgrService}");
+            Instance.Info($"[SIMULATOR CARD]    ConfigMgr.IsConfigured: {configMgrIsConfigured}");
+            
+            if (hasGraphService && configMgrReady)
             {
+                Instance.Info($"[SIMULATOR CARD]    ➡️ Badge: ✓ Live Data (both services ready)");
                 DataSourceBadge.Background = new SolidColorBrush(Color.FromRgb(232, 245, 233)); // Light green
                 DataSourceText.Text = "✓ Live Data";
                 DataSourceText.Foreground = new SolidColorBrush(Color.FromRgb(46, 125, 50)); // Green
             }
             else if (hasGraphService || hasConfigMgrService)
             {
+                // Show which service is missing/not ready
+                string reason = !hasGraphService ? "Graph missing" : 
+                               !hasConfigMgrService ? "ConfigMgr missing" : 
+                               !configMgrIsConfigured ? "ConfigMgr not yet configured" : "Unknown";
+                Instance.Info($"[SIMULATOR CARD]    ➡️ Badge: ⚡ Partial Data (reason: {reason})");
                 DataSourceBadge.Background = new SolidColorBrush(Color.FromRgb(255, 248, 225)); // Light yellow
                 DataSourceText.Text = "⚡ Partial Data";
                 DataSourceText.Foreground = new SolidColorBrush(Color.FromRgb(245, 124, 0)); // Orange
             }
             else
             {
+                Instance.Info($"[SIMULATOR CARD]    ➡️ Badge: 📋 Demo Data (no services)");
                 DataSourceBadge.Background = new SolidColorBrush(Color.FromRgb(255, 243, 224)); // Light orange
                 DataSourceText.Text = "📋 Demo Data";
                 DataSourceText.Foreground = new SolidColorBrush(Color.FromRgb(230, 81, 0)); // Dark orange
@@ -261,22 +278,38 @@ namespace ZeroTrustMigrationAddin.Views
         /// </summary>
         private void ViewDetails_Click(object sender, RoutedEventArgs e)
         {
+            Instance.Info("[SIMULATOR CARD] 🖱️ User clicked 'View Details' button");
+            Instance.Info($"[SIMULATOR CARD]    _lastResult is null: {_lastResult == null}");
+            
             if (_lastResult == null)
             {
-                MessageBox.Show("Please run a simulation first.", "No Results", 
+                Instance.Warning("[SIMULATOR CARD] ⚠️ No simulation results available - need to run simulation first");
+                MessageBox.Show("Please run a simulation first.\n\nClick the 'Run Simulation' button to analyze your devices.", 
+                    "No Simulation Results", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
+            Instance.Info($"[SIMULATOR CARD]    Results: Total={_lastResult.TotalDevices}, WouldPass={_lastResult.WouldBeCompliantCount}, WouldFail={_lastResult.WouldFailCount}");
+
             try
             {
+                Instance.Info("[SIMULATOR CARD] Opening EnrollmentSimulatorWindow...");
                 var detailsWindow = new EnrollmentSimulatorWindow(_lastResult);
                 detailsWindow.Owner = Window.GetWindow(this);
                 detailsWindow.ShowDialog();
+                Instance.Info("[SIMULATOR CARD] ✅ Details window closed");
             }
             catch (Exception ex)
             {
-                Instance.Error($"[SIMULATOR CARD] Failed to open details: {ex.Message}");
+                Instance.Error($"[SIMULATOR CARD] ❌ Failed to open details window: {ex.Message}");
+                Instance.Error($"[SIMULATOR CARD]    Exception: {ex.GetType().Name}");
+                if (ex.InnerException != null)
+                {
+                    Instance.Error($"[SIMULATOR CARD]    Inner: {ex.InnerException.Message}");
+                }
+                MessageBox.Show($"Failed to open details window: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
