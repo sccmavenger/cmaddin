@@ -78,6 +78,11 @@ namespace ZeroTrustMigrationAddin.Services
             int enrolledDevices,
             bool hasSecurityBaseline)
         {
+            // Log input parameters BEFORE making GPT-4 call
+            FileLogger.Instance.Info("[WORKLOAD] Calling GPT-4 for workload momentum analysis");
+            FileLogger.Instance.Debug($"[WORKLOAD] Input params: CompletedWorkloads=[{string.Join(", ", completedWorkloads)}], InProgress=[{string.Join(", ", inProgressWorkloads)}]");
+            FileLogger.Instance.Debug($"[WORKLOAD] Input params: ComplianceScore={complianceScore:F1}%, TotalDevices={totalDevices}, Enrolled={enrolledDevices}, SecurityBaseline={hasSecurityBaseline}");
+            
             string allWorkloads = "Compliance Policies, Device Configuration, Windows Update, Endpoint Protection, Resource Access, Office Click-to-Run, Client Apps";
             double enrollmentPercentage = totalDevices > 0 ? (enrolledDevices * 100.0 / totalDevices) : 0;
 

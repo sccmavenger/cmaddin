@@ -85,16 +85,20 @@ namespace ZeroTrustMigrationAddin.Services
 
         private async Task<MigrationImpactInputs> GatherInputsAsync()
         {
+            Instance.Debug("[MIGRATION IMPACT] Gathering inputs from Graph and ConfigMgr...");
             var inputs = new MigrationImpactInputs();
 
             try
             {
                 if (_graphService != null)
                 {
+                    Instance.Debug("[MIGRATION IMPACT] Graph service available - fetching device data");
+                    
                     // Get device counts using the correct method name
                     var devices = await _graphService.GetCachedManagedDevicesAsync();
                     inputs.TotalDevices = devices?.Count ?? 0;
                     inputs.EnrolledDevices = devices?.Count(d => !string.IsNullOrEmpty(d.Id)) ?? 0;
+                    Instance.Debug($"[MIGRATION IMPACT] Devices from Graph: Total={inputs.TotalDevices}, Enrolled={inputs.EnrolledDevices}");
 
                     // Get compliance data
                     var complianceData = await _graphService.GetComplianceDashboardAsync();
@@ -103,6 +107,7 @@ namespace ZeroTrustMigrationAddin.Services
                         inputs.CurrentComplianceRate = complianceData.OverallComplianceRate;
                         inputs.CompliantDevices = complianceData.CompliantDevices;
                         inputs.NonCompliantDevices = complianceData.NonCompliantDevices;
+                        Instance.Debug($"[MIGRATION IMPACT] Compliance from Graph: Rate={inputs.CurrentComplianceRate:F1}%, Compliant={inputs.CompliantDevices}, NonCompliant={inputs.NonCompliantDevices}");
                     }
 
                     // Get co-management details from workloads
@@ -114,6 +119,7 @@ namespace ZeroTrustMigrationAddin.Services
                         inputs.ComplianceWorkloadInCloud = workloads.Any(w => w.Name.Contains("Compliance", StringComparison.OrdinalIgnoreCase) && w.Status == WorkloadStatus.Completed);
                         inputs.EndpointProtectionWorkloadInCloud = workloads.Any(w => w.Name.Contains("Endpoint", StringComparison.OrdinalIgnoreCase) && w.Status == WorkloadStatus.Completed);
                         inputs.WindowsUpdateWorkloadInCloud = workloads.Any(w => w.Name.Contains("Update", StringComparison.OrdinalIgnoreCase) && w.Status == WorkloadStatus.Completed);
+                        Instance.Debug($"[MIGRATION IMPACT] Workloads: CoMgmt={inputs.HasCoManagement}, Compliance={inputs.ComplianceWorkloadInCloud}, EP={inputs.EndpointProtectionWorkloadInCloud}, WU={inputs.WindowsUpdateWorkloadInCloud}");
                     }
 
                     // Estimate other metrics from device data
@@ -129,12 +135,18 @@ namespace ZeroTrustMigrationAddin.Services
                         
                         // CA-ready = enrolled + compliant
                         inputs.ConditionalAccessReadyDevices = inputs.CompliantDevices;
+                        Instance.Debug($"[MIGRATION IMPACT] OS breakdown: Win11={inputs.Windows11Devices}, Win10={inputs.Windows10Devices}, Stale={inputs.StaleDevices}, Active={inputs.ActiveDevices}");
                     }
+                }
+                else
+                {
+                    Instance.Warning("[MIGRATION IMPACT] Graph service not available");
                 }
 
                 // Set defaults for ConfigMgr-only scenarios
                 if (inputs.TotalDevices == 0)
                 {
+                    Instance.Info("[MIGRATION IMPACT] No device data from Graph - using DEMO/ESTIMATION mode");
                     // Demo/estimation mode
                     inputs.TotalDevices = 1000;
                     inputs.EnrolledDevices = 350;
@@ -162,10 +174,15 @@ namespace ZeroTrustMigrationAddin.Services
                     inputs.UnhealthyClients = 130;
                     inputs.PatchComplianceRate = 78;
                 }
+                else
+                {
+                    Instance.Info($"[MIGRATION IMPACT] Inputs gathered successfully: TotalDevices={inputs.TotalDevices}, Enrolled={inputs.EnrolledDevices}, Compliance={inputs.CurrentComplianceRate:F1}%");
+                }
             }
             catch (Exception ex)
             {
                 Instance.Error($"[MIGRATION IMPACT] Error gathering inputs: {ex.Message}");
+                Instance.Warning($"[MIGRATION IMPACT] Partial data gathered before error: TotalDevices={inputs.TotalDevices}, Enrolled={inputs.EnrolledDevices}, Compliance={inputs.CurrentComplianceRate:F1}%");
             }
 
             return inputs;

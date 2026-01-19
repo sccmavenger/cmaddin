@@ -755,6 +755,9 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var query = $"{_adminServiceUrl}/wmi/SMS_Application?$select=LocalizedDisplayName,SoftwareVersion,NumberOfDeploymentTypes,IsDeployed,IsSuperseded,DateCreated,DateLastModified";
 
+                Instance.Info("[CONFIGMGR] GetApplications via REST - querying ConfigMgr Admin Service");
+                Instance.Info($"[CONFIGMGR] Query: {query}");
+
                 var response = await _httpClient.GetAsync(query);
                 response.EnsureSuccessStatusCode();
 
@@ -782,10 +785,12 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
+                Instance.Info($"[CONFIGMGR] GetApplications via REST - returned {apps.Count} applications (Deployed: {apps.Count(a => a.IsDeployed)}, Superseded: {apps.Count(a => a.IsSuperseded)})");
                 return apps;
             }
             catch (Exception ex)
             {
+                Instance.Error($"[CONFIGMGR] GetApplications via REST FAILED: {ex.Message}");
                 throw new Exception($"Failed to get applications via REST: {ex.Message}", ex);
             }
         }
@@ -796,8 +801,12 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 try
                 {
+                    Instance.Info("[CONFIGMGR] GetApplications via WMI - connecting to WMI namespace");
+                    var wmiNamespace = $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_Application");
+
                     var apps = new List<ConfigMgrApplication>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = new ManagementScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_Application");
@@ -817,10 +826,12 @@ namespace ZeroTrustMigrationAddin.Services
                         });
                     }
 
+                    Instance.Info($"[CONFIGMGR] GetApplications via WMI - returned {apps.Count} applications (Deployed: {apps.Count(a => a.IsDeployed)}, Superseded: {apps.Count(a => a.IsSuperseded)})");
                     return apps;
                 }
                 catch (Exception ex)
                 {
+                    Instance.Error($"[CONFIGMGR] GetApplications via WMI FAILED: {ex.Message}");
                     throw new Exception($"Failed to get applications via WMI: {ex.Message}", ex);
                 }
             });
@@ -852,6 +863,9 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var query = $"{_adminServiceUrl}/wmi/SMS_G_System_COMPUTER_SYSTEM?$select=ResourceID,Manufacturer,Model,SystemType";
 
+                Instance.Info("[CONFIGMGR] GetHardwareInventory via REST - querying ConfigMgr Admin Service");
+                Instance.Info($"[CONFIGMGR] Query: {query}");
+
                 var response = await _httpClient.GetAsync(query);
                 response.EnsureSuccessStatusCode();
 
@@ -876,10 +890,17 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
+                Instance.Info($"[CONFIGMGR] GetHardwareInventory via REST - returned {hardware.Count} devices");
+                if (hardware.Count > 0)
+                {
+                    var manufacturers = hardware.GroupBy(h => h.Manufacturer).OrderByDescending(g => g.Count()).Take(5);
+                    Instance.Debug($"[CONFIGMGR] Top manufacturers: {string.Join(", ", manufacturers.Select(m => $"{m.Key}:{m.Count()}"))}");
+                }
                 return hardware;
             }
             catch (Exception ex)
             {
+                Instance.Error($"[CONFIGMGR] GetHardwareInventory via REST FAILED: {ex.Message}");
                 throw new Exception($"Failed to get hardware inventory via REST: {ex.Message}", ex);
             }
         }
@@ -890,8 +911,12 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 try
                 {
+                    Instance.Info("[CONFIGMGR] GetHardwareInventory via WMI - connecting to WMI namespace");
+                    var wmiNamespace = $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_G_System_COMPUTER_SYSTEM");
+
                     var hardware = new List<ConfigMgrHardwareInfo>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = new ManagementScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_G_System_COMPUTER_SYSTEM");
@@ -908,10 +933,17 @@ namespace ZeroTrustMigrationAddin.Services
                         });
                     }
 
+                    Instance.Info($"[CONFIGMGR] GetHardwareInventory via WMI - returned {hardware.Count} devices");
+                    if (hardware.Count > 0)
+                    {
+                        var manufacturers = hardware.GroupBy(h => h.Manufacturer).OrderByDescending(g => g.Count()).Take(5);
+                        Instance.Debug($"[CONFIGMGR] Top manufacturers: {string.Join(", ", manufacturers.Select(m => $"{m.Key}:{m.Count()}"))}");
+                    }
                     return hardware;
                 }
                 catch (Exception ex)
                 {
+                    Instance.Error($"[CONFIGMGR] GetHardwareInventory via WMI FAILED: {ex.Message}");
                     throw new Exception($"Failed to get hardware inventory via WMI: {ex.Message}", ex);
                 }
             });
@@ -943,6 +975,9 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var query = $"{_adminServiceUrl}/wmi/SMS_UpdateComplianceStatus?$select=ResourceID,Status,LastStatusCheckTime";
 
+                Instance.Info("[CONFIGMGR] GetUpdateCompliance via REST - querying ConfigMgr Admin Service");
+                Instance.Info($"[CONFIGMGR] Query: {query}");
+
                 var response = await _httpClient.GetAsync(query);
                 response.EnsureSuccessStatusCode();
 
@@ -966,10 +1001,14 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
+                var compliant = compliance.Count(c => c.ComplianceStatus == 1);
+                var nonCompliant = compliance.Count(c => c.ComplianceStatus != 1);
+                Instance.Info($"[CONFIGMGR] GetUpdateCompliance via REST - returned {compliance.Count} devices (Compliant: {compliant}, Non-Compliant: {nonCompliant})");
                 return compliance;
             }
             catch (Exception ex)
             {
+                Instance.Error($"[CONFIGMGR] GetUpdateCompliance via REST FAILED: {ex.Message}");
                 throw new Exception($"Failed to get update compliance via REST: {ex.Message}", ex);
             }
         }
@@ -980,8 +1019,12 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 try
                 {
+                    Instance.Info("[CONFIGMGR] GetUpdateCompliance via WMI - connecting to WMI namespace");
+                    var wmiNamespace = $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_UpdateComplianceStatus");
+
                     var compliance = new List<ConfigMgrUpdateCompliance>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = new ManagementScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_UpdateComplianceStatus");
@@ -997,10 +1040,14 @@ namespace ZeroTrustMigrationAddin.Services
                         });
                     }
 
+                    var compliant = compliance.Count(c => c.ComplianceStatus == 1);
+                    var nonCompliant = compliance.Count(c => c.ComplianceStatus != 1);
+                    Instance.Info($"[CONFIGMGR] GetUpdateCompliance via WMI - returned {compliance.Count} devices (Compliant: {compliant}, Non-Compliant: {nonCompliant})");
                     return compliance;
                 }
                 catch (Exception ex)
                 {
+                    Instance.Error($"[CONFIGMGR] GetUpdateCompliance via WMI FAILED: {ex.Message}");
                     throw new Exception($"Failed to get update compliance via WMI: {ex.Message}", ex);
                 }
             });
@@ -1032,6 +1079,9 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var query = $"{_adminServiceUrl}/wmi/SMS_FullCollectionMembership?$filter=ResourceID eq {resourceId}&$select=CollectionID";
 
+                Instance.Debug($"[CONFIGMGR] GetCollectionMemberships via REST for ResourceID={resourceId}");
+                Instance.Info($"[CONFIGMGR] Query: {query}");
+
                 var response = await _httpClient.GetAsync(query);
                 response.EnsureSuccessStatusCode();
 
@@ -1054,10 +1104,12 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
+                Instance.Debug($"[CONFIGMGR] GetCollectionMemberships via REST - ResourceID={resourceId} is in {memberships.Count} collections");
                 return memberships;
             }
             catch (Exception ex)
             {
+                Instance.Error($"[CONFIGMGR] GetCollectionMemberships via REST FAILED for ResourceID={resourceId}: {ex.Message}");
                 throw new Exception($"Failed to get collection memberships via REST: {ex.Message}", ex);
             }
         }
@@ -1068,8 +1120,12 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 try
                 {
+                    Instance.Debug($"[CONFIGMGR] GetCollectionMemberships via WMI for ResourceID={resourceId}");
+                    var wmiNamespace = $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery(wmiNamespace, $"SELECT * FROM SMS_FullCollectionMembership WHERE ResourceID = {resourceId}");
+
                     var memberships = new List<ConfigMgrCollectionMembership>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = new ManagementScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_FullCollectionMembership", $"ResourceID = {resourceId}");
@@ -1084,10 +1140,12 @@ namespace ZeroTrustMigrationAddin.Services
                         });
                     }
 
+                    Instance.Debug($"[CONFIGMGR] GetCollectionMemberships via WMI - ResourceID={resourceId} is in {memberships.Count} collections");
                     return memberships;
                 }
                 catch (Exception ex)
                 {
+                    Instance.Error($"[CONFIGMGR] GetCollectionMemberships via WMI FAILED for ResourceID={resourceId}: {ex.Message}");
                     throw new Exception($"Failed to get collection memberships via WMI: {ex.Message}", ex);
                 }
             });
@@ -1119,6 +1177,9 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var query = $"{_adminServiceUrl}/wmi/SMS_CH_Summary?$select=ResourceID,ClientActiveStatus,LastActiveTime,LastPolicyRequest,LastDDR,LastHardwareScan,LastSoftwareScan";
 
+                Instance.Info("[CONFIGMGR] GetClientHealth via REST - querying ConfigMgr Admin Service");
+                Instance.Info($"[CONFIGMGR] Query: {query}");
+
                 var response = await _httpClient.GetAsync(query);
                 response.EnsureSuccessStatusCode();
 
@@ -1146,10 +1207,14 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
+                var active = healthMetrics.Count(h => h.ClientActiveStatus == 1);
+                var inactive = healthMetrics.Count(h => h.ClientActiveStatus != 1);
+                Instance.Info($"[CONFIGMGR] GetClientHealth via REST - returned {healthMetrics.Count} devices (Active: {active}, Inactive: {inactive})");
                 return healthMetrics;
             }
             catch (Exception ex)
             {
+                Instance.Error($"[CONFIGMGR] GetClientHealth via REST FAILED: {ex.Message}");
                 throw new Exception($"Failed to get client health metrics via REST: {ex.Message}", ex);
             }
         }
@@ -1160,8 +1225,12 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 try
                 {
+                    Instance.Info("[CONFIGMGR] GetClientHealth via WMI - connecting to WMI namespace");
+                    var wmiNamespace = $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_CH_Summary");
+
                     var healthMetrics = new List<ConfigMgrClientHealth>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = new ManagementScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_CH_Summary");
@@ -1181,10 +1250,14 @@ namespace ZeroTrustMigrationAddin.Services
                         });
                     }
 
+                    var active = healthMetrics.Count(h => h.ClientActiveStatus == 1);
+                    var inactive = healthMetrics.Count(h => h.ClientActiveStatus != 1);
+                    Instance.Info($"[CONFIGMGR] GetClientHealth via WMI - returned {healthMetrics.Count} devices (Active: {active}, Inactive: {inactive})");
                     return healthMetrics;
                 }
                 catch (Exception ex)
                 {
+                    Instance.Error($"[CONFIGMGR] GetClientHealth via WMI FAILED: {ex.Message}");
                     throw new Exception($"Failed to get client health metrics via WMI: {ex.Message}", ex);
                 }
             });

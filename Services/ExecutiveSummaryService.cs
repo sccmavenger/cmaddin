@@ -80,6 +80,12 @@ namespace ZeroTrustMigrationAddin.Services
             int daysSinceStart,
             int daysSinceLastProgress)
         {
+            // Log input parameters BEFORE making GPT-4 call
+            FileLogger.Instance.Info("[EXECUTIVE] Calling GPT-4 for executive summary analysis");
+            FileLogger.Instance.Debug($"[EXECUTIVE] Input params: TotalDevices={totalDevices}, Enrolled={enrolledDevices} ({(totalDevices > 0 ? enrolledDevices * 100.0 / totalDevices : 0):F1}%)");
+            FileLogger.Instance.Debug($"[EXECUTIVE] Input params: CompletedWorkloads=[{string.Join(", ", completedWorkloads)}], InProgress=[{string.Join(", ", inProgressWorkloads)}]");
+            FileLogger.Instance.Debug($"[EXECUTIVE] Input params: ComplianceScore={complianceScore:F1}%, DaysSinceStart={daysSinceStart}, DaysSinceLastProgress={daysSinceLastProgress}");
+            
             double enrollmentPercentage = totalDevices > 0 ? (enrolledDevices * 100.0 / totalDevices) : 0;
             int totalWorkloads = 7;
 

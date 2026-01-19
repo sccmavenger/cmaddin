@@ -117,6 +117,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         private List<EnrollmentSnapshot> GenerateHistoricalSnapshots(int currentTotal, int currentEnrolled)
         {
+            Instance.Info("[ANALYTICS] Generating SYNTHETIC historical snapshots (no stored history available)");
+            Instance.Debug($"[ANALYTICS] Synthetic baseline: Total={currentTotal}, Enrolled={currentEnrolled}");
+            
             var snapshots = new List<EnrollmentSnapshot>();
             var random = new Random(42); // Deterministic for consistency
 
@@ -143,6 +146,7 @@ namespace ZeroTrustMigrationAddin.Services
                 });
             }
 
+            Instance.Info($"[ANALYTICS] Generated {snapshots.Count} synthetic snapshots spanning 90 days");
             return snapshots;
         }
 
@@ -231,6 +235,8 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         private async Task<ConfidenceInputs> BuildConfidenceInputsAsync(EnrollmentAnalyticsResult result, CancellationToken ct)
         {
+            Instance.Debug("[ANALYTICS] Building confidence inputs from available data sources");
+            
             var inputs = new ConfidenceInputs
             {
                 Velocity30 = result.Trend.Velocity30,
@@ -261,10 +267,13 @@ namespace ZeroTrustMigrationAddin.Services
                 inputs.RequiredAppCount = 8;
                 inputs.BlockingESPAppCount = 2;
                 inputs.HasAutopilot = true;
+                
+                Instance.Debug($"[ANALYTICS] Confidence inputs: V30={inputs.Velocity30:F2}, V60={inputs.Velocity60:F2}, V90={inputs.Velocity90:F2}, EnrolledPct={inputs.CurrentEnrollmentPct:F1}%, DaysSinceEnroll={inputs.DaysSinceLastEnrollment}, HasCMG={inputs.HasCMG}, HasCoMgmt={inputs.HasCoManagement}");
             }
             catch (Exception ex)
             {
                 Instance.Warning($"[ANALYTICS] Failed to gather extended confidence inputs: {ex.Message}");
+                Instance.Debug($"[ANALYTICS] Partial confidence inputs gathered: V30={inputs.Velocity30:F2}, V60={inputs.Velocity60:F2}, EnrolledPct={inputs.CurrentEnrollmentPct:F1}%");
             }
 
             return inputs;
