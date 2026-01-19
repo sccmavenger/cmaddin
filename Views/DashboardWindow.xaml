@@ -2357,7 +2357,7 @@
                             <!-- NEW: Migration Impact Forecast Section -->
                             <views:MigrationImpactCard x:Name="MigrationImpactCard" Margin="0,0,0,15"/>
 
-                            <!-- NEW: Enrollment Impact Simulator (100% Data-Driven) -->
+                            <!-- Enrollment Readiness Analyzer (100% Data-Driven) -->
                             <views:EnrollmentSimulatorCard x:Name="EnrollmentSimulatorCard" Margin="0,0,0,15"/>
 
                             <!-- Enrollment Readiness (Moved from Overview) -->

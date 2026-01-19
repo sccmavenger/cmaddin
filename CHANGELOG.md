@@ -1,5 +1,40 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.16.44] - 2026-01-19
+
+### Fixed - View Details NullReferenceException + UX Terminology Rename
+
+**Bug Fix: View Details Button Still Failing**
+Root cause: Multiple collection accesses (Gaps, GapSummaries, PoliciesUsed) could be null at runtime.
+
+**Added Comprehensive Null-Safe Checks:**
+- `LoadDeviceData()`: Now uses null-safe access for `d.Gaps` on each device
+- `LoadGapAnalysis()`: Added null coalescing for all GapSummary properties  
+- `LoadPolicyDetails()`: Added null-safe access for PoliciesUsed and UnassignedPolicyNames
+- `PopulateGapFilter()`: Added null checks before iterating gaps
+
+**All methods now have diagnostic logging** for debugging failed window loads.
+
+**UX Terminology Change: "Simulator" → "Analyzer"**
+Renamed "Enrollment Impact Simulator" to **"Enrollment Readiness Analyzer"** throughout the UI.
+
+**Updated User-Visible Text:**
+- Card title: "ENROLLMENT READINESS ANALYZER"
+- Window title: "Enrollment Readiness Analysis Results"  
+- Button text: "Run Analysis" (was "Run Simulation")
+- Message dialogs: Updated all "simulation" references to "analysis"
+
+**Files Modified:**
+- `Views/EnrollmentSimulatorWindow.xaml.cs` - Null-safe checks in LoadDeviceData, LoadGapAnalysis, LoadPolicyDetails, PopulateGapFilter
+- `Views/EnrollmentSimulatorWindow.xaml` - Updated window title and header
+- `Views/EnrollmentSimulatorCard.xaml` - Updated card title and button text
+- `Views/EnrollmentSimulatorCard.xaml.cs` - Updated button text and messages
+- `Views/DashboardWindow.xaml` - Updated comment
+- `Views/DashboardWindow.xaml.cs` - Updated comments and log messages
+
+**Note:** File names remain as `EnrollmentSimulator*` for code stability. Only user-visible text was changed.
+
+
 ## [3.16.42] - 2026-01-19
 
 ### Fixed - Enrollment Simulator Diagnostics & View Details Error

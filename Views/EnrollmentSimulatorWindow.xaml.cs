@@ -9,7 +9,7 @@ using static ZeroTrustMigrationAddin.Services.FileLogger;
 namespace ZeroTrustMigrationAddin.Views
 {
     /// <summary>
-    /// Detailed results window for Enrollment Impact Simulator.
+    /// Detailed results window for Enrollment Readiness Analyzer.
     /// Shows device-level data and gap analysis.
     /// </summary>
     public partial class EnrollmentSimulatorWindow : Window
@@ -122,17 +122,22 @@ namespace ZeroTrustMigrationAddin.Views
         /// </summary>
         private void LoadGapAnalysis()
         {
-            var gapItems = _result.GapSummaries.Select(g => new GapAnalysisItem
-            {
-                Icon = g.Icon,
-                Requirement = g.Requirement,
-                DeviceCount = g.DeviceCount,
-                Percentage = g.Percentage,
-                RemediationAction = g.RemediationAction,
-                RemediationEffort = g.RemediationEffort,
-                AutoRemediateText = g.CanAutoRemediate ? "✓" : "✗"
-            }).ToList();
+            Instance.Debug("[SIMULATOR WINDOW] LoadGapAnalysis starting...");
+            
+            var gapItems = _result.GapSummaries
+                .Select(g => new GapAnalysisItem
+                {
+                    Icon = g?.Icon ?? "⚠️",
+                    Requirement = g?.Requirement ?? "Unknown",
+                    DeviceCount = g?.DeviceCount ?? 0,
+                    Percentage = g?.Percentage ?? 0,
+                    RemediationAction = g?.RemediationAction ?? "",
+                    RemediationEffort = g?.RemediationEffort ?? "",
+                    AutoRemediateText = g?.CanAutoRemediate == true ? "✓" : "✗"
+                })
+                .ToList();
 
+            Instance.Debug($"[SIMULATOR WINDOW] Loaded {gapItems.Count} gap analysis items");
             GapAnalysisGrid.ItemsSource = gapItems;
         }
 
@@ -141,21 +146,28 @@ namespace ZeroTrustMigrationAddin.Views
         /// </summary>
         private void LoadDeviceData()
         {
-            // Devices needing remediation
+            Instance.Debug("[SIMULATOR WINDOW] LoadDeviceData starting...");
+            
+            // Devices needing remediation - with defensive null checks on Gaps
             _allRemediationDevices = _result.DeviceResults
                 .Where(d => !d.WouldBeCompliant)
-                .Select(d => new DeviceDisplayItem
+                .Select(d => 
                 {
-                    DeviceName = d.DeviceName,
-                    GapCount = d.Gaps.Count,
-                    GapsList = string.Join(", ", d.Gaps.Select(g => g.Requirement)),
-                    Gaps = d.Gaps.Select(g => g.Requirement).ToList(),
-                    MaxEffort = GetMaxEffort(d.Gaps.Select(g => g.RemediationEffort)),
-                    LastScanText = d.HasStaleInventory ? $"⚠️ {d.DaysSinceLastScan}d ago" : "Recent"
+                    var gaps = d.Gaps ?? new List<ComplianceGap>();
+                    return new DeviceDisplayItem
+                    {
+                        DeviceName = d.DeviceName ?? "Unknown",
+                        GapCount = gaps.Count,
+                        GapsList = string.Join(", ", gaps.Select(g => g?.Requirement ?? "")),
+                        Gaps = gaps.Select(g => g?.Requirement ?? "").ToList(),
+                        MaxEffort = GetMaxEffort(gaps.Select(g => g?.RemediationEffort ?? "")),
+                        LastScanText = d.HasStaleInventory ? $"⚠️ {d.DaysSinceLastScan}d ago" : "Recent"
+                    };
                 })
                 .OrderByDescending(d => d.GapCount)
                 .ToList();
 
+            Instance.Debug($"[SIMULATOR WINDOW] Loaded {_allRemediationDevices.Count} remediation devices");
             RemediationDevicesGrid.ItemsSource = _allRemediationDevices;
 
             // Ready devices
@@ -163,7 +175,7 @@ namespace ZeroTrustMigrationAddin.Views
                 .Where(d => d.WouldBeCompliant)
                 .Select(d => new DeviceDisplayItem
                 {
-                    DeviceName = d.DeviceName,
+                    DeviceName = d.DeviceName ?? "Unknown",
                     OSVersion = "N/A", // Would need to add to result model
                     BitLockerText = "✓",
                     FirewallText = "✓",
@@ -174,6 +186,7 @@ namespace ZeroTrustMigrationAddin.Views
                 })
                 .ToList();
 
+            Instance.Debug($"[SIMULATOR WINDOW] Loaded {_allReadyDevices.Count} ready devices");
             ReadyDevicesGrid.ItemsSource = _allReadyDevices;
         }
 
@@ -182,10 +195,13 @@ namespace ZeroTrustMigrationAddin.Views
         /// </summary>
         private void LoadPolicyDetails()
         {
+            Instance.Debug("[SIMULATOR WINDOW] LoadPolicyDetails starting...");
+            
             PolicyDetailsPanel.Children.Clear();
 
             if (_result.PrimaryPolicy == null)
             {
+                Instance.Debug("[SIMULATOR WINDOW] PrimaryPolicy is null - showing placeholder");
                 PolicyDetailsPanel.Children.Add(new TextBlock
                 {
                     Text = "No policy information available",
@@ -196,9 +212,10 @@ namespace ZeroTrustMigrationAddin.Views
             }
 
             var policy = _result.PrimaryPolicy;
+            Instance.Debug($"[SIMULATOR WINDOW] Displaying policy: {policy.PolicyName ?? "Unknown"}");
 
             // Policy header
-            AddPolicySection($"📋 {policy.PolicyName}", policy.Description ?? "");
+            AddPolicySection($"📋 {policy.PolicyName ?? "Unknown Policy"}", policy.Description ?? "");
 
             // Requirements
             AddPolicyRequirement("BitLocker Encryption", policy.RequiresBitLocker);
@@ -214,29 +231,31 @@ namespace ZeroTrustMigrationAddin.Views
                 AddPolicyText($"Minimum OS Version: {policy.MinimumOSVersion}");
             }
 
-            // If multiple policies were combined
-            if (_result.PoliciesUsed.Count > 1)
+            // If multiple policies were combined - use null-safe access
+            var policiesUsed = _result.PoliciesUsed ?? new List<CompliancePolicyRequirements>();
+            if (policiesUsed.Count > 1)
             {
                 AddPolicySection("Source Policies (Assigned)", 
-                    $"Combined from {_result.PoliciesUsed.Count(p => p.IsEffectivelyActive)} assigned policies:");
+                    $"Combined from {policiesUsed.Count(p => p?.IsEffectivelyActive == true)} assigned policies:");
                 
-                foreach (var p in _result.PoliciesUsed.Where(p => p.IsEffectivelyActive))
+                foreach (var p in policiesUsed.Where(p => p?.IsEffectivelyActive == true))
                 {
                     AddAssignmentInfo(p);
                 }
             }
 
             // Show unassigned policies as warning
+            var unassignedNames = _result.UnassignedPolicyNames ?? new List<string>();
             if (_result.UnassignedPolicyCount > 0)
             {
-                AddWarningText($"⚠️ {_result.UnassignedPolicyCount} Unassigned Policies (excluded from simulation):");
-                foreach (var name in _result.UnassignedPolicyNames.Take(5))
+                AddWarningText($"⚠️ {_result.UnassignedPolicyCount} Unassigned Policies (excluded from analysis):");
+                foreach (var name in unassignedNames.Take(5))
                 {
-                    AddPolicyText($"  • {name} - Not assigned to any devices");
+                    AddPolicyText($"  • {name ?? "Unknown"} - Not assigned to any devices");
                 }
-                if (_result.UnassignedPolicyNames.Count > 5)
+                if (unassignedNames.Count > 5)
                 {
-                    AddPolicyText($"  ... and {_result.UnassignedPolicyNames.Count - 5} more");
+                    AddPolicyText($"  ... and {unassignedNames.Count - 5} more");
                 }
             }
 
@@ -245,6 +264,8 @@ namespace ZeroTrustMigrationAddin.Views
             {
                 AddWarningText("⚠️ Assignment Filters Detected: Some policies use assignment filters. Actual impact may vary based on device properties.");
             }
+            
+            Instance.Debug("[SIMULATOR WINDOW] LoadPolicyDetails completed");
         }
 
         /// <summary>
@@ -411,14 +432,20 @@ namespace ZeroTrustMigrationAddin.Views
         /// </summary>
         private void PopulateGapFilter()
         {
+            Instance.Debug("[SIMULATOR WINDOW] PopulateGapFilter starting...");
+            
             // Already has "All Gaps" as first item
-            foreach (var gap in _result.GapSummaries.OrderByDescending(g => g.DeviceCount))
+            var gaps = _result.GapSummaries ?? new List<GapSummary>();
+            foreach (var gap in gaps.OrderByDescending(g => g?.DeviceCount ?? 0))
             {
+                if (gap == null) continue;
                 GapFilterCombo.Items.Add(new ComboBoxItem
                 {
-                    Content = $"{gap.Icon} {gap.Requirement} ({gap.DeviceCount})"
+                    Content = $"{gap.Icon ?? "⚠️"} {gap.Requirement ?? "Unknown"} ({gap.DeviceCount})"
                 });
             }
+            
+            Instance.Debug($"[SIMULATOR WINDOW] Added {gaps.Count} gap filter items");
         }
 
         /// <summary>

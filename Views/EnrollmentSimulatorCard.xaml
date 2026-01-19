@@ -50,7 +50,7 @@
                     <TextBlock Text="🔬" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <StackPanel VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="ENROLLMENT IMPACT SIMULATOR" FontSize="14" FontWeight="Bold" Foreground="#333333"/>
+                            <TextBlock Text="ENROLLMENT READINESS ANALYZER" FontSize="14" FontWeight="Bold" Foreground="#333333"/>
                             <Border x:Name="DataSourceBadge" Background="#FFF3E0" CornerRadius="3" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
                                 <TextBlock x:Name="DataSourceText" Text="📋 Demo Data" FontSize="10" Foreground="#E65100"/>
                             </Border>
@@ -77,7 +77,7 @@
                     </Button.Style>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="ButtonIcon" Text="▶" FontSize="10" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="ButtonText" Text="Run Simulation"/>
+                        <TextBlock x:Name="ButtonText" Text="Run Analysis"/>
                     </StackPanel>
                 </Button>
             </Grid>

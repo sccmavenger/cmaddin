@@ -12,8 +12,8 @@ using static ZeroTrustMigrationAddin.Services.FileLogger;
 namespace ZeroTrustMigrationAddin.Views
 {
     /// <summary>
-    /// Dashboard card for the Enrollment Impact Simulator.
-    /// Shows headline metrics from simulation results.
+    /// Dashboard card for the Enrollment Readiness Analyzer.
+    /// Shows headline metrics from analysis results.
     /// </summary>
     public partial class EnrollmentSimulatorCard : UserControl
     {
@@ -58,12 +58,12 @@ namespace ZeroTrustMigrationAddin.Views
             {
                 // Enable button and auto-run if we have BOTH services fully ready
                 RunSimulationButton.IsEnabled = true;
-                ButtonText.Text = "Run Simulation";
+                ButtonText.Text = "Run Analysis";
                 ButtonIcon.Text = "▶";
                 
                 if (hasGraph && configMgrReady)
                 {
-                    Instance.Info("[SIMULATOR CARD] ✅ Both services ready - AUTO-RUNNING simulation...");
+                    Instance.Info("[SIMULATOR CARD] ✅ Both services ready - AUTO-RUNNING analysis...");
                     await RunSimulationAsync();
                 }
                 else
@@ -283,9 +283,9 @@ namespace ZeroTrustMigrationAddin.Views
             
             if (_lastResult == null)
             {
-                Instance.Warning("[SIMULATOR CARD] ⚠️ No simulation results available - need to run simulation first");
-                MessageBox.Show("Please run a simulation first.\n\nClick the 'Run Simulation' button to analyze your devices.", 
-                    "No Simulation Results", 
+                Instance.Warning("[SIMULATOR CARD] ⚠️ No analysis results available - need to run analysis first");
+                MessageBox.Show("Please run an analysis first.\n\nClick the 'Run Analysis' button to analyze your devices.", 
+                    "No Analysis Results", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -320,7 +320,7 @@ namespace ZeroTrustMigrationAddin.Views
         {
             if (_lastResult == null)
             {
-                MessageBox.Show("Please run a simulation first.", "No Results", 
+                MessageBox.Show("Please run an analysis first.", "No Results", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }

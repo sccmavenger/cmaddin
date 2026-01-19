@@ -81,12 +81,12 @@ namespace ZeroTrustMigrationAddin.Views
                     EnrollmentPlaybooksView.DataContext = playbooksVM;
                 }
                 
-                // Initialize Enrollment Simulator Card (starts with no services - will show initial state)
+                // Initialize Enrollment Readiness Analyzer Card (starts with no services - will show initial state)
                 // Card will use demo data when services are not connected
                 if (EnrollmentSimulatorCard != null)
                 {
                     EnrollmentSimulatorCard.Initialize(null, null);
-                    System.Diagnostics.Debug.WriteLine("Enrollment Simulator Card initialized (will use demo data until connected)");
+                    System.Diagnostics.Debug.WriteLine("Enrollment Readiness Analyzer Card initialized (will use demo data until connected)");
                 }
                 
                 System.Diagnostics.Debug.WriteLine("Enrollment Analytics components initialized with mock data");
@@ -484,15 +484,15 @@ namespace ZeroTrustMigrationAddin.Views
                         Instance.Info("[ANALYTICS] Migration Impact card refreshed");
                     }
                     
-                    // Initialize Enrollment Simulator Card with real services
+                    // Initialize Enrollment Readiness Analyzer Card with real services
                     // IMPORTANT: Use graphDataService.ConfigMgrService, NOT viewModel.ConfigMgrAdminService
                     // The ConfigureAsync() is called on graphDataService.ConfigMgrService, so that's the configured one
                     if (EnrollmentSimulatorCard != null)
                     {
                         var configMgrService = graphDataService.ConfigMgrService;
-                        Instance.Info($"[ANALYTICS] Simulator - Graph: {graphDataService != null}, ConfigMgr: {configMgrService != null}, ConfigMgr.IsConfigured: {configMgrService?.IsConfigured ?? false}");
+                        Instance.Info($"[ANALYTICS] Analyzer - Graph: {graphDataService != null}, ConfigMgr: {configMgrService != null}, ConfigMgr.IsConfigured: {configMgrService?.IsConfigured ?? false}");
                         EnrollmentSimulatorCard.Initialize(graphDataService, configMgrService);
-                        Instance.Info("[ANALYTICS] Enrollment Simulator card initialized with real services");
+                        Instance.Info("[ANALYTICS] Enrollment Readiness Analyzer card initialized with real services");
                     }
                     
                     Instance.Info("[ANALYTICS] All Enrollment Analytics views refreshed with real data");
