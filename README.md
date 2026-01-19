@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.16.38** | January 19, 2026
+**Version 3.16.39** | January 19, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -102,6 +102,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.16.38 (January 19, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
 
 ### Version 3.16.37 (January 19, 2026)
 
@@ -217,30 +231,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - `Services/DeviceReadinessService.cs` - Added comprehensive logging
   - `ViewModels/DashboardViewModel.cs` - New `GenerateRealAIActionSummaryAsync()` method
   - `ViewModels/DashboardViewModel.cs` - Updated `LoadDeviceSelectionDataAsync()` to avoid mock data when connected
-
----
-
-### Version 3.16.32 (January 17, 2026)
-
-### Added
-- **Phase 1 Assignment Awareness** for Enrollment Impact Simulator
-  - Only simulates with policies that are actually assigned (not just created)
-  - Shows assignment status for each policy (All Devices, specific groups, or unassigned)
-  - Warns about unassigned policies that won't affect devices
-  - Warns about assignment filters (beta API limitation)
-
-### Changed
-- **Graph API Permissions** - Added 3 new required scopes:
-  - `Group.Read.All` - Resolve group names for policy assignments
-  - `DeviceManagementServiceConfig.Read.All` - Read Autopilot devices and enrollment config
-  - `Organization.Read.All` - Read tenant/organization information
-
-### Fixed
-- **Admin User Guide** - Comprehensive permissions documentation update:
-  - Added all 8 required Graph API permissions with descriptions
-  - Added Admin Consent requirement warning (explains "Need admin approval" popup)
-  - Added detailed ConfigMgr RBAC requirements with specific WMI classes
-  - Added step-by-step instructions for granting admin consent
 
 ---
 
@@ -1357,5 +1347,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-19  
-**Version**: 3.16.38  
+**Version**: 3.16.39  
 **Maintainer:** Zero Trust Migration Journey Add-in Team

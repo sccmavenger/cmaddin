@@ -1,6 +1,6 @@
 {
-  "Version": "3.16.38",
-  "TotalSize": 241667487,
+  "Version": "3.16.39",
+  "TotalSize": 241666625,
   "Files": [
     {
       "LastModified": "2025-10-28T09:24:06.0000000Z",
@@ -10,11 +10,11 @@
       "SHA256Hash": "767765b28e4066615b602e11e3d690371a5cf18879f77b56505cca1817561493"
     },
     {
-      "LastModified": "2026-01-19T07:46:08.9562362Z",
+      "LastModified": "2026-01-19T08:00:34.6645175Z",
       "RelativePath": "AdminUserGuide.html",
       "IsCritical": false,
       "FileSize": 52490,
-      "SHA256Hash": "bd9866c460fea26d21dd8b4b91d95f04bb86a666c1c62c50048b7f864e95c8d2"
+      "SHA256Hash": "39987b9d87d77e97539087c5e31ada03aac59ece9cbab95538c824952eb13fc9"
     },
     {
       "LastModified": "2026-01-19T07:46:27.3322139Z",
@@ -514,11 +514,11 @@
       "SHA256Hash": "dcc94bdce4d6321772d74576b86a62baf1ce514467133621ca11b852bd08a2f5"
     },
     {
-      "LastModified": "2026-01-19T07:46:08.9386066Z",
+      "LastModified": "2026-01-19T08:00:34.6585176Z",
       "RelativePath": "README.md",
       "IsCritical": false,
-      "FileSize": 48157,
-      "SHA256Hash": "15bada6fea1df9b90afe169e7710ff2c0dbb6ceca1c9c2fd41a09ed12be6d3ae"
+      "FileSize": 47159,
+      "SHA256Hash": "fd68bd030d9a12a6c097297344538bde9ed3f4b20ecb0c071bc2492ff1280828"
     },
     {
       "LastModified": "2026-01-19T07:46:55.2231588Z",
@@ -1921,40 +1921,40 @@
       "SHA256Hash": "1ccb4943ef0d472d70e1cb4738f89fb457010e12fa82379daf2dc64cf59d6e9b"
     },
     {
-      "LastModified": "2026-01-19T07:46:23.1527181Z",
+      "LastModified": "2026-01-19T08:00:45.5710377Z",
       "RelativePath": "ZeroTrustMigrationAddin.deps.json",
       "IsCritical": false,
       "FileSize": 76663,
-      "SHA256Hash": "d7669137fcf3f13a1d306f1bef837900bfe635c7093edf05990266e47a13555a"
+      "SHA256Hash": "6e5272da42d1425d257311d4116827cc7fd2e4164d9ab00ee6a6d5c4e3eedcaa"
     },
     {
-      "LastModified": "2026-01-19T07:46:57.9618056Z",
+      "LastModified": "2026-01-19T08:00:50.1860888Z",
       "RelativePath": "ZeroTrustMigrationAddin.dll",
       "IsCritical": true,
       "FileSize": 2818048,
-      "SHA256Hash": "a66b5d0f036edf4b0421b8c447a2bdc2fc0a6e04f5902476c3a1d9d3d5199c05"
+      "SHA256Hash": "28ea8223696cabdb5c010e84baa758e8e7d38e8bb57c8fe1ba69fa0e10e208db"
     },
     {
-      "LastModified": "2026-01-19T07:46:22.4809459Z",
+      "LastModified": "2026-01-19T08:00:44.9167219Z",
       "RelativePath": "ZeroTrustMigrationAddin.exe",
       "IsCritical": true,
       "FileSize": 152064,
-      "SHA256Hash": "cc5069e3a07fda6807170ffee805db99d03f7d40101ad363f665c1ab66d7da19"
+      "SHA256Hash": "ff0942c85551b53813eaea0fe7567bde8a0489692b20e0b6e46b60ce55e2f84d"
     },
     {
-      "LastModified": "2026-01-19T07:46:22.2669290Z",
+      "LastModified": "2026-01-19T08:00:44.6921806Z",
       "RelativePath": "ZeroTrustMigrationAddin.pdb",
       "IsCritical": false,
-      "FileSize": 329380,
-      "SHA256Hash": "b8115afbcf52914410077c6ac744a539b32d0ff47e1a71171e77d661205298ca"
+      "FileSize": 329516,
+      "SHA256Hash": "fca1463b347e09b03de28b4eb0135d0b4c00aa83459cf96f2c14f823114c2447"
     },
     {
-      "LastModified": "2026-01-19T07:46:25.6225625Z",
+      "LastModified": "2026-01-19T08:00:48.0936267Z",
       "RelativePath": "ZeroTrustMigrationAddin.runtimeconfig.json",
       "IsCritical": false,
       "FileSize": 525,
       "SHA256Hash": "35be036df53a45ab23455e856266911356051bbd0614c45c9b179bdec3b39bb9"
     }
   ],
-  "BuildDate": "2026-01-19T07:47:13.4144056Z"
+  "BuildDate": "2026-01-19T08:01:04.4755702Z"
 }
