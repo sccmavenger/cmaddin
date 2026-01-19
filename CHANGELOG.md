@@ -12,6 +12,35 @@
 - 
 
 
+## [3.16.38] - 2026-01-19
+
+### Fixed - Enrollment Impact Simulator Not Auto-Running
+**Root Cause Analysis from v3.16.37 logs:**
+- User expected simulator to show analysis/forecast after connection
+- Simulator was waiting for manual "Run Simulation" button click
+- No logs showed simulator execution because it was never triggered
+
+### Changes Made (EnrollmentSimulatorCard.xaml.cs)
+
+**1. Auto-Run Simulation on Connection**
+- Simulator now automatically runs when `Initialize()` is called with real services
+- Checks for both Graph AND ConfigMgr services configured before auto-running
+- Logs: `[SIMULATOR CARD] ✅ Real services detected - AUTO-RUNNING simulation...`
+
+**2. Button State Management**
+- "Run Simulation" button now disabled until services are ready
+- Shows "⏳ Connect First" when services not available
+- Prevents user from clicking button before services are initialized
+
+**3. Enhanced Click Logging**
+- Logs when user manually clicks "Run Simulation" button
+- Shows service availability status at click time
+- Helps diagnose if user clicked before connection completed
+
+### Files Modified
+- `Views/EnrollmentSimulatorCard.xaml.cs` - Auto-run, button state, click logging
+
+
 ## [3.16.37] - 2026-01-19
 
 ### Added

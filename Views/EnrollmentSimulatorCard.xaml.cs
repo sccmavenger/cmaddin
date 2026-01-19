@@ -29,8 +29,9 @@ namespace ZeroTrustMigrationAddin.Views
 
         /// <summary>
         /// Initialize the card with services.
+        /// Automatically runs simulation when real services are provided.
         /// </summary>
-        public void Initialize(GraphDataService? graphService, ConfigMgrAdminService? configMgrService)
+        public async void Initialize(GraphDataService? graphService, ConfigMgrAdminService? configMgrService)
         {
             _graphService = graphService;
             _configMgrService = configMgrService;
@@ -38,6 +39,26 @@ namespace ZeroTrustMigrationAddin.Views
             
             // Update data source badge based on connection status
             UpdateDataSourceBadge();
+            
+            // Check if we have REAL services (not initial null call)
+            bool hasRealServices = graphService != null && configMgrService != null && configMgrService.IsConfigured;
+            
+            Instance.Info($"[SIMULATOR CARD] Initialize called - Graph: {graphService != null}, ConfigMgr: {configMgrService != null}, ConfigMgr.IsConfigured: {configMgrService?.IsConfigured ?? false}");
+            
+            // Auto-run simulation when real services are connected
+            if (hasRealServices)
+            {
+                Instance.Info("[SIMULATOR CARD] ✅ Real services detected - AUTO-RUNNING simulation...");
+                await RunSimulationAsync();
+            }
+            else
+            {
+                Instance.Info("[SIMULATOR CARD] ⏳ Waiting for services - simulation requires manual trigger or connection");
+                // Disable button until services are ready
+                RunSimulationButton.IsEnabled = false;
+                ButtonText.Text = "Connect First";
+                ButtonIcon.Text = "⏳";
+            }
         }
 
         /// <summary>
@@ -73,6 +94,9 @@ namespace ZeroTrustMigrationAddin.Views
         /// </summary>
         private async void RunSimulation_Click(object sender, RoutedEventArgs e)
         {
+            Instance.Info("[SIMULATOR CARD] 🖱️ User clicked 'Run Simulation' button");
+            Instance.Info($"[SIMULATOR CARD]    Graph service: {(_graphService != null ? "✅ Available" : "❌ NULL")}");
+            Instance.Info($"[SIMULATOR CARD]    ConfigMgr service: {(_configMgrService != null ? (_configMgrService.IsConfigured ? "✅ Configured" : "⚠️ Not Configured") : "❌ NULL")}");
             await RunSimulationAsync();
         }
 
