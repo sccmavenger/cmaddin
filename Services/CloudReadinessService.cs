@@ -28,7 +28,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public async Task<CloudReadinessDashboard> GetCloudReadinessDashboardAsync()
         {
-            Instance.Info("=== CLOUD READINESS ASSESSMENT START ===");
+            Instance.Info("╔══════════════════════════════════════════════════════════════════════════════════════════╗");
+            Instance.Info("║                       CLOUD READINESS ASSESSMENT START                                   ║");
+            Instance.Info("╚══════════════════════════════════════════════════════════════════════════════════════════╝");
             
             var dashboard = new CloudReadinessDashboard
             {
@@ -54,10 +56,27 @@ namespace ZeroTrustMigrationAddin.Services
                 dashboard.Signals.Add(await wufbTask);
                 dashboard.Signals.Add(await endpointSecurityTask);
 
-                Instance.Info($"=== CLOUD READINESS ASSESSMENT COMPLETE ===");
-                Instance.Info($"   Overall Readiness: {dashboard.OverallReadiness}%");
-                Instance.Info($"   Total Devices Assessed: {dashboard.TotalAssessedDevices}");
-                Instance.Info($"   Total Blockers Identified: {dashboard.TotalBlockersIdentified}");
+                Instance.Info("╔══════════════════════════════════════════════════════════════════════════════════════════╗");
+                Instance.Info("║                       CLOUD READINESS ASSESSMENT SUMMARY                                 ║");
+                Instance.Info("╚══════════════════════════════════════════════════════════════════════════════════════════╝");
+                Instance.Info($"   📊 Overall Readiness Score: {dashboard.OverallReadiness}%");
+                Instance.Info($"   📱 Total Devices Assessed: {dashboard.TotalAssessedDevices}");
+                Instance.Info($"   🚫 Total Blockers Identified: {dashboard.TotalBlockersIdentified}");
+                Instance.Info("");
+                Instance.Info("   SIGNAL BREAKDOWN:");
+                foreach (var sig in dashboard.Signals)
+                {
+                    var status = sig.ReadinessPercentage >= 80 ? "✅" : sig.ReadinessPercentage >= 50 ? "🟡" : "🔴";
+                    Instance.Info($"      {status} {sig.Name}: {sig.ReadinessPercentage}% ({sig.ReadyDevices}/{sig.TotalDevices} ready)");
+                    if (sig.TopBlockers.Any())
+                    {
+                        foreach (var blocker in sig.TopBlockers.Take(3))
+                        {
+                            Instance.Info($"         └─ 🚫 {blocker.Name}: {blocker.AffectedDeviceCount} devices ({blocker.PercentageAffected}%)");
+                        }
+                    }
+                }
+                Instance.Info("═══════════════════════════════════════════════════════════════════════════════════════════");
             }
             catch (Exception ex)
             {
@@ -73,7 +92,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public async Task<CloudReadinessSignal> GetAutopilotReadinessSignalAsync()
         {
-            Instance.Info("Assessing Autopilot readiness...");
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 🚀 AUTOPILOT READINESS ASSESSMENT                                                       │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
             
             var signal = new CloudReadinessSignal
             {
@@ -88,16 +109,20 @@ namespace ZeroTrustMigrationAddin.Services
             try
             {
                 // Get device data from ConfigMgr
+                Instance.Info("   Fetching device data from ConfigMgr...");
                 var devices = await _configMgrService.GetWindows1011DevicesAsync();
                 var tpmStatus = await _configMgrService.GetTpmStatusAsync();
                 var osDetails = await _configMgrService.GetOSDetailsAsync();
                 var enrollmentData = await _graphService.GetDeviceEnrollmentAsync();
 
                 signal.TotalDevices = devices?.Count ?? 0;
+                Instance.Info($"   📱 Total devices found: {signal.TotalDevices}");
+                Instance.Info($"   📊 TPM records retrieved: {tpmStatus?.Count ?? 0}");
+                Instance.Info($"   📊 OS detail records retrieved: {osDetails?.Count ?? 0}");
                 
                 if (signal.TotalDevices == 0)
                 {
-                    Instance.Warning("No devices found for Autopilot readiness assessment");
+                    Instance.Warning("   ⚠️ No devices found for Autopilot readiness assessment");
                     return signal;
                 }
 
@@ -105,14 +130,36 @@ namespace ZeroTrustMigrationAddin.Services
                 var readyDeviceIds = new HashSet<int>(devices.Select(d => d.ResourceId));
 
                 // Check TPM 2.0 requirement
+                Instance.Info("");
+                Instance.Info("   [CHECK 1/3] TPM 2.0 REQUIREMENT");
                 var tpmLookup = tpmStatus?.ToDictionary(t => t.ResourceId) ?? new Dictionary<int, TpmStatus>();
-                var devicesWithTpm20 = devices.Count(d => 
+                
+                var devicesWithNoTpmData = devices.Where(d => !tpmLookup.ContainsKey(d.ResourceId)).ToList();
+                var devicesWithTpmDisabled = devices.Where(d => tpmLookup.TryGetValue(d.ResourceId, out var t) && (!t.IsPresent || !t.IsEnabled)).ToList();
+                var devicesWithTpm12 = devices.Where(d => tpmLookup.TryGetValue(d.ResourceId, out var t) && t.IsPresent && t.IsEnabled && 
+                    !string.IsNullOrEmpty(t.SpecVersion) && !t.SpecVersion.StartsWith("2.") && !t.SpecVersion.Contains("2.0")).ToList();
+                var devicesWithTpm20 = devices.Where(d => 
                     tpmLookup.TryGetValue(d.ResourceId, out var tpm) && 
                     tpm.IsPresent && tpm.IsEnabled &&
                     !string.IsNullOrEmpty(tpm.SpecVersion) && 
-                    (tpm.SpecVersion.StartsWith("2.") || tpm.SpecVersion.Contains("2.0")));
+                    (tpm.SpecVersion.StartsWith("2.") || tpm.SpecVersion.Contains("2.0"))).ToList();
 
-                var noTpm20Count = signal.TotalDevices - devicesWithTpm20;
+                Instance.Info($"      ✅ TPM 2.0 Present & Enabled: {devicesWithTpm20.Count} devices");
+                Instance.Info($"      ⚠️ No TPM data available: {devicesWithNoTpmData.Count} devices");
+                Instance.Info($"      ❌ TPM Missing or Disabled: {devicesWithTpmDisabled.Count} devices");
+                Instance.Info($"      ❌ TPM 1.2 (needs upgrade): {devicesWithTpm12.Count} devices");
+                
+                // Log sample devices without TPM 2.0
+                if (devicesWithNoTpmData.Any())
+                {
+                    Instance.Debug("      Devices with no TPM data (first 10):");
+                    foreach (var d in devicesWithNoTpmData.Take(10))
+                    {
+                        Instance.Debug($"         - {d.Name} (ResourceId: {d.ResourceId})");
+                    }
+                }
+
+                var noTpm20Count = signal.TotalDevices - devicesWithTpm20.Count;
                 if (noTpm20Count > 0)
                 {
                     blockers.Add(new ReadinessBlocker
@@ -138,20 +185,44 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 // Check OS version requirement (Windows 10 1809+ or Windows 11)
+                Instance.Info("");
+                Instance.Info("   [CHECK 2/3] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");
                 var osLookup = osDetails?.ToDictionary(o => o.ResourceId) ?? new Dictionary<int, OSDetails>();
-                var unsupportedOsCount = devices.Count(d =>
-                {
-                    if (!osLookup.TryGetValue(d.ResourceId, out var os)) return true;
-                    if (string.IsNullOrEmpty(os.BuildNumber)) return true;
-                    
-                    // Windows 10 1809 = Build 17763, Windows 11 = Build 22000+
-                    if (int.TryParse(os.BuildNumber, out var build))
-                    {
-                        return build < 17763;
-                    }
-                    return true;
-                });
+                
+                var devicesWithNoOsData = devices.Where(d => !osLookup.ContainsKey(d.ResourceId) || string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber)).ToList();
+                var devicesBelowMinBuild = devices.Where(d => {
+                    if (!osLookup.TryGetValue(d.ResourceId, out var os)) return false;
+                    if (string.IsNullOrEmpty(os.BuildNumber)) return false;
+                    if (int.TryParse(os.BuildNumber, out var build)) return build < 17763;
+                    return false;
+                }).ToList();
+                var devicesMeetingOsReq = devices.Where(d => {
+                    if (!osLookup.TryGetValue(d.ResourceId, out var os)) return false;
+                    if (string.IsNullOrEmpty(os.BuildNumber)) return false;
+                    if (int.TryParse(os.BuildNumber, out var build)) return build >= 17763;
+                    return false;
+                }).ToList();
 
+                Instance.Info($"      ✅ Windows 10 1809+ or Windows 11: {devicesMeetingOsReq.Count} devices");
+                Instance.Info($"      ⚠️ No OS build data: {devicesWithNoOsData.Count} devices");
+                Instance.Info($"      ❌ Below minimum build (< 17763): {devicesBelowMinBuild.Count} devices");
+
+                // Log OS version distribution
+                var osBuildGroups = devices
+                    .Where(d => osLookup.ContainsKey(d.ResourceId) && !string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber))
+                    .GroupBy(d => osLookup[d.ResourceId].BuildNumber)
+                    .OrderByDescending(g => g.Count())
+                    .Take(10);
+                Instance.Info("      OS Build Distribution (top 10):");
+                foreach (var group in osBuildGroups)
+                {
+                    var buildNum = int.TryParse(group.Key, out var b) ? b : 0;
+                    var osName = buildNum >= 22000 ? "Windows 11" : buildNum >= 19041 ? "Windows 10 2004+" : buildNum >= 17763 ? "Windows 10 1809+" : "Windows 10 (old)";
+                    var status = buildNum >= 17763 ? "✅" : "❌";
+                    Instance.Info($"         {status} Build {group.Key} ({osName}): {group.Count()} devices");
+                }
+
+                var unsupportedOsCount = devicesWithNoOsData.Count + devicesBelowMinBuild.Count;
                 if (unsupportedOsCount > 0)
                 {
                     blockers.Add(new ReadinessBlocker
@@ -176,6 +247,15 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 // Check identity requirement (AAD Joined or Hybrid Joined)
+                Instance.Info("");
+                Instance.Info("   [CHECK 3/3] IDENTITY REQUIREMENT (Azure AD or Hybrid Join)");
+                Instance.Info($"      📊 Enrollment data from Graph API:");
+                Instance.Info($"         Total devices: {enrollmentData?.TotalDevices ?? 0}");
+                Instance.Info($"         ✅ Azure AD Joined: {enrollmentData?.AzureADOnlyDevices ?? 0}");
+                Instance.Info($"         ✅ Hybrid Azure AD Joined: {enrollmentData?.HybridJoinedDevices ?? 0}");
+                Instance.Info($"         ❌ On-Prem Domain Only: {enrollmentData?.OnPremDomainOnlyDevices ?? 0}");
+                Instance.Info($"         ❌ Workgroup: {enrollmentData?.WorkgroupDevices ?? 0}");
+                
                 var notAadJoined = (enrollmentData?.OnPremDomainOnlyDevices ?? 0) + (enrollmentData?.WorkgroupDevices ?? 0);
                 if (notAadJoined > 0)
                 {
@@ -197,11 +277,17 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 signal.Recommendations = GenerateAutopilotRecommendations(signal, blockers);
 
-                Instance.Info($"   Autopilot Readiness: {signal.ReadinessPercentage}% ({signal.ReadyDevices}/{signal.TotalDevices})");
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   🚀 AUTOPILOT READINESS RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Ready devices: {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      Blockers found: {blockers.Count}");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
             }
             catch (Exception ex)
             {
                 Instance.Error($"Autopilot readiness assessment failed: {ex.Message}");
+                Instance.Error($"Stack trace: {ex.StackTrace}");
             }
 
             return signal;
@@ -213,7 +299,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public async Task<CloudReadinessSignal> GetWindows11ReadinessSignalAsync()
         {
-            Instance.Info("Assessing Windows 11 readiness...");
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 🪟 WINDOWS 11 READINESS ASSESSMENT                                                      │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
             
             var signal = new CloudReadinessSignal
             {
@@ -227,14 +315,26 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
+                Instance.Info("   Fetching device and hardware data...");
                 var devices = await _configMgrService.GetWindows1011DevicesAsync();
                 var tpmStatus = await _configMgrService.GetTpmStatusAsync();
                 var osDetails = await _configMgrService.GetOSDetailsAsync();
 
-                // Only assess Windows 10 devices (Windows 11 devices are already upgraded)
+                Instance.Info($"   📱 Total devices found: {devices?.Count ?? 0}");
+                Instance.Info($"   📊 TPM records retrieved: {tpmStatus?.Count ?? 0}");
+                Instance.Info($"   📊 OS records retrieved: {osDetails?.Count ?? 0}");
+
+                // Separate Windows 10 and Windows 11 devices
+                var windows11Devices = devices?.Where(d => 
+                    d.OperatingSystem?.Contains("11") == true).ToList() ?? new List<ConfigMgrDevice>();
                 var windows10Devices = devices?.Where(d => 
                     d.OperatingSystem?.Contains("10") == true && 
                     d.OperatingSystem?.Contains("11") != true).ToList() ?? new List<ConfigMgrDevice>();
+
+                Instance.Info("");
+                Instance.Info("   OS DISTRIBUTION:");
+                Instance.Info($"      ✅ Already Windows 11: {windows11Devices.Count} devices");
+                Instance.Info($"      🔄 Still Windows 10: {windows10Devices.Count} devices");
 
                 signal.TotalDevices = windows10Devices.Count;
                 
@@ -242,7 +342,7 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     signal.TotalDevices = devices?.Count ?? 0;
                     signal.ReadyDevices = signal.TotalDevices; // All devices are already Windows 11
-                    Instance.Info("   All devices are already Windows 11 or no Windows 10 devices found");
+                    Instance.Info("   ✅ All devices are already Windows 11 or no Windows 10 devices found");
                     return signal;
                 }
 
@@ -250,15 +350,32 @@ namespace ZeroTrustMigrationAddin.Services
                 var readyDeviceIds = new HashSet<int>(windows10Devices.Select(d => d.ResourceId));
 
                 // Check TPM 2.0
+                Instance.Info("");
+                Instance.Info("   [CHECK 1/1] TPM 2.0 REQUIREMENT (most common blocker)");
                 var tpmLookup = tpmStatus?.ToDictionary(t => t.ResourceId) ?? new Dictionary<int, TpmStatus>();
-                var noTpm20 = windows10Devices.Count(d => 
-                    !tpmLookup.TryGetValue(d.ResourceId, out var tpm) || 
-                    !tpm.IsPresent || !tpm.IsEnabled ||
-                    string.IsNullOrEmpty(tpm.SpecVersion) || 
-                    !(tpm.SpecVersion.StartsWith("2.") || tpm.SpecVersion.Contains("2.0")));
+                
+                var devicesWithTpm20 = windows10Devices.Where(d => 
+                    tpmLookup.TryGetValue(d.ResourceId, out var tpm) && 
+                    tpm.IsPresent && tpm.IsEnabled &&
+                    !string.IsNullOrEmpty(tpm.SpecVersion) && 
+                    (tpm.SpecVersion.StartsWith("2.") || tpm.SpecVersion.Contains("2.0"))).ToList();
+                var devicesWithNoTpmData = windows10Devices.Where(d => !tpmLookup.ContainsKey(d.ResourceId)).ToList();
+                var devicesWithTpmDisabled = windows10Devices.Where(d => 
+                    tpmLookup.TryGetValue(d.ResourceId, out var t) && (!t.IsPresent || !t.IsEnabled)).ToList();
+                var devicesWithTpm12 = windows10Devices.Where(d => 
+                    tpmLookup.TryGetValue(d.ResourceId, out var t) && t.IsPresent && t.IsEnabled && 
+                    !string.IsNullOrEmpty(t.SpecVersion) && 
+                    !t.SpecVersion.StartsWith("2.") && !t.SpecVersion.Contains("2.0")).ToList();
 
+                Instance.Info($"      ✅ TPM 2.0 Present & Enabled: {devicesWithTpm20.Count} devices");
+                Instance.Info($"      ⚠️ No TPM data available: {devicesWithNoTpmData.Count} devices");
+                Instance.Info($"      ❌ TPM Missing or Disabled: {devicesWithTpmDisabled.Count} devices");
+                Instance.Info($"      ❌ TPM 1.2 (needs upgrade): {devicesWithTpm12.Count} devices");
+
+                var noTpm20 = signal.TotalDevices - devicesWithTpm20.Count;
                 if (noTpm20 > 0)
                 {
+                    Instance.Info($"      → {noTpm20} devices cannot upgrade to Windows 11 due to TPM");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "no-tpm20",
@@ -281,16 +398,33 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
+                // Log sample devices without TPM 2.0
+                if (devicesWithNoTpmData.Any())
+                {
+                    Instance.Debug("      Devices with no TPM data (first 10):");
+                    foreach (var d in devicesWithNoTpmData.Take(10))
+                    {
+                        Instance.Debug($"         - {d.Name} (ResourceId: {d.ResourceId})");
+                    }
+                }
+
                 signal.ReadyDevices = readyDeviceIds.Count;
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = GenerateWindows11Recommendations(signal, blockers);
 
-                Instance.Info($"   Windows 11 Readiness: {signal.ReadinessPercentage}% ({signal.ReadyDevices}/{signal.TotalDevices})");
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   🪟 WINDOWS 11 READINESS RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Ready Win10 devices: {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      Already on Windows 11: {windows11Devices.Count}");
+                Instance.Info($"      Blockers found: {blockers.Count}");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
             }
             catch (Exception ex)
             {
                 Instance.Error($"Windows 11 readiness assessment failed: {ex.Message}");
+                Instance.Error($"Stack trace: {ex.StackTrace}");
             }
 
             return signal;
@@ -301,7 +435,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public async Task<CloudReadinessSignal> GetCloudNativeReadinessSignalAsync()
         {
-            Instance.Info("Assessing Cloud-Native readiness...");
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ ☁️ CLOUD-NATIVE READINESS ASSESSMENT                                                    │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
             
             var signal = new CloudReadinessSignal
             {
@@ -315,13 +451,26 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
+                Instance.Info("   Fetching enrollment data from Graph API and ConfigMgr...");
                 var enrollmentData = await _graphService.GetDeviceEnrollmentAsync();
                 var devices = await _configMgrService.GetWindows1011DevicesAsync();
 
                 signal.TotalDevices = enrollmentData?.TotalDevices ?? devices?.Count ?? 0;
                 
+                Instance.Info($"   📱 Total devices: {signal.TotalDevices}");
+                Instance.Info("");
+                Instance.Info("   DEVICE MANAGEMENT STATE BREAKDOWN:");
+                Instance.Info($"      ☁️ Already Cloud-Native (Intune-only, no ConfigMgr): {enrollmentData?.CloudNativeDevices ?? 0}");
+                Instance.Info($"      ✅ Azure AD Joined (ready for cloud-native): {enrollmentData?.AzureADOnlyDevices ?? 0}");
+                Instance.Info($"      🔄 Co-Managed (ConfigMgr + Intune): {enrollmentData?.CoManagedDevices ?? 0}");
+                Instance.Info($"      🟡 Hybrid Azure AD Joined: {enrollmentData?.HybridJoinedDevices ?? 0}");
+                Instance.Info($"      🔴 ConfigMgr-Only (not in Intune): {enrollmentData?.ConfigMgrOnlyDevices ?? 0}");
+                Instance.Info($"      🔴 On-Prem AD Only (no cloud identity): {enrollmentData?.OnPremDomainOnlyDevices ?? 0}");
+                Instance.Info($"      ⚫ Workgroup devices: {enrollmentData?.WorkgroupDevices ?? 0}");
+                
                 if (signal.TotalDevices == 0)
                 {
+                    Instance.Warning("   ⚠️ No devices found for cloud-native assessment");
                     return signal;
                 }
 
@@ -333,10 +482,16 @@ namespace ZeroTrustMigrationAddin.Services
                 // Devices that could be cloud-native (AAD joined + Intune)
                 var aadJoinedWithIntune = enrollmentData?.AzureADOnlyDevices ?? 0;
                 
+                Instance.Info("");
+                Instance.Info("   BLOCKERS ANALYSIS:");
+                
                 // Hybrid joined devices need more work
                 var hybridJoined = enrollmentData?.HybridJoinedDevices ?? 0;
                 if (hybridJoined > 0)
                 {
+                    Instance.Info($"      🟡 Hybrid Azure AD Joined: {hybridJoined} devices");
+                    Instance.Info($"         → These devices have on-prem AD dependencies");
+                    Instance.Info($"         → Need to migrate from Hybrid to cloud-only Azure AD join");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "hybrid-joined",
@@ -354,6 +509,9 @@ namespace ZeroTrustMigrationAddin.Services
                 var onPremOnly = enrollmentData?.OnPremDomainOnlyDevices ?? 0;
                 if (onPremOnly > 0)
                 {
+                    Instance.Info($"      🔴 On-Premises AD Only: {onPremOnly} devices");
+                    Instance.Info($"         → These devices are only joined to on-premises AD");
+                    Instance.Info($"         → No cloud identity - need Hybrid AAD Join as first step");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "on-prem-only",
@@ -371,6 +529,9 @@ namespace ZeroTrustMigrationAddin.Services
                 var configMgrOnly = enrollmentData?.ConfigMgrOnlyDevices ?? 0;
                 if (configMgrOnly > 0)
                 {
+                    Instance.Info($"      🔴 ConfigMgr Only (not in Intune): {configMgrOnly} devices");
+                    Instance.Info($"         → Managed by ConfigMgr but not enrolled in Intune");
+                    Instance.Info($"         → Enable co-management to start cloud journey");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "configmgr-only",
@@ -390,11 +551,18 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 signal.Recommendations = GenerateCloudNativeRecommendations(signal, blockers);
 
-                Instance.Info($"   Cloud-Native Readiness: {signal.ReadinessPercentage}% ({signal.ReadyDevices}/{signal.TotalDevices})");
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   ☁️ CLOUD-NATIVE READINESS RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Ready devices: {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      (Cloud-native: {alreadyCloudNative} + AAD-only: {aadJoinedWithIntune})");
+                Instance.Info($"      Blockers found: {blockers.Count}");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
             }
             catch (Exception ex)
             {
                 Instance.Error($"Cloud-Native readiness assessment failed: {ex.Message}");
+                Instance.Error($"Stack trace: {ex.StackTrace}");
             }
 
             return signal;
@@ -405,7 +573,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public async Task<CloudReadinessSignal> GetIdentityReadinessSignalAsync()
         {
-            Instance.Info("Assessing Identity readiness...");
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 🔐 IDENTITY READINESS ASSESSMENT                                                        │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
             
             var signal = new CloudReadinessSignal
             {
@@ -419,24 +589,45 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
+                Instance.Info("   Fetching identity data from Graph API...");
                 var enrollmentData = await _graphService.GetDeviceEnrollmentAsync();
 
                 signal.TotalDevices = enrollmentData?.TotalDevices ?? 0;
                 
+                Instance.Info($"   📱 Total devices: {signal.TotalDevices}");
+                Instance.Info("");
+                Instance.Info("   IDENTITY STATE BREAKDOWN:");
+                
+                var aadOnly = enrollmentData?.AzureADOnlyDevices ?? 0;
+                var hybridJoined = enrollmentData?.HybridJoinedDevices ?? 0;
+                var onPremOnly = enrollmentData?.OnPremDomainOnlyDevices ?? 0;
+                var workgroup = enrollmentData?.WorkgroupDevices ?? 0;
+                
+                Instance.Info($"      ✅ Azure AD Joined (cloud-native identity): {aadOnly}");
+                Instance.Info($"      ✅ Hybrid Azure AD Joined (dual identity): {hybridJoined}");
+                Instance.Info($"      🔴 On-Prem AD Only (no cloud identity): {onPremOnly}");
+                Instance.Info($"      ⚫ Workgroup (no domain identity): {workgroup}");
+                
                 if (signal.TotalDevices == 0)
                 {
+                    Instance.Warning("   ⚠️ No devices found for identity assessment");
                     return signal;
                 }
 
                 var blockers = new List<ReadinessBlocker>();
 
                 // Devices with cloud identity (AAD or Hybrid)
-                var cloudIdentityReady = (enrollmentData?.AzureADOnlyDevices ?? 0) + (enrollmentData?.HybridJoinedDevices ?? 0);
+                var cloudIdentityReady = aadOnly + hybridJoined;
+                
+                Instance.Info("");
+                Instance.Info("   BLOCKERS ANALYSIS:");
                 
                 // On-prem only (no cloud identity)
-                var onPremOnly = enrollmentData?.OnPremDomainOnlyDevices ?? 0;
                 if (onPremOnly > 0)
                 {
+                    Instance.Info($"      🔴 No Cloud Identity: {onPremOnly} devices ({Math.Round((double)onPremOnly / signal.TotalDevices * 100, 1)}%)");
+                    Instance.Info($"         → These devices cannot authenticate to cloud services");
+                    Instance.Info($"         → Configure Azure AD Connect for Hybrid Join");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "no-cloud-identity",
@@ -451,9 +642,11 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 // Workgroup devices
-                var workgroup = enrollmentData?.WorkgroupDevices ?? 0;
                 if (workgroup > 0)
                 {
+                    Instance.Info($"      ⚫ Workgroup Devices: {workgroup} devices ({Math.Round((double)workgroup / signal.TotalDevices * 100, 1)}%)");
+                    Instance.Info($"         → Not domain joined, no cloud identity");
+                    Instance.Info($"         → Consider Azure AD Join for these devices");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "workgroup-devices",
@@ -479,11 +672,18 @@ namespace ZeroTrustMigrationAddin.Services
                     workgroup > 0 ? "Consider Azure AD Join for workgroup devices." : null
                 }.Where(r => r != null).ToList()!;
 
-                Instance.Info($"   Identity Readiness: {signal.ReadinessPercentage}% ({signal.ReadyDevices}/{signal.TotalDevices})");
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   🔐 IDENTITY READINESS RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Ready devices: {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      (AAD: {aadOnly} + Hybrid: {hybridJoined})");
+                Instance.Info($"      Blockers found: {blockers.Count}");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
             }
             catch (Exception ex)
             {
                 Instance.Error($"Identity readiness assessment failed: {ex.Message}");
+                Instance.Error($"Stack trace: {ex.StackTrace}");
             }
 
             return signal;
@@ -494,7 +694,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public async Task<CloudReadinessSignal> GetWufbReadinessSignalAsync()
         {
-            Instance.Info("Assessing Windows Update for Business readiness...");
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 🔄 UPDATE MANAGEMENT (WUfB) READINESS ASSESSMENT                                        │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
             
             var signal = new CloudReadinessSignal
             {
@@ -508,23 +710,31 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
+                Instance.Info("   Fetching device and OS data...");
                 var devices = await _configMgrService.GetWindows1011DevicesAsync();
                 var osDetails = await _configMgrService.GetOSDetailsAsync();
                 var enrollmentData = await _graphService.GetDeviceEnrollmentAsync();
 
                 signal.TotalDevices = devices?.Count ?? 0;
                 
+                Instance.Info($"   📱 Total devices: {signal.TotalDevices}");
+                Instance.Info($"   📊 OS records retrieved: {osDetails?.Count ?? 0}");
+                
                 if (signal.TotalDevices == 0)
                 {
+                    Instance.Warning("   ⚠️ No devices found for WUfB assessment");
                     return signal;
                 }
 
                 var blockers = new List<ReadinessBlocker>();
                 var readyCount = 0;
+                var oldOsCount = 0;
 
                 // WUfB requires Windows 10 Pro/Enterprise/Education or Windows 11
-                // Most Windows 10/11 devices are ready, but we check for enrollment state
                 var osLookup = osDetails?.ToDictionary(o => o.ResourceId) ?? new Dictionary<int, OSDetails>();
+                
+                Instance.Info("");
+                Instance.Info("   [CHECK 1/2] OS VERSION REQUIREMENT (Windows 10 1703+)");
                 
                 foreach (var device in devices)
                 {
@@ -536,16 +746,44 @@ namespace ZeroTrustMigrationAddin.Services
                         if (int.TryParse(os.BuildNumber, out var build) && build < 15063) // 1703 = 15063
                         {
                             isWufbReady = false;
+                            oldOsCount++;
                         }
                     }
                     
                     if (isWufbReady) readyCount++;
                 }
 
+                Instance.Info($"      ✅ Windows 10 1703+ or Windows 11: {readyCount} devices");
+                Instance.Info($"      ❌ Below minimum build (< 15063): {oldOsCount} devices");
+                
+                if (oldOsCount > 0)
+                {
+                    blockers.Add(new ReadinessBlocker
+                    {
+                        Id = "old-os-wufb",
+                        Name = "OS Too Old for WUfB",
+                        Description = "WUfB requires Windows 10 version 1703 or later.",
+                        AffectedDeviceCount = oldOsCount,
+                        PercentageAffected = Math.Round((double)oldOsCount / signal.TotalDevices * 100, 1),
+                        Severity = BlockerSeverity.Medium,
+                        RemediationAction = "Upgrade to Windows 10 1703+ or Windows 11",
+                        RemediationUrl = "https://learn.microsoft.com/windows/release-health/"
+                    });
+                }
+
                 // Check for devices not in Intune (needed for WUfB policy delivery)
+                Instance.Info("");
+                Instance.Info("   [CHECK 2/2] INTUNE ENROLLMENT (for policy delivery)");
                 var notInIntune = enrollmentData?.ConfigMgrOnlyDevices ?? 0;
+                var inIntune = (enrollmentData?.CoManagedDevices ?? 0) + (enrollmentData?.CloudNativeDevices ?? 0);
+                
+                Instance.Info($"      ✅ Enrolled in Intune (can receive WUfB policies): {inIntune} devices");
+                Instance.Info($"      🔴 Not in Intune (ConfigMgr-only): {notInIntune} devices");
+                
                 if (notInIntune > 0)
                 {
+                    Instance.Info($"         → WUfB policies require Intune for delivery");
+                    Instance.Info($"         → Enable co-management to enroll in Intune");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "not-in-intune",
@@ -569,11 +807,17 @@ namespace ZeroTrustMigrationAddin.Services
                     "Consider using Update Rings in Intune to manage feature and quality updates."
                 }.Where(r => r != null).ToList()!;
 
-                Instance.Info($"   WUfB Readiness: {signal.ReadinessPercentage}% ({signal.ReadyDevices}/{signal.TotalDevices})");
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   🔄 UPDATE MANAGEMENT READINESS RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Ready devices (OS compatible): {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      Blockers found: {blockers.Count}");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
             }
             catch (Exception ex)
             {
                 Instance.Error($"WUfB readiness assessment failed: {ex.Message}");
+                Instance.Error($"Stack trace: {ex.StackTrace}");
             }
 
             return signal;
@@ -584,7 +828,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public async Task<CloudReadinessSignal> GetEndpointSecurityReadinessSignalAsync()
         {
-            Instance.Info("Assessing Endpoint Security readiness...");
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 🛡️ ENDPOINT SECURITY (MDE) READINESS ASSESSMENT                                         │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
             
             var signal = new CloudReadinessSignal
             {
@@ -598,13 +844,19 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
+                Instance.Info("   Fetching device and OS data...");
                 var devices = await _configMgrService.GetWindows1011DevicesAsync();
                 var osDetails = await _configMgrService.GetOSDetailsAsync();
+                var enrollmentData = await _graphService.GetDeviceEnrollmentAsync();
 
                 signal.TotalDevices = devices?.Count ?? 0;
                 
+                Instance.Info($"   📱 Total devices: {signal.TotalDevices}");
+                Instance.Info($"   📊 OS records retrieved: {osDetails?.Count ?? 0}");
+                
                 if (signal.TotalDevices == 0)
                 {
+                    Instance.Warning("   ⚠️ No devices found for Endpoint Security assessment");
                     return signal;
                 }
 
@@ -614,7 +866,11 @@ namespace ZeroTrustMigrationAddin.Services
                 // MDE is built into Windows 10/11 - check for supported versions
                 var supportedCount = 0;
                 var unsupportedOs = 0;
+                var noOsData = 0;
 
+                Instance.Info("");
+                Instance.Info("   [CHECK 1/2] OS VERSION REQUIREMENT (Windows 10 1607+)");
+                
                 foreach (var device in devices)
                 {
                     var isSupported = false;
@@ -625,14 +881,25 @@ namespace ZeroTrustMigrationAddin.Services
                         if (int.TryParse(os.BuildNumber, out var build))
                         {
                             isSupported = build >= 14393;
+                            if (!isSupported) unsupportedOs++;
                         }
+                        else
+                        {
+                            noOsData++;
+                        }
+                    }
+                    else
+                    {
+                        noOsData++;
                     }
                     
                     if (isSupported)
                         supportedCount++;
-                    else
-                        unsupportedOs++;
                 }
+
+                Instance.Info($"      ✅ Windows 10 1607+ (MDE supported): {supportedCount} devices");
+                Instance.Info($"      ❌ Below minimum build (< 14393): {unsupportedOs} devices");
+                Instance.Info($"      ⚠️ No OS data available: {noOsData} devices");
 
                 if (unsupportedOs > 0)
                 {
@@ -649,6 +916,16 @@ namespace ZeroTrustMigrationAddin.Services
                     });
                 }
 
+                // Check Intune enrollment for MDE onboarding via Intune
+                Instance.Info("");
+                Instance.Info("   [CHECK 2/2] INTUNE ENROLLMENT (for MDE onboarding)");
+                var notInIntune = enrollmentData?.ConfigMgrOnlyDevices ?? 0;
+                var inIntune = (enrollmentData?.CoManagedDevices ?? 0) + (enrollmentData?.CloudNativeDevices ?? 0);
+                
+                Instance.Info($"      ✅ Enrolled in Intune (MDE onboarding ready): {inIntune} devices");
+                Instance.Info($"      🟡 ConfigMgr-only (can use ConfigMgr for MDE): {notInIntune} devices");
+                Instance.Info($"         Note: MDE can be onboarded via ConfigMgr or Intune");
+
                 signal.ReadyDevices = supportedCount;
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
@@ -661,11 +938,17 @@ namespace ZeroTrustMigrationAddin.Services
                         : $"Upgrade {unsupportedOs} devices to enable MDE support."
                 };
 
-                Instance.Info($"   Endpoint Security Readiness: {signal.ReadinessPercentage}% ({signal.ReadyDevices}/{signal.TotalDevices})");
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   🛡️ ENDPOINT SECURITY READINESS RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Ready devices (OS supported): {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      Blockers found: {blockers.Count}");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
             }
             catch (Exception ex)
             {
                 Instance.Error($"Endpoint Security readiness assessment failed: {ex.Message}");
+                Instance.Error($"Stack trace: {ex.StackTrace}");
             }
 
             return signal;
