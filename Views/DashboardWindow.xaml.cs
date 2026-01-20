@@ -689,5 +689,51 @@ namespace ZeroTrustMigrationAddin.Views
 
             return devices;
         }
+
+        /// <summary>
+        /// Track tab navigation for telemetry
+        /// </summary>
+        private string? _previousTabName = null;
+        
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Only handle tab control selection changes (not nested controls)
+            if (e.Source != MainTabControl) return;
+            
+            try
+            {
+                if (MainTabControl.SelectedItem is TabItem selectedTab)
+                {
+                    // Extract tab name from header (remove emoji prefix)
+                    var tabName = selectedTab.Header?.ToString()?.Trim() ?? "Unknown";
+                    
+                    // Clean up tab name - remove emojis and extra spaces
+                    var cleanTabName = tabName;
+                    if (tabName.Length > 2 && char.IsHighSurrogate(tabName[0]))
+                    {
+                        cleanTabName = tabName.Substring(2).Trim();
+                    }
+                    else if (tabName.StartsWith("📊") || tabName.StartsWith("☁") || tabName.StartsWith("📋"))
+                    {
+                        cleanTabName = tabName.Substring(2).Trim();
+                    }
+                    
+                    // Track telemetry
+                    AzureTelemetryService.Instance.TrackEvent("TabNavigated", new Dictionary<string, string>
+                    {
+                        { "TabName", cleanTabName },
+                        { "PreviousTab", _previousTabName ?? "None" }
+                    });
+                    
+                    Instance.Info($"[TELEMETRY] Tab navigated: {_previousTabName ?? "None"} → {cleanTabName}");
+                    
+                    _previousTabName = cleanTabName;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error tracking tab navigation: {ex.Message}");
+            }
+        }
     }
 }

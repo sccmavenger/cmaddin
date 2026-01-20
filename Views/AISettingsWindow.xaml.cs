@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using ZeroTrustMigrationAddin.Services;
 
 namespace ZeroTrustMigrationAddin.Views
 {
@@ -11,6 +13,12 @@ namespace ZeroTrustMigrationAddin.Views
         public AISettingsWindow()
         {
             InitializeComponent();
+            
+            // Track window opened for telemetry
+            AzureTelemetryService.Instance.TrackEvent("WindowOpened", new Dictionary<string, string>
+            {
+                { "WindowName", "AISettingsWindow" }
+            });
         }
 
         private void ApiKeyPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using ZeroTrustMigrationAddin.Services;
 
@@ -12,6 +13,13 @@ namespace ZeroTrustMigrationAddin.Views
         {
             InitializeComponent();
             LoadQueryLog();
+            
+            // Track window opened for telemetry
+            AzureTelemetryService.Instance.TrackEvent("WindowOpened", new Dictionary<string, string>
+            {
+                { "WindowName", "DiagnosticsWindow" },
+                { "QueryCount", FileLogger.Instance.GetRecentQueries().Count.ToString() }
+            });
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)

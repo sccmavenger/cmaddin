@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using ZeroTrustMigrationAddin.Models;
+using ZeroTrustMigrationAddin.Services;
 using static ZeroTrustMigrationAddin.Services.FileLogger;
 
 namespace ZeroTrustMigrationAddin.Views
@@ -20,6 +21,14 @@ namespace ZeroTrustMigrationAddin.Views
         {
             InitializeComponent();
             _result = result;
+            
+            // Track window opened for telemetry
+            AzureTelemetryService.Instance.TrackEvent("WindowOpened", new Dictionary<string, string>
+            {
+                { "WindowName", "MigrationImpactReportWindow" },
+                { "OverallCurrentScore", (result?.OverallCurrentScore ?? 0).ToString() },
+                { "OverallProjectedScore", (result?.OverallProjectedScore ?? 0).ToString() }
+            });
             
             if (result != null)
             {

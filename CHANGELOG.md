@@ -1,5 +1,43 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.4] - 2025-01-20
+
+### Added - Enhanced Telemetry
+
+**New Telemetry Events:**
+Added comprehensive telemetry tracking to better understand user engagement and feature adoption:
+
+- **TabNavigated** - Tracks when users switch between tabs in the main dashboard
+  - Properties: TabName, PreviousTab
+  - Helps identify which features users engage with most
+
+- **WindowOpened** - Tracks when dialog windows are opened
+  - Properties: WindowName, plus context-specific data
+  - Windows tracked: DiagnosticsWindow, AISettingsWindow, EnrollmentSimulatorWindow, RecommendationsWindow, MigrationImpactReportWindow, ConfidenceDetailsWindow
+
+- **CloudReadinessViewed** - Tracks when Cloud Readiness assessment is run
+  - Properties: OverallReadiness, TotalDevices, SignalCount, UsedMockData
+  - Helps measure adoption of the new Cloud Readiness Signals feature
+
+**Benefits:**
+- Better visibility into feature adoption through Azure Workbook dashboards
+- Identification of commonly used vs underutilized features
+- User journey analysis (which tabs do users visit, in what order)
+- Window usage patterns (which detailed views are most valuable)
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Added SelectionChanged event to TabControl
+- `Views/DashboardWindow.xaml.cs` - Added MainTabControl_SelectionChanged handler with telemetry
+- `Views/DiagnosticsWindow.xaml.cs` - Added WindowOpened telemetry
+- `Views/CloudReadinessTab.xaml.cs` - Added CloudReadinessViewed telemetry
+- `Views/AISettingsWindow.xaml.cs` - Added WindowOpened telemetry
+- `Views/EnrollmentSimulatorWindow.xaml.cs` - Added WindowOpened telemetry
+- `Views/RecommendationsWindow.xaml.cs` - Added WindowOpened telemetry
+- `Views/MigrationImpactReportWindow.xaml.cs` - Added WindowOpened telemetry
+- `Views/ConfidenceDetailsWindow.xaml.cs` - Added WindowOpened telemetry
+
+---
+
 ## [3.17.0] - 2026-01-19
 
 ### Added - Cloud Readiness Signals Tab
