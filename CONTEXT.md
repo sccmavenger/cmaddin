@@ -65,6 +65,22 @@ This document provides current project state for developers and AI assistants. U
 
 ---
 
+## Hidden/Disabled Features
+
+The following features are implemented but hidden for alpha release. To restore, change `Visibility="Collapsed"` to `Visibility="Visible"`:
+
+| Feature | Location | Reason Hidden | How to Restore |
+|---------|----------|---------------|----------------|
+| Enrollment Momentum | DashboardWindow.xaml line ~2342 | Needs refinement | Change `Visibility="Collapsed"` on Border |
+| Enrollment Playbooks | DashboardWindow.xaml line ~2365 | Not wired up | Change `Visibility="Collapsed"` |
+| Workloads Tab | DashboardWindow.xaml | Hidden by default | Use `/showtabs:workloads` command line |
+| AI Actions Tab | DashboardWindow.xaml | Hidden by default | Use `/showtabs:ai` command line |
+| Workload Brainstorm Tab | DashboardWindow.xaml | Hidden by default | Use `/showtabs:brainstorm` command line |
+
+See `TAB_VISIBILITY_GUIDE.md` for command-line arguments.
+
+---
+
 ## Known Issues
 
 1. **Migration Impact Analysis has hardcoded estimates** - May need revision per ADR-007 principles

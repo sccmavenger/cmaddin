@@ -424,7 +424,7 @@
                                         <lvc:Axis Labels="{Binding EnrollmentTrendLabels, Mode=OneWay}"/>
                                     </lvc:CartesianChart.AxisX>
                                     <lvc:CartesianChart.AxisY>
-                                        <lvc:Axis Title="Windows 10/11 Devices"/>
+                                        <lvc:Axis Title="Windows 10/11 Devices" MinValue="0"/>
                                     </lvc:CartesianChart.AxisY>
                                 </lvc:CartesianChart>
                             </StackPanel>
@@ -478,7 +478,7 @@
                                                 <TextBlock Grid.Column="0" Text="✅" FontSize="18" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                     <TextBlock Text="Hybrid Entra joined" FontSize="12" FontWeight="SemiBold"/>
-                                                    <TextBlock Text="Domain + Azure AD identity" FontSize="10" Foreground="#666" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="Domain + Entra ID identity" FontSize="10" Foreground="#666" Margin="0,2,0,0"/>
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="2" Text="{Binding DeviceEnrollment.HybridJoinedDevices}" 
                                                            FontSize="18" FontWeight="Bold" Foreground="#4CAF50" 
@@ -508,7 +508,7 @@
                                                 <TextBlock Grid.Column="0" Text="☁️" FontSize="18" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                     <TextBlock Text="Entra joined" FontSize="12" FontWeight="SemiBold"/>
-                                                    <TextBlock Text="Cloud-native identity (no domain)" FontSize="10" Foreground="#666" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="Cloud-native identity" FontSize="10" Foreground="#666" Margin="0,2,0,0"/>
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="2" Text="{Binding DeviceEnrollment.AzureADOnlyDevices}" 
                                                            FontSize="18" FontWeight="Bold" Foreground="#0078D4" 
@@ -538,7 +538,7 @@
                                                 <TextBlock Grid.Column="0" Text="⚠️" FontSize="18" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                     <TextBlock Text="Active Directory joined" FontSize="12" FontWeight="SemiBold"/>
-                                                    <TextBlock Text="AD domain joined (no Azure AD)" FontSize="10" Foreground="#666" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="AD domain joined (no Entra ID)" FontSize="10" Foreground="#666" Margin="0,2,0,0"/>
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="2" Text="{Binding DeviceEnrollment.OnPremDomainOnlyDevices}" 
                                                            FontSize="18" FontWeight="Bold" Foreground="#FDB813" 
@@ -573,7 +573,7 @@
                                                 <TextBlock Grid.Column="0" Text="❌" FontSize="18" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                     <TextBlock Text="Workgroup (Standalone)" FontSize="12" FontWeight="SemiBold"/>
-                                                    <TextBlock Text="Not domain or Azure AD joined" FontSize="10" Foreground="#666" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="Not domain or Entra ID joined" FontSize="10" Foreground="#666" Margin="0,2,0,0"/>
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="2" Text="{Binding DeviceEnrollment.WorkgroupDevices}" 
                                                            FontSize="18" FontWeight="Bold" Foreground="#D13438" 
@@ -904,7 +904,7 @@
                                             <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap">
                                                 <Run Text="Common barriers:"/>
                                                 <LineBreak/>
-                                                <Run Text="• Not Azure AD joined"/>
+                                                <Run Text="• Not Entra ID joined"/>
                                                 <LineBreak/>
                                                 <Run Text="• Offline &gt;7 days"/>
                                                 <LineBreak/>
@@ -2339,8 +2339,13 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- NEW: Enrollment Momentum & Analytics Section -->
-                            <Border Style="{StaticResource SectionCard}">
+                            <!-- Enrollment Momentum & Analytics Section
+                                 STATUS: HIDDEN (January 2026)
+                                 REASON: Feature needs refinement before alpha release
+                                 TO RESTORE: Change Visibility="Collapsed" to Visibility="Visible" below
+                                 CONTAINS: EnrollmentMomentumView (velocity/projections) + EnrollmentConfidenceCard (score breakdown)
+                            -->
+                            <Border Style="{StaticResource SectionCard}" Visibility="Collapsed">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -2456,7 +2461,7 @@
                                                 <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                                     <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
                                                         <Run Text="✓" Foreground="#107C10" FontWeight="Bold"/>
-                                                        <Run Text=" Azure AD Hybrid Join configured"/>
+                                                        <Run Text=" Entra ID Hybrid Join configured"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
                                                         <Run Text="✓" Foreground="#107C10" FontWeight="Bold"/>
@@ -2602,7 +2607,7 @@
                                                 <TextBlock FontSize="11" Foreground="#0078D4" TextDecorations="Underline" Cursor="Hand">
                                                     <Hyperlink NavigateUri="https://docs.microsoft.com/mem/configmgr/comanage/quickstart-hybrid-aad" 
                                                                RequestNavigate="Hyperlink_RequestNavigate">
-                                                        Azure AD Hybrid Join Configuration
+                                                        Entra ID Hybrid Join Configuration
                                                     </Hyperlink>
                                                 </TextBlock>
                                             </StackPanel>
@@ -3084,7 +3089,7 @@
                                                         <TextBlock Text="Compliance Policies" FontSize="16" FontWeight="Bold" Foreground="#333"/>
                                                         <TextBlock Text="High probability of success" FontSize="12" Foreground="#107C10" Margin="0,3,0,8"/>
                                                         <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap">
-                                                            <Run Text="✓ All devices Azure AD joined • "/>
+                                                            <Run Text="✓ All devices Entra ID joined • "/>
                                                             <Run Text="✓ Windows 10 1909+ • "/>
                                                             <Run Text="✓ No blocking dependencies • "/>
                                                             <Run Text="✓ Test group shows 100% success rate"/>
@@ -3429,9 +3434,9 @@
                                                             <TextBlock Grid.Column="0" Text="✓" FontSize="24" Foreground="#107C10" VerticalAlignment="Center"/>
                                                             
                                                             <StackPanel Grid.Column="1">
-                                                                <TextBlock Text="Azure AD Join Status" FontSize="12" FontWeight="Bold" Foreground="#333"/>
+                                                                <TextBlock Text="Entra ID Join Status" FontSize="12" FontWeight="Bold" Foreground="#333"/>
                                                                 <TextBlock FontSize="11" Foreground="#666">
-                                                                    <Run Text="98% of devices are Azure AD joined • Ready for cloud management"/>
+                                                                    <Run Text="98% of devices are Entra ID joined • Ready for cloud management"/>
                                                                 </TextBlock>
                                                             </StackPanel>
                                                             
@@ -3485,30 +3490,6 @@
                                                             
                                                             <Border Grid.Column="2" Background="#FFB900" CornerRadius="4" Padding="8,4">
                                                                 <TextBlock Text="Improving" FontSize="11" FontWeight="Bold" Foreground="White"/>
-                                                            </Border>
-                                                        </Grid>
-                                                    </Border>
-                                                    
-                                                    <!-- Factor 4 -->
-                                                    <Border Background="#FFEBEE" CornerRadius="6" Padding="15">
-                                                        <Grid>
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="40"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            
-                                                            <TextBlock Grid.Column="0" Text="⚠" FontSize="24" Foreground="#D13438" VerticalAlignment="Center"/>
-                                                            
-                                                            <StackPanel Grid.Column="1">
-                                                                <TextBlock Text="Legacy Applications" FontSize="12" FontWeight="Bold" Foreground="#333"/>
-                                                                <TextBlock FontSize="11" Foreground="#666">
-                                                                    <Run Text="43 apps require repackaging • AI can automate 28 of these conversions"/>
-                                                                </TextBlock>
-                                                            </StackPanel>
-                                                            
-                                                            <Border Grid.Column="2" Background="#D13438" CornerRadius="4" Padding="8,4">
-                                                                <TextBlock Text="Needs Work" FontSize="11" FontWeight="Bold" Foreground="White"/>
                                                             </Border>
                                                         </Grid>
                                                     </Border>

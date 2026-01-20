@@ -241,14 +241,6 @@ namespace ZeroTrustMigrationAddin.Services
                     AffectedDevices = 185,
                     RemediationUrl = "https://docs.microsoft.com/azure/active-directory/devices/",
                     Severity = BlockerSeverity.Medium
-                },
-                new Blocker
-                {
-                    Title = "Incompatible Applications",
-                    Description = "42 legacy applications need packaging updates",
-                    AffectedDevices = 420,
-                    RemediationUrl = "https://docs.microsoft.com/mem/intune/apps/apps-win32-app-management",
-                    Severity = BlockerSeverity.Low
                 }
             };
         }

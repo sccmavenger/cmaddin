@@ -108,7 +108,7 @@ namespace ZeroTrustMigrationAddin.Views
                         TopBlockers = new List<ReadinessBlocker>
                         {
                             new ReadinessBlocker { Name = "Missing TPM 2.0", AffectedDeviceCount = 180, Severity = BlockerSeverity.Critical },
-                            new ReadinessBlocker { Name = "Not Azure AD Joined", AffectedDeviceCount = 120, Severity = BlockerSeverity.High }
+                            new ReadinessBlocker { Name = "Not Entra ID Joined", AffectedDeviceCount = 120, Severity = BlockerSeverity.High }
                         }
                     },
                     new CloudReadinessSignal
@@ -139,7 +139,7 @@ namespace ZeroTrustMigrationAddin.Views
                         LearnMoreUrl = "https://learn.microsoft.com/mem/intune/fundamentals/cloud-native-endpoints-overview",
                         TopBlockers = new List<ReadinessBlocker>
                         {
-                            new ReadinessBlocker { Name = "Hybrid Azure AD Joined", AffectedDeviceCount = 688, Severity = BlockerSeverity.Medium },
+                            new ReadinessBlocker { Name = "Hybrid Entra ID Joined", AffectedDeviceCount = 688, Severity = BlockerSeverity.Medium },
                             new ReadinessBlocker { Name = "ConfigMgr Only", AffectedDeviceCount = 250, Severity = BlockerSeverity.Medium }
                         }
                     },
