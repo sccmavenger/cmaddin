@@ -6,28 +6,46 @@ This Power BI dashboard provides comprehensive insights into the Cloud Journey A
 
 ---
 
-## 🚀 Quick Setup (NEW - Use Template!)
+## 🚀 Quick Setup
 
-### Option 1: Generate Template (Easiest)
-```powershell
-cd powerbi
-.\Create-PowerBITemplate.ps1
-```
-This creates `CloudJourneyAddin-Telemetry.pbit` - double-click to open in Power BI Desktop!
+### Step 1: Get Your Azure Credentials
 
-### Option 2: Power BI Desktop Project
-If you have Power BI Desktop with "Power BI Projects" preview enabled:
-1. Open Power BI Desktop → File → Open
-2. Browse to `powerbi\CloudJourneyAddin-Telemetry.pbip`
+1. Go to **Azure Portal** → **Application Insights** → `appi-cloudjourney-addin`
+2. Navigate to **Configure** → **API Access**
+3. Copy your **Application ID**
+4. Click **Create API Key** → Select "Read telemetry" → Copy the key
+
+### Step 2: Create Parameters in Power BI
+
+1. Open **Power BI Desktop**
+2. **Home** → **Transform data** (opens Power Query Editor)
+3. **Home** → **Manage Parameters** → **New Parameter**
+4. Create these two parameters:
+
+| Name | Type | Required | Value |
+|------|------|----------|-------|
+| `ApplicationId` | Text | Yes | Your App Insights Application ID |
+| `ApiKey` | Text | Yes | Your App Insights API Key |
+
+### Step 3: Import Queries
+
+1. In Power Query Editor: **Home** → **New Source** → **Blank Query**
+2. **View** → **Advanced Editor**
+3. Open `CloudJourneyAddin-Telemetry-Import.pq` in a text editor
+4. Copy ONE query section (between the `// ====` markers)
+5. Paste into Advanced Editor → **Done**
+6. Rename the query (right-click → Rename)
+7. Repeat for each query you need
+
+### Recommended Queries to Import:
+- **AppLaunches** - Daily active users trend
+- **VersionDistribution** - Version adoption pie chart
+- **KPISummary** - Executive KPI cards
+- **DailyErrorTrend** - Error stability chart
+- **FeatureUsage** - Feature ranking
+- **WeeklyActiveUsers** - WAU trend
 
 ---
-
-## 🔧 Manual Setup
-
-### Prerequisites
-- Power BI Desktop (latest version)
-- Azure Application Insights API access
-- Application ID and API Key from your Application Insights resource
 
 ### Step 1: Get Your Credentials
 
