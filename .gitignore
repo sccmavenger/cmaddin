@@ -75,6 +75,10 @@ $RECYCLE.BIN/
 # Logs
 *.log
 Logs/
+
+# Telemetry/Operational files (internal use only)
+telemetry/
+
 research/~$nfiguration Manager Customer - Middle-Stage.docx
 research/ConfigMgr Intune Journey Execu.pdf
 research/Configuration Manager Customer - Cloud Journey.pdf
