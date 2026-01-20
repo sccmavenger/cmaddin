@@ -1,5 +1,56 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.0] - 2026-01-19
+
+### Added - Cloud Readiness Signals Tab
+
+**New Feature: Cloud Readiness Signals**
+A comprehensive new tab that assesses your environment's readiness for various cloud migration workloads. This feature provides quantifiable readiness percentages to help IT administrators understand exactly where they stand and what needs attention before transitioning workloads to the cloud.
+
+**Readiness Signals Included:**
+- 🚀 **Autopilot Readiness** - Assess device readiness for Windows Autopilot deployment (SCCM OSD → Autopilot)
+  - Checks: TPM 2.0, UEFI, Secure Boot, Windows 10 1809+, Azure AD/Hybrid joined
+- 🪟 **Windows 11 Readiness** - Assess device readiness for Windows 11 upgrade
+  - Checks: TPM 2.0, UEFI with Secure Boot, compatible CPU, RAM, storage
+- ☁️ **Cloud-Native Readiness** - Assess readiness for cloud-only management (Entra + Intune, no ConfigMgr)
+  - Checks: Identity type, Intune enrollment, on-prem dependencies
+- 🔐 **Identity Readiness** - Assess readiness for cloud identity (on-prem AD → Entra ID)
+  - Checks: Azure AD join status, Hybrid join, workgroup devices
+- 🔄 **Update Management Readiness** - Assess readiness for Windows Update for Business (WSUS/SCCM → WUfB)
+  - Checks: OS version support, Intune enrollment for policy delivery
+- 🛡️ **Endpoint Security Readiness** - Assess readiness for Microsoft Defender for Endpoint (SCEP → MDE)
+  - Checks: OS version support for MDE
+
+**Features:**
+- Overall readiness score with color-coded status
+- Individual signal cards with progress bars and percentages
+- Top blockers identification across all signals
+- Specific blockers per signal with affected device counts
+- Actionable recommendations for each blocker
+- Links to Microsoft documentation for each migration scenario
+- Connection to Workloads tab for transition planning
+
+**UI Highlights:**
+- Dashboard-style summary with overall readiness percentage
+- Visual progress bars for each readiness signal
+- Blocker severity indicators (Critical, High, Medium, Low)
+- "Quick wins" identification for signals ready to go
+- Mock data demonstration when not connected to data sources
+
+**Files Added:**
+- `Models/CloudReadinessModels.cs` - Data models for readiness assessments
+- `Services/CloudReadinessService.cs` - Assessment logic for all signals
+- `Views/CloudReadinessTab.xaml` - New tab UI
+- `Views/CloudReadinessTab.xaml.cs` - Code-behind with service integration
+
+**Files Modified:**
+- `Models/TabVisibilityOptions.cs` - Added ShowCloudReadinessTab property
+- `ViewModels/DashboardViewModel.cs` - Added cloud readiness tab visibility binding
+- `Views/DashboardWindow.xaml` - Added Cloud Readiness Signals tab
+- `Views/DashboardWindow.xaml.cs` - Initialize CloudReadinessTab with services
+
+---
+
 ## [Unreleased]
 
 ### Changed - Moved Migration Impact Forecast to Overview Tab

@@ -484,6 +484,15 @@ namespace ZeroTrustMigrationAddin.Views
                         Instance.Info("[ANALYTICS] Migration Impact card refreshed");
                     }
                     
+                    // Initialize Cloud Readiness Tab with real services
+                    if (CloudReadinessTab != null)
+                    {
+                        var configMgrService = graphDataService.ConfigMgrService;
+                        CloudReadinessTab.Initialize(graphDataService, configMgrService);
+                        await CloudReadinessTab.RefreshAsync();
+                        Instance.Info("[ANALYTICS] Cloud Readiness Signals tab refreshed");
+                    }
+                    
                     // Initialize Enrollment Readiness Analyzer Card with real services
                     // IMPORTANT: Use graphDataService.ConfigMgrService, NOT viewModel.ConfigMgrAdminService
                     // The ConfigureAsync() is called on graphDataService.ConfigMgrService, so that's the configured one

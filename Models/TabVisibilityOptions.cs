@@ -37,6 +37,11 @@ namespace ZeroTrustMigrationAddin.Models
         public Visibility ShowAIActionsTab { get; set; } = Visibility.Collapsed;
 
         /// <summary>
+        /// Shows or hides the Cloud Readiness Signals tab
+        /// </summary>
+        public Visibility ShowCloudReadinessTab { get; set; } = Visibility.Visible;
+
+        /// <summary>
         /// Parse command-line arguments to determine tab visibility.
         /// 
         /// Usage examples:
@@ -78,6 +83,10 @@ namespace ZeroTrustMigrationAddin.Models
                             case "ai":
                                 options.ShowAIActionsTab = Visibility.Collapsed;
                                 break;
+                            case "cloudreadiness":
+                            case "readiness":
+                                options.ShowCloudReadinessTab = Visibility.Collapsed;
+                                break;
                         }
                     }
                 }
@@ -91,6 +100,7 @@ namespace ZeroTrustMigrationAddin.Models
                     options.ShowWorkloadBrainstormTab = Visibility.Collapsed;
                     options.ShowApplicationsTab = Visibility.Collapsed;
                     options.ShowAIActionsTab = Visibility.Collapsed;
+                    options.ShowCloudReadinessTab = Visibility.Collapsed;
 
                     // Then show only specified tabs
                     var tabsToShow = lowerArg.Substring(lowerArg.IndexOf(':') + 1).Split(',');
@@ -115,6 +125,10 @@ namespace ZeroTrustMigrationAddin.Models
                             case "aiactions":
                             case "ai":
                                 options.ShowAIActionsTab = Visibility.Visible;
+                                break;
+                            case "cloudreadiness":
+                            case "readiness":
+                                options.ShowCloudReadinessTab = Visibility.Visible;
                                 break;
                         }
                     }
