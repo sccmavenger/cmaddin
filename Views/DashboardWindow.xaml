@@ -193,7 +193,7 @@
 
         <!-- Main Content with Tabs -->
         <Grid Grid.Row="1">
-            <TabControl Margin="10" Background="Transparent" BorderThickness="0">
+            <TabControl x:Name="MainTabControl" Margin="10" Background="Transparent" BorderThickness="0" SelectionChanged="MainTabControl_SelectionChanged">
                 <TabControl.Resources>
                     <Style TargetType="TabItem">
                         <Setter Property="Padding" Value="20,12"/>

@@ -24,6 +24,13 @@ namespace ZeroTrustMigrationAddin.Views
             _result = result;
             _graphService = graphService;
             
+            // Track window opened for telemetry
+            AzureTelemetryService.Instance.TrackEvent("WindowOpened", new Dictionary<string, string>
+            {
+                { "WindowName", "RecommendationsWindow" },
+                { "CurrentScore", (result?.Score ?? 0).ToString() }
+            });
+            
             LoadRecommendations();
         }
 

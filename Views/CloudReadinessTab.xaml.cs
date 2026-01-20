@@ -65,6 +65,15 @@ namespace ZeroTrustMigrationAddin.Views
                 _currentDashboard = await _readinessService.GetCloudReadinessDashboardAsync();
                 UpdateUI(_currentDashboard);
                 
+                // Track CloudReadinessViewed telemetry
+                AzureTelemetryService.Instance.TrackEvent("CloudReadinessViewed", new Dictionary<string, string>
+                {
+                    { "OverallReadiness", _currentDashboard.OverallReadiness.ToString() },
+                    { "TotalDevices", _currentDashboard.TotalAssessedDevices.ToString() },
+                    { "SignalCount", _currentDashboard.Signals.Count.ToString() },
+                    { "UsedMockData", "false" }
+                });
+                
                 Instance.Info($"[CLOUD READINESS TAB] Assessment complete: {_currentDashboard.OverallReadiness}% overall readiness");
             }
             catch (Exception ex)

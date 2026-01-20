@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using ZeroTrustMigrationAddin.Models;
+using ZeroTrustMigrationAddin.Services;
 using ZeroTrustMigrationAddin.ViewModels;
 
 namespace ZeroTrustMigrationAddin.Views
@@ -14,6 +15,14 @@ namespace ZeroTrustMigrationAddin.Views
         public ConfidenceDetailsWindow(EnrollmentConfidenceResult? result)
         {
             InitializeComponent();
+            
+            // Track window opened for telemetry
+            AzureTelemetryService.Instance.TrackEvent("WindowOpened", new Dictionary<string, string>
+            {
+                { "WindowName", "ConfidenceDetailsWindow" },
+                { "Score", (result?.Score ?? 0).ToString() },
+                { "Band", result?.Band.ToString() ?? "Unknown" }
+            });
             
             if (result != null)
             {
