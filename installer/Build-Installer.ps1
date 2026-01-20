@@ -122,28 +122,49 @@ if (-not (Test-Path $publishPath)) {
 $fileCount = (Get-ChildItem -Path $publishPath -Recurse -File).Count
 Write-Success "Found $fileCount files in publish folder"
 
-# Step 2: Generate Application Files Component with Heat
+# Step 2: Generate Application Files Component (WiX 6 compatible)
 if (-not $SkipHeat) {
     Write-Header "Generating Application Files Component"
     
-    Write-Host "Running Heat.exe to harvest application files..."
+    # WiX 6 removed Heat.exe - use PowerShell script instead
+    Write-Host "Generating ApplicationFiles.wxs using PowerShell script..."
     
-    $heatArgs = @(
-        "dir", $publishPath,
-        "-cg", "ApplicationFiles",
-        "-dr", "INSTALLFOLDER",
-        "-gg",
-        "-sfrag",
-        "-srd",
-        "-var", "var.PublishDir",
-        "-out", "ApplicationFiles.wxs"
-    )
+    $generateScript = Join-Path $scriptPath "Generate-ApplicationFiles.ps1"
     
-    & heat $heatArgs
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Failure "Heat.exe failed"
-        exit 1
+    if (Test-Path $generateScript) {
+        & $generateScript -PublishPath $publishPath -OutputFile "ApplicationFiles.wxs"
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Failure "Generate-ApplicationFiles.ps1 failed"
+            exit 1
+        }
+    } else {
+        # Fallback: Try heat.exe if available (WiX 4/5)
+        Write-Host "Trying legacy Heat.exe..."
+        $heatPath = Get-Command "heat" -ErrorAction SilentlyContinue
+        
+        if ($heatPath) {
+            $heatArgs = @(
+                "dir", $publishPath,
+                "-cg", "ApplicationFiles",
+                "-dr", "INSTALLFOLDER",
+                "-gg",
+                "-sfrag",
+                "-srd",
+                "-var", "var.PublishDir",
+                "-out", "ApplicationFiles.wxs"
+            )
+            
+            & heat $heatArgs
+            
+            if ($LASTEXITCODE -ne 0) {
+                Write-Failure "Heat.exe failed"
+                exit 1
+            }
+        } else {
+            Write-Failure "Neither Generate-ApplicationFiles.ps1 nor Heat.exe available"
+            exit 1
+        }
     }
     
     if (Test-Path "ApplicationFiles.wxs") {
