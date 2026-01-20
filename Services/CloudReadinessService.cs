@@ -248,11 +248,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 // Check identity requirement (AAD Joined or Hybrid Joined)
                 Instance.Info("");
-                Instance.Info("   [CHECK 3/3] IDENTITY REQUIREMENT (Azure AD or Hybrid Join)");
+                Instance.Info("   [CHECK 3/3] IDENTITY REQUIREMENT (Entra ID or Hybrid Join)");
                 Instance.Info($"      📊 Enrollment data from Graph API:");
                 Instance.Info($"         Total devices: {enrollmentData?.TotalDevices ?? 0}");
-                Instance.Info($"         ✅ Azure AD Joined: {enrollmentData?.AzureADOnlyDevices ?? 0}");
-                Instance.Info($"         ✅ Hybrid Azure AD Joined: {enrollmentData?.HybridJoinedDevices ?? 0}");
+                Instance.Info($"         ✅ Entra ID Joined: {enrollmentData?.AzureADOnlyDevices ?? 0}");
+                Instance.Info($"         ✅ Hybrid Entra ID Joined: {enrollmentData?.HybridJoinedDevices ?? 0}");
                 Instance.Info($"         ❌ On-Prem Domain Only: {enrollmentData?.OnPremDomainOnlyDevices ?? 0}");
                 Instance.Info($"         ❌ Workgroup: {enrollmentData?.WorkgroupDevices ?? 0}");
                 
@@ -262,12 +262,12 @@ namespace ZeroTrustMigrationAddin.Services
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "not-aad-joined",
-                        Name = "Not Azure AD Joined",
-                        Description = "Devices must be Azure AD joined or Hybrid joined for Autopilot.",
+                        Name = "Not Entra ID Joined",
+                        Description = "Devices must be Entra ID joined or Hybrid joined for Autopilot.",
                         AffectedDeviceCount = notAadJoined,
                         PercentageAffected = Math.Round((double)notAadJoined / signal.TotalDevices * 100, 1),
                         Severity = BlockerSeverity.High,
-                        RemediationAction = "Configure Hybrid Azure AD Join or Azure AD Join",
+                        RemediationAction = "Configure Hybrid Entra ID Join or Entra ID Join",
                         RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/hybrid-join-plan"
                     });
                 }
@@ -461,9 +461,9 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info("");
                 Instance.Info("   DEVICE MANAGEMENT STATE BREAKDOWN:");
                 Instance.Info($"      ☁️ Already Cloud-Native (Intune-only, no ConfigMgr): {enrollmentData?.CloudNativeDevices ?? 0}");
-                Instance.Info($"      ✅ Azure AD Joined (ready for cloud-native): {enrollmentData?.AzureADOnlyDevices ?? 0}");
+                Instance.Info($"      ✅ Entra ID Joined (ready for cloud-native): {enrollmentData?.AzureADOnlyDevices ?? 0}");
                 Instance.Info($"      🔄 Co-Managed (ConfigMgr + Intune): {enrollmentData?.CoManagedDevices ?? 0}");
-                Instance.Info($"      🟡 Hybrid Azure AD Joined: {enrollmentData?.HybridJoinedDevices ?? 0}");
+                Instance.Info($"      🟡 Hybrid Entra ID Joined: {enrollmentData?.HybridJoinedDevices ?? 0}");
                 Instance.Info($"      🔴 ConfigMgr-Only (not in Intune): {enrollmentData?.ConfigMgrOnlyDevices ?? 0}");
                 Instance.Info($"      🔴 On-Prem AD Only (no cloud identity): {enrollmentData?.OnPremDomainOnlyDevices ?? 0}");
                 Instance.Info($"      ⚫ Workgroup devices: {enrollmentData?.WorkgroupDevices ?? 0}");
@@ -489,18 +489,18 @@ namespace ZeroTrustMigrationAddin.Services
                 var hybridJoined = enrollmentData?.HybridJoinedDevices ?? 0;
                 if (hybridJoined > 0)
                 {
-                    Instance.Info($"      🟡 Hybrid Azure AD Joined: {hybridJoined} devices");
+                    Instance.Info($"      🟡 Hybrid Entra ID Joined: {hybridJoined} devices");
                     Instance.Info($"         → These devices have on-prem AD dependencies");
-                    Instance.Info($"         → Need to migrate from Hybrid to cloud-only Azure AD join");
+                    Instance.Info($"         → Need to migrate from Hybrid to cloud-only Entra ID join");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "hybrid-joined",
-                        Name = "Hybrid Azure AD Joined",
+                        Name = "Hybrid Entra ID Joined",
                         Description = "These devices are Hybrid joined and have on-premises AD dependencies.",
                         AffectedDeviceCount = hybridJoined,
                         PercentageAffected = Math.Round((double)hybridJoined / signal.TotalDevices * 100, 1),
                         Severity = BlockerSeverity.Medium,
-                        RemediationAction = "Plan migration from Hybrid to cloud-only Azure AD join",
+                        RemediationAction = "Plan migration from Hybrid to cloud-only Entra ID join",
                         RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/device-join-plan"
                     });
                 }
@@ -511,7 +511,7 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     Instance.Info($"      🔴 On-Premises AD Only: {onPremOnly} devices");
                     Instance.Info($"         → These devices are only joined to on-premises AD");
-                    Instance.Info($"         → No cloud identity - need Hybrid AAD Join as first step");
+                    Instance.Info($"         → No cloud identity - need Hybrid Entra ID Join as first step");
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "on-prem-only",
@@ -520,7 +520,7 @@ namespace ZeroTrustMigrationAddin.Services
                         AffectedDeviceCount = onPremOnly,
                         PercentageAffected = Math.Round((double)onPremOnly / signal.TotalDevices * 100, 1),
                         Severity = BlockerSeverity.High,
-                        RemediationAction = "Configure Hybrid Azure AD Join as first step to cloud",
+                        RemediationAction = "Configure Hybrid Entra ID Join as first step to cloud",
                         RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/hybrid-join-plan"
                     });
                 }

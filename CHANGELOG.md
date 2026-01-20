@@ -1,5 +1,53 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.8] - 2026-01-20
+
+### Changed - Alpha Tester Feedback (Panu)
+
+**Terminology Update: Azure AD → Entra ID**
+- Updated all user-facing text from "Azure AD" to "Entra ID" to reflect Microsoft's rebranding
+- Affects Device Identity State Analysis, Cloud Readiness signals, blockers, and recommendations
+
+**Device Identity State Analysis:**
+- Removed "(no domain)" from "Cloud-native identity" description - simplified to "Cloud-native identity"
+- Updated descriptions: "Domain + Entra ID identity", "AD domain joined (no Entra ID)", etc.
+
+**Chart Fix:**
+- Added `MinValue="0"` to enrollment trend chart Y-axis to prevent negative numbers from appearing
+
+**Removed Incompatible Applications Feature:**
+- Removed "Legacy Applications" / "Incompatible Applications" blocker and card
+- This feature caused confusion for co-managed scenarios where app repackaging isn't required
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Terminology updates, chart fix, removed Legacy Apps card
+- `Services/CloudReadinessService.cs` - Updated blocker names and remediation actions
+- `Views/CloudReadinessTab.xaml.cs` - Updated mock data blocker names
+- `Services/TelemetryService.cs` - Removed Incompatible Applications blocker
+
+---
+
+## [3.17.7] - 2026-01-20
+
+### Changed - UI Refinements for Alpha Release
+
+**Enrollment Momentum Section Hidden:**
+- Temporarily hidden the Enrollment Momentum section from the Enrollment tab
+- Feature needs refinement before alpha release
+- TO RESTORE: In `Views/DashboardWindow.xaml`, find the Border with comment "Enrollment Momentum & Analytics Section" and change `Visibility="Collapsed"` to `Visibility="Visible"`
+
+**AdminUserGuide.html Navigation Fix:**
+- Fixed issue where sticky navigation would block bookmark targets when clicking nav links
+- Added `scroll-padding-top: 120px` to offset content below the sticky nav
+- Added smooth scrolling behavior
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Hidden Enrollment Momentum section with documentation comments
+- `AdminUserGuide.html` - Fixed navigation scroll offset
+- `CONTEXT.md` - Added "Hidden/Disabled Features" documentation section
+
+---
+
 ## [3.17.4] - 2025-01-20
 
 ### Added - Enhanced Telemetry
