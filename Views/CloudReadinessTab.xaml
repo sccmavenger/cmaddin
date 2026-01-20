@@ -5,6 +5,7 @@
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
         
         <!-- Progress Bar Styles -->
         <Style x:Key="ReadinessProgressBar" TargetType="Border">
@@ -191,8 +192,7 @@
                                     <Border Grid.Column="0" Style="{StaticResource ReadinessProgressBar}">
                                         <Border CornerRadius="6" HorizontalAlignment="Left">
                                             <Border.Width>
-                                                <MultiBinding Converter="{StaticResource BoolToVisibilityConverter}" 
-                                                              ConverterParameter="PercentageWidth">
+                                                <MultiBinding Converter="{StaticResource PercentageToWidthConverter}">
                                                     <Binding Path="ReadinessPercentage"/>
                                                     <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Border}"/>
                                                 </MultiBinding>
