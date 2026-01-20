@@ -1,0 +1,91 @@
+{
+  "name": "CloudJourneyAddin-Theme",
+  "dataColors": [
+    "#0078D4",
+    "#107C10",
+    "#FDB813",
+    "#D13438",
+    "#5C2D91",
+    "#008272",
+    "#0063B1",
+    "#E81123",
+    "#FFB900",
+    "#00B294"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#323130",
+  "tableAccent": "#0078D4",
+  "good": "#107C10",
+  "neutral": "#FDB813",
+  "bad": "#D13438",
+  "maximum": "#0078D4",
+  "center": "#FDB813",
+  "minimum": "#D13438",
+  "textClasses": {
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 14,
+      "color": "#323130"
+    },
+    "header": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 12,
+      "color": "#323130"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 10,
+      "color": "#605E5C"
+    },
+    "callout": {
+      "fontFace": "Segoe UI Light",
+      "fontSize": 28,
+      "color": "#0078D4"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "color": { "solid": { "color": "#FFFFFF" } },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "color": { "solid": { "color": "#E1DFDD" } },
+            "radius": 4
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#000000" } },
+            "position": "Outer",
+            "preset": "BottomRight"
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "calloutValue": [
+          {
+            "color": { "solid": { "color": "#0078D4" } }
+          }
+        ]
+      }
+    },
+    "lineChart": {
+      "*": {
+        "lineStyles": [
+          {
+            "strokeWidth": 3,
+            "showMarker": false
+          }
+        ]
+      }
+    }
+  }
+}

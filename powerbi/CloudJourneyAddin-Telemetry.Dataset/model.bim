@@ -1,0 +1,806 @@
+{
+  "name": "CloudJourneyAddin-Telemetry",
+  "compatibilityLevel": 1567,
+  "model": {
+    "culture": "en-US",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "en-US",
+    "expressions": [
+      {
+        "name": "ApplicationId",
+        "description": "Your Azure Application Insights Application ID (found in Azure Portal → Application Insights → API Access)",
+        "kind": "m",
+        "expression": "\"YOUR_APP_ID\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      },
+      {
+        "name": "ApiKey",
+        "description": "Your Azure Application Insights API Key (create in Azure Portal → Application Insights → API Access → Create API Key)",
+        "kind": "m",
+        "expression": "\"YOUR_API_KEY\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      },
+      {
+        "name": "TimeRangeDays",
+        "description": "Number of days to query (default 30, max 90)",
+        "kind": "m",
+        "expression": "30 meta [IsParameterQuery=true, Type=\"Number\", IsParameterQueryRequired=false]"
+      },
+      {
+        "name": "LatestVersion",
+        "description": "The current latest version for % calculations",
+        "kind": "m",
+        "expression": "\"3.17.3\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=false]"
+      }
+    ],
+    "tables": [
+      {
+        "name": "AppLaunches",
+        "description": "Daily app launches and unique users over the past 90 days",
+        "columns": [
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "sourceColumn": "timestamp",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Launches",
+            "dataType": "int64",
+            "sourceColumn": "Launches",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "UniqueUsers",
+            "dataType": "int64",
+            "sourceColumn": "UniqueUsers",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "AppLaunches",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(90d) | where name == 'AppStarted' | extend Version = tostring(customDimensions.Version), OS = tostring(customDimensions.OS) | summarize Launches = count(), UniqueUsers = dcount(user_Id) by bin(timestamp, 1d) | order by timestamp asc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"timestamp\", type datetime}, {\"Launches\", Int64.Type}, {\"UniqueUsers\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "VersionDistribution",
+        "description": "User and launch counts by application version",
+        "columns": [
+          {
+            "name": "Version",
+            "dataType": "string",
+            "sourceColumn": "Version",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Users",
+            "dataType": "int64",
+            "sourceColumn": "Users",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "Launches",
+            "dataType": "int64",
+            "sourceColumn": "Launches",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "LastSeen",
+            "dataType": "dateTime",
+            "sourceColumn": "LastSeen",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "VersionDistribution",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name == 'AppStarted' | extend Version = tostring(customDimensions.Version) | summarize Users = dcount(user_Id), Launches = count(), LastSeen = max(timestamp) by Version | order by LastSeen desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"Version\", type text}, {\"Users\", Int64.Type}, {\"Launches\", Int64.Type}, {\"LastSeen\", type datetime}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "UserActivity",
+        "description": "Individual user activity with first/last seen dates and session counts",
+        "columns": [
+          {
+            "name": "UserId",
+            "dataType": "string",
+            "sourceColumn": "user_Id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "FirstSeen",
+            "dataType": "dateTime",
+            "sourceColumn": "FirstSeen",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "LastSeen",
+            "dataType": "dateTime",
+            "sourceColumn": "LastSeen",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Sessions",
+            "dataType": "int64",
+            "sourceColumn": "Sessions",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "LatestVersion",
+            "dataType": "string",
+            "sourceColumn": "LatestVersion",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "UserActivity",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name == 'AppStarted' | extend Version = tostring(customDimensions.Version) | summarize FirstSeen = min(timestamp), LastSeen = max(timestamp), Sessions = count(), LatestVersion = arg_max(timestamp, Version) by user_Id | project user_Id, FirstSeen, LastSeen, Sessions, LatestVersion = LatestVersion1 | order by LastSeen desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"user_Id\", type text}, {\"FirstSeen\", type datetime}, {\"LastSeen\", type datetime}, {\"Sessions\", Int64.Type}, {\"LatestVersion\", type text}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "ErrorsByType",
+        "description": "Errors grouped by type and message with affected user counts",
+        "columns": [
+          {
+            "name": "ErrorType",
+            "dataType": "string",
+            "sourceColumn": "type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Message",
+            "dataType": "string",
+            "sourceColumn": "outerMessage",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Version",
+            "dataType": "string",
+            "sourceColumn": "Version",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ErrorCount",
+            "dataType": "int64",
+            "sourceColumn": "ErrorCount",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "AffectedUsers",
+            "dataType": "int64",
+            "sourceColumn": "AffectedUsers",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "FirstOccurrence",
+            "dataType": "dateTime",
+            "sourceColumn": "FirstOccurrence",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "LastOccurrence",
+            "dataType": "dateTime",
+            "sourceColumn": "LastOccurrence",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ErrorsByType",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"exceptions | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | extend Version = tostring(customDimensions.Version) | summarize ErrorCount = count(), AffectedUsers = dcount(user_Id), FirstOccurrence = min(timestamp), LastOccurrence = max(timestamp) by type, outerMessage, Version | order by ErrorCount desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"type\", type text}, {\"outerMessage\", type text}, {\"Version\", type text}, {\"ErrorCount\", Int64.Type}, {\"AffectedUsers\", Int64.Type}, {\"FirstOccurrence\", type datetime}, {\"LastOccurrence\", type datetime}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DailyErrorTrend",
+        "description": "Daily error counts and affected users over 90 days",
+        "columns": [
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "sourceColumn": "timestamp",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Errors",
+            "dataType": "int64",
+            "sourceColumn": "Errors",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "AffectedUsers",
+            "dataType": "int64",
+            "sourceColumn": "AffectedUsers",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DailyErrorTrend",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"exceptions | where timestamp > ago(90d) | summarize Errors = count(), AffectedUsers = dcount(user_Id) by bin(timestamp, 1d) | order by timestamp asc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"timestamp\", type datetime}, {\"Errors\", Int64.Type}, {\"AffectedUsers\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "FeatureUsage",
+        "description": "Feature/event usage counts excluding lifecycle events",
+        "columns": [
+          {
+            "name": "FeatureName",
+            "dataType": "string",
+            "sourceColumn": "name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "UsageCount",
+            "dataType": "int64",
+            "sourceColumn": "UsageCount",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "UniqueUsers",
+            "dataType": "int64",
+            "sourceColumn": "UniqueUsers",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "FeatureUsage",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name !in ('AppStarted', 'AppExited') | summarize UsageCount = count(), UniqueUsers = dcount(user_Id) by name | order by UsageCount desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"name\", type text}, {\"UsageCount\", Int64.Type}, {\"UniqueUsers\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "UpdateCheckResults",
+        "description": "Auto-update event counts by day",
+        "columns": [
+          {
+            "name": "EventName",
+            "dataType": "string",
+            "sourceColumn": "name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "sourceColumn": "timestamp",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Count",
+            "dataType": "int64",
+            "sourceColumn": "Count",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "UpdateCheckResults",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name in ('UpdateCheckStarted', 'UpdateCheckSuccess', 'UpdateCheckFailed', 'UpdateDetected', 'UpdateApplied') | summarize Count = count() by name, bin(timestamp, 1d) | order by timestamp asc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"name\", type text}, {\"timestamp\", type datetime}, {\"Count\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "UpdateFailures",
+        "description": "Update failure analysis with error types and affected users",
+        "columns": [
+          {
+            "name": "ErrorType",
+            "dataType": "string",
+            "sourceColumn": "ErrorType",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Message",
+            "dataType": "string",
+            "sourceColumn": "Message",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "IsAuthenticated",
+            "dataType": "string",
+            "sourceColumn": "IsAuthenticated",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Count",
+            "dataType": "int64",
+            "sourceColumn": "Count",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "Users",
+            "dataType": "int64",
+            "sourceColumn": "Users",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "UpdateFailures",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name == 'UpdateCheckFailed' | extend ErrorType = tostring(customDimensions.ErrorType), Message = tostring(customDimensions.Message), IsAuthenticated = tostring(customDimensions.IsAuthenticated) | summarize Count = count(), Users = dcount(user_Id) by ErrorType, Message, IsAuthenticated | order by Count desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"ErrorType\", type text}, {\"Message\", type text}, {\"IsAuthenticated\", type text}, {\"Count\", Int64.Type}, {\"Users\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "SessionDuration",
+        "description": "Average and median session duration by version",
+        "columns": [
+          {
+            "name": "Version",
+            "dataType": "string",
+            "sourceColumn": "Version",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "AvgDurationMinutes",
+            "dataType": "double",
+            "sourceColumn": "AvgDuration",
+            "summarizeBy": "average"
+          },
+          {
+            "name": "MedianDurationMinutes",
+            "dataType": "double",
+            "sourceColumn": "MedianDuration",
+            "summarizeBy": "average"
+          },
+          {
+            "name": "Sessions",
+            "dataType": "int64",
+            "sourceColumn": "Sessions",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "SessionDuration",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name in ('AppStarted', 'AppExited') | extend Version = tostring(customDimensions.Version) | order by session_Id, timestamp asc | serialize | extend NextEvent = next(name), NextTimestamp = next(timestamp), NextSession = next(session_Id) | where name == 'AppStarted' and NextEvent == 'AppExited' and session_Id == NextSession | extend DurationMinutes = datetime_diff('minute', NextTimestamp, timestamp) | where DurationMinutes > 0 and DurationMinutes < 480 | summarize AvgDuration = avg(DurationMinutes), MedianDuration = percentile(DurationMinutes, 50), Sessions = count() by Version | order by Sessions desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"Version\", type text}, {\"AvgDuration\", type number}, {\"MedianDuration\", type number}, {\"Sessions\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "PeakUsageHours",
+        "description": "Launch counts by hour and day of week",
+        "columns": [
+          {
+            "name": "Hour",
+            "dataType": "int64",
+            "sourceColumn": "Hour",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "DayOfWeek",
+            "dataType": "int64",
+            "sourceColumn": "DayOfWeek",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Launches",
+            "dataType": "int64",
+            "sourceColumn": "Launches",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "PeakUsageHours",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name == 'AppStarted' | extend Hour = hourofday(timestamp), DayOfWeek = toint(dayofweek(timestamp)/1d) | summarize Launches = count() by Hour, DayOfWeek | order by DayOfWeek asc, Hour asc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"Hour\", Int64.Type}, {\"DayOfWeek\", Int64.Type}, {\"Launches\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "CrashDetection",
+        "description": "Incomplete sessions that may indicate crashes",
+        "columns": [
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "sourceColumn": "StartTime",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Version",
+            "dataType": "string",
+            "sourceColumn": "Version",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "CrashCount",
+            "dataType": "int64",
+            "sourceColumn": "CrashCount",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "AffectedUsers",
+            "dataType": "int64",
+            "sourceColumn": "AffectedUsers",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "CrashDetection",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"let Started = customEvents | where timestamp > ago(7d) | where name == 'AppStarted' | project session_Id, user_Id, StartTime = timestamp, Version = tostring(customDimensions.Version); let Exited = customEvents | where timestamp > ago(7d) | where name == 'AppExited' | project session_Id; Started | join kind=leftanti Exited on session_Id | summarize CrashCount = count(), AffectedUsers = dcount(user_Id) by bin(StartTime, 1d), Version | order by StartTime desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"StartTime\", type datetime}, {\"Version\", type text}, {\"CrashCount\", Int64.Type}, {\"AffectedUsers\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "TabNavigation",
+        "description": "Tab/feature engagement by view count",
+        "columns": [
+          {
+            "name": "TabName",
+            "dataType": "string",
+            "sourceColumn": "TabName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Views",
+            "dataType": "int64",
+            "sourceColumn": "Views",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "UniqueUsers",
+            "dataType": "int64",
+            "sourceColumn": "UniqueUsers",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "TabNavigation",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name == 'TabNavigated' or name contains 'Tab' | extend TabName = tostring(customDimensions.TabName) | where isnotempty(TabName) | summarize Views = count(), UniqueUsers = dcount(user_Id) by TabName | order by Views desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"TabName\", type text}, {\"Views\", Int64.Type}, {\"UniqueUsers\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DataSourceUsage",
+        "description": "Data refresh counts by source (Graph vs ConfigMgr)",
+        "columns": [
+          {
+            "name": "DataSource",
+            "dataType": "string",
+            "sourceColumn": "DataSource",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Refreshes",
+            "dataType": "int64",
+            "sourceColumn": "Refreshes",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "UniqueUsers",
+            "dataType": "int64",
+            "sourceColumn": "UniqueUsers",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DataSourceUsage",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(\" & Text.From(TimeRangeDays) & \"d) | where name == 'DataRefreshed' | extend DataSource = tostring(customDimensions.DataSource) | summarize Refreshes = count(), UniqueUsers = dcount(user_Id) by DataSource | order by Refreshes desc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"DataSource\", type text}, {\"Refreshes\", Int64.Type}, {\"UniqueUsers\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "WeeklyActiveUsers",
+        "description": "Weekly active user counts over 90 days",
+        "columns": [
+          {
+            "name": "WeekStart",
+            "dataType": "dateTime",
+            "sourceColumn": "timestamp",
+            "formatString": "General Date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "WAU",
+            "dataType": "int64",
+            "sourceColumn": "WAU",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "WeeklyActiveUsers",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"customEvents | where timestamp > ago(90d) | where name == 'AppStarted' | summarize WAU = dcount(user_Id) by bin(timestamp, 7d) | order by timestamp asc\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, []),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(Source,{{\"timestamp\", type datetime}, {\"WAU\", Int64.Type}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "KPISummary",
+        "description": "Key performance indicators for the last 7 days",
+        "columns": [
+          {
+            "name": "TotalLaunches",
+            "dataType": "int64",
+            "sourceColumn": "TotalLaunches",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "UniqueUsers",
+            "dataType": "int64",
+            "sourceColumn": "UniqueUsers",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "UsersOnLatest",
+            "dataType": "int64",
+            "sourceColumn": "UsersOnLatest",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "TotalErrors",
+            "dataType": "int64",
+            "sourceColumn": "TotalErrors",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "UsersWithErrors",
+            "dataType": "int64",
+            "sourceColumn": "UsersWithErrors",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "Period",
+            "dataType": "string",
+            "sourceColumn": "Period",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "KPISummary",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    KqlQuery = \"let appStarts = customEvents | where timestamp > ago(7d) | where name == 'AppStarted'; let errors = exceptions | where timestamp > ago(7d); let latestVersion = '\" & LatestVersion & \"'; print TotalLaunches = toscalar(appStarts | count), UniqueUsers = toscalar(appStarts | dcount(user_Id)), UsersOnLatest = toscalar(appStarts | extend Version = tostring(customDimensions.Version) | where Version == latestVersion | dcount(user_Id)), TotalErrors = toscalar(errors | count), UsersWithErrors = toscalar(errors | dcount(user_Id)), Period = '7 days'\",",
+                "    Source = AzureApplicationInsights.Contents(ApplicationId, ApiKey, KqlQuery, [])",
+                "in",
+                "    Source"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DayOfWeekLookup",
+        "description": "Lookup table for day of week names",
+        "columns": [
+          {
+            "name": "DayNumber",
+            "dataType": "int64",
+            "sourceColumn": "DayNumber",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "DayName",
+            "dataType": "string",
+            "sourceColumn": "DayName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "DayAbbrev",
+            "dataType": "string",
+            "sourceColumn": "DayAbbrev",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DayOfWeekLookup",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = #table({\"DayNumber\", \"DayName\", \"DayAbbrev\"}, {",
+                "        {0, \"Sunday\", \"Sun\"},",
+                "        {1, \"Monday\", \"Mon\"},",
+                "        {2, \"Tuesday\", \"Tue\"},",
+                "        {3, \"Wednesday\", \"Wed\"},",
+                "        {4, \"Thursday\", \"Thu\"},",
+                "        {5, \"Friday\", \"Fri\"},",
+                "        {6, \"Saturday\", \"Sat\"}",
+                "    })",
+                "in",
+                "    Source"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "PeakUsageHours_DayOfWeek",
+        "fromTable": "PeakUsageHours",
+        "fromColumn": "DayOfWeek",
+        "toTable": "DayOfWeekLookup",
+        "toColumn": "DayNumber",
+        "crossFilteringBehavior": "bothDirections"
+      }
+    ],
+    "annotations": [
+      {
+        "name": "PBI_QueryOrder",
+        "value": "[\"ApplicationId\",\"ApiKey\",\"TimeRangeDays\",\"LatestVersion\",\"AppLaunches\",\"VersionDistribution\",\"UserActivity\",\"ErrorsByType\",\"DailyErrorTrend\",\"FeatureUsage\",\"UpdateCheckResults\",\"UpdateFailures\",\"SessionDuration\",\"PeakUsageHours\",\"CrashDetection\",\"TabNavigation\",\"DataSourceUsage\",\"WeeklyActiveUsers\",\"KPISummary\",\"DayOfWeekLookup\"]"
+      }
+    ]
+  }
+}

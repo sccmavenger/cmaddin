@@ -6,7 +6,23 @@ This Power BI dashboard provides comprehensive insights into the Cloud Journey A
 
 ---
 
-## 🚀 Quick Setup
+## 🚀 Quick Setup (NEW - Use Template!)
+
+### Option 1: Generate Template (Easiest)
+```powershell
+cd powerbi
+.\Create-PowerBITemplate.ps1
+```
+This creates `CloudJourneyAddin-Telemetry.pbit` - double-click to open in Power BI Desktop!
+
+### Option 2: Power BI Desktop Project
+If you have Power BI Desktop with "Power BI Projects" preview enabled:
+1. Open Power BI Desktop → File → Open
+2. Browse to `powerbi\CloudJourneyAddin-Telemetry.pbip`
+
+---
+
+## 🔧 Manual Setup
 
 ### Prerequisites
 - Power BI Desktop (latest version)
