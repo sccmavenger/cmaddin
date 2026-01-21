@@ -610,10 +610,16 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     // Co-management scenario: Use ConfigMgr as source (devices we're migrating from ConfigMgr to Intune)
                     totalDevices = configMgrCount;
-                    configMgrOnlyCount = configMgrCount - coManagedCount; // Devices not yet co-managed
-                    cloudManagedCount = coManagedCount; // Co-managed devices (the progress metric)
+                    // Ensure non-negative: co-managed count might exceed ConfigMgr count if Intune has more devices
+                    configMgrOnlyCount = Math.Max(0, configMgrCount - coManagedCount); // Devices not yet co-managed
+                    cloudManagedCount = Math.Min(coManagedCount, configMgrCount); // Cap at ConfigMgr count
                     Instance.Info($"✅ Using ConfigMgr as source (co-management scenario): {totalDevices} total devices");
                     Instance.Info($"   ConfigMgr devices: {configMgrCount}, Co-managed (cloud progress): {cloudManagedCount}, ConfigMgr-only: {configMgrOnlyCount}");
+                    if (coManagedCount > configMgrCount)
+                    {
+                        Instance.Warning($"   ⚠️ Note: Intune reports {coManagedCount} co-managed devices but only {configMgrCount} in ConfigMgr");
+                        Instance.Warning($"      This can happen when devices were removed from ConfigMgr but remain in Intune");
+                    }
                     System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {cloudManagedCount} co-managed, {configMgrOnlyCount} not yet co-managed");
                 }
                 else
