@@ -198,14 +198,17 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info("   [CHECK 2/2] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");
                 var osLookup = osDetails?.ToDictionary(o => o.ResourceId) ?? new Dictionary<int, OSDetails>();
                 
-                var devicesWithNoOsData = configMgrDevices.Where(d => !osLookup.ContainsKey(d.ResourceId) || string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber)).ToList();
-                var devicesBelowMinBuild = configMgrDevices.Where(d => {
+                // BUG FIX: Ensure configMgrDevices is not null before using LINQ
+                var safeConfigMgrDevices = configMgrDevices ?? new List<ConfigMgrDevice>();
+                
+                var devicesWithNoOsData = safeConfigMgrDevices.Where(d => !osLookup.ContainsKey(d.ResourceId) || string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber)).ToList();
+                var devicesBelowMinBuild = safeConfigMgrDevices.Where(d => {
                     if (!osLookup.TryGetValue(d.ResourceId, out var os)) return false;
                     if (string.IsNullOrEmpty(os.BuildNumber)) return false;
                     if (int.TryParse(os.BuildNumber, out var build)) return build < 17763;
                     return false;
                 }).ToList();
-                var devicesMeetingOsReq = configMgrDevices.Where(d => {
+                var devicesMeetingOsReq = safeConfigMgrDevices.Where(d => {
                     if (!osLookup.TryGetValue(d.ResourceId, out var os)) return false;
                     if (string.IsNullOrEmpty(os.BuildNumber)) return false;
                     if (int.TryParse(os.BuildNumber, out var build)) return build >= 17763;
@@ -217,7 +220,7 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info($"      ❌ Below minimum build (< 17763): {devicesBelowMinBuild.Count} devices");
 
                 // Log OS version distribution
-                var osBuildGroups = configMgrDevices
+                var osBuildGroups = safeConfigMgrDevices
                     .Where(d => osLookup.ContainsKey(d.ResourceId) && !string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber))
                     .GroupBy(d => osLookup[d.ResourceId].BuildNumber)
                     .OrderByDescending(g => g.Count())
