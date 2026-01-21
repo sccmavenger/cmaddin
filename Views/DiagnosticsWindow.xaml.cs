@@ -93,26 +93,12 @@ namespace ZeroTrustMigrationAddin.Views
 
         private async void ManualConfigMgrButton_Click(object sender, RoutedEventArgs e)
         {
-            var input = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter your ConfigMgr Site Server name or FQDN:\n\n" +
-                "Examples:\n" +
-                "• CM01\n" +
-                "• CM01.contoso.com\n" +
-                "• sccm.contoso.local\n\n" +
-                "The app will try both Admin Service (REST API) and WMI fallback.",
-                "ConfigMgr Site Server",
-                "",
-                -1, -1);
+            var input = ConfigMgrServerDialog.Prompt(this);
 
             if (!string.IsNullOrWhiteSpace(input))
             {
-                // Remove https:// if user pasted a full URL
-                input = input.Replace("https://", "").Replace("http://", "").Split('/')[0].Trim();
-                
-                if (!string.IsNullOrEmpty(input))
-                {
-                    ManualConfigMgrRequested?.Invoke(this, input);
-                }
+                // Note: ConfigMgrServerDialog already cleans the input
+                ManualConfigMgrRequested?.Invoke(this, input);
             }
         }
 

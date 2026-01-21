@@ -2,6 +2,57 @@
 
 ## [Unreleased]
 
+### Fixed - LIVE DATA Indicator Shows Incorrectly (Panu Feedback)
+
+**Bug:** The green "LIVE DATA" badge was showing even when the dashboard was displaying mock data (115,000 devices).
+
+**Root Cause:** The indicator was based solely on connection status (Graph + ConfigMgr connected), but didn't verify if the actual data loaded was real or mock.
+
+**Fix:** Added device count validation to detect mock data:
+- Mock data has 115,000+ devices
+- Real environments typically have fewer than 100,000 devices
+- Diagnostics now shows "MOCK DATA" when device count suggests mock data is displayed
+- Added detailed logging of actual data state
+
+**Files Modified:**
+- `ViewModels/DashboardViewModel.cs` - Added `hasRealDeviceData` check to diagnostics
+
+---
+
+### Changed - Modern ConfigMgr Server Dialog (Panu Feedback)
+
+**Issue:** The ConfigMgr Site Server input dialog looked "90s style" - it used the legacy Windows Forms `InputBox` which has no styling control.
+
+**Fix:** Created new WPF `ConfigMgrServerDialog` with modern styling:
+- Consistent with app's design language
+- Fluent-style input field with rounded corners
+- Clear examples section
+- Proper validation (no empty input)
+- Auto-cleans protocol prefixes (https://, http://) from pasted URLs
+
+**Files Modified:**
+- `Views/ConfigMgrServerDialog.xaml` (new) - Modern styled dialog
+- `Views/ConfigMgrServerDialog.xaml.cs` (new) - Dialog code-behind
+- `ViewModels/DashboardViewModel.cs` - Use new dialog instead of InputBox
+- `Views/DiagnosticsWindow.xaml.cs` - Use new dialog instead of InputBox
+
+---
+
+### Added - ConfigMgr Settings Button (Panu Feedback)
+
+**Issue:** ConfigMgr server configuration was hidden under Diagnostics, making it hard to find.
+
+**Fix:** Added dedicated ⚙️ ConfigMgr button in the header toolbar:
+- Visible at all times (not just when disconnected)
+- Opens the new modern ConfigMgr Server dialog
+- Makes ConfigMgr setup more discoverable
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Added ConfigMgr button to toolbar
+- `ViewModels/DashboardViewModel.cs` - Added `ShowConfigMgrSettingsCommand`
+
+---
+
 ### Fixed - Enrollment Readiness shows co-managed devices as "unenrolled"
 
 **Bug:** The Enrollment Readiness Analysis was incorrectly showing co-managed devices as "unenrolled" and "ready to enroll" when they are already enrolled in Intune.

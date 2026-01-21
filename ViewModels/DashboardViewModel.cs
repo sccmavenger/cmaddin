@@ -182,6 +182,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
             ConnectToConfigMgrCommand = new RelayCommand(async () => await ConnectToConfigMgrAsync());
             ShowDiagnosticsCommand = new RelayCommand(OnShowDiagnostics);
             ShowAISettingsCommand = new RelayCommand(OnShowAISettings);
+            ShowConfigMgrSettingsCommand = new RelayCommand(OnShowConfigMgrSettings);
             TestOpenAIConnectionCommand = new RelayCommand(async () => await TestOpenAIConnectionAsync());
             SaveOpenAIConfigCommand = new RelayCommand(OnSaveOpenAIConfig);
             OpenSetupGuideCommand = new RelayCommand(OnOpenSetupGuide);
@@ -896,6 +897,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public ICommand ConnectToConfigMgrCommand { get; }
         public ICommand ShowDiagnosticsCommand { get; }
         public ICommand ShowAISettingsCommand { get; }
+        public ICommand ShowConfigMgrSettingsCommand { get; }
         public ICommand TestOpenAIConnectionCommand { get; }
         public ICommand SaveOpenAIConfigCommand { get; }
         public ICommand OpenSetupGuideCommand { get; }
@@ -1132,11 +1134,18 @@ namespace ZeroTrustMigrationAddin.ViewModels
             bool configMgrConnected = _graphDataService?.ConfigMgrService?.IsConfigured ?? false;
             bool aiConnected = _aiRecommendationService != null && (_aiRecommendationService?.IsConfigured ?? false);
             
-            // Log actual state for debugging
-            Instance.Info($"[DIAGNOSTICS] Graph: {graphConnected}, ConfigMgr: {configMgrConnected}, AI: {aiConnected}, UseRealData: {UseRealData}");
+            // v3.17.11 - Also detect if we're actually showing mock data by checking device counts
+            // Mock data has 115,000+ devices, real environments typically have much fewer
+            bool hasRealDeviceData = DeviceEnrollment != null && 
+                                     DeviceEnrollment.TotalDevices > 0 && 
+                                     DeviceEnrollment.TotalDevices < 100000;  // Mock data = 115,000
             
-            // Overall authentication status - based on ACTUAL state, not cached property
-            bool actuallyShowingRealData = graphConnected && configMgrConnected;
+            // Log actual state for debugging
+            Instance.Info($"[DIAGNOSTICS] Graph: {graphConnected}, ConfigMgr: {configMgrConnected}, AI: {aiConnected}, UseRealData: {UseRealData}, HasRealDeviceData: {hasRealDeviceData}, TotalDevices: {DeviceEnrollment?.TotalDevices ?? 0}");
+            
+            // Overall authentication status - based on ACTUAL state AND device data validation
+            // Both connections must be established AND device data must look real (not mock)
+            bool actuallyShowingRealData = graphConnected && configMgrConnected && hasRealDeviceData;
             string overallStatus = actuallyShowingRealData 
                 ? "✅ FULLY AUTHENTICATED - Showing REAL DATA" 
                 : "⚠️ NOT FULLY AUTHENTICATED - Showing MOCK DATA";
@@ -1259,6 +1268,20 @@ namespace ZeroTrustMigrationAddin.ViewModels
             diagWindow.SetDebugLog(_connectionLog.ToString());
 
             diagWindow.ShowDialog();
+        }
+
+        /// <summary>
+        /// Shows the ConfigMgr Server Settings dialog for manual configuration.
+        /// This is more discoverable than having it only under Diagnostics.
+        /// </summary>
+        private async void OnShowConfigMgrSettings()
+        {
+            var serverName = Views.ConfigMgrServerDialog.Prompt();
+            
+            if (!string.IsNullOrWhiteSpace(serverName))
+            {
+                await TryManualConfigMgrConnection(serverName);
+            }
         }
 
         private void OnShowAISettings()
@@ -1546,22 +1569,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     // Couldn't detect ConfigMgr installation - prompt for manual entry
                     LogConnection($"Auto-detection failed: {debugInfo}");
                     LogConnection("Prompting for manual server entry...");
-                    var manualServer = Microsoft.VisualBasic.Interaction.InputBox(
-                        "ConfigMgr Console not detected automatically.\n\n" +
-                        "Enter your ConfigMgr Site Server name:\n\n" +
-                        "Examples:\n" +
-                        "• localhost (if ConfigMgr is on this machine)\n" +
-                        "• CM01\n" +
-                        "• CM01.contoso.com\n\n" +
-                        "Or click Cancel to continue with Intune data only.",
-                        "ConfigMgr Site Server",
-                        "localhost",
-                        -1, -1);
+                    var manualServer = Views.ConfigMgrServerDialog.Prompt();
 
                     if (!string.IsNullOrWhiteSpace(manualServer))
                     {
-                        // Remove any protocol or path if user pasted full URL
-                        manualServer = manualServer.Replace("https://", "").Replace("http://", "").Split('/')[0].Trim();
+                        // Note: ConfigMgrServerDialog already cleans the input
                         var manualUrl = $"https://{manualServer}/AdminService";
                         
                         LogConnection($"Manual entry: {manualServer}, attempting connection to {manualUrl}");
@@ -1724,22 +1736,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private async void PromptForManualConfigMgrEntry()
         {
             LogConnection("Prompting for manual ConfigMgr server entry...");
-            var manualServer = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter your ConfigMgr Site Server name:\n\n" +
-                "Examples:\n" +
-                "• localhost (if ConfigMgr is on this machine)\n" +
-                "• CM01\n" +
-                "• CM01.contoso.com\n" +
-                "• sccm.corp.contoso.com\n\n" +
-                "Or click Cancel to skip ConfigMgr connection.",
-                "ConfigMgr Site Server",
-                "",
-                -1, -1);
+            var manualServer = Views.ConfigMgrServerDialog.Prompt();
 
             if (!string.IsNullOrWhiteSpace(manualServer))
             {
-                // Remove any protocol or path if user pasted full URL
-                manualServer = manualServer.Replace("https://", "").Replace("http://", "").Split('/')[0].Trim();
+                // Note: ConfigMgrServerDialog already cleans the input
                 var manualUrl = $"https://{manualServer}/AdminService";
                 
                 LogConnection($"Manual entry: {manualServer}, attempting connection to {manualUrl}");

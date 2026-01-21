@@ -165,6 +165,12 @@
                                 Background="#9B59B6"
                                 ToolTip="Configure Azure OpenAI integration"
                                 Margin="0,0,5,0" Padding="10,5"/>
+                        <Button Content="⚙️ ConfigMgr" 
+                                Command="{Binding ShowConfigMgrSettingsCommand}"
+                                Style="{StaticResource ActionButton}"
+                                Background="#2C3E50"
+                                ToolTip="Configure ConfigMgr Site Server connection"
+                                Margin="0,0,5,0" Padding="10,5"/>
                         <Button Content="📋 Logs" 
                                 Command="{Binding OpenLogFolderCommand}"
                                 Style="{StaticResource ActionButton}"
