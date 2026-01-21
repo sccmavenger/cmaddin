@@ -1,5 +1,66 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.14] - 2025-01-22
+
+### Fixed - Autopilot Readiness Signal Logic (Panu Feedback)
+
+**Issue:** The Autopilot Readiness signal was showing:
+1. TPM 2.0 as a "Critical" blocker, but TPM is NOT required for Autopilot registration
+2. All ConfigMgr devices instead of showing devices NOT YET registered to Autopilot
+3. 13 devices when the user had 25 Autopilot devices
+
+**Root Cause Analysis:**
+- TPM 2.0 is required for Windows 11, BitLocker, and Windows Hello - but NOT for Autopilot registration itself
+- The signal was assessing hardware readiness instead of registration status
+- It wasn't comparing against actual Autopilot-registered devices from Graph API
+
+**Fix:** Completely reworked `GetAutopilotReadinessSignalAsync()`:
+- **Renamed:** "Autopilot Readiness" → "Autopilot Registration" (more accurate)
+- **Data Source:** Now fetches actual Autopilot devices via `GetAutopilotDeviceStatusAsync()` from Graph API
+- **Comparison:** Compares ConfigMgr device count with Autopilot registered device count
+- **Removed:** TPM 2.0 check (not required for Autopilot registration)
+- **New Blocker:** "Not Registered to Autopilot" (Medium severity) - devices not yet in Autopilot
+- **Kept:** OS version check (Windows 10 1809+ is required)
+
+**Calculation Logic:**
+```
+TotalDevices = ConfigMgr Windows 10/11 device count
+AutopilotRegistered = Graph API WindowsAutopilotDeviceIdentities count
+NotRegistered = TotalDevices - AutopilotRegistered (capped at 0)
+ReadyDevices = min(AutopilotRegistered, DevicesMeetingOSRequirements)
+ReadinessPercentage = (ReadyDevices / TotalDevices) * 100
+```
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Reworked `GetAutopilotReadinessSignalAsync()` method
+
+---
+
+### Added - Cloud Readiness Documentation (Panu Suggestion)
+
+**Request:** "Maybe in the AdminGuide we should define how the readiness scores are calculated."
+
+**Added:** New "Cloud Readiness Signals" section to AdminUserGuide.html explaining:
+- Data sources (ConfigMgr vs Graph API)
+- Each signal's calculation methodology
+- What "Total Devices" and "Ready Devices" mean for each signal
+- All blockers with severity levels and remediation actions
+- Clear note that TPM 2.0 is NOT required for Autopilot registration
+- Readiness percentage interpretation guide (80%+ = Excellent, 50-79% = Moderate, <50% = Low)
+
+**Signals Documented:**
+1. 🚀 Autopilot Registration - devices registered to Windows Autopilot
+2. 🪟 Windows 11 Readiness - hardware requirements for Windows 11 upgrade
+3. ☁️ Cloud-Native Readiness - devices ready for Intune-only management
+4. 🔐 Identity Readiness - Entra ID join status
+5. 🔄 WUfB Readiness - Windows Update for Business readiness
+6. 🛡️ Endpoint Security Readiness - Intune security management readiness
+
+**Files Modified:**
+- `AdminUserGuide.html` - Added new Cloud Readiness Signals section with navigation link
+
+---
+
 ## [Unreleased]
 
 ### Fixed - LIVE DATA Indicator Shows Incorrectly (Panu Feedback)
