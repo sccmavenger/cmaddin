@@ -1,5 +1,49 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.16] - 2025-01-22
+
+### Fixed - CMTrace-Compatible Logging Format
+
+**Issue:** Log files were not compatible with CMTrace (Configuration Manager Trace Log Tool), making troubleshooting difficult for ConfigMgr administrators.
+
+**Root Cause:** FileLogger used a simple text format `[timestamp] [LEVEL] message` instead of the CMTrace XML format.
+
+**CMTrace Format Reference:** https://learn.microsoft.com/mem/configmgr/core/support/cmtrace
+
+**Fix:** Converted FileLogger to output logs in CMTrace-compatible format:
+```
+<![LOG[Message]LOG]!><time="HH:mm:ss.mmm+TZO" date="MM-DD-YYYY" component="Component" context="" type="N" thread="ThreadID" file="FileName:LineNumber">
+```
+
+**Type Values:**
+- `type="1"` = Informational (Info, Debug)
+- `type="2"` = Warning
+- `type="3"` = Error (Error, Critical)
+
+**Benefits:**
+- Logs now open properly in CMTrace with correct coloring (yellow=warning, red=error)
+- Timestamp parsing works correctly
+- Thread ID and source file:line tracking for debugging
+- Component name shows "CloudJourneyAddin"
+
+**Files Modified:**
+- `Services/FileLogger.cs` - Complete rewrite of Log() method to use CMTrace format
+
+---
+
+### Fixed - Null Reference Bug in CloudReadinessService
+
+**Issue:** `GetAutopilotReadinessSignalAsync()` could throw NullReferenceException when ConfigMgr returned null device list.
+
+**Root Cause:** The code used `configMgrDevices.Where(...)` directly without null checking, causing CS8604 nullable warning.
+
+**Fix:** Added safe variable: `var safeConfigMgrDevices = configMgrDevices ?? new List<ConfigMgrDevice>();`
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Added null-safe device list handling
+
+---
+
 ## [3.17.14] - 2025-01-22
 
 ### Fixed - Autopilot Readiness Signal Logic (Panu Feedback)

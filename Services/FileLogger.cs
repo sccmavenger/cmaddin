@@ -1,13 +1,26 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Runtime.CompilerServices;
 
 namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// File-based logger for comprehensive debug information.
-    /// Logs to %LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\
+    /// Logs to %LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\ in CMTrace-compatible format.
+    /// 
+    /// CMTrace Format Reference (Microsoft Configuration Manager Trace Log Tool):
+    /// <![LOG[Message]LOG]!><time="HH:mm:ss.mmm+TZO" date="MM-DD-YYYY" component="Component" context="" type="N" thread="ThreadID" file="File:Line">
+    /// 
+    /// Type values:
+    ///   1 = Information
+    ///   2 = Warning
+    ///   3 = Error
+    /// 
+    /// Source: https://learn.microsoft.com/mem/configmgr/core/support/cmtrace
     /// </summary>
     public class FileLogger
     {
@@ -16,6 +29,7 @@ namespace ZeroTrustMigrationAddin.Services
         private readonly string _logFilePath;
         private readonly string _queryLogFilePath;
         private readonly string _logDirectory;
+        private const string ComponentName = "CloudJourneyAddin";
         
         // In-memory query log for UI display (last 100 queries)
         private readonly List<QueryLogEntry> _recentQueries = new();
@@ -56,12 +70,13 @@ namespace ZeroTrustMigrationAddin.Services
             var queryLogFileName = $"QueryLog_{DateTime.Now:yyyyMMdd}.log";
             _queryLogFilePath = Path.Combine(_logDirectory, queryLogFileName);
 
-            // Write startup header
-            Log(LogLevel.Info, "=".PadRight(80, '='));
-            Log(LogLevel.Info, $"CloudJourney Add-in Started - {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            // Write startup header (CMTrace will display these as info entries)
+            Log(LogLevel.Info, "========== CloudJourney Add-in Session Started ==========");
+            Log(LogLevel.Info, $"Session Start: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            Log(LogLevel.Info, $"Log Format: CMTrace compatible (use CMTrace.exe to view)");
             Log(LogLevel.Info, $"Log File: {_logFilePath}");
             Log(LogLevel.Info, $"Query Log: {_queryLogFilePath}");
-            Log(LogLevel.Info, "=".PadRight(80, '='));
+            Log(LogLevel.Info, "==========================================================");
         }
 
         public string LogFilePath => _logFilePath;
@@ -88,20 +103,76 @@ namespace ZeroTrustMigrationAddin.Services
             Critical
         }
 
-        public void Log(LogLevel level, string message)
+        /// <summary>
+        /// Converts LogLevel to CMTrace type value.
+        /// CMTrace uses: 1=Info, 2=Warning, 3=Error
+        /// </summary>
+        private static int GetCMTraceType(LogLevel level) => level switch
+        {
+            LogLevel.Debug => 1,
+            LogLevel.Info => 1,
+            LogLevel.Warning => 2,
+            LogLevel.Error => 3,
+            LogLevel.Critical => 3,
+            _ => 1
+        };
+
+        /// <summary>
+        /// Formats a log entry in CMTrace-compatible format.
+        /// Format: <![LOG[Message]LOG]!><time="HH:mm:ss.mmm+TZO" date="MM-DD-YYYY" component="Component" context="" type="N" thread="ThreadID" file="File:Line">
+        /// </summary>
+        private static string FormatCMTraceEntry(LogLevel level, string message, string component = ComponentName, 
+            [CallerFilePath] string sourceFile = "", [CallerLineNumber] int sourceLine = 0)
+        {
+            var now = DateTime.Now;
+            
+            // Time format: HH:mm:ss.mmm+TZO (e.g., "14:30:45.123+000")
+            var timeZoneOffset = TimeZoneInfo.Local.GetUtcOffset(now);
+            var tzOffsetMinutes = (int)timeZoneOffset.TotalMinutes;
+            var timeString = $"{now:HH:mm:ss.fff}{tzOffsetMinutes:+000;-000;+000}";
+            
+            // Date format: MM-DD-YYYY
+            var dateString = now.ToString("MM-dd-yyyy");
+            
+            // Thread ID
+            var threadId = Thread.CurrentThread.ManagedThreadId;
+            
+            // File name (just the filename, not full path)
+            var fileName = string.IsNullOrEmpty(sourceFile) ? "Unknown" : Path.GetFileName(sourceFile);
+            
+            // CMTrace type: 1=Info, 2=Warning, 3=Error
+            var cmTraceType = GetCMTraceType(level);
+            
+            // Escape special characters in message for XML compatibility
+            var escapedMessage = message
+                .Replace("&", "&amp;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;")
+                .Replace("\"", "&quot;")
+                .Replace("\r\n", " ")
+                .Replace("\n", " ")
+                .Replace("\r", " ");
+            
+            // CMTrace format
+            return $"<![LOG[{escapedMessage}]LOG]!><time=\"{timeString}\" date=\"{dateString}\" component=\"{component}\" context=\"\" type=\"{cmTraceType}\" thread=\"{threadId}\" file=\"{fileName}:{sourceLine}\">";
+        }
+
+        public void Log(LogLevel level, string message, 
+            [CallerFilePath] string sourceFile = "", [CallerLineNumber] int sourceLine = 0)
         {
             try
             {
-                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                var logEntry = $"[{timestamp}] [{level.ToString().ToUpper().PadRight(8)}] {message}";
+                var logEntry = FormatCMTraceEntry(level, message, ComponentName, sourceFile, sourceLine);
 
                 lock (_lock)
                 {
                     File.AppendAllText(_logFilePath, logEntry + Environment.NewLine);
                 }
 
-                // Also write to Debug output for DebugView compatibility
-                System.Diagnostics.Debug.WriteLine(logEntry);
+                // Also write to Debug output for DebugView compatibility (plain text for readability)
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                var plainTextEntry = $"[{timestamp}] [{level.ToString().ToUpper().PadRight(8)}] {message}";
+                System.Diagnostics.Debug.WriteLine(plainTextEntry);
             }
             catch (Exception ex)
             {
@@ -110,11 +181,11 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
-        public void Debug(string message) => Log(LogLevel.Debug, message);
-        public void Info(string message) => Log(LogLevel.Info, message);
-        public void Warning(string message) => Log(LogLevel.Warning, message);
-        public void Error(string message) => Log(LogLevel.Error, message);
-        public void Critical(string message) => Log(LogLevel.Critical, message);
+        public void Debug(string message, [CallerFilePath] string f = "", [CallerLineNumber] int l = 0) => Log(LogLevel.Debug, message, f, l);
+        public void Info(string message, [CallerFilePath] string f = "", [CallerLineNumber] int l = 0) => Log(LogLevel.Info, message, f, l);
+        public void Warning(string message, [CallerFilePath] string f = "", [CallerLineNumber] int l = 0) => Log(LogLevel.Warning, message, f, l);
+        public void Error(string message, [CallerFilePath] string f = "", [CallerLineNumber] int l = 0) => Log(LogLevel.Error, message, f, l);
+        public void Critical(string message, [CallerFilePath] string f = "", [CallerLineNumber] int l = 0) => Log(LogLevel.Critical, message, f, l);
 
         /// <summary>
         /// Log a data query (Graph API, WMI, Admin Service) for transparency
@@ -269,26 +340,34 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
-        public void LogException(Exception ex, string context = "")
+        public void LogException(Exception ex, string context = "", 
+            [CallerFilePath] string sourceFile = "", [CallerLineNumber] int sourceLine = 0)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine($"EXCEPTION in {context}:");
-            sb.AppendLine($"  Type: {ex.GetType().Name}");
-            sb.AppendLine($"  Message: {ex.Message}");
-            sb.AppendLine($"  Stack Trace: {ex.StackTrace}");
+            // Log exception details in CMTrace-friendly format (single line per entry for proper parsing)
+            var exceptionType = ex.GetType().Name;
+            var message = ex.Message.Replace("\r\n", " ").Replace("\n", " ");
+            
+            Log(LogLevel.Error, $"EXCEPTION in {context}: [{exceptionType}] {message}", sourceFile, sourceLine);
+            
+            if (!string.IsNullOrEmpty(ex.StackTrace))
+            {
+                // Log stack trace as separate warning entries for better CMTrace viewing
+                var stackLines = ex.StackTrace.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in stackLines.Take(10)) // Limit to first 10 stack frames
+                {
+                    Log(LogLevel.Warning, $"  Stack: {line.Trim()}", sourceFile, sourceLine);
+                }
+            }
             
             if (ex.InnerException != null)
             {
-                sb.AppendLine($"  Inner Exception: {ex.InnerException.GetType().Name}");
-                sb.AppendLine($"  Inner Message: {ex.InnerException.Message}");
+                Log(LogLevel.Error, $"  Inner Exception: [{ex.InnerException.GetType().Name}] {ex.InnerException.Message.Replace("\r\n", " ").Replace("\n", " ")}", sourceFile, sourceLine);
             }
-
-            Log(LogLevel.Error, sb.ToString());
         }
 
-        public void LogSeparator()
+        public void LogSeparator([CallerFilePath] string f = "", [CallerLineNumber] int l = 0)
         {
-            Log(LogLevel.Info, "".PadRight(80, '-'));
+            Log(LogLevel.Info, "--------------------------------------------------------------------------------", f, l);
         }
 
         /// <summary>
