@@ -236,6 +236,7 @@
                 <li><a href="#auto-updates">Automatic Updates</a></li>
                 <li><a href="#enrollment">Device Enrollment</a></li>
                 <li><a href="#device-readiness">Device Readiness</a></li>
+                <li><a href="#cloud-readiness">Cloud Readiness Signals</a></li>
                 <li><a href="#enrollment-agent">Enrollment Agent</a></li>
                 <li><a href="#troubleshooting">Troubleshooting</a></li>
                 <li><a href="#faq">FAQ</a></li>
@@ -910,11 +911,182 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.13 - January 21, 2026</strong>
+                <strong>🎉 Version 3.17.14 - January 2026</strong>
                 <ul>
-                    <li>Version update</li>
+                    <li>Fixed Autopilot Readiness to show registration status</li>
+                    <li>Added Cloud Readiness documentation</li>
                 </ul>
             </div>
+        </section>
+
+        <!-- Cloud Readiness Signals Section -->
+        <section id="cloud-readiness">
+            <h2><span class="emoji">☁️</span> Cloud Readiness Signals</h2>
+            
+            <p>Cloud Readiness Signals help you assess your organization's readiness for various cloud migration scenarios. Each signal evaluates specific requirements and identifies blockers that may prevent successful migration.</p>
+
+            <h3>Data Sources</h3>
+            <p>Cloud Readiness assessments combine data from multiple sources:</p>
+            <ul>
+                <li><strong>ConfigMgr (Admin Service/WMI):</strong> Device inventory, TPM status, OS details, hardware specifications</li>
+                <li><strong>Microsoft Graph API:</strong> Intune enrollment status, Autopilot registration, Entra ID join status, compliance data</li>
+            </ul>
+
+            <div class="alert alert-info">
+                <strong>💡 Important:</strong> The "Total Devices" count for most signals comes from ConfigMgr, as these are the devices you're planning to migrate. Intune/Graph data is used to cross-reference enrollment and registration status.
+            </div>
+
+            <h3>🚀 Autopilot Registration</h3>
+            <p><strong>What it measures:</strong> ConfigMgr devices that are registered to Windows Autopilot for Zero-Touch provisioning.</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Description</th>
+                        <th>Data Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Total Devices</strong></td>
+                        <td>Windows 10/11 devices in ConfigMgr</td>
+                        <td>ConfigMgr Admin Service</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ready Devices</strong></td>
+                        <td>Devices registered to Autopilot AND meeting OS requirements</td>
+                        <td>Graph API (WindowsAutopilotDeviceIdentities)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Blockers Checked:</strong></p>
+            <ul>
+                <li><strong>Not Registered to Autopilot (Medium):</strong> Devices not yet in Autopilot. Register via hardware hash upload or OEM.</li>
+                <li><strong>Unsupported OS Version (High):</strong> Devices running Windows 10 older than version 1809 (build 17763).</li>
+            </ul>
+
+            <div class="alert alert-warning">
+                <strong>⚠️ Note:</strong> TPM 2.0 is NOT required for Autopilot registration. TPM 2.0 is required for Windows 11, BitLocker, and Windows Hello for Business, but devices can register with Autopilot without TPM 2.0.
+            </div>
+
+            <h3>🪟 Windows 11 Readiness</h3>
+            <p><strong>What it measures:</strong> Windows 10 devices that meet the hardware requirements for Windows 11 upgrade.</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Description</th>
+                        <th>Data Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Total Devices</strong></td>
+                        <td>Windows 10 devices in ConfigMgr (excludes devices already on Windows 11)</td>
+                        <td>ConfigMgr Admin Service</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ready Devices</strong></td>
+                        <td>Windows 10 devices meeting all Windows 11 hardware requirements</td>
+                        <td>ConfigMgr Hardware Inventory</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Blockers Checked:</strong></p>
+            <ul>
+                <li><strong>Missing TPM 2.0 (Critical):</strong> TPM 2.0 is required for Windows 11. Enable in BIOS or upgrade hardware.</li>
+                <li><strong>UEFI/Secure Boot (High):</strong> Windows 11 requires UEFI firmware with Secure Boot enabled.</li>
+            </ul>
+
+            <div class="alert alert-info">
+                <strong>💡 Tip:</strong> If you see 0% readiness but have devices, check if TPM hardware inventory is enabled in ConfigMgr. Devices without TPM data are counted as "not ready."
+            </div>
+
+            <h3>☁️ Cloud-Native Readiness</h3>
+            <p><strong>What it measures:</strong> Devices ready for full cloud-native management (Intune-only, no ConfigMgr dependency).</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Description</th>
+                        <th>Data Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Total Devices</strong></td>
+                        <td>All Windows 10/11 devices being assessed</td>
+                        <td>ConfigMgr Admin Service</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ready Devices</strong></td>
+                        <td>Devices enrolled in Intune AND Entra ID joined (not Hybrid)</td>
+                        <td>Graph API (Intune Managed Devices)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🔐 Identity Readiness</h3>
+            <p><strong>What it measures:</strong> Device identity posture for cloud services (Entra ID Join, Hybrid Join).</p>
+            
+            <p><strong>Blockers Checked:</strong></p>
+            <ul>
+                <li><strong>On-Prem Domain Only (High):</strong> Devices not synced to Entra ID. Configure Azure AD Connect with Hybrid Join.</li>
+                <li><strong>Workgroup Devices (High):</strong> Not domain-joined. Consider Entra ID Join for these devices.</li>
+            </ul>
+
+            <h3>🔄 Windows Update for Business (WUfB) Readiness</h3>
+            <p><strong>What it measures:</strong> Devices ready to receive updates via Windows Update for Business instead of WSUS/ConfigMgr.</p>
+            
+            <p><strong>Requirements:</strong></p>
+            <ul>
+                <li>Enrolled in Intune (for policy delivery)</li>
+                <li>Windows 10/11 Pro, Enterprise, or Education</li>
+                <li>Internet connectivity to Windows Update</li>
+            </ul>
+
+            <h3>🛡️ Endpoint Security Readiness</h3>
+            <p><strong>What it measures:</strong> Devices ready for Intune Endpoint Security management (Defender, Compliance, Conditional Access).</p>
+            
+            <p><strong>Requirements:</strong></p>
+            <ul>
+                <li>Enrolled in Intune</li>
+                <li>Entra ID joined or Hybrid joined</li>
+                <li>Defender for Endpoint license (recommended)</li>
+            </ul>
+
+            <h3>Interpreting Readiness Percentages</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Percentage</th>
+                        <th>Status</th>
+                        <th>Recommendation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>80-100%</strong></td>
+                        <td>✅ Excellent</td>
+                        <td>Ready to proceed with migration</td>
+                    </tr>
+                    <tr>
+                        <td><strong>50-79%</strong></td>
+                        <td>🟡 Moderate</td>
+                        <td>Address high-severity blockers first</td>
+                    </tr>
+                    <tr>
+                        <td><strong>0-49%</strong></td>
+                        <td>🔴 Low</td>
+                        <td>Significant preparation needed before migration</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
 
         <!-- Enrollment Agent Section -->

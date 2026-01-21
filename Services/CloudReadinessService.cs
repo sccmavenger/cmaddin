@@ -111,20 +111,22 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Assesses Autopilot readiness (SCCM OSD → Autopilot transition).
-        /// Requirements: TPM 2.0, UEFI, Secure Boot, Windows 10 1809+, AAD/Hybrid joined
+        /// Assesses Autopilot Registration status.
+        /// Shows ConfigMgr devices NOT yet registered to Windows Autopilot.
+        /// NOTE: TPM 2.0 is NOT required for Autopilot registration (it's required for Windows 11/BitLocker/Hello).
+        /// Requirements: Windows 10 1809+, Entra ID/Hybrid joined, Hardware hash captured
         /// </summary>
         public async Task<CloudReadinessSignal> GetAutopilotReadinessSignalAsync()
         {
             Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
-            Instance.Info("│ 🚀 AUTOPILOT READINESS ASSESSMENT                                                       │");
+            Instance.Info("│ 🚀 AUTOPILOT REGISTRATION STATUS                                                        │");
             Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
             
             var signal = new CloudReadinessSignal
             {
                 Id = "autopilot",
-                Name = "Autopilot Readiness",
-                Description = "Ready for Windows Autopilot deployment (SCCM OSD → Autopilot)",
+                Name = "Autopilot Registration",
+                Description = "ConfigMgr devices registered to Windows Autopilot",
                 Icon = "🚀",
                 RelatedWorkload = "Device Provisioning",
                 LearnMoreUrl = "https://learn.microsoft.com/mem/autopilot/windows-autopilot"
@@ -132,95 +134,78 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
-                // Get device data from ConfigMgr
+                // Get device data from ConfigMgr AND Autopilot
                 Instance.Info("   Fetching device data from ConfigMgr...");
-                var devices = await _configMgrService.GetWindows1011DevicesAsync();
-                var tpmStatus = await _configMgrService.GetTpmStatusAsync();
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
                 var osDetails = await _configMgrService.GetOSDetailsAsync();
                 var enrollmentData = await _graphService.GetDeviceEnrollmentAsync();
+                
+                Instance.Info("   Fetching Autopilot registered devices from Graph API...");
+                var autopilotDevices = await _graphService.GetAutopilotDeviceStatusAsync();
 
-                signal.TotalDevices = devices?.Count ?? 0;
-                Instance.Info($"   📱 Total devices found: {signal.TotalDevices}");
-                Instance.Info($"   📊 TPM records retrieved: {tpmStatus?.Count ?? 0}");
+                var configMgrCount = configMgrDevices?.Count ?? 0;
+                var autopilotCount = autopilotDevices?.Count ?? 0;
+                
+                Instance.Info($"   📱 ConfigMgr Windows 10/11 devices: {configMgrCount}");
+                Instance.Info($"   🚀 Autopilot registered devices: {autopilotCount}");
                 Instance.Info($"   📊 OS detail records retrieved: {osDetails?.Count ?? 0}");
+                
+                // TotalDevices = ConfigMgr devices (these are the ones we want to register)
+                signal.TotalDevices = configMgrCount;
                 
                 if (signal.TotalDevices == 0)
                 {
-                    Instance.Warning("   ⚠️ No devices found for Autopilot readiness assessment");
+                    Instance.Warning("   ⚠️ No ConfigMgr devices found for Autopilot registration assessment");
                     return signal;
                 }
 
                 var blockers = new List<ReadinessBlocker>();
-                var readyDeviceIds = new HashSet<int>(devices.Select(d => d.ResourceId));
 
-                // Check TPM 2.0 requirement
+                // Match ConfigMgr devices to Autopilot by serial number
+                // Devices already in Autopilot are "ready", devices not in Autopilot need registration
+                var autopilotSerials = new HashSet<string>(
+                    autopilotDevices?.Select(a => a.SerialNumber?.ToUpperInvariant() ?? "").Where(s => !string.IsNullOrEmpty(s)) ?? new List<string>());
+                
+                Instance.Info($"   📋 Autopilot serial numbers found: {autopilotSerials.Count}");
+                
+                // Count devices already registered vs not registered
+                // Note: ConfigMgr doesn't always have serial numbers, so we estimate based on counts
+                var devicesNotRegistered = configMgrCount > autopilotCount ? configMgrCount - autopilotCount : 0;
+                var devicesRegistered = Math.Min(configMgrCount, autopilotCount);
+                
                 Instance.Info("");
-                Instance.Info("   [CHECK 1/3] TPM 2.0 REQUIREMENT");
-                var tpmLookup = tpmStatus?.ToDictionary(t => t.ResourceId) ?? new Dictionary<int, TpmStatus>();
+                Instance.Info("   [CHECK 1/2] AUTOPILOT REGISTRATION STATUS");
+                Instance.Info($"      ✅ Already registered to Autopilot: ~{devicesRegistered} devices (estimated)");
+                Instance.Info($"      ⚠️ Not yet registered: ~{devicesNotRegistered} devices (estimated)");
                 
-                var devicesWithNoTpmData = devices.Where(d => !tpmLookup.ContainsKey(d.ResourceId)).ToList();
-                var devicesWithTpmDisabled = devices.Where(d => tpmLookup.TryGetValue(d.ResourceId, out var t) && (!t.IsPresent || !t.IsEnabled)).ToList();
-                var devicesWithTpm12 = devices.Where(d => tpmLookup.TryGetValue(d.ResourceId, out var t) && t.IsPresent && t.IsEnabled && 
-                    !string.IsNullOrEmpty(t.SpecVersion) && !t.SpecVersion.StartsWith("2.") && !t.SpecVersion.Contains("2.0")).ToList();
-                var devicesWithTpm20 = devices.Where(d => 
-                    tpmLookup.TryGetValue(d.ResourceId, out var tpm) && 
-                    tpm.IsPresent && tpm.IsEnabled &&
-                    !string.IsNullOrEmpty(tpm.SpecVersion) && 
-                    (tpm.SpecVersion.StartsWith("2.") || tpm.SpecVersion.Contains("2.0"))).ToList();
-
-                Instance.Info($"      ✅ TPM 2.0 Present & Enabled: {devicesWithTpm20.Count} devices");
-                Instance.Info($"      ⚠️ No TPM data available: {devicesWithNoTpmData.Count} devices");
-                Instance.Info($"      ❌ TPM Missing or Disabled: {devicesWithTpmDisabled.Count} devices");
-                Instance.Info($"      ❌ TPM 1.2 (needs upgrade): {devicesWithTpm12.Count} devices");
-                
-                // Log sample devices without TPM 2.0
-                if (devicesWithNoTpmData.Any())
-                {
-                    Instance.Debug("      Devices with no TPM data (first 10):");
-                    foreach (var d in devicesWithNoTpmData.Take(10))
-                    {
-                        Instance.Debug($"         - {d.Name} (ResourceId: {d.ResourceId})");
-                    }
-                }
-
-                var noTpm20Count = signal.TotalDevices - devicesWithTpm20.Count;
-                if (noTpm20Count > 0)
+                if (devicesNotRegistered > 0)
                 {
                     blockers.Add(new ReadinessBlocker
                     {
-                        Id = "no-tpm20",
-                        Name = "Missing TPM 2.0",
-                        Description = "TPM 2.0 is required for Autopilot. These devices have no TPM or TPM 1.2.",
-                        AffectedDeviceCount = noTpm20Count,
-                        PercentageAffected = SafeBlockerPercentage(noTpm20Count, signal.TotalDevices),
-                        Severity = BlockerSeverity.Critical,
-                        RemediationAction = "Enable TPM in BIOS or upgrade hardware",
-                        RemediationUrl = "https://learn.microsoft.com/mem/autopilot/autopilot-requirements"
+                        Id = "not-autopilot-registered",
+                        Name = "Not Registered to Autopilot",
+                        Description = "These devices are not yet registered to Windows Autopilot. Register them to enable Autopilot provisioning.",
+                        AffectedDeviceCount = devicesNotRegistered,
+                        PercentageAffected = SafeBlockerPercentage(devicesNotRegistered, signal.TotalDevices),
+                        Severity = BlockerSeverity.Medium,
+                        RemediationAction = "Register devices to Autopilot via hardware hash upload or OEM registration",
+                        RemediationUrl = "https://learn.microsoft.com/mem/autopilot/add-devices"
                     });
-                    
-                    // Remove devices without TPM 2.0 from ready set
-                    foreach (var d in devices.Where(d => !tpmLookup.TryGetValue(d.ResourceId, out var tpm) || 
-                        !tpm.IsPresent || !tpm.IsEnabled || 
-                        string.IsNullOrEmpty(tpm.SpecVersion) || 
-                        !(tpm.SpecVersion.StartsWith("2.") || tpm.SpecVersion.Contains("2.0"))))
-                    {
-                        readyDeviceIds.Remove(d.ResourceId);
-                    }
                 }
 
                 // Check OS version requirement (Windows 10 1809+ or Windows 11)
                 Instance.Info("");
-                Instance.Info("   [CHECK 2/3] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");
+                Instance.Info("   [CHECK 2/2] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");
                 var osLookup = osDetails?.ToDictionary(o => o.ResourceId) ?? new Dictionary<int, OSDetails>();
                 
-                var devicesWithNoOsData = devices.Where(d => !osLookup.ContainsKey(d.ResourceId) || string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber)).ToList();
-                var devicesBelowMinBuild = devices.Where(d => {
+                var devicesWithNoOsData = configMgrDevices.Where(d => !osLookup.ContainsKey(d.ResourceId) || string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber)).ToList();
+                var devicesBelowMinBuild = configMgrDevices.Where(d => {
                     if (!osLookup.TryGetValue(d.ResourceId, out var os)) return false;
                     if (string.IsNullOrEmpty(os.BuildNumber)) return false;
                     if (int.TryParse(os.BuildNumber, out var build)) return build < 17763;
                     return false;
                 }).ToList();
-                var devicesMeetingOsReq = devices.Where(d => {
+                var devicesMeetingOsReq = configMgrDevices.Where(d => {
                     if (!osLookup.TryGetValue(d.ResourceId, out var os)) return false;
                     if (string.IsNullOrEmpty(os.BuildNumber)) return false;
                     if (int.TryParse(os.BuildNumber, out var build)) return build >= 17763;
@@ -232,7 +217,7 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info($"      ❌ Below minimum build (< 17763): {devicesBelowMinBuild.Count} devices");
 
                 // Log OS version distribution
-                var osBuildGroups = devices
+                var osBuildGroups = configMgrDevices
                     .Where(d => osLookup.ContainsKey(d.ResourceId) && !string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber))
                     .GroupBy(d => osLookup[d.ResourceId].BuildNumber)
                     .OrderByDescending(g => g.Count())
@@ -253,58 +238,26 @@ namespace ZeroTrustMigrationAddin.Services
                     {
                         Id = "unsupported-os",
                         Name = "Unsupported OS Version",
-                        Description = "Windows 10 version 1809 or later is required for Autopilot.",
+                        Description = "Windows 10 version 1809 or later is required for Autopilot registration.",
                         AffectedDeviceCount = unsupportedOsCount,
                         PercentageAffected = SafeBlockerPercentage(unsupportedOsCount, signal.TotalDevices),
                         Severity = BlockerSeverity.High,
                         RemediationAction = "Upgrade to Windows 10 1809+ or Windows 11",
                         RemediationUrl = "https://learn.microsoft.com/windows/release-health/"
                     });
-                    
-                    foreach (var d in devices.Where(d => 
-                        !osLookup.TryGetValue(d.ResourceId, out var os) || 
-                        string.IsNullOrEmpty(os.BuildNumber) ||
-                        !int.TryParse(os.BuildNumber, out var build) || build < 17763))
-                    {
-                        readyDeviceIds.Remove(d.ResourceId);
-                    }
                 }
 
-                // Check identity requirement (AAD Joined or Hybrid Joined)
-                Instance.Info("");
-                Instance.Info("   [CHECK 3/3] IDENTITY REQUIREMENT (Entra ID or Hybrid Join)");
-                Instance.Info($"      📊 Enrollment data from Graph API:");
-                Instance.Info($"         Total devices: {enrollmentData?.TotalDevices ?? 0}");
-                Instance.Info($"         ✅ Entra ID Joined: {enrollmentData?.AzureADOnlyDevices ?? 0}");
-                Instance.Info($"         ✅ Hybrid Entra ID Joined: {enrollmentData?.HybridJoinedDevices ?? 0}");
-                Instance.Info($"         ❌ On-Prem Domain Only: {enrollmentData?.OnPremDomainOnlyDevices ?? 0}");
-                Instance.Info($"         ❌ Workgroup: {enrollmentData?.WorkgroupDevices ?? 0}");
-                
-                var notAadJoined = (enrollmentData?.OnPremDomainOnlyDevices ?? 0) + (enrollmentData?.WorkgroupDevices ?? 0);
-                if (notAadJoined > 0)
-                {
-                    blockers.Add(new ReadinessBlocker
-                    {
-                        Id = "not-aad-joined",
-                        Name = "Not Entra ID Joined",
-                        Description = "Devices must be Entra ID joined or Hybrid joined for Autopilot.",
-                        AffectedDeviceCount = notAadJoined,
-                        PercentageAffected = SafeBlockerPercentage(notAadJoined, signal.TotalDevices),
-                        Severity = BlockerSeverity.High,
-                        RemediationAction = "Configure Hybrid Entra ID Join or Entra ID Join",
-                        RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/hybrid-join-plan"
-                    });
-                }
-
-                signal.ReadyDevices = SafeReadyDevices(readyDeviceIds.Count, signal.TotalDevices, "Autopilot");
+                // Calculate ready devices: registered to Autopilot AND meeting OS requirements
+                var meetsOsRequirements = signal.TotalDevices - unsupportedOsCount;
+                signal.ReadyDevices = Math.Min(devicesRegistered, meetsOsRequirements);
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = GenerateAutopilotRecommendations(signal, blockers);
 
                 Instance.Info("");
                 Instance.Info($"   ═══════════════════════════════════════════════════════════════");
-                Instance.Info($"   🚀 AUTOPILOT READINESS RESULT: {signal.ReadinessPercentage}%");
-                Instance.Info($"      Ready devices: {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"   🚀 AUTOPILOT REGISTRATION RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Registered devices: {signal.ReadyDevices} / {signal.TotalDevices}");
                 Instance.Info($"      Blockers found: {blockers.Count}");
                 Instance.Info($"   ═══════════════════════════════════════════════════════════════");
             }
