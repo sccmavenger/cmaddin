@@ -24,6 +24,30 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
+        /// Helper to calculate blocker percentage, capped at 100% to handle data source mismatches.
+        /// </summary>
+        private static double SafeBlockerPercentage(int affectedCount, int totalDevices)
+        {
+            if (totalDevices <= 0) return 0;
+            var capped = Math.Min(affectedCount, totalDevices);
+            return Math.Round((double)capped / totalDevices * 100, 1);
+        }
+
+        /// <summary>
+        /// Helper to cap ReadyDevices to TotalDevices to prevent impossible displays like "83 of 2 ready".
+        /// Logs a warning when data sources appear mismatched.
+        /// </summary>
+        private static int SafeReadyDevices(int readyCount, int totalDevices, string signalName)
+        {
+            if (readyCount > totalDevices && totalDevices > 0)
+            {
+                Instance.Warning($"   ⚠️ [{signalName}] Data source mismatch: ReadyDevices ({readyCount}) > TotalDevices ({totalDevices}). Capping to {totalDevices}.");
+                return totalDevices;
+            }
+            return Math.Max(0, readyCount);
+        }
+
+        /// <summary>
         /// Gets the complete Cloud Readiness Dashboard with all signals.
         /// </summary>
         public async Task<CloudReadinessDashboard> GetCloudReadinessDashboardAsync()
@@ -168,7 +192,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "Missing TPM 2.0",
                         Description = "TPM 2.0 is required for Autopilot. These devices have no TPM or TPM 1.2.",
                         AffectedDeviceCount = noTpm20Count,
-                        PercentageAffected = Math.Round((double)noTpm20Count / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(noTpm20Count, signal.TotalDevices),
                         Severity = BlockerSeverity.Critical,
                         RemediationAction = "Enable TPM in BIOS or upgrade hardware",
                         RemediationUrl = "https://learn.microsoft.com/mem/autopilot/autopilot-requirements"
@@ -231,7 +255,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "Unsupported OS Version",
                         Description = "Windows 10 version 1809 or later is required for Autopilot.",
                         AffectedDeviceCount = unsupportedOsCount,
-                        PercentageAffected = Math.Round((double)unsupportedOsCount / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(unsupportedOsCount, signal.TotalDevices),
                         Severity = BlockerSeverity.High,
                         RemediationAction = "Upgrade to Windows 10 1809+ or Windows 11",
                         RemediationUrl = "https://learn.microsoft.com/windows/release-health/"
@@ -265,14 +289,14 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "Not Entra ID Joined",
                         Description = "Devices must be Entra ID joined or Hybrid joined for Autopilot.",
                         AffectedDeviceCount = notAadJoined,
-                        PercentageAffected = Math.Round((double)notAadJoined / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(notAadJoined, signal.TotalDevices),
                         Severity = BlockerSeverity.High,
                         RemediationAction = "Configure Hybrid Entra ID Join or Entra ID Join",
                         RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/hybrid-join-plan"
                     });
                 }
 
-                signal.ReadyDevices = readyDeviceIds.Count;
+                signal.ReadyDevices = SafeReadyDevices(readyDeviceIds.Count, signal.TotalDevices, "Autopilot");
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = GenerateAutopilotRecommendations(signal, blockers);
@@ -382,7 +406,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "Missing TPM 2.0",
                         Description = "TPM 2.0 is required for Windows 11.",
                         AffectedDeviceCount = noTpm20,
-                        PercentageAffected = Math.Round((double)noTpm20 / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(noTpm20, signal.TotalDevices),
                         Severity = BlockerSeverity.Critical,
                         RemediationAction = "Enable TPM 2.0 in BIOS or plan hardware refresh",
                         RemediationUrl = "https://support.microsoft.com/windows/enable-tpm-2-0-on-your-pc"
@@ -408,7 +432,7 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
-                signal.ReadyDevices = readyDeviceIds.Count;
+                signal.ReadyDevices = SafeReadyDevices(readyDeviceIds.Count, signal.TotalDevices, "Windows11");
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = GenerateWindows11Recommendations(signal, blockers);
@@ -498,7 +522,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "Hybrid Entra ID Joined",
                         Description = "These devices are Hybrid joined and have on-premises AD dependencies.",
                         AffectedDeviceCount = hybridJoined,
-                        PercentageAffected = Math.Round((double)hybridJoined / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(hybridJoined, signal.TotalDevices),
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Plan migration from Hybrid to cloud-only Entra ID join",
                         RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/device-join-plan"
@@ -518,7 +542,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "On-Premises AD Only",
                         Description = "These devices are only joined to on-premises AD with no cloud identity.",
                         AffectedDeviceCount = onPremOnly,
-                        PercentageAffected = Math.Round((double)onPremOnly / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(onPremOnly, signal.TotalDevices),
                         Severity = BlockerSeverity.High,
                         RemediationAction = "Configure Hybrid Entra ID Join as first step to cloud",
                         RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/hybrid-join-plan"
@@ -538,7 +562,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "ConfigMgr Only (Not in Intune)",
                         Description = "These devices are managed by ConfigMgr but not enrolled in Intune.",
                         AffectedDeviceCount = configMgrOnly,
-                        PercentageAffected = Math.Round((double)configMgrOnly / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(configMgrOnly, signal.TotalDevices),
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Enable co-management and enroll in Intune",
                         RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-enable"
@@ -546,7 +570,7 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 // Ready = Already cloud-native + AAD-only devices with Intune
-                signal.ReadyDevices = alreadyCloudNative + aadJoinedWithIntune;
+                signal.ReadyDevices = SafeReadyDevices(alreadyCloudNative + aadJoinedWithIntune, signal.TotalDevices, "CloudNative");
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = GenerateCloudNativeRecommendations(signal, blockers);
@@ -634,7 +658,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "No Cloud Identity",
                         Description = "These devices have no Azure AD/Entra identity.",
                         AffectedDeviceCount = onPremOnly,
-                        PercentageAffected = Math.Round((double)onPremOnly / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(onPremOnly, signal.TotalDevices),
                         Severity = BlockerSeverity.High,
                         RemediationAction = "Configure Azure AD Connect for Hybrid Join",
                         RemediationUrl = "https://learn.microsoft.com/entra/identity/hybrid/connect/how-to-connect-install-roadmap"
@@ -653,14 +677,14 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "Workgroup Devices",
                         Description = "These devices are not domain joined and have no cloud identity.",
                         AffectedDeviceCount = workgroup,
-                        PercentageAffected = Math.Round((double)workgroup / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(workgroup, signal.TotalDevices),
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Azure AD Join these devices directly",
                         RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/device-join-plan"
                     });
                 }
 
-                signal.ReadyDevices = cloudIdentityReady;
+                signal.ReadyDevices = SafeReadyDevices(cloudIdentityReady, signal.TotalDevices, "Identity");
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = new List<string>
@@ -764,7 +788,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "OS Too Old for WUfB",
                         Description = "WUfB requires Windows 10 version 1703 or later.",
                         AffectedDeviceCount = oldOsCount,
-                        PercentageAffected = Math.Round((double)oldOsCount / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(oldOsCount, signal.TotalDevices),
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Upgrade to Windows 10 1703+ or Windows 11",
                         RemediationUrl = "https://learn.microsoft.com/windows/release-health/"
@@ -790,14 +814,14 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "Not Enrolled in Intune",
                         Description = "WUfB policies are delivered through Intune. These devices need enrollment.",
                         AffectedDeviceCount = notInIntune,
-                        PercentageAffected = Math.Round((double)notInIntune / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(notInIntune, signal.TotalDevices),
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Enroll devices in Intune via co-management",
                         RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-enable"
                     });
                 }
 
-                signal.ReadyDevices = readyCount;
+                signal.ReadyDevices = SafeReadyDevices(readyCount, signal.TotalDevices, "WUfB");
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = new List<string>
@@ -909,7 +933,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Name = "Unsupported OS for MDE",
                         Description = "Microsoft Defender for Endpoint requires Windows 10 1607 or later.",
                         AffectedDeviceCount = unsupportedOs,
-                        PercentageAffected = Math.Round((double)unsupportedOs / signal.TotalDevices * 100, 1),
+                        PercentageAffected = SafeBlockerPercentage(unsupportedOs, signal.TotalDevices),
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Upgrade to Windows 10 1607+ or Windows 11",
                         RemediationUrl = "https://learn.microsoft.com/microsoft-365/security/defender-endpoint/minimum-requirements"
@@ -926,7 +950,7 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info($"      🟡 ConfigMgr-only (can use ConfigMgr for MDE): {notInIntune} devices");
                 Instance.Info($"         Note: MDE can be onboarded via ConfigMgr or Intune");
 
-                signal.ReadyDevices = supportedCount;
+                signal.ReadyDevices = SafeReadyDevices(supportedCount, signal.TotalDevices, "EndpointSecurity");
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = new List<string>

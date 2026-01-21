@@ -1,5 +1,24 @@
 # Zero Trust Migration Journey - Change Log
 
+## [Unreleased]
+
+### Fixed - Cloud Readiness Data Validation
+
+**Defensive Data Guards:**
+- Added `SafeReadyDevices()` helper to cap ReadyDevices at TotalDevices, preventing impossible displays like "83 of 2 devices ready"
+- Added `SafeBlockerPercentage()` helper to cap blocker percentages at 100%
+- Logs warning when data source mismatch is detected (e.g., Graph returns more devices than ConfigMgr)
+
+**Impact:**
+- All 7 Cloud Readiness signals now have defensive guards
+- All 12 blocker percentage calculations now capped at 100%
+- Test environments with mismatched data sources will show sensible numbers
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Added helper methods and applied to all signals
+
+---
+
 ## [3.17.8] - 2026-01-20
 
 ### Changed - Alpha Tester Feedback (Panu)
