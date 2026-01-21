@@ -1,5 +1,43 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.22] - 2026-01-21
+
+### Added - In-App Feedback Feature 💬
+
+**Feature:** Users can now submit feedback, bug reports, and feature requests directly from the app to GitHub Issues.
+
+**How It Works:**
+1. Click the new **💬 Feedback** button in the toolbar (coral/red color)
+2. Sign in with your GitHub account (OAuth Device Flow - opens browser)
+3. Select feedback type: Bug Report, Feature Request, Question, or General Feedback
+4. Enter title and description
+5. Optionally include screenshot and system info
+6. Submit - creates a GitHub Issue automatically!
+
+**Features:**
+- **GitHub OAuth Device Flow** - Secure authentication without storing passwords
+- **Screenshot capture** - Automatically captures dashboard screenshot and copies to clipboard
+- **System info** - Includes app version, OS, and timestamp for easier debugging
+- **Persistent login** - Token saved locally, no need to re-authenticate each time
+- **Direct link** - Opens created issue in browser so you can add more details
+
+**Files Added:**
+- `Services/FeedbackService.cs` - OAuth authentication and issue creation via Octokit
+- `Views/FeedbackWindow.xaml` - Feedback submission dialog UI
+- `Views/FeedbackWindow.xaml.cs` - Dialog logic and event handlers
+- `.github/ISSUE_TEMPLATE/bug_report.md` - Structured bug report template
+- `.github/ISSUE_TEMPLATE/feature_request.md` - Feature request template
+- `.github/ISSUE_TEMPLATE/alpha_feedback.md` - Alpha tester feedback template
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Added Feedback button to toolbar
+- `ViewModels/DashboardViewModel.cs` - Added ShowFeedbackCommand
+
+**Note:** You'll need to create a GitHub OAuth App and set the Client ID in FeedbackService.cs for this to work.
+To create an OAuth App: https://github.com/settings/applications/new
+
+---
+
 ## [3.17.20] - 2026-01-21
 
 ### Fixed - Graph Button Visibility Inconsistency

@@ -1,0 +1,202 @@
+<Window x:Class="ZeroTrustMigrationAddin.Views.FeedbackWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Submit Feedback" 
+        Height="580" Width="520"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F5F5"
+        ResizeMode="NoResize">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+            <TextBlock Text="💬 Submit Feedback" 
+                       FontSize="24" FontWeight="Bold" 
+                       Foreground="#0078D4"/>
+            <TextBlock Text="Report bugs, suggest features, or share your thoughts" 
+                       FontSize="14" Foreground="#666"
+                       Margin="0,5,0,0"/>
+            <TextBlock Text="Feedback is submitted as a GitHub Issue" 
+                       FontSize="12" Foreground="#888"
+                       Margin="0,3,0,0"/>
+        </StackPanel>
+
+        <!-- GitHub Auth Status -->
+        <Border Grid.Row="1" Background="#E8F4FD" CornerRadius="6" Padding="12" Margin="0,0,0,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock x:Name="AuthStatusIcon" Text="🔒" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="AuthStatusText" Text="Sign in with GitHub to submit feedback" 
+                               FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap" Width="280"/>
+                </StackPanel>
+                <Button x:Name="AuthButton" Grid.Column="1" Content="Sign In" 
+                        Padding="15,8" Background="#24292E" Foreground="White"
+                        BorderThickness="0" Cursor="Hand"
+                        Click="AuthButton_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" 
+                                                CornerRadius="4" 
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Feedback Type -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,12">
+            <TextBlock Text="Type" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <ComboBox x:Name="FeedbackTypeCombo" SelectedIndex="0" Padding="10,8" FontSize="14">
+                <ComboBoxItem Content="🐛 Bug Report - Something isn't working correctly"/>
+                <ComboBoxItem Content="💡 Feature Request - I have an idea for improvement"/>
+                <ComboBoxItem Content="❓ Question - I need help or clarification"/>
+                <ComboBoxItem Content="💬 General Feedback - Other comments or thoughts"/>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,12">
+            <TextBlock Text="Title" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <TextBox x:Name="TitleBox" Padding="10,8" FontSize="14"
+                     MaxLength="100">
+                <TextBox.Style>
+                    <Style TargetType="TextBox">
+                        <Setter Property="BorderBrush" Value="#CCC"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+            <TextBlock Text="Brief summary of the issue or request" FontSize="11" Foreground="#888" Margin="0,3,0,0"/>
+        </StackPanel>
+
+        <!-- Description -->
+        <StackPanel Grid.Row="4" Margin="0,0,0,12">
+            <TextBlock Text="Description" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <TextBox x:Name="DescriptionBox" 
+                     Padding="10,8" FontSize="14"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     Height="120">
+                <TextBox.Style>
+                    <Style TargetType="TextBox">
+                        <Setter Property="BorderBrush" Value="#CCC"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+            <TextBlock Text="Provide as much detail as possible. For bugs: steps to reproduce, expected vs actual behavior." 
+                       FontSize="11" Foreground="#888" Margin="0,3,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Options -->
+        <StackPanel Grid.Row="5" Margin="0,0,0,15">
+            <CheckBox x:Name="IncludeScreenshotCheck" Content="📸 Include screenshot of dashboard (copied to clipboard for pasting)" 
+                      IsChecked="True" Margin="0,0,0,8" FontSize="13"/>
+            <CheckBox x:Name="IncludeSystemInfoCheck" Content="ℹ️ Include system information (app version, OS version)" 
+                      IsChecked="True" FontSize="13"/>
+        </StackPanel>
+
+        <!-- Status -->
+        <Border x:Name="StatusBorder" Grid.Row="6" Background="#FFF4E6" CornerRadius="4" 
+                Padding="12" Margin="0,0,0,15" Visibility="Collapsed">
+            <TextBlock x:Name="StatusText" TextWrapping="Wrap" FontSize="13"/>
+        </Border>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="7">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <Button Grid.Column="0" Content="View Issues" Padding="15,8" 
+                    Click="ViewIssues_Click" ToolTip="Open GitHub Issues page in browser">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="#0078D4"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                    </Style>
+                </Button.Style>
+            </Button>
+            
+            <Button Grid.Column="2" Content="Cancel" Padding="20,10" Margin="0,0,10,0"
+                    Click="Cancel_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#E0E0E0"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" 
+                                            CornerRadius="4" 
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+            
+            <Button x:Name="SubmitButton" Grid.Column="3" Content="Submit Feedback" 
+                    Padding="20,10" Foreground="White"
+                    FontWeight="SemiBold"
+                    IsEnabled="False"
+                    Click="Submit_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#0078D4"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" 
+                                            CornerRadius="4" 
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#CCCCCC"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

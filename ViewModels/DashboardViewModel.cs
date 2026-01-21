@@ -188,6 +188,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
             OpenSetupGuideCommand = new RelayCommand(OnOpenSetupGuide);
             OpenLogFolderCommand = new RelayCommand(OnOpenLogFolder);
             OpenUserGuideCommand = new RelayCommand(OnOpenUserGuide);
+            ShowFeedbackCommand = new RelayCommand(OnShowFeedback);
             StartMigrationCommand = new RelayCommand<Workload>(OnStartMigration);
             LearnMoreCommand = new RelayCommand<string>(OnLearnMore);
             ActionCommand = new RelayCommand<string>(OnAction);
@@ -903,6 +904,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public ICommand OpenSetupGuideCommand { get; }
         public ICommand OpenLogFolderCommand { get; }
         public ICommand OpenUserGuideCommand { get; }
+        public ICommand ShowFeedbackCommand { get; }
         public ICommand StartMigrationCommand { get; }
         public ICommand LearnMoreCommand { get; }
         public ICommand ActionCommand { get; }
@@ -1112,6 +1114,27 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 Instance.LogException(ex, "OnOpenUserGuide");
                 System.Windows.MessageBox.Show(
                     $"Failed to open User Guide: {ex.Message}",
+                    "Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private void OnShowFeedback()
+        {
+            try
+            {
+                Instance.Info("User requested to open Feedback window");
+                var mainWindow = System.Windows.Application.Current.MainWindow;
+                var feedbackWindow = new Views.FeedbackWindow(mainWindow);
+                feedbackWindow.Owner = mainWindow;
+                feedbackWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "OnShowFeedback");
+                System.Windows.MessageBox.Show(
+                    $"Failed to open Feedback window: {ex.Message}",
                     "Error",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);

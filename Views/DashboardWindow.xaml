@@ -182,7 +182,13 @@
                                 Background="#5C2D91"
                                 ToolTip="Open user guide and documentation"
                                 Margin="0,0,5,0" Padding="10,5"/>
-                        <Button Content="�🔄 Refresh" 
+                        <Button Content="💬 Feedback" 
+                                Command="{Binding ShowFeedbackCommand}"
+                                Style="{StaticResource ActionButton}"
+                                Background="#E74C3C"
+                                ToolTip="Submit feedback, report bugs, or suggest features"
+                                Margin="0,0,5,0" Padding="10,5"/>
+                        <Button Content="🔄 Refresh" 
                                 Command="{Binding RefreshCommand}"
                                 Style="{StaticResource ActionButton}"
                                 Background="#106EBE"
