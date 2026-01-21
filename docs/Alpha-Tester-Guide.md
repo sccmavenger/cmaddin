@@ -324,9 +324,26 @@ Include:
 **Q1: What permissions do I need to use this tool?**
 
 A: For full functionality, you need:
-- **Intune/Graph API**: At minimum, `DeviceManagementManagedDevices.Read.All` permission. For full features: `DeviceManagementConfiguration.Read.All`, `DeviceManagementApps.Read.All`
-- **ConfigMgr**: Read access to the Admin Service (typically "Read-Only Analyst" role or higher)
-- **Local**: The tool runs with your current Windows credentials
+
+**Microsoft Graph API (Intune) Permissions:**
+| Permission | Purpose | Required? |
+|------------|---------|----------|
+| `DeviceManagementManagedDevices.Read.All` | Read device inventory, enrollment status, compliance | **Required** |
+| `DeviceManagementConfiguration.Read.All` | Read configuration policies, co-management workloads | Recommended |
+| `DeviceManagementApps.Read.All` | Read app inventory for migration analysis | Recommended |
+| `User.Read` | Read current user profile for authentication | **Required** |
+| `Organization.Read.All` | Read tenant license information (for Autopatch readiness) | Optional |
+
+> **Note:** These permissions require **admin consent**. A Global Administrator must approve these permissions before users can authenticate. The app uses "Microsoft Graph Command Line Tools" app registration.
+
+**ConfigMgr (Configuration Manager) Permissions:**
+- **Admin Service (REST API)**: Read access via "Read-Only Analyst" role or higher
+- **WMI (fallback)**: WMI query access to SMS namespace on site server
+- The tool auto-detects ConfigMgr Console installation and connects using your Windows credentials
+
+**Local Machine:**
+- The tool runs with your current Windows credentials (no elevation required)
+- Outbound HTTPS connectivity to Microsoft Graph API and your ConfigMgr site server
 
 ---
 
