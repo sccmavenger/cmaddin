@@ -352,7 +352,7 @@
                                             BorderBrush="#0078D4" BorderThickness="0,0,0,4">
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
-                                                <Ellipse Width="10" Height="10" Fill="#0078D4" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <Polygon Points="5,0 10,10 0,10" Fill="#0078D4" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                                 <TextBlock Text="Cloud Native" Style="{StaticResource MetricLabel}"/>
                                             </StackPanel>
                                             <TextBlock Text="{Binding DeviceEnrollment.CloudNativeDevices}" 
