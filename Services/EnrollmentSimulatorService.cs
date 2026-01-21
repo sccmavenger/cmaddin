@@ -213,6 +213,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// <summary>
         /// Get device security inventory from ConfigMgr.
         /// NEVER falls back to demo data - logs detailed errors for troubleshooting.
+        /// Cross-references with Intune to accurately detect co-managed devices.
         /// </summary>
         private async Task<List<DeviceSecurityStatus>> GetDeviceSecurityInventoryAsync()
         {
@@ -246,13 +247,85 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.Warning("[ENROLLMENT SIMULATOR]    2. Hardware inventory classes not enabled");
                     Instance.Warning("[ENROLLMENT SIMULATOR]    3. Hardware inventory has not run on clients");
                     Instance.Warning("[ENROLLMENT SIMULATOR]    Check individual query results above for details");
+                    return inventory ?? new List<DeviceSecurityStatus>();
+                }
+                
+                Instance.Info($"[ENROLLMENT SIMULATOR] ✅ Retrieved {inventory.Count} devices from ConfigMgr security inventory");
+                
+                // Cross-reference with Intune to accurately detect co-managed devices
+                // ConfigMgr's SMS_R_System doesn't contain co-management data when using Admin Service
+                if (_graphService != null && _graphService.IsAuthenticated)
+                {
+                    Instance.Info("[ENROLLMENT SIMULATOR] 🔄 Cross-referencing with Intune to detect co-managed devices...");
+                    
+                    try
+                    {
+                        var intuneDevices = await _graphService.GetCachedManagedDevicesAsync();
+                        
+                        // Find co-managed devices (ManagementAgent = ConfigurationManagerClientMdm)
+                        var coManagedDevices = intuneDevices
+                            .Where(d => d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm)
+                            .ToList();
+                        
+                        // Also include pure MDM-enrolled devices (they're also "enrolled in Intune")
+                        var mdmEnrolledDevices = intuneDevices
+                            .Where(d => d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.Mdm)
+                            .ToList();
+                        
+                        // Build lookup sets by device name (case-insensitive)
+                        var coManagedNames = new HashSet<string>(
+                            coManagedDevices
+                                .Where(d => !string.IsNullOrEmpty(d.DeviceName))
+                                .Select(d => d.DeviceName!.ToLowerInvariant()),
+                            StringComparer.OrdinalIgnoreCase);
+                        
+                        var mdmEnrolledNames = new HashSet<string>(
+                            mdmEnrolledDevices
+                                .Where(d => !string.IsNullOrEmpty(d.DeviceName))
+                                .Select(d => d.DeviceName!.ToLowerInvariant()),
+                            StringComparer.OrdinalIgnoreCase);
+                        
+                        int coManagedCount = 0;
+                        int mdmEnrolledCount = 0;
+                        
+                        foreach (var device in inventory)
+                        {
+                            if (!string.IsNullOrEmpty(device.DeviceName))
+                            {
+                                var lowerName = device.DeviceName.ToLowerInvariant();
+                                
+                                if (coManagedNames.Contains(lowerName))
+                                {
+                                    device.IsCoManaged = true;
+                                    device.IsEnrolledInIntune = true;
+                                    coManagedCount++;
+                                }
+                                else if (mdmEnrolledNames.Contains(lowerName))
+                                {
+                                    device.IsEnrolledInIntune = true;
+                                    mdmEnrolledCount++;
+                                }
+                            }
+                        }
+                        
+                        Instance.Info($"[ENROLLMENT SIMULATOR] ✅ Intune cross-reference complete:");
+                        Instance.Info($"[ENROLLMENT SIMULATOR]    Co-managed devices: {coManagedCount}");
+                        Instance.Info($"[ENROLLMENT SIMULATOR]    MDM-only enrolled: {mdmEnrolledCount}");
+                        Instance.Info($"[ENROLLMENT SIMULATOR]    Not in Intune: {inventory.Count - coManagedCount - mdmEnrolledCount}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Instance.Warning($"[ENROLLMENT SIMULATOR] ⚠️ Intune cross-reference failed: {ex.Message}");
+                        Instance.Warning("[ENROLLMENT SIMULATOR]    Continuing with ConfigMgr data only - co-management detection may be incomplete");
+                    }
                 }
                 else
                 {
-                    Instance.Info($"[ENROLLMENT SIMULATOR] ✅ Retrieved {inventory.Count} devices from ConfigMgr security inventory");
+                    Instance.Warning("[ENROLLMENT SIMULATOR] ⚠️ Graph service not available for Intune cross-reference");
+                    Instance.Warning("[ENROLLMENT SIMULATOR]    Co-management detection will rely on ConfigMgr data only");
                 }
                 
-                return inventory ?? new List<DeviceSecurityStatus>();
+                return inventory;
             }
             catch (Exception ex)
             {

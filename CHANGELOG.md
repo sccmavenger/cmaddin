@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Fixed - Enrollment Readiness shows co-managed devices as "unenrolled"
+
+**Bug:** The Enrollment Readiness Analysis was incorrectly showing co-managed devices as "unenrolled" and "ready to enroll" when they are already enrolled in Intune.
+
+**Root Cause:** When using the ConfigMgr Admin Service (REST API), the `SMS_R_System` class doesn't include co-management data. The `IsCoManaged` flag was always `false` because the cross-reference with Intune was not happening in the Enrollment Simulator's device inventory query.
+
+**Fix:** Added Intune cross-reference to `EnrollmentSimulatorService.GetDeviceSecurityInventoryAsync()`:
+- Queries Intune for co-managed devices (`ManagementAgent = ConfigurationManagerClientMdm`)
+- Queries Intune for MDM-enrolled devices (`ManagementAgent = Mdm`)
+- Cross-references by device name to mark ConfigMgr devices as enrolled/co-managed
+- Logs detailed breakdown: co-managed count, MDM-only count, not-in-Intune count
+
+**Files Modified:**
+- `Services/EnrollmentSimulatorService.cs` - Added Intune cross-reference logic
+
+---
+
 ### Fixed - Cloud Readiness Data Validation
 
 **Defensive Data Guards:**
