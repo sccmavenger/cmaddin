@@ -2,10 +2,11 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Submit Feedback" 
-        Height="580" Width="520"
+        Height="650" Width="520"
+        MinHeight="550" MinWidth="450"
         WindowStartupLocation="CenterOwner"
         Background="#F5F5F5"
-        ResizeMode="NoResize">
+        ResizeMode="CanResize">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>

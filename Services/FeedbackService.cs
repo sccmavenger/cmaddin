@@ -27,7 +27,7 @@ namespace ZeroTrustMigrationAddin.Services
         // Create your own at: https://github.com/settings/applications/new
         // Callback URL: Leave empty for Device Flow
         // Required scope: public_repo
-        private const string GitHubClientId = "Ov23liNqfPuxsBDfbVgz"; // Replace with your OAuth App Client ID
+        private const string GitHubClientId = "Ov23liLYexklh7vAjuO9";
         
         private GitHubClient? _authenticatedClient;
         private string? _accessToken;

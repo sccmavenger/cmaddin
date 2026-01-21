@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.23** | January 21, 2026
+**Version 3.17.24** | January 21, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -93,6 +93,7 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ---
 
 ## 🆕 What's New
+
 
 
 
@@ -1304,5 +1305,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-21  
-**Version**: 3.17.23  
+**Version**: 3.17.24  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
