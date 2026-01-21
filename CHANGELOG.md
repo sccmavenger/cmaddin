@@ -1,5 +1,20 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.18] - 2025-01-22
+
+### Fixed - ConfigMgr Site Server Dialog Buttons Cut Off
+
+**Issue:** Connect and Cancel buttons were not visible in the ConfigMgr Site Server dialog - they were cut off at the bottom.
+
+**Root Cause:** Window Height was set to 380px which was insufficient for all content including the 24px margins, header, input field, examples section, info text, and buttons.
+
+**Fix:** Increased dialog Height from 380 to 430 pixels to properly display all content including the action buttons.
+
+**Files Modified:**
+- `Views/ConfigMgrServerDialog.xaml` - Height="380" → Height="430"
+
+---
+
 ## [3.17.16] - 2025-01-22
 
 ### Fixed - CMTrace-Compatible Logging Format
