@@ -150,7 +150,6 @@
                                 Command="{Binding ConnectToGraphCommand}"
                                 Style="{StaticResource ActionButton}"
                                 Background="#107C10"
-                                Visibility="{Binding UseRealData, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"
                                 ToolTip="Connect to Microsoft Graph"
                                 Margin="0,0,5,0" Padding="10,5"/>
                         <Button Content="⚙️ ConfigMgr" 
