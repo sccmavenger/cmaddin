@@ -19,8 +19,12 @@ namespace ZeroTrustMigrationAddin.Models
         // Readiness metrics
         public int TotalDevices { get; set; }
         public int ReadyDevices { get; set; }
-        public int NotReadyDevices => TotalDevices - ReadyDevices;
-        public double ReadinessPercentage => TotalDevices > 0 ? Math.Round((double)ReadyDevices / TotalDevices * 100, 1) : 0;
+        public int NotReadyDevices => Math.Max(0, TotalDevices - ReadyDevices);
+        
+        // Cap percentage at 100% to handle data inconsistencies where ReadyDevices > TotalDevices
+        public double ReadinessPercentage => TotalDevices > 0 
+            ? Math.Min(100, Math.Round((double)ReadyDevices / TotalDevices * 100, 1)) 
+            : 0;
         
         // Visual properties
         public string ReadinessLevel => ReadinessPercentage switch
@@ -90,9 +94,9 @@ namespace ZeroTrustMigrationAddin.Models
     {
         public List<CloudReadinessSignal> Signals { get; set; } = new();
         
-        // Summary metrics
+        // Summary metrics - cap at 100% for safety
         public double OverallReadiness => Signals.Any() 
-            ? Math.Round(Signals.Average(s => s.ReadinessPercentage), 1) 
+            ? Math.Min(100, Math.Round(Signals.Average(s => s.ReadinessPercentage), 1)) 
             : 0;
         
         public int TotalAssessedDevices => Signals.Any() ? Signals.Max(s => s.TotalDevices) : 0;
@@ -144,7 +148,7 @@ namespace ZeroTrustMigrationAddin.Models
             HasTpm20, HasUefi), HasSecureBoot), HasSupportedOs), IsAadJoinedOrHybrid);
         
         public double ReadinessPercentage => TotalDevices > 0 
-            ? Math.Round((double)FullyReady / TotalDevices * 100, 1) 
+            ? Math.Min(100, Math.Round((double)FullyReady / TotalDevices * 100, 1)) 
             : 0;
         
         // Blockers
@@ -170,7 +174,7 @@ namespace ZeroTrustMigrationAddin.Models
         public int FullyReady { get; set; }
         
         public double ReadinessPercentage => TotalDevices > 0 
-            ? Math.Round((double)FullyReady / TotalDevices * 100, 1) 
+            ? Math.Min(100, Math.Round((double)FullyReady / TotalDevices * 100, 1)) 
             : 0;
         
         // Blockers
@@ -194,7 +198,7 @@ namespace ZeroTrustMigrationAddin.Models
         public int FullyReady { get; set; }
         
         public double ReadinessPercentage => TotalDevices > 0 
-            ? Math.Round((double)FullyReady / TotalDevices * 100, 1) 
+            ? Math.Min(100, Math.Round((double)FullyReady / TotalDevices * 100, 1)) 
             : 0;
         
         // Blockers
@@ -218,7 +222,7 @@ namespace ZeroTrustMigrationAddin.Models
         public int FullyReady { get; set; }
         
         public double ReadinessPercentage => TotalDevices > 0 
-            ? Math.Round((double)FullyReady / TotalDevices * 100, 1) 
+            ? Math.Min(100, Math.Round((double)FullyReady / TotalDevices * 100, 1)) 
             : 0;
         
         // Blockers
@@ -242,7 +246,7 @@ namespace ZeroTrustMigrationAddin.Models
         public int FullyReady => Win32AppsReady + MsiAppsReady;
         
         public double ReadinessPercentage => TotalApps > 0 
-            ? Math.Round((double)FullyReady / TotalApps * 100, 1) 
+            ? Math.Min(100, Math.Round((double)FullyReady / TotalApps * 100, 1)) 
             : 0;
         
         // Blockers
@@ -266,7 +270,7 @@ namespace ZeroTrustMigrationAddin.Models
         public int CloudIdentityReady => EntraJoined + HybridJoined;
         
         public double ReadinessPercentage => TotalDevices > 0 
-            ? Math.Round((double)CloudIdentityReady / TotalDevices * 100, 1) 
+            ? Math.Min(100, Math.Round((double)CloudIdentityReady / TotalDevices * 100, 1)) 
             : 0;
         
         // Blockers
@@ -290,7 +294,7 @@ namespace ZeroTrustMigrationAddin.Models
         public int FullyReady { get; set; }
         
         public double ReadinessPercentage => TotalDevices > 0 
-            ? Math.Round((double)FullyReady / TotalDevices * 100, 1) 
+            ? Math.Min(100, Math.Round((double)FullyReady / TotalDevices * 100, 1)) 
             : 0;
         
         // Blockers
