@@ -30,6 +30,11 @@ namespace ZeroTrustMigrationAddin.Services
         private string _lastConnectionError = string.Empty;
         private string _connectionMethod = "None";
         
+        // Device caching to prevent excessive API calls
+        private List<ConfigMgrDevice>? _cachedDevices;
+        private DateTime _deviceCacheExpiration = DateTime.MinValue;
+        private readonly TimeSpan _deviceCacheLifetime = TimeSpan.FromMinutes(5);
+        
         public string ConnectionMethod => _connectionMethod;
         public string LastConnectionError => _lastConnectionError;
         public bool IsUsingWmiFallback => _useWmiFallback;
@@ -497,7 +502,8 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Get Windows 10/11 devices from ConfigMgr that are eligible for Intune enrollment
+        /// Get Windows 10/11 devices from ConfigMgr with caching (5 minute TTL)
+        /// This prevents excessive API calls when multiple services query device data
         /// </summary>
         public async Task<List<ConfigMgrDevice>> GetWindows1011DevicesAsync()
         {
@@ -506,14 +512,41 @@ namespace ZeroTrustMigrationAddin.Services
                 throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
             }
 
+            // Return cached devices if still valid
+            if (_cachedDevices != null && DateTime.Now < _deviceCacheExpiration)
+            {
+                Instance.Info($"[CACHE HIT] Returning {_cachedDevices.Count} cached ConfigMgr devices (expires in {(_deviceCacheExpiration - DateTime.Now).TotalSeconds:F0}s)");
+                return _cachedDevices;
+            }
+
+            Instance.Info("[CACHE MISS] Fetching fresh ConfigMgr device data...");
+            
+            List<ConfigMgrDevice> devices;
             if (_useWmiFallback)
             {
-                return await GetDevicesViaWmiAsync();
+                devices = await GetDevicesViaWmiAsync();
             }
             else
             {
-                return await GetDevicesViaRestApiAsync();
+                devices = await GetDevicesViaRestApiAsync();
             }
+            
+            // Update cache
+            _cachedDevices = devices;
+            _deviceCacheExpiration = DateTime.Now.Add(_deviceCacheLifetime);
+            Instance.Info($"[CACHE UPDATE] Cached {devices.Count} ConfigMgr devices for {_deviceCacheLifetime.TotalMinutes} minutes");
+            
+            return devices;
+        }
+        
+        /// <summary>
+        /// Invalidate the device cache (call when user manually refreshes)
+        /// </summary>
+        public void InvalidateDeviceCache()
+        {
+            _cachedDevices = null;
+            _deviceCacheExpiration = DateTime.MinValue;
+            Instance.Info("[CACHE] Device cache invalidated");
         }
 
         /// <summary>

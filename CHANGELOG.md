@@ -1,5 +1,42 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.20] - 2026-01-21
+
+### Fixed - Graph Button Visibility Inconsistency
+
+**Issue:** Graph button disappeared after authentication while ConfigMgr button stayed visible, causing user confusion.
+
+**Fix:** Removed visibility binding from Graph button so both connection buttons behave consistently - always visible.
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Removed `Visibility` binding from Graph button
+
+---
+
+### Fixed - Excessive ConfigMgr API Calls (Performance)
+
+**Issue:** `GetWindows1011DevicesAsync()` was being called 10-20+ times per data refresh without caching, causing:
+- Unnecessary network traffic to ConfigMgr Admin Service
+- Slower dashboard performance
+- Potential rate limiting
+
+**Root Cause:** Multiple services (CloudReadinessService, DeviceReadinessService, GraphDataService) each called `GetWindows1011DevicesAsync()` independently without caching.
+
+**Fix:** Added 5-minute TTL caching to `ConfigMgrAdminService.GetWindows1011DevicesAsync()`:
+- First call fetches from API and caches result
+- Subsequent calls within 5 minutes return cached data
+- Cache logs show `[CACHE HIT]` vs `[CACHE MISS]` for diagnostics
+- Added `InvalidateDeviceCache()` method for manual refresh scenarios
+
+**Performance Impact:**
+- Before: ~20 API calls per refresh
+- After: 1 API call per 5 minutes (unless manually refreshed)
+
+**Files Modified:**
+- `Services/ConfigMgrAdminService.cs` - Added caching fields and logic to `GetWindows1011DevicesAsync()`
+
+---
+
 ## [3.17.18] - 2025-01-22
 
 ### Fixed - ConfigMgr Site Server Dialog Buttons Cut Off
