@@ -248,7 +248,7 @@
             <h2><span class="emoji">🎯</span> Overview</h2>
             
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.33 - January 22, 2026</strong>
+                <strong>🎉 Version 3.17.34 - January 22, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -911,7 +911,7 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.33 - January 22, 2026</strong>
+                <strong>🎉 Version 3.17.34 - January 22, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -935,7 +935,7 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                 <strong>💡 Important:</strong> The "Total Devices" count for most signals comes from ConfigMgr, as these are the devices you're planning to migrate. Intune/Graph data is used to cross-reference enrollment and registration status.
             </div>
 
-            <h3>🚀 Autopilot Registration</h3>
+            <h3 id="signal-autopilot">🚀 Autopilot Registration</h3>
             <p><strong>What it measures:</strong> ConfigMgr devices that are registered to Windows Autopilot for Zero-Touch provisioning.</p>
             
             <table>
@@ -970,7 +970,7 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                 <strong>⚠️ Note:</strong> TPM 2.0 is NOT required for Autopilot registration. TPM 2.0 is required for Windows 11, BitLocker, and Windows Hello for Business, but devices can register with Autopilot without TPM 2.0.
             </div>
 
-            <h3>🪟 Windows 11 Readiness</h3>
+            <h3 id="signal-windows11">🪟 Windows 11 Readiness</h3>
             <p><strong>What it measures:</strong> Windows 10 devices that meet the hardware requirements for Windows 11 upgrade.</p>
             
             <table>
@@ -1005,7 +1005,7 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                 <strong>💡 Tip:</strong> If you see 0% readiness but have devices, check if TPM hardware inventory is enabled in ConfigMgr. Devices without TPM data are counted as "not ready."
             </div>
 
-            <h3>☁️ Cloud-Native Readiness</h3>
+            <h3 id="signal-cloud-native">☁️ Cloud-Native Readiness</h3>
             <p><strong>What it measures:</strong> Devices ready for full cloud-native management (Intune-only, no ConfigMgr dependency). This includes devices that can safely have their ConfigMgr agent removed.</p>
             
             <p><strong>A device is "Cloud-Native Ready" if it meets ANY of these criteria:</strong></p>
@@ -1100,7 +1100,7 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                 <strong>💡 Tip:</strong> The workload authority data comes from Graph API <code>configurationManagerClientEnabledFeatures</code>. If a property is <code>true</code>, ConfigMgr manages that workload. If <code>false</code>, Intune manages it.
             </div>
 
-            <h3>🔐 Identity Readiness</h3>
+            <h3 id="signal-identity">🔐 Identity Readiness</h3>
             <p><strong>What it measures:</strong> Device identity posture for cloud services (Entra ID Join, Hybrid Join).</p>
             
             <p><strong>Blockers Checked:</strong></p>
@@ -1109,7 +1109,7 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                 <li><strong>Workgroup Devices (High):</strong> Not domain-joined. Consider Entra ID Join for these devices.</li>
             </ul>
 
-            <h3>🔄 Windows Update for Business (WUfB) Readiness</h3>
+            <h3 id="signal-wufb">🔄 Windows Update for Business (WUfB) Readiness</h3>
             <p><strong>What it measures:</strong> Devices ready to receive updates via Windows Update for Business instead of WSUS/ConfigMgr.</p>
             
             <p><strong>Requirements:</strong></p>
@@ -1119,7 +1119,7 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                 <li>Internet connectivity to Windows Update</li>
             </ul>
 
-            <h3>🛡️ Endpoint Security Readiness</h3>
+            <h3 id="signal-endpoint-security">🛡️ Endpoint Security Readiness</h3>
             <p><strong>What it measures:</strong> Devices ready for Intune Endpoint Security management (Defender, Compliance, Conditional Access).</p>
             
             <p><strong>Requirements:</strong></p>
@@ -1372,7 +1372,7 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
         </section>
 
         <footer>
-            <p>Zero Trust Migration Journey Add-in v3.17.33 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Zero Trust Migration Journey Add-in v3.17.34 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>

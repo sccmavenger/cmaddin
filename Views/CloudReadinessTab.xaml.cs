@@ -383,6 +383,47 @@ namespace ZeroTrustMigrationAddin.Views
             }
         }
 
+        private void AdminGuideHelpButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string signalId)
+            {
+                try
+                {
+                    // Build the anchor based on signal ID
+                    string anchor = $"#signal-{signalId}";
+                    
+                    // Look for AdminUserGuide.html in the application directory
+                    string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    string userGuidePath = System.IO.Path.Combine(appDirectory, "AdminUserGuide.html");
+                    
+                    if (System.IO.File.Exists(userGuidePath))
+                    {
+                        // Open with anchor - browsers will navigate to the section
+                        string fullPath = userGuidePath + anchor;
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = fullPath,
+                            UseShellExecute = true
+                        });
+                        Instance.Info($"[CLOUD READINESS TAB] Opened Admin Guide: {fullPath}");
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            $"Admin User Guide not found.\n\nExpected location: {userGuidePath}",
+                            "User Guide Not Found",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Information);
+                        Instance.Warning($"[CLOUD READINESS TAB] Admin Guide not found: {userGuidePath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Instance.Warning($"[CLOUD READINESS TAB] Failed to open Admin Guide: {ex.Message}");
+                }
+            }
+        }
+
         /// <summary>
         /// Helper to find a child element by name or type.
         /// </summary>
