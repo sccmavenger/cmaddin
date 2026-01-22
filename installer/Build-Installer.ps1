@@ -90,17 +90,17 @@ if ($BuildApp) {
     Set-Location ".."
     
     Write-Host "Cleaning previous build..."
-    & dotnet clean -c Release
+    & dotnet clean ZeroTrustMigrationAddin.csproj -c Release
     
     Write-Host "Building application..."
-    & dotnet build -c Release
+    & dotnet build ZeroTrustMigrationAddin.csproj -c Release
     if ($LASTEXITCODE -ne 0) {
         Write-Failure "Application build failed"
         exit 1
     }
     
     Write-Host "Publishing application..."
-    & dotnet publish -c Release -r win-x64 --self-contained true
+    & dotnet publish ZeroTrustMigrationAddin.csproj -c Release -r win-x64 --self-contained true
     if ($LASTEXITCODE -ne 0) {
         Write-Failure "Application publish failed"
         exit 1
