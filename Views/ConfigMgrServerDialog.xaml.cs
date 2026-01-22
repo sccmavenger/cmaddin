@@ -1,4 +1,5 @@
 using System.Windows;
+using ZeroTrustMigrationAddin.Services;
 
 namespace ZeroTrustMigrationAddin.Views
 {
@@ -21,6 +22,15 @@ namespace ZeroTrustMigrationAddin.Views
         public ConfigMgrServerDialog()
         {
             InitializeComponent();
+            
+            // Pre-populate with saved server from last session
+            var savedServer = ConfigMgrAdminService.GetSavedSiteServer();
+            if (!string.IsNullOrEmpty(savedServer))
+            {
+                ServerNameTextBox.Text = savedServer;
+                ServerNameTextBox.SelectAll();
+            }
+            
             ServerNameTextBox.Focus();
         }
 
