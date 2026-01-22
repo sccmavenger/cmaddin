@@ -190,6 +190,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
             OpenSetupGuideCommand = new RelayCommand(OnOpenSetupGuide);
             OpenLogFolderCommand = new RelayCommand(OnOpenLogFolder);
             OpenUserGuideCommand = new RelayCommand(OnOpenUserGuide);
+            OpenUserGuideSectionCommand = new RelayCommand<string>(OnOpenUserGuideSection);
             ShowFeedbackCommand = new RelayCommand(OnShowFeedback);
             StartMigrationCommand = new RelayCommand<Workload>(OnStartMigration);
             LearnMoreCommand = new RelayCommand<string>(OnLearnMore);
@@ -916,6 +917,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public ICommand OpenSetupGuideCommand { get; }
         public ICommand OpenLogFolderCommand { get; }
         public ICommand OpenUserGuideCommand { get; }
+        public ICommand OpenUserGuideSectionCommand { get; }
         public ICommand ShowFeedbackCommand { get; }
         public ICommand StartMigrationCommand { get; }
         public ICommand LearnMoreCommand { get; }
@@ -1129,6 +1131,36 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     "Error",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private void OnOpenUserGuideSection(string? sectionId)
+        {
+            try
+            {
+                Instance.Info($"User requested help for section: {sectionId}");
+                
+                string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string userGuidePath = System.IO.Path.Combine(appDirectory, "AdminUserGuide.html");
+                
+                if (System.IO.File.Exists(userGuidePath))
+                {
+                    string url = !string.IsNullOrEmpty(sectionId) ? $"{userGuidePath}#{sectionId}" : userGuidePath;
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    });
+                    Instance.Info($"Opened User Guide at section: {sectionId}");
+                }
+                else
+                {
+                    OnOpenUserGuide();
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "OnOpenUserGuideSection");
             }
         }
 
