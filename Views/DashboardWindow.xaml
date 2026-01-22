@@ -613,8 +613,9 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Migration Impact Forecast -->
-                        <views:MigrationImpactCard x:Name="MigrationImpactCard" Margin="0,0,0,15"/>
+                        <!-- Migration Impact Forecast - HIDDEN per ADR-007: projected values need citable sources -->
+                        <views:MigrationImpactCard x:Name="MigrationImpactCard" Margin="0,0,0,15"
+                                                   Visibility="{Binding ShowMigrationImpactCard}"/>
 
                         <!-- 3a. Generate Migration Plan Prompt (shows when no plan exists) -->
                         <Border Style="{StaticResource SectionCard}"

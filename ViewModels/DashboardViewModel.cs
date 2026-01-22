@@ -87,6 +87,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private Visibility _showApplicationsTab = Visibility.Visible;
         private Visibility _showAIActionsTab = Visibility.Visible;
         private Visibility _showCloudReadinessTab = Visibility.Visible;
+        private Visibility _showMigrationImpactCard = Visibility.Collapsed; // Hidden per ADR-007
 
         public DashboardViewModel(TelemetryService telemetryService, TabVisibilityOptions? tabVisibilityOptions = null)
         {
@@ -103,6 +104,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 _showApplicationsTab = tabVisibilityOptions.ShowApplicationsTab;
                 _showAIActionsTab = tabVisibilityOptions.ShowAIActionsTab;
                 _showCloudReadinessTab = tabVisibilityOptions.ShowCloudReadinessTab;
+                _showMigrationImpactCard = tabVisibilityOptions.ShowMigrationImpactCard;
             }
             
             // Initialize AI Recommendation Service - Azure OpenAI is now required
@@ -438,6 +440,16 @@ namespace ZeroTrustMigrationAddin.ViewModels
         {
             get => _showCloudReadinessTab;
             set => SetProperty(ref _showCloudReadinessTab, value);
+        }
+
+        /// <summary>
+        /// Shows or hides the Migration Impact Forecast card.
+        /// Hidden by default per ADR-007: projected values use hardcoded estimates without citable sources.
+        /// </summary>
+        public Visibility ShowMigrationImpactCard
+        {
+            get => _showMigrationImpactCard;
+            set => SetProperty(ref _showMigrationImpactCard, value);
         }
 
         // Phase 1 AI Enhancement Properties

@@ -42,6 +42,13 @@ namespace ZeroTrustMigrationAddin.Models
         public Visibility ShowCloudReadinessTab { get; set; } = Visibility.Visible;
 
         /// <summary>
+        /// Shows or hides the Migration Impact Forecast card on the Overview tab.
+        /// Hidden by default per ADR-007: projected values use hardcoded estimates without citable sources.
+        /// TODO: Rework to show only current state or use Microsoft-documented benchmarks.
+        /// </summary>
+        public Visibility ShowMigrationImpactCard { get; set; } = Visibility.Collapsed;
+
+        /// <summary>
         /// Parse command-line arguments to determine tab visibility.
         /// 
         /// Usage examples:
@@ -87,6 +94,10 @@ namespace ZeroTrustMigrationAddin.Models
                             case "readiness":
                                 options.ShowCloudReadinessTab = Visibility.Collapsed;
                                 break;
+                            case "migrationimpact":
+                            case "impact":
+                                options.ShowMigrationImpactCard = Visibility.Collapsed;
+                                break;
                         }
                     }
                 }
@@ -101,6 +112,7 @@ namespace ZeroTrustMigrationAddin.Models
                     options.ShowApplicationsTab = Visibility.Collapsed;
                     options.ShowAIActionsTab = Visibility.Collapsed;
                     options.ShowCloudReadinessTab = Visibility.Collapsed;
+                    options.ShowMigrationImpactCard = Visibility.Collapsed;
 
                     // Then show only specified tabs
                     var tabsToShow = lowerArg.Substring(lowerArg.IndexOf(':') + 1).Split(',');
@@ -129,6 +141,10 @@ namespace ZeroTrustMigrationAddin.Models
                             case "cloudreadiness":
                             case "readiness":
                                 options.ShowCloudReadinessTab = Visibility.Visible;
+                                break;
+                            case "migrationimpact":
+                            case "impact":
+                                options.ShowMigrationImpactCard = Visibility.Visible;
                                 break;
                         }
                     }
