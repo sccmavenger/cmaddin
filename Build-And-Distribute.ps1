@@ -1134,6 +1134,61 @@ if (Test-Path $previousPackage) {
 }
 
 # ============================================
+# MSI INSTALLER (OPTIONAL)
+# ============================================
+
+$msiPath = $null
+$installerScript = Join-Path $scriptDir "installer\Build-Installer.ps1"
+if (Test-Path $installerScript) {
+    Write-Host "📦 MSI INSTALLER BUILD" -ForegroundColor Magenta
+    Write-Host "═══════════════════════════════════════" -ForegroundColor Magenta
+    Write-Host ""
+    
+    try {
+        # Check if WiX is installed
+        $wixCheck = & wix --version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[STEP 1/2] Building MSI installer..." -ForegroundColor Yellow
+            
+            Push-Location (Join-Path $scriptDir "installer")
+            
+            # Run the installer build script (skip app build since we already built)
+            & .\Build-Installer.ps1 -SkipHeat -OutputPath "..\builds"
+            
+            Pop-Location
+            
+            # Find the MSI file
+            $msiFile = Get-ChildItem -Path (Join-Path $scriptDir "builds") -Filter "ZeroTrustMigrationAddin.msi" | Select-Object -First 1
+            
+            if ($msiFile) {
+                # Rename with version
+                $versionedMsiName = "ZeroTrustMigrationAddin-v$newVersion.msi"
+                $msiPath = Join-Path $scriptDir $versionedMsiName
+                Copy-Item $msiFile.FullName -Destination $msiPath -Force
+                
+                $msiSize = [math]::Round((Get-Item $msiPath).Length / 1MB, 2)
+                Write-Host "   ✅ MSI created: $versionedMsiName ($msiSize MB)" -ForegroundColor Green
+                
+                Write-Host ""
+                Write-Host "[STEP 2/2] Copying MSI to distribution..." -ForegroundColor Yellow
+                if ($DistributionPath -and (Test-Path $DistributionPath)) {
+                    Copy-Item $msiPath -Destination $DistributionPath -Force
+                    Write-Host "   ✅ MSI copied to: $DistributionPath" -ForegroundColor Green
+                }
+            } else {
+                Write-Host "   ⚠️ MSI file not found after build" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "   ⚠️ WiX Toolset not installed - skipping MSI build" -ForegroundColor Yellow
+            Write-Host "   Install with: dotnet tool install --global wix" -ForegroundColor Gray
+        }
+    } catch {
+        Write-Host "   ⚠️ MSI build failed: $_" -ForegroundColor Yellow
+    }
+    Write-Host ""
+}
+
+# ============================================
 # GITHUB RELEASE (OPTIONAL)
 # ============================================
 
@@ -1201,7 +1256,16 @@ Package Size: $packageSize MB
         $releaseArgs = @(
             "release", "create", "v$newVersion",
             $packagePath,
-            $manifestPath,
+            $manifestPath
+        )
+        
+        # Add MSI to release if it exists
+        if ($msiPath -and (Test-Path $msiPath)) {
+            $releaseArgs += $msiPath
+            Write-Host "   📦 Including MSI installer in release" -ForegroundColor Cyan
+        }
+        
+        $releaseArgs += @(
             "--title", "Zero Trust Migration Journey Add-in v$newVersion",
             "--notes-file", $notesFile
         )
