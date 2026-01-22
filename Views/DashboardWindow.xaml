@@ -335,18 +335,21 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Total Devices - No trend line (it's the sum) -->
-                                    <Border Grid.Column="0" Background="#F8F8F8" CornerRadius="6" Padding="12" Margin="0,0,5,0">
+                                    <!-- Total Devices from ConfigMgr - No trend line (it's the baseline) -->
+                                    <Border Grid.Column="0" Background="#F8F8F8" CornerRadius="6" Padding="12" Margin="0,0,5,0"
+                                            ToolTip="Windows 10/11 workstations from ConfigMgr.&#x0a;This is your migration baseline - the devices you're moving to cloud management.&#x0a;&#x0a;Note: This count may differ from Intune if devices were added directly to Intune or removed from ConfigMgr.">
                                         <StackPanel>
-                                            <TextBlock Text="Total Windows 10/11" Style="{StaticResource MetricLabel}"/>
+                                            <TextBlock Text="ConfigMgr Windows 10/11" Style="{StaticResource MetricLabel}"/>
                                             <TextBlock Text="{Binding DeviceEnrollment.TotalDevices}" 
                                                        Style="{StaticResource MetricValue}" FontSize="22"/>
+                                            <TextBlock Text="📋 Migration baseline" FontSize="9" Foreground="#666" FontStyle="Italic"/>
                                         </StackPanel>
                                     </Border>
 
                                     <!-- Comanaged - GREEN line in chart -->
                                     <Border Grid.Column="1" Background="#F0FFF0" CornerRadius="6" Padding="12" Margin="5,0,5,0"
-                                            BorderBrush="#107C10" BorderThickness="0,0,0,4">
+                                            BorderBrush="#107C10" BorderThickness="0,0,0,4"
+                                            ToolTip="Devices managed by BOTH ConfigMgr AND Intune.&#x0a;Detected via Intune ManagementAgent = ConfigurationManagerClientMdm.&#x0a;&#x0a;These devices have the ConfigMgr client installed AND are enrolled in Intune for co-management workloads.">
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <Ellipse Width="10" Height="10" Fill="#107C10" Margin="0,0,6,0" VerticalAlignment="Center"/>
@@ -354,28 +357,29 @@
                                             </StackPanel>
                                             <TextBlock Text="{Binding DeviceEnrollment.IntuneEnrolledDevices}" 
                                                        Style="{StaticResource MetricValue}" FontSize="22" Foreground="#107C10"/>
-                                            <TextBlock Text="📈 Tracked in chart" FontSize="9" Foreground="#107C10" FontStyle="Italic"/>
+                                            <TextBlock Text="📈 ConfigMgr + Intune" FontSize="9" Foreground="#107C10" FontStyle="Italic"/>
                                         </StackPanel>
                                     </Border>
 
                                     <!-- Cloud Native - BLUE (informational, not in trend) -->
                                     <Border Grid.Column="2" Background="#F0F8FF" CornerRadius="6" Padding="12" Margin="5,0,5,0"
-                                            BorderBrush="#0078D4" BorderThickness="0,0,0,4">
+                                            BorderBrush="#0078D4" BorderThickness="0,0,0,4"
+                                            ToolTip="Windows 10/11 devices in Intune that have NO ConfigMgr record.&#x0a;These are already fully cloud-managed (Entra joined + Intune MDM).&#x0a;&#x0a;These devices were either:&#x0a;• Enrolled directly into Intune (Autopilot, user enrollment)&#x0a;• Removed from ConfigMgr after migration">
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <Polygon Points="5,0 10,10 0,10" Fill="#0078D4" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                                 <TextBlock Text="Cloud Native" Style="{StaticResource MetricLabel}"/>
                                             </StackPanel>
                                             <TextBlock Text="{Binding DeviceEnrollment.CloudNativeDevices}" 
-                                                       Style="{StaticResource MetricValue}" FontSize="22" Foreground="#0078D4"
-                                                       ToolTip="Entra joined + Intune managed, no ConfigMgr record"/>
-                                            <TextBlock Text="☁️ Intune only" FontSize="9" Foreground="#0078D4" FontStyle="Italic"/>
+                                                       Style="{StaticResource MetricValue}" FontSize="22" Foreground="#0078D4"/>
+                                            <TextBlock Text="☁️ Intune only (no ConfigMgr)" FontSize="9" Foreground="#0078D4" FontStyle="Italic"/>
                                         </StackPanel>
                                     </Border>
 
                                     <!-- ConfigMgr Only - RED/ORANGE line in chart -->
                                     <Border Grid.Column="3" Background="#FFF5F5" CornerRadius="6" Padding="12" Margin="5,0,0,0"
-                                            BorderBrush="#D13438" BorderThickness="0,0,0,4">
+                                            BorderBrush="#D13438" BorderThickness="0,0,0,4"
+                                            ToolTip="ConfigMgr devices NOT yet enrolled in Intune.&#x0a;These are your migration candidates.&#x0a;&#x0a;To migrate these devices:&#x0a;• Enable co-management in ConfigMgr&#x0a;• Ensure Hybrid Azure AD Join is configured&#x0a;• Configure co-management workloads">
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <Rectangle Width="10" Height="10" Fill="#D13438" Margin="0,0,6,0" VerticalAlignment="Center"/>
@@ -383,7 +387,7 @@
                                             </StackPanel>
                                             <TextBlock Text="{Binding DeviceEnrollment.ConfigMgrOnlyDevices}" 
                                                        Style="{StaticResource MetricValue}" FontSize="22" Foreground="#D13438"/>
-                                            <TextBlock Text="📉 Tracked in chart" FontSize="9" Foreground="#D13438" FontStyle="Italic"/>
+                                            <TextBlock Text="📉 Not in Intune yet" FontSize="9" Foreground="#D13438" FontStyle="Italic"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
