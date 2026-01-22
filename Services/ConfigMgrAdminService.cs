@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -12,6 +13,76 @@ using static ZeroTrustMigrationAddin.Services.FileLogger;
 
 namespace ZeroTrustMigrationAddin.Services
 {
+    /// <summary>
+    /// Configuration model for ConfigMgr connection settings.
+    /// Stored in %LOCALAPPDATA%\ZeroTrustMigrationAddin\configmgr-settings.json
+    /// </summary>
+    public class ConfigMgrSettings
+    {
+        public string? SiteServer { get; set; }
+        public string? AdminServiceUrl { get; set; }
+        public DateTime? LastConnected { get; set; }
+        public bool AutoConnect { get; set; } = true;
+
+        private static string ConfigPath => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ZeroTrustMigrationAddin",
+            "configmgr-settings.json");
+
+        public static ConfigMgrSettings Load()
+        {
+            try
+            {
+                if (File.Exists(ConfigPath))
+                {
+                    var json = File.ReadAllText(ConfigPath);
+                    var settings = JsonSerializer.Deserialize<ConfigMgrSettings>(json);
+                    if (settings != null)
+                    {
+                        Instance.Info($"[CONFIGMGR] Loaded saved settings - Site Server: {settings.SiteServer ?? "(none)"}");
+                        return settings;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[CONFIGMGR] Failed to load settings: {ex.Message}");
+            }
+
+            return new ConfigMgrSettings();
+        }
+
+        public void Save()
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(ConfigPath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory!);
+                }
+
+                var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(ConfigPath, json);
+
+                Instance.Info($"[CONFIGMGR] Settings saved - Site Server: {SiteServer}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CONFIGMGR] Failed to save settings: {ex.Message}");
+            }
+        }
+
+        public void Clear()
+        {
+            SiteServer = null;
+            AdminServiceUrl = null;
+            LastConnected = null;
+            Save();
+            Instance.Info("[CONFIGMGR] Settings cleared");
+        }
+    }
+
     /// <summary>
     /// ConfigMgr Admin Service integration for querying device inventory
     /// Supports both Admin Service (REST API) and WMI (SDK fallback)
@@ -26,6 +97,9 @@ namespace ZeroTrustMigrationAddin.Services
         private bool _isAuthenticated = false;
         private bool _useWmiFallback = false;
         
+        // Settings persistence
+        private static ConfigMgrSettings? _savedSettings;
+        
         // Connection diagnostics
         private string _lastConnectionError = string.Empty;
         private string _connectionMethod = "None";
@@ -38,6 +112,16 @@ namespace ZeroTrustMigrationAddin.Services
         public string ConnectionMethod => _connectionMethod;
         public string LastConnectionError => _lastConnectionError;
         public bool IsUsingWmiFallback => _useWmiFallback;
+        
+        /// <summary>
+        /// Gets the saved ConfigMgr settings (site server URL, etc.)
+        /// </summary>
+        public static ConfigMgrSettings SavedSettings => _savedSettings ??= ConfigMgrSettings.Load();
+        
+        /// <summary>
+        /// Gets the last saved site server URL, if any
+        /// </summary>
+        public static string? GetSavedSiteServer() => SavedSettings.SiteServer;
 
         public ConfigMgrAdminService()
         {
@@ -329,6 +413,9 @@ namespace ZeroTrustMigrationAddin.Services
                     // Log environment details
                     LogEnvironmentInfo();
                     
+                    // Save settings for next session
+                    SaveConnectionSettings();
+                    
                     return true;
                 }
                 else
@@ -483,6 +570,10 @@ namespace ZeroTrustMigrationAddin.Services
                             _connectionMethod = "WMI Fallback (ConfigMgr SDK)";
                             _lastConnectionError = string.Empty; // Clear error - WMI worked
                             System.Diagnostics.Debug.WriteLine($"✅ WMI fallback SUCCESSFUL: {_siteServer}, Site: {_siteCode}");
+                            
+                            // Save settings for next session
+                            SaveConnectionSettings();
+                            
                             return true;
                         }
                     }
@@ -499,6 +590,26 @@ namespace ZeroTrustMigrationAddin.Services
                     return false;
                 }
             });
+        }
+
+        /// <summary>
+        /// Saves the current connection settings for next session
+        /// </summary>
+        private void SaveConnectionSettings()
+        {
+            try
+            {
+                var settings = SavedSettings;
+                settings.SiteServer = _siteServer;
+                settings.AdminServiceUrl = _adminServiceUrl;
+                settings.LastConnected = DateTime.Now;
+                settings.AutoConnect = true;
+                settings.Save();
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[CONFIGMGR] Failed to save connection settings: {ex.Message}");
+            }
         }
 
         /// <summary>
