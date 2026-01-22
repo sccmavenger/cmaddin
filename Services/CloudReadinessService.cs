@@ -125,8 +125,8 @@ namespace ZeroTrustMigrationAddin.Services
             var signal = new CloudReadinessSignal
             {
                 Id = "autopilot",
-                Name = "Autopilot Registration",
-                Description = "ConfigMgr devices registered to Windows Autopilot",
+                Name = "Autopilot Readiness",
+                Description = "Ready for Windows Autopilot deployment",
                 Icon = "🚀",
                 RelatedWorkload = "Device Provisioning",
                 LearnMoreUrl = "https://learn.microsoft.com/mem/autopilot/windows-autopilot"
@@ -428,7 +428,7 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Id = "cloud-native",
                 Name = "Cloud-Native Readiness",
-                Description = "Ready for cloud-only management (Entra + Intune, no ConfigMgr)",
+                Description = "Ready for cloud-only management",
                 Icon = "☁️",
                 RelatedWorkload = "Device Management",
                 LearnMoreUrl = "https://learn.microsoft.com/mem/intune/fundamentals/cloud-native-endpoints-overview"
@@ -613,7 +613,7 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Id = "identity",
                 Name = "Identity Readiness",
-                Description = "Ready for cloud identity (Entra ID/Azure AD)",
+                Description = "Ready for cloud identity (Entra ID)",
                 Icon = "🔐",
                 RelatedWorkload = "Identity Management",
                 LearnMoreUrl = "https://learn.microsoft.com/entra/identity/devices/overview"
@@ -734,7 +734,7 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Id = "wufb",
                 Name = "Update Management Readiness",
-                Description = "Ready for Windows Update for Business (WSUS/SCCM → WUfB)",
+                Description = "Ready for Windows Update for Business",
                 Icon = "🔄",
                 RelatedWorkload = "Update Management",
                 LearnMoreUrl = "https://learn.microsoft.com/windows/deployment/update/waas-manage-updates-wufb"
@@ -868,7 +868,7 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Id = "endpoint-security",
                 Name = "Endpoint Security Readiness",
-                Description = "Ready for Microsoft Defender for Endpoint (SCEP → MDE)",
+                Description = "Ready for Microsoft Defender for Endpoint",
                 Icon = "🛡️",
                 RelatedWorkload = "Endpoint Security",
                 LearnMoreUrl = "https://learn.microsoft.com/microsoft-365/security/defender-endpoint/microsoft-defender-endpoint"
