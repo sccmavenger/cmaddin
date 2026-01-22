@@ -1,5 +1,30 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.35] - 2026-01-22
+
+### Fixed - Cloud Readiness Signal UX Consistency 🎨
+
+**Issue:** Signal names and descriptions were different between mock data (disconnected mode) and live data (connected mode), causing confusing UX where labels changed after connecting to Graph/ConfigMgr.
+
+**What Changed:**
+- Standardized signal names between mock and live data
+- Shortened descriptions for cleaner UX (removed technical parentheticals)
+- Ensures consistent visual experience regardless of connection state
+
+**Before vs After:**
+| Signal | Live (Before) | Live (After) |
+|--------|---------------|--------------|
+| Autopilot | "Autopilot Registration" | "Autopilot Readiness" |
+| Cloud-Native | "Ready for cloud-only management (Entra + Intune, no ConfigMgr)" | "Ready for cloud-only management" |
+| Identity | "Ready for cloud identity (Entra ID/Azure AD)" | "Ready for cloud identity (Entra ID)" |
+| WUfB | "Ready for Windows Update for Business (WSUS/SCCM → WUfB)" | "Ready for Windows Update for Business" |
+| Endpoint Security | "Ready for Microsoft Defender for Endpoint (SCEP → MDE)" | "Ready for Microsoft Defender for Endpoint" |
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Updated signal Name and Description values
+
+---
+
 ## [3.17.34] - 2026-01-22
 
 ### Added - Contextual Help Icons on Cloud Readiness Signal Cards ❓
