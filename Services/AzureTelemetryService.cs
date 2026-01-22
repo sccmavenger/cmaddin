@@ -325,7 +325,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// - UNC paths (\\server\share)
         /// - Local paths with usernames (C:\Users\username)
         /// - Email addresses
-        /// - IP addresses
+        /// - IP addresses (but NOT version numbers like 3.17.36.0)
         /// - GUIDs (tenant IDs, device IDs)
         /// - Domain\username format
         /// </summary>
@@ -345,8 +345,10 @@ namespace ZeroTrustMigrationAddin.Services
             // Remove email addresses
             sanitized = Regex.Replace(sanitized, @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "[EMAIL]");
 
-            // Remove IP addresses
-            sanitized = Regex.Replace(sanitized, @"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", "[IP]");
+            // Remove IP addresses - only match patterns that look like real IPs (first octet >= 10)
+            // This avoids matching version numbers like 3.17.36.0 which start with small numbers
+            // Matches: 10.x.x.x, 172.x.x.x, 192.x.x.x and other IPs starting with 10-255
+            sanitized = Regex.Replace(sanitized, @"\b(?:1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d)\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", "[IP]");
 
             // Remove GUIDs
             sanitized = Regex.Replace(sanitized, @"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b", "[GUID]");
