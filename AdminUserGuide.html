@@ -1006,8 +1006,62 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
             </div>
 
             <h3>☁️ Cloud-Native Readiness</h3>
-            <p><strong>What it measures:</strong> Devices ready for full cloud-native management (Intune-only, no ConfigMgr dependency).</p>
+            <p><strong>What it measures:</strong> Devices ready for full cloud-native management (Intune-only, no ConfigMgr dependency). This includes devices that can safely have their ConfigMgr agent removed.</p>
             
+            <p><strong>A device is "Cloud-Native Ready" if it meets ANY of these criteria:</strong></p>
+            <ol>
+                <li><strong>Already cloud-native</strong> - Entra ID joined, Intune-only, no ConfigMgr client</li>
+                <li><strong>Entra ID joined with Intune</strong> - Cloud identity ready, no hybrid dependency</li>
+                <li><strong>Co-managed with ALL workloads on Intune</strong> - Can remove ConfigMgr client (NEW!)</li>
+            </ol>
+
+            <h4>Co-Management Workload Authority</h4>
+            <p>For co-managed devices, the dashboard queries the Graph API to determine which workloads are managed by ConfigMgr vs. Intune. A device with ALL 8 workloads on Intune is considered "ready for cloud-native" because the ConfigMgr agent can be safely removed.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Workload</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Compliance Policy</strong></td>
+                        <td>Device compliance evaluation and conditional access</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Device Configuration</strong></td>
+                        <td>Configuration profiles and settings management</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Resource Access</strong></td>
+                        <td>Wi-Fi, VPN, email, and certificate profiles</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Endpoint Protection</strong></td>
+                        <td>Windows Defender Antivirus and Firewall settings</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Windows Update for Business</strong></td>
+                        <td>Feature and quality update policies</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Office Apps</strong></td>
+                        <td>Microsoft 365 Apps deployment and updates</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Modern Apps</strong></td>
+                        <td>Win32 and LOB application deployment</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Inventory</strong></td>
+                        <td>Hardware and software inventory collection</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>Data Sources</h4>
             <table>
                 <thead>
                     <tr>
@@ -1023,12 +1077,28 @@ ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
                         <td>ConfigMgr Admin Service</td>
                     </tr>
                     <tr>
+                        <td><strong>Workload Authority</strong></td>
+                        <td>Per-device workload management state (ConfigMgr vs Intune)</td>
+                        <td>Graph API: <code>configurationManagerClientEnabledFeatures</code></td>
+                    </tr>
+                    <tr>
                         <td><strong>Ready Devices</strong></td>
-                        <td>Devices enrolled in Intune AND Entra ID joined (not Hybrid)</td>
+                        <td>Cloud-native + Entra-only + Co-managed with all workloads on Intune</td>
                         <td>Graph API (Intune Managed Devices)</td>
                     </tr>
                 </tbody>
             </table>
+
+            <h4>Blockers Checked</h4>
+            <ul>
+                <li><strong>Co-Managed with Workloads on ConfigMgr (High):</strong> Device has one or more workloads still managed by ConfigMgr. Move workloads to Intune before removing ConfigMgr agent.</li>
+                <li><strong>Hybrid Joined (Medium):</strong> Device is hybrid Entra ID joined. Consider migration path to Entra ID join-only.</li>
+                <li><strong>ConfigMgr Only (High):</strong> Device not yet enrolled in Intune. Enable co-management or direct enrollment.</li>
+            </ul>
+
+            <div class="alert alert-info">
+                <strong>💡 Tip:</strong> The workload authority data comes from Graph API <code>configurationManagerClientEnabledFeatures</code>. If a property is <code>true</code>, ConfigMgr manages that workload. If <code>false</code>, Intune manages it.
+            </div>
 
             <h3>🔐 Identity Readiness</h3>
             <p><strong>What it measures:</strong> Device identity posture for cloud services (Entra ID Join, Hybrid Join).</p>

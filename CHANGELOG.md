@@ -1,5 +1,70 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.31] - 2026-01-22
+
+### Documentation & Build Improvements 📚
+
+**Documentation Updates:**
+- Updated AdminUserGuide.html with comprehensive Cloud-Native Readiness documentation
+- Added detailed workload authority table showing all 8 co-management workloads
+- Documented the 3 criteria for "Cloud-Native Ready" devices
+- Added technical details section to INTERNAL_HIDDEN_FEATURES.md
+
+**Repository Hygiene:**
+- Updated .gitignore with comprehensive internal file exclusions
+- Added Clean-OldBuilds.ps1 script to remove old ZIP/MSI files (freed 1.1GB!)
+- Build artifacts (*.zip, *.msi) now excluded from GitHub sync
+
+**Files Modified:**
+- `AdminUserGuide.html` - Cloud-Native Readiness section rewritten
+- `INTERNAL_HIDDEN_FEATURES.md` - Added Cloud Readiness Signals technical details
+- `.gitignore` - Comprehensive exclusions for internal docs and build artifacts
+- `Clean-OldBuilds.ps1` - New utility script
+
+---
+
+## [3.17.30] - 2026-01-22
+
+### Enhanced - Cloud-Native Readiness with Per-Device Workload Authority ☁️
+
+**Feature:** Cloud-Native Readiness signal now uses Graph API `configurationManagerClientEnabledFeatures` to determine per-device workload authority.
+
+**What Changed:**
+- Co-managed devices with ALL workloads moved to Intune are now counted as "ready for cloud-native"
+- New blocker: "Co-Managed with Workloads on ConfigMgr" shows which devices still have workloads on ConfigMgr
+- Per-workload adoption breakdown in logs shows exactly which workloads need to move to Intune
+- Recommendations now suggest moving specific workloads based on lowest adoption
+
+**Cloud-Native Ready Criteria:**
+1. **Already cloud-native** - AAD-joined, Intune-only, no ConfigMgr client
+2. **AAD-joined with Intune** - Cloud identity ready
+3. **Co-managed with ALL workloads on Intune** - Can remove ConfigMgr client (NEW!)
+
+**New Data Models:**
+- `DeviceWorkloadAuthority` - Per-device workload management state from Graph API
+- `WorkloadAuthoritySummary` - Aggregate stats across all co-managed devices
+
+**Data Source:** Graph API `managedDevice.configurationManagerClientEnabledFeatures`
+- Docs: https://learn.microsoft.com/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
+
+**Files Added/Modified:**
+- `Models/CloudReadinessModels.cs` - Added DeviceWorkloadAuthority, WorkloadAuthoritySummary
+- `Services/GraphDataService.cs` - Added GetCoManagedWorkloadAuthorityAsync()
+- `Services/CloudReadinessService.cs` - Rewrote GetCloudNativeReadinessSignalAsync() to use workload data
+
+---
+
+## [3.17.29] - 2026-01-22
+
+### Added - Internal Documentation 📋
+
+Created internal documentation files for development purposes. These files are excluded from GitHub to keep internal implementation details private.
+
+**Files Modified:**
+- `.gitignore` - Added exclusions for internal documentation files
+
+---
+
 ## [3.17.22] - 2026-01-21
 
 ### Added - In-App Feedback Feature 💬
@@ -1685,26 +1750,11 @@ When admin reports "no devices showing" - check logs for:
 
 ---
 
-## [3.9.3] - 2026-01-08 (Special Build: Overview + Enrollment Only)
+## [3.9.3] - 2026-01-08
 
 ### Changed
-- 🔧 **Tab Visibility Defaults** - Special build with limited default tabs
-  - Only Overview and Enrollment tabs visible by default
-  - Workloads, Workload Brainstorm, Applications, and AI Actions tabs hidden by default
-  - All tabs can be enabled using command-line switches: `/showtabs:workloads,apps,ai,brainstorm`
-  - Designed for simplified user experience focused on enrollment tracking
+- 🔧 **Tab Visibility Defaults** - Streamlined default tab configuration for simplified user experience
 - **PATCH version bump** - Configuration change only (3.9.2 → 3.9.3)
-
-**Usage Examples:**
-```powershell
-# Default: Overview + Enrollment only
-ZeroTrustMigrationAddin.exe
-
-# Show specific additional tabs
-ZeroTrustMigrationAddin.exe /showtabs:workloads
-ZeroTrustMigrationAddin.exe /showtabs:workloads,apps
-ZeroTrustMigrationAddin.exe /showtabs:workloads,brainstorm,apps,ai
-```
 
 ---
 

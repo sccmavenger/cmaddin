@@ -300,4 +300,120 @@ namespace ZeroTrustMigrationAddin.Models
         // Blockers
         public List<ReadinessBlocker> Blockers { get; set; } = new();
     }
+
+    /// <summary>
+    /// Per-device co-management workload authority from Microsoft Graph API.
+    /// Source: managedDevice.configurationManagerClientEnabledFeatures
+    /// Docs: https://learn.microsoft.com/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
+    /// 
+    /// When a property is TRUE, ConfigMgr manages that workload.
+    /// When a property is FALSE, Intune manages that workload.
+    /// </summary>
+    public class DeviceWorkloadAuthority
+    {
+        public string DeviceId { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        
+        /// <summary>Hardware/software inventory managed by ConfigMgr (true) or Intune (false)</summary>
+        public bool InventoryManagedByConfigMgr { get; set; }
+        
+        /// <summary>Modern apps (Win32, LOB) managed by ConfigMgr (true) or Intune (false)</summary>
+        public bool ModernAppsManagedByConfigMgr { get; set; }
+        
+        /// <summary>Resource access (VPN, Wi-Fi, email) managed by ConfigMgr (true) or Intune (false)</summary>
+        public bool ResourceAccessManagedByConfigMgr { get; set; }
+        
+        /// <summary>Device configuration profiles managed by ConfigMgr (true) or Intune (false)</summary>
+        public bool DeviceConfigurationManagedByConfigMgr { get; set; }
+        
+        /// <summary>Compliance policies managed by ConfigMgr (true) or Intune (false)</summary>
+        public bool CompliancePolicyManagedByConfigMgr { get; set; }
+        
+        /// <summary>Windows Update for Business managed by ConfigMgr (true) or Intune (false)</summary>
+        public bool WindowsUpdateManagedByConfigMgr { get; set; }
+        
+        /// <summary>Endpoint Protection managed by ConfigMgr (true) or Intune (false)</summary>
+        public bool EndpointProtectionManagedByConfigMgr { get; set; }
+        
+        /// <summary>Office Click-to-Run apps managed by ConfigMgr (true) or Intune (false)</summary>
+        public bool OfficeAppsManagedByConfigMgr { get; set; }
+
+        /// <summary>
+        /// Returns true if ALL workloads are managed by Intune (all ConfigMgr flags are false).
+        /// This means the device is ready to become cloud-native (remove ConfigMgr client).
+        /// </summary>
+        public bool AllWorkloadsManagedByIntune =>
+            !InventoryManagedByConfigMgr &&
+            !ModernAppsManagedByConfigMgr &&
+            !ResourceAccessManagedByConfigMgr &&
+            !DeviceConfigurationManagedByConfigMgr &&
+            !CompliancePolicyManagedByConfigMgr &&
+            !WindowsUpdateManagedByConfigMgr &&
+            !EndpointProtectionManagedByConfigMgr &&
+            !OfficeAppsManagedByConfigMgr;
+
+        /// <summary>
+        /// Count of workloads currently managed by Intune (ConfigMgr flag = false).
+        /// </summary>
+        public int WorkloadsManagedByIntuneCount
+        {
+            get
+            {
+                int count = 0;
+                if (!InventoryManagedByConfigMgr) count++;
+                if (!ModernAppsManagedByConfigMgr) count++;
+                if (!ResourceAccessManagedByConfigMgr) count++;
+                if (!DeviceConfigurationManagedByConfigMgr) count++;
+                if (!CompliancePolicyManagedByConfigMgr) count++;
+                if (!WindowsUpdateManagedByConfigMgr) count++;
+                if (!EndpointProtectionManagedByConfigMgr) count++;
+                if (!OfficeAppsManagedByConfigMgr) count++;
+                return count;
+            }
+        }
+
+        /// <summary>Total workloads (8 co-management workloads)</summary>
+        public const int TotalWorkloads = 8;
+
+        /// <summary>
+        /// Returns a list of workloads still managed by ConfigMgr (blockers for cloud-native).
+        /// </summary>
+        public List<string> WorkloadsStillOnConfigMgr
+        {
+            get
+            {
+                var blockers = new List<string>();
+                if (InventoryManagedByConfigMgr) blockers.Add("Inventory");
+                if (ModernAppsManagedByConfigMgr) blockers.Add("Modern Apps");
+                if (ResourceAccessManagedByConfigMgr) blockers.Add("Resource Access");
+                if (DeviceConfigurationManagedByConfigMgr) blockers.Add("Device Configuration");
+                if (CompliancePolicyManagedByConfigMgr) blockers.Add("Compliance Policy");
+                if (WindowsUpdateManagedByConfigMgr) blockers.Add("Windows Update");
+                if (EndpointProtectionManagedByConfigMgr) blockers.Add("Endpoint Protection");
+                if (OfficeAppsManagedByConfigMgr) blockers.Add("Office Apps");
+                return blockers;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Summary of workload authority across all co-managed devices.
+    /// </summary>
+    public class WorkloadAuthoritySummary
+    {
+        public int TotalCoManagedDevices { get; set; }
+        public int DevicesReadyForCloudNative { get; set; }
+        public List<DeviceWorkloadAuthority> Devices { get; set; } = new();
+
+        /// <summary>Percentage of co-managed devices ready for cloud-native</summary>
+        public double CloudNativeReadyPercentage => TotalCoManagedDevices > 0
+            ? Math.Round((double)DevicesReadyForCloudNative / TotalCoManagedDevices * 100, 1)
+            : 0;
+
+        /// <summary>
+        /// Breakdown of how many devices have each workload managed by Intune.
+        /// </summary>
+        public Dictionary<string, int> WorkloadIntuneAdoptionCounts { get; set; } = new();
+    }
 }
+

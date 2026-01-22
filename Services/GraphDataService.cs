@@ -266,6 +266,150 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
+        /// Get workload authority for all co-managed devices.
+        /// Uses Graph API managedDevice.configurationManagerClientEnabledFeatures property.
+        /// Source: https://learn.microsoft.com/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
+        /// 
+        /// This tells us which workloads are managed by ConfigMgr (true) vs Intune (false).
+        /// Devices with ALL workloads managed by Intune are ready for cloud-native.
+        /// </summary>
+        public async Task<WorkloadAuthoritySummary> GetCoManagedWorkloadAuthorityAsync()
+        {
+            if (_graphClient == null)
+            {
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+            }
+
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 📊 QUERYING CO-MANAGEMENT WORKLOAD AUTHORITY                                            │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+
+            var summary = new WorkloadAuthoritySummary();
+            
+            try
+            {
+                // Query co-managed devices with configurationManagerClientEnabledFeatures
+                // We need to use individual device queries because this property requires $select
+                var selectFields = new[] { 
+                    "id", 
+                    "deviceName", 
+                    "managementAgent",
+                    "configurationManagerClientEnabledFeatures"
+                };
+                
+                Instance.LogGraphQuery("GetCoManagedWorkloadAuthority", "/deviceManagement/managedDevices", selectFields);
+                
+                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                    config => config.QueryParameters.Select = selectFields
+                );
+
+                if (devices?.Value == null || !devices.Value.Any())
+                {
+                    Instance.Warning("   ⚠️ No managed devices returned from Graph API");
+                    return summary;
+                }
+
+                // Filter to co-managed devices only (ManagementAgent = ConfigurationManagerClientMdm)
+                var coManagedDevices = devices.Value
+                    .Where(d => d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm)
+                    .ToList();
+
+                Instance.Info($"   📱 Total Intune devices: {devices.Value.Count}");
+                Instance.Info($"   🔄 Co-managed devices: {coManagedDevices.Count}");
+
+                if (!coManagedDevices.Any())
+                {
+                    Instance.Warning("   ⚠️ No co-managed devices found (ManagementAgent != ConfigurationManagerClientMdm)");
+                    return summary;
+                }
+
+                summary.TotalCoManagedDevices = coManagedDevices.Count;
+                
+                // Initialize workload adoption counters
+                summary.WorkloadIntuneAdoptionCounts = new Dictionary<string, int>
+                {
+                    ["Inventory"] = 0,
+                    ["Modern Apps"] = 0,
+                    ["Resource Access"] = 0,
+                    ["Device Configuration"] = 0,
+                    ["Compliance Policy"] = 0,
+                    ["Windows Update"] = 0,
+                    ["Endpoint Protection"] = 0,
+                    ["Office Apps"] = 0
+                };
+
+                Instance.Info("");
+                Instance.Info("   WORKLOAD AUTHORITY ANALYSIS:");
+
+                foreach (var device in coManagedDevices)
+                {
+                    var features = device.ConfigurationManagerClientEnabledFeatures;
+                    
+                    var workloadAuth = new DeviceWorkloadAuthority
+                    {
+                        DeviceId = device.Id ?? "",
+                        DeviceName = device.DeviceName ?? "Unknown",
+                        // Note: TRUE means ConfigMgr manages it, FALSE means Intune manages it
+                        InventoryManagedByConfigMgr = features?.Inventory ?? true,
+                        ModernAppsManagedByConfigMgr = features?.ModernApps ?? true,
+                        ResourceAccessManagedByConfigMgr = features?.ResourceAccess ?? true,
+                        DeviceConfigurationManagedByConfigMgr = features?.DeviceConfiguration ?? true,
+                        CompliancePolicyManagedByConfigMgr = features?.CompliancePolicy ?? true,
+                        WindowsUpdateManagedByConfigMgr = features?.WindowsUpdateForBusiness ?? true,
+                        // Note: Endpoint Protection and Office Apps may not be in all API versions
+                        EndpointProtectionManagedByConfigMgr = true, // Default to ConfigMgr if not available
+                        OfficeAppsManagedByConfigMgr = true // Default to ConfigMgr if not available
+                    };
+
+                    summary.Devices.Add(workloadAuth);
+
+                    // Count workloads managed by Intune
+                    if (!workloadAuth.InventoryManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Inventory"]++;
+                    if (!workloadAuth.ModernAppsManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Modern Apps"]++;
+                    if (!workloadAuth.ResourceAccessManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Resource Access"]++;
+                    if (!workloadAuth.DeviceConfigurationManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Device Configuration"]++;
+                    if (!workloadAuth.CompliancePolicyManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Compliance Policy"]++;
+                    if (!workloadAuth.WindowsUpdateManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Windows Update"]++;
+                    if (!workloadAuth.EndpointProtectionManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Endpoint Protection"]++;
+                    if (!workloadAuth.OfficeAppsManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Office Apps"]++;
+
+                    if (workloadAuth.AllWorkloadsManagedByIntune)
+                    {
+                        summary.DevicesReadyForCloudNative++;
+                    }
+                }
+
+                // Log workload adoption summary
+                Instance.Info("");
+                Instance.Info("   WORKLOAD ADOPTION (managed by Intune):");
+                foreach (var workload in summary.WorkloadIntuneAdoptionCounts.OrderByDescending(w => w.Value))
+                {
+                    var pct = Math.Round((double)workload.Value / summary.TotalCoManagedDevices * 100, 1);
+                    var status = pct >= 80 ? "✅" : pct >= 50 ? "🟡" : "🔴";
+                    Instance.Info($"      {status} {workload.Key}: {workload.Value}/{summary.TotalCoManagedDevices} ({pct}%)");
+                }
+
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   📊 CLOUD-NATIVE READINESS RESULT:");
+                Instance.Info($"      Co-managed devices: {summary.TotalCoManagedDevices}");
+                Instance.Info($"      Ready for cloud-native (all workloads on Intune): {summary.DevicesReadyForCloudNative}");
+                Instance.Info($"      Cloud-native ready percentage: {summary.CloudNativeReadyPercentage}%");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+
+                Instance.LogGraphQuery("GetCoManagedWorkloadAuthority (Result)", 
+                    "/deviceManagement/managedDevices", selectFields, null, coManagedDevices.Count);
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Failed to get co-management workload authority: {ex.Message}");
+                Instance.LogException(ex, "GetCoManagedWorkloadAuthorityAsync");
+            }
+
+            return summary;
+        }
+
+        /// <summary>
         /// Get devices filtered by join type for drill-through functionality.
         /// Cross-references ConfigMgr devices with Intune for accurate join type detection.
         /// </summary>

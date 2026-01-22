@@ -79,6 +79,53 @@ Logs/
 # Telemetry/Operational files (internal use only)
 telemetry/
 
+# Internal documentation (not for public GitHub)
+# Strategy documents
+MISSION.md
+
+# Hidden features documentation
+TAB_VISIBILITY_GUIDE.md
+INTERNAL_HIDDEN_FEATURES.md
+Create-TestShortcuts.ps1
+Test-TabVisibility.ps1
+
+# Build documentation (internal process)
+BUILD_COMPLETE.md
+BUILD_ENHANCEMENT_SUMMARY.md
+BUILD_QUICK_REFERENCE.txt
+BUILD_SCRIPT_GUIDE.md
+CONTEXT.md
+VERSIONING.md
+CHANGELOG_WORKFLOW.md
+QUICK_TEST_INSTRUCTIONS.md
+
+# Auto-update guides (internal)
+AUTO_UPDATE_GUIDE.md
+AUTO_UPDATE_QUICKSTART.md
+AUTO_UPDATE_TEST_PLAN.md
+AUTO_UPDATE_TESTING_GUIDE.md
+
+# Other internal documentation
+AUTO_REMEDIATION_ROADMAP.md
+ENROLLMENT_AGENT_GUIDE.md
+EXECUTIVE_SUMMARY.md
+WORKLOAD_BRAINSTORM_IDEAS.md
+
+# Telemetry documentation (internal)
+TELEMETRY.md
+TELEMETRY_QUERIES.md
+
+# Build artifacts (versioned ZIP and MSI files)
+ZeroTrustMigrationAddin-v*.zip
+ZeroTrustMigrationAddin-v*.msi
+
+# Old manifest backups
+manifest-v*.json
+
+# Build cleanup script
+Clean-OldBuilds.ps1
+
+# Research documents
 research/~$nfiguration Manager Customer - Middle-Stage.docx
 research/ConfigMgr Intune Journey Execu.pdf
 research/Configuration Manager Customer - Cloud Journey.pdf
