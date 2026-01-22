@@ -1,5 +1,32 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.34] - 2026-01-22
+
+### Added - Contextual Help Icons on Cloud Readiness Signal Cards ❓
+
+**Feature:** Each signal card on the Cloud Readiness Signals tab now has a ❓ help icon button that opens the Admin User Guide directly to that signal's documentation section.
+
+**What Changed:**
+- Added anchor IDs to AdminUserGuide.html for each signal section (`#signal-autopilot`, `#signal-windows11`, etc.)
+- Added ❓ help button to each signal card that opens the specific documentation section
+- Button uses subtle styling that becomes visible on hover
+- Existing "Learn more" Microsoft Learn links preserved
+
+**Signal Help Links:**
+- 🚀 Autopilot Readiness → `#signal-autopilot`
+- 🪟 Windows 11 Readiness → `#signal-windows11`
+- ☁️ Cloud-Native Readiness → `#signal-cloud-native`
+- 🔐 Identity Readiness → `#signal-identity`
+- 🔄 Update Management Readiness → `#signal-wufb`
+- 🛡️ Endpoint Security Readiness → `#signal-endpoint-security`
+
+**Files Modified:**
+- `AdminUserGuide.html` - Added anchor IDs to each signal section
+- `Views/CloudReadinessTab.xaml` - Added ❓ help button to signal card template
+- `Views/CloudReadinessTab.xaml.cs` - Added AdminGuideHelpButton_Click handler
+
+---
+
 ## [3.17.33] - 2026-01-22
 
 ### Added - Contextual Help Links on Dashboard Tiles ❓
