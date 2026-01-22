@@ -1,5 +1,20 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.37] - 2026-01-22
+
+### Fixed - Telemetry Version Numbers Being Masked as IP Addresses 📊
+
+**Issue:** In Azure Application Insights workbooks, version numbers like "3.17.36.0" were showing as "[IP]" because the PII sanitization regex was incorrectly matching version numbers as IP addresses.
+
+**Root Cause:** The IP address regex `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}` matched any four dot-separated numbers, including version strings like "3.17.36.0".
+
+**Fix:** Updated the IP regex to only match patterns where the first octet is >= 10, which excludes version numbers (which typically start with small numbers like 1, 2, 3) while still catching real IP addresses (10.x.x.x, 172.x.x.x, 192.x.x.x, etc.).
+
+**Files Modified:**
+- `Services/AzureTelemetryService.cs` - Updated SanitizeString() IP address regex
+
+---
+
 ## [3.17.35] - 2026-01-22
 
 ### Fixed - Cloud Readiness Signal UX Consistency 🎨
