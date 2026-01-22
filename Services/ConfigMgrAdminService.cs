@@ -307,7 +307,8 @@ namespace ZeroTrustMigrationAddin.Services
         
         /// <summary>
         /// Get co-management details for a device from SMS_Client (Option 2)
-        /// This provides workload assignments and co-management flags
+        /// This indicates if co-management is enabled.
+        /// NOTE: For per-device workload authority, use Graph API GetCoManagedWorkloadAuthorityAsync().
         /// </summary>
         public async Task<CoManagementDetails?> GetCoManagementDetailsAsync(int resourceId)
         {
@@ -337,16 +338,10 @@ namespace ZeroTrustMigrationAddin.Services
                     {
                         ResourceId = resourceId,
                         IsCoManaged = client.CoManagementFlags > 0,
-                        CoManagementFlags = client.CoManagementFlags,
-                        // Workload flags (bitfield):
-                        // 1 = Compliance Policies
-                        // 2 = Resource Access
-                        // 4 = Device Configuration
-                        // 8 = Windows Update
-                        // 16 = Endpoint Protection
-                        // 32 = Client Apps
-                        // 64 = Office Click-to-Run
-                        WorkloadFlags = client.CoManagementFlags
+                        CoManagementFlags = client.CoManagementFlags
+                        // NOTE: CoManagementFlags only indicates if co-management is enabled.
+                        // For per-device workload authority (which workloads are managed by Intune),
+                        // use Graph API managedDevice.configurationManagerClientEnabledFeatures
                     };
                 }
             }
@@ -2293,20 +2288,27 @@ namespace ZeroTrustMigrationAddin.Services
         public string CollectionId { get; set; } = string.Empty;
     }
     
+    /// <summary>
+    /// Co-management details from ConfigMgr SMS_Client WMI class.
+    /// NOTE: CoManagementFlags indicates if co-management is enabled, but does NOT indicate
+    /// which workloads are set to Intune vs ConfigMgr.
+    /// 
+    /// For per-device workload authority, use Graph API managedDevice.configurationManagerClientEnabledFeatures
+    /// See: DeviceWorkloadAuthority model in CloudReadinessModels.cs
+    /// Docs: https://learn.microsoft.com/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
+    /// </summary>
     public class CoManagementDetails
     {
         public int ResourceId { get; set; }
-        public bool IsCoManaged { get; set; }
-        public int CoManagementFlags { get; set; }
-        public int WorkloadFlags { get; set; }
         
-        public bool HasCompliancePolicies => (WorkloadFlags & 1) != 0;
-        public bool HasResourceAccess => (WorkloadFlags & 2) != 0;
-        public bool HasDeviceConfiguration => (WorkloadFlags & 4) != 0;
-        public bool HasWindowsUpdate => (WorkloadFlags & 8) != 0;
-        public bool HasEndpointProtection => (WorkloadFlags & 16) != 0;
-        public bool HasClientApps => (WorkloadFlags & 32) != 0;
-        public bool HasOfficeClickToRun => (WorkloadFlags & 64) != 0;
+        /// <summary>True if co-management is enabled (CoManagementFlags > 0)</summary>
+        public bool IsCoManaged { get; set; }
+        
+        /// <summary>
+        /// Raw CoManagementFlags from SMS_Client. Non-zero means co-management enabled.
+        /// This does NOT indicate which workloads are managed by Intune vs ConfigMgr.
+        /// </summary>
+        public int CoManagementFlags { get; set; }
     }
 
     public class ConfigMgrClientHealth
