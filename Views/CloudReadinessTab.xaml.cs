@@ -303,6 +303,39 @@ namespace ZeroTrustMigrationAddin.Views
             }
         }
 
+        private void HelpButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Instance.Info("User requested help for Cloud Readiness Signals");
+                
+                string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string userGuidePath = System.IO.Path.Combine(appDirectory, "AdminUserGuide.html");
+                
+                if (System.IO.File.Exists(userGuidePath))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = $"{userGuidePath}#cloud-readiness",
+                        UseShellExecute = true
+                    });
+                    Instance.Info("Opened User Guide at cloud-readiness section");
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "User Guide not found.\n\nPlease ensure AdminUserGuide.html is in the application directory.",
+                        "Help Not Found",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "HelpButton_Click");
+            }
+        }
+
         private void ViewWorkloadsButton_Click(object sender, RoutedEventArgs e)
         {
             // Navigate to Workloads tab - find parent DashboardWindow and switch tab

@@ -1,5 +1,31 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.33] - 2026-01-22
+
+### Added - Contextual Help Links on Dashboard Tiles ❓
+
+**Feature:** Each tile/card on the dashboard now has a "❓ Learn more" link at the bottom right that opens the relevant section of the Admin User Guide.
+
+**What Changed:**
+- Added `OpenUserGuideSectionCommand` to navigate directly to specific documentation sections
+- Help links open AdminUserGuide.html with anchor navigation (e.g., `#enrollment`, `#cloud-readiness`)
+- Links appear at bottom-right of tiles with subtle styling that becomes visible on hover
+
+**Tiles Updated:**
+- 💻 Device Enrollment → `#enrollment`
+- 🔐 Device Identity State Analysis → `#enrollment`
+- 🎯 Smart Enrollment Management → `#enrollment-agent`
+- 🚫 Enrollment Readiness Check → `#device-readiness`
+- ☁️ Cloud Readiness Signals (tab header) → `#cloud-readiness`
+
+**Files Modified:**
+- `ViewModels/DashboardViewModel.cs` - Added OpenUserGuideSectionCommand and handler
+- `Views/DashboardWindow.xaml` - Added TileHelpButton style and help buttons to tiles
+- `Views/CloudReadinessTab.xaml` - Added Help button to header
+- `Views/CloudReadinessTab.xaml.cs` - Added HelpButton_Click handler
+
+---
+
 ## [3.17.31] - 2026-01-22
 
 ### Documentation & Build Improvements 📚

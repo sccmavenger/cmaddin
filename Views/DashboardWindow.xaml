@@ -84,6 +84,34 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Help Icon Button Style -->
+        <Style x:Key="TileHelpButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#0078D4"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+            <Setter Property="Opacity" Value="0.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="1"/>
+                    <Setter Property="Background" Value="#E8F4FD"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Toggle Switch Style for Autonomous Mode -->
         <Style x:Key="ToggleSwitchStyle" TargetType="ToggleButton">
             <Setter Property="Template">
@@ -442,6 +470,14 @@
                                         <lvc:Axis Title="Windows 10/11 Devices" MinValue="0"/>
                                     </lvc:CartesianChart.AxisY>
                                 </lvc:CartesianChart>
+                                
+                                <!-- Help Link -->
+                                <Button Content="❓ Learn more" 
+                                        Style="{StaticResource TileHelpButton}"
+                                        Command="{Binding OpenUserGuideSectionCommand}"
+                                        CommandParameter="enrollment"
+                                        ToolTip="Open help for Device Enrollment"
+                                        Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
@@ -610,6 +646,14 @@
                                         </Border>
                                     </Grid>
                                 </Border>
+                                
+                                <!-- Help Link -->
+                                <Button Content="❓ Learn more" 
+                                        Style="{StaticResource TileHelpButton}"
+                                        Command="{Binding OpenUserGuideSectionCommand}"
+                                        CommandParameter="enrollment"
+                                        ToolTip="Open help for Device Identity"
+                                        Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
@@ -2351,6 +2395,13 @@
                                         </StackPanel>
                                     </Border>
 
+                                    <!-- Help Link -->
+                                    <Button Content="❓ Learn more" 
+                                            Style="{StaticResource TileHelpButton}"
+                                            Command="{Binding OpenUserGuideSectionCommand}"
+                                            CommandParameter="enrollment-agent"
+                                            ToolTip="Open help for Smart Enrollment Management"
+                                            Margin="0,10,0,0"/>
 
                                 </StackPanel>
                             </Border>
@@ -2629,6 +2680,14 @@
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
+                                    
+                                    <!-- Help Link -->
+                                    <Button Content="❓ Learn more" 
+                                            Style="{StaticResource TileHelpButton}"
+                                            Command="{Binding OpenUserGuideSectionCommand}"
+                                            CommandParameter="device-readiness"
+                                            ToolTip="Open help for Enrollment Readiness"
+                                            Margin="0,10,0,0"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
