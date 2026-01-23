@@ -1,5 +1,40 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.49] - 2026-01-22
+
+### Fixed - Emoji Rendering (Square Boxes) 🎨
+
+**Issue:** Emojis displayed as square boxes on some Windows systems due to WPF's default font not supporting color emojis.
+
+**Solution:** Added `FontFamily="Segoe UI Emoji, Segoe UI, Arial"` font fallback to all Windows and UserControls.
+
+**Technical Details:**
+- WPF's default text rendering doesn't handle color emojis properly
+- "Segoe UI Emoji" is built into Windows 10/11 and provides full color emoji support
+- Font fallback chain ensures emojis render correctly while text uses Segoe UI
+
+**Files Modified (18 XAML files):**
+- `Views/DashboardWindow.xaml` - Window + TabItem style + ActionButton style
+- `Views/EnrollmentSimulatorWindow.xaml`
+- `Views/FeedbackWindow.xaml`
+- `Views/DiagnosticsWindow.xaml`
+- `Views/RecommendationsWindow.xaml`
+- `Views/ConfigMgrServerDialog.xaml`
+- `Views/ConfidenceDetailsWindow.xaml`
+- `Views/CloudReadinessTab.xaml`
+- `Views/AISettingsWindow.xaml`
+- `Views/MigrationImpactCard.xaml`
+- `Views/MigrationImpactReportWindow.xaml`
+- `Views/UpdateProgressWindow.xaml`
+- `Views/UpdateNotificationWindow.xaml`
+- `Views/DeviceListDialog.xaml`
+- `Views/EnrollmentConfidenceCard.xaml`
+- `Views/EnrollmentMomentumView.xaml`
+- `Views/EnrollmentPlaybooksView.xaml`
+- `Views/EnrollmentSimulatorCard.xaml`
+
+---
+
 ## [3.17.47] - 2026-01-22
 
 ### Fixed - Broken "Learn More" Links (GitHub Issue #2) 🔗

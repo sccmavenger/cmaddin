@@ -6,6 +6,7 @@
         MinHeight="550" MinWidth="450"
         WindowStartupLocation="CenterOwner"
         Background="#F5F5F5"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial"
         ResizeMode="CanResize">
 
     <Grid Margin="20">

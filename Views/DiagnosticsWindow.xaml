@@ -4,7 +4,8 @@
         Title="Connection Diagnostics" 
         Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5">
+        Background="#F5F5F5"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>

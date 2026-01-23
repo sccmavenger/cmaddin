@@ -1,7 +1,8 @@
 <UserControl x:Class="ZeroTrustMigrationAddin.Views.EnrollmentPlaybooksView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="clr-namespace:ZeroTrustMigrationAddin.Converters">
+             xmlns:converters="clr-namespace:ZeroTrustMigrationAddin.Converters"
+             FontFamily="Segoe UI Emoji, Segoe UI, Arial">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>

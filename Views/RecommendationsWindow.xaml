@@ -4,7 +4,8 @@
         Title="Enrollment Recommendations" 
         Height="550" Width="700"
         WindowStartupLocation="CenterOwner"
-        Background="#F3F4F6">
+        Background="#F3F4F6"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial">
     
     <Grid Margin="20">
         <Grid.RowDefinitions>

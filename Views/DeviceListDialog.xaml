@@ -8,6 +8,7 @@
         Width="1000" Height="700"
         WindowStartupLocation="CenterOwner"
         Background="White"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
