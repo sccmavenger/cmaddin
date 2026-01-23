@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.53** | January 23, 2026
+**Version 3.17.54** | January 23, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -95,6 +95,37 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ## 🆕 What's New
 
 
+
+
+### Version 3.17.54 (January 23, 2026)
+
+### Fixed - MDE (msSense) Devices Incorrectly Counted as Cloud Native 🐛
+
+**Issue Reported by:** Panu  
+**Root Cause:** Microsoft Defender for Endpoint (MDE) creates device records in Entra/Intune when deployed on servers for granular policy. These devices have `ManagementAgent = msSense` (`MsSense` in Graph SDK) and were being counted as "Cloud Native" workstations because they appear in Intune with no ConfigMgr record.
+
+**Impact:** Cloud Native device counts were inflated by server-originated MDE device records.
+
+**Solution:** Added `ManagementAgent != MsSense` filter to exclude MDE devices from all workstation counts:
+- Main device enrollment counting (`intuneEligibleDevices`)
+- Intune Windows enrolled count
+- Total Intune Windows count  
+- Cloud Native calculation
+- Compliance dashboard filtering
+
+**Technical Details:**
+- `ManagementAgentType.MsSense` = MDE/msSense devices in Graph SDK
+- JSON value in Graph API responses: `"managementAgent": "msSense"`
+- These are typically servers with Microsoft Defender for Endpoint
+- They should NOT be counted as Windows 10/11 workstations for migration purposes
+- Added logging: `⚠️ Excluding X MDE (msSense) devices from workstation count`
+
+**Files Modified:**
+- `Services/GraphDataService.cs` - Added MDE exclusion to 5 device filtering locations
+
+---
+
+---
 
 ### Version 3.17.52 (January 23, 2026)
 
@@ -215,27 +246,6 @@ Added drill-down functionality to Cloud Readiness signal tiles. Users can now cl
 
 **Files Modified:**
 - `Services/TelemetryService.cs` - Fixed TotalDevices from 115,000 to 106,500
-
----
-
----
-
-### Version 3.17.43 (January 22, 2026)
-
-### Fixed - Overview Tile Binding Inconsistency 🐛
-
-**Issue:** The Overview tab's "Comanaged" tile was binding to `IntuneEnrolledDevices` (which includes BOTH co-managed + cloud-native), but the label implied it should only show co-managed devices.
-
-**Before:** "Comanaged" tile showed 64,400 (IntuneEnrolledDevices = 55,900 + 8,500)
-
-**After:** "Co-managed" tile shows 55,900 (CoManagedDevices only)
-
-**Result:** Overview tile now matches Enrollment tab's 3-category display for consistency.
-
-**Telemetry Verification:** ✅ Tab navigation telemetry uses tab header names (not indices), so the tab reordering in v3.17.41 did NOT break telemetry.
-
-**Files Modified:**
-- `Views/DashboardWindow.xaml` - Fixed Overview tile binding from `IntuneEnrolledDevices` to `CoManagedDevices`
 
 ---
 
@@ -1352,5 +1362,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-23  
-**Version**: 3.17.53  
+**Version**: 3.17.54  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
