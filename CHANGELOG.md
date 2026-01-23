@@ -1,5 +1,32 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.45] - 2026-01-22
+
+### Fixed - Mock Data Math Inconsistency 📊
+
+**Issue:** In mock data, `TotalDevices` (115,000) didn't match the sum of `CoManagedDevices` (55,900) + `ConfigMgrOnlyDevices` (50,600) = 106,500.
+
+**Root Cause:** Cloud Native devices (8,500) were incorrectly included in `TotalDevices`, but Cloud Native means NO ConfigMgr record.
+
+**Semantic Clarification:**
+- **TotalDevices** = ConfigMgr baseline (devices WITH ConfigMgr records)
+- **TotalDevices** = Co-managed + ConfigMgr Only = 106,500
+- **Cloud Native** (8,500) are Intune-only with NO ConfigMgr record
+
+**Math Now Correct:**
+| Property | Value | Formula |
+|----------|-------|--------|
+| TotalDevices | 106,500 | Co-managed + ConfigMgr Only |
+| Co-managed | 55,900 | In both ConfigMgr + Intune |
+| ConfigMgr Only | 50,600 | In ConfigMgr only |
+| Cloud Native | 8,500 | In Intune only (no ConfigMgr) |
+| IntuneEnrolledDevices | 64,400 | Co-managed + Cloud Native |
+
+**Files Modified:**
+- `Services/TelemetryService.cs` - Fixed TotalDevices from 115,000 to 106,500
+
+---
+
 ## [3.17.43] - 2026-01-22
 
 ### Fixed - Overview Tile Binding Inconsistency 🐛
