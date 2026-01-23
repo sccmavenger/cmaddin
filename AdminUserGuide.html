@@ -230,7 +230,6 @@
             <h2>Quick Navigation</h2>
             <ul>
                 <li><a href="#overview">Overview</a></li>
-                <li><a href="#dashboard-tabs">Dashboard Tabs</a></li>
                 <li><a href="#requirements">Requirements</a></li>
                 <li><a href="#installation">Installation</a></li>
                 <li><a href="#auto-updates">Automatic Updates</a></li>
@@ -278,117 +277,6 @@
                 <li><strong>Workloads Tab:</strong> Track workload migration from ConfigMgr to Intune (hidden by default)</li>
                 <li><strong>AI Actions Tab:</strong> View AI-generated recommendations and blockers (hidden by default)</li>
             </ul>
-        </section>
-
-        <!-- Dashboard Tabs Section -->
-        <section id="dashboard-tabs">
-            <h2><span class="emoji">🗂️</span> Dashboard Tabs</h2>
-
-            <h3>Tab Overview</h3>
-            <p>The dashboard organizes information across multiple tabs. Some tabs are hidden by default and can be enabled via command-line arguments.</p>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tab</th>
-                        <th>Icon</th>
-                        <th>Purpose</th>
-                        <th>Default Visibility</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Overview</strong></td>
-                        <td>📊</td>
-                        <td>Executive summary: device counts, identity states, compliance scorecard</td>
-                        <td>✅ Always visible</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Enrollment</strong></td>
-                        <td>📱</td>
-                        <td>Smart Enrollment Management, device readiness, enrollment momentum</td>
-                        <td>✅ Visible</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Workloads</strong></td>
-                        <td>🔄</td>
-                        <td>Track workload migration from ConfigMgr to Intune policies</td>
-                        <td>❌ Hidden</td>
-                    </tr>
-                    <tr>
-                        <td><strong>AI Actions</strong></td>
-                        <td>🤖</td>
-                        <td>AI-generated enrollment and workload recommendations</td>
-                        <td>❌ Hidden</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Applications</strong></td>
-                        <td>📦</td>
-                        <td>Application migration tracking (future)</td>
-                        <td>❌ Hidden</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <h3>Tab Visibility Configuration</h3>
-            <p>Use command-line arguments to show or hide tabs:</p>
-            <pre><code># Hide specific tabs
-ZeroTrustMigrationAddin.exe /HideTabs:Workloads,AI
-
-# Show only specific tabs
-ZeroTrustMigrationAddin.exe /ShowOnlyTabs:Overview,Enrollment</code></pre>
-
-            <h3>Overview Tab Contents</h3>
-            <p>The Overview tab contains several key sections:</p>
-            <ul>
-                <li><strong>Device Enrollment Summary:</strong> Total Windows 10/11 devices, Co-managed, Cloud Native, ConfigMgr Only</li>
-                <li><strong>Device Identity State Analysis:</strong> Breakdown by join type (Hybrid Entra, Entra-joined, AD-only, Workgroup)</li>
-                <li><strong>Security & Compliance Scorecard:</strong> Compliance rates, policy status, security posture</li>
-                <li><strong>Quick Actions:</strong> Connect to Graph, refresh data, open diagnostics</li>
-            </ul>
-
-            <h3>Device Identity States</h3>
-            <p>Understanding device identity is critical for enrollment planning:</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>State</th>
-                        <th>Icon</th>
-                        <th>Description</th>
-                        <th>Enrollment Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Hybrid Entra Joined</strong></td>
-                        <td>✅</td>
-                        <td>Domain-joined + Azure AD registered</td>
-                        <td>Ready for co-management</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Entra Joined</strong></td>
-                        <td>☁️</td>
-                        <td>Azure AD joined only (cloud-native)</td>
-                        <td>Ready for Intune-only</td>
-                    </tr>
-                    <tr>
-                        <td><strong>AD Joined Only</strong></td>
-                        <td>⚠️</td>
-                        <td>On-premises AD only, no Azure AD</td>
-                        <td>Blocked - needs Hybrid Entra</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Workgroup</strong></td>
-                        <td>❌</td>
-                        <td>Standalone, not domain-joined</td>
-                        <td>Blocked - needs domain/Azure AD join</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="alert alert-warning">
-                <strong>⚠️ Enrollment Blockers:</strong> Devices in "AD Joined Only" or "Workgroup" states cannot be enrolled in Intune without first establishing Azure AD identity.
-            </div>
         </section>
 
         <!-- Requirements Section -->

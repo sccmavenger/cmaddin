@@ -270,7 +270,20 @@
                                                                FontSize="12" Foreground="#333333"
                                                                TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Grid.Column="2" FontSize="12" 
-                                                               Foreground="#D13438" FontWeight="SemiBold">
+                                                               Foreground="#D13438" FontWeight="SemiBold"
+                                                               Cursor="Hand"
+                                                               Tag="{Binding}"
+                                                               MouseLeftButtonDown="BlockerDeviceCount_Click"
+                                                               ToolTip="Click to view affected devices">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter Property="TextDecorations" Value="Underline"/>
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
                                                         <Run Text="{Binding AffectedDeviceCount, Mode=OneWay}"/>
                                                         <Run Text=" devices"/>
                                                     </TextBlock>
