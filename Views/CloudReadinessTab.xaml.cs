@@ -443,8 +443,14 @@ namespace ZeroTrustMigrationAddin.Views
 
                 List<ManagedDevice> devices;
 
-                // Try to get actual device data if authenticated
-                if (_graphService != null && _graphService.IsAuthenticated)
+                // If blocker has specific affected device names, use those to filter
+                if (blocker.AffectedDeviceNames.Any())
+                {
+                    Instance.Info($"[CLOUD READINESS TAB] Using {blocker.AffectedDeviceNames.Count} device names from blocker");
+                    devices = await GetDevicesByNamesAsync(blocker.AffectedDeviceNames);
+                }
+                // Fall back to blocker-specific logic if authenticated
+                else if (_graphService != null && _graphService.IsAuthenticated)
                 {
                     devices = await GetDevicesForBlockerAsync(blocker.Id);
                 }
@@ -532,6 +538,30 @@ namespace ZeroTrustMigrationAddin.Views
             return allDevices
                 .Where(d => string.IsNullOrEmpty(d.AzureADDeviceId))
                 .ToList();
+        }
+
+        /// <summary>
+        /// Gets devices by their names from the cached device list.
+        /// </summary>
+        private async Task<List<ManagedDevice>> GetDevicesByNamesAsync(List<string> deviceNames)
+        {
+            if (_graphService == null || !deviceNames.Any()) 
+                return new List<ManagedDevice>();
+
+            try
+            {
+                var deviceNameSet = new HashSet<string>(deviceNames, StringComparer.OrdinalIgnoreCase);
+                var allDevices = await _graphService.GetCachedManagedDevicesAsync();
+                
+                return allDevices
+                    .Where(d => !string.IsNullOrEmpty(d.DeviceName) && deviceNameSet.Contains(d.DeviceName))
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CLOUD READINESS TAB] Error fetching devices by names: {ex.Message}");
+                return new List<ManagedDevice>();
+            }
         }
 
         /// <summary>
