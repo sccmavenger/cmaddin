@@ -381,9 +381,9 @@
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <Ellipse Width="10" Height="10" Fill="#107C10" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                                <TextBlock Text="Comanaged" Style="{StaticResource MetricLabel}"/>
+                                                <TextBlock Text="Co-managed" Style="{StaticResource MetricLabel}"/>
                                             </StackPanel>
-                                            <TextBlock Text="{Binding DeviceEnrollment.IntuneEnrolledDevices}" 
+                                            <TextBlock Text="{Binding DeviceEnrollment.CoManagedDevices}" 
                                                        Style="{StaticResource MetricValue}" FontSize="22" Foreground="#107C10"/>
                                             <TextBlock Text="📈 ConfigMgr + Intune" FontSize="9" Foreground="#107C10" FontStyle="Italic"/>
                                         </StackPanel>
