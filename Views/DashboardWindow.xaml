@@ -1587,11 +1587,6 @@
         </ScrollViewer>
     </TabItem>
 
-                <!-- CLOUD READINESS SIGNALS TAB -->
-                <TabItem Header="☁️ Cloud Readiness" Visibility="{Binding ShowCloudReadinessTab}">
-                    <views:CloudReadinessTab x:Name="CloudReadinessTab"/>
-                </TabItem>
-
                 <!-- ENROLLMENT MOMENTUM TAB -->
                 <TabItem Header="📱 Enrollment" Visibility="{Binding ShowEnrollmentTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
@@ -2713,6 +2708,11 @@
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
+                </TabItem>
+
+                <!-- CLOUD READINESS SIGNALS TAB -->
+                <TabItem Header="☁️ Cloud Readiness" Visibility="{Binding ShowCloudReadinessTab}">
+                    <views:CloudReadinessTab x:Name="CloudReadinessTab"/>
                 </TabItem>
 
                 <!-- WORKLOAD MOMENTUM TAB -->

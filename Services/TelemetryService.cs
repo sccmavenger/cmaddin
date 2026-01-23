@@ -47,6 +47,7 @@ namespace ZeroTrustMigrationAddin.Services
                 TotalDevices = 115000,
                 IntuneEnrolledDevices = 64400,
                 ConfigMgrOnlyDevices = 50600,
+                CoManagedDevices = 55900, // Devices in both ConfigMgr + Intune
                 CloudNativeDevices = 8500, // Entra joined + Intune only, no ConfigMgr record
                 TrendData = trendData.ToArray(),
                 // Mock join type data for visualization
