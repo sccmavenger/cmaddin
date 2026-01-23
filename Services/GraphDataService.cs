@@ -272,6 +272,9 @@ namespace ZeroTrustMigrationAddin.Services
         /// 
         /// This tells us which workloads are managed by ConfigMgr (true) vs Intune (false).
         /// Devices with ALL workloads managed by Intune are ready for cloud-native.
+        /// 
+        /// Note: v1.0 API has 6 workloads. Beta API adds endpointProtection and officeApps.
+        /// We query v1.0 first, then fallback to Beta for the additional properties.
         /// </summary>
         public async Task<WorkloadAuthoritySummary> GetCoManagedWorkloadAuthorityAsync()
         {
@@ -285,6 +288,9 @@ namespace ZeroTrustMigrationAddin.Services
             Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
 
             var summary = new WorkloadAuthoritySummary();
+            
+            // Dictionary to store Beta API workload data (deviceId -> (endpointProtection, officeApps))
+            var betaWorkloadData = new Dictionary<string, (bool? endpointProtection, bool? officeApps)>();
             
             try
             {
@@ -323,6 +329,18 @@ namespace ZeroTrustMigrationAddin.Services
                     return summary;
                 }
 
+                // Try to get additional workload data from Beta API (endpointProtection, officeApps)
+                betaWorkloadData = await GetBetaWorkloadDataAsync(coManagedDevices.Select(d => d.Id ?? "").Where(id => !string.IsNullOrEmpty(id)).ToList());
+                
+                if (betaWorkloadData.Any())
+                {
+                    Instance.Info($"   ✅ Beta API: Retrieved Endpoint Protection & Office Apps data for {betaWorkloadData.Count} devices");
+                }
+                else
+                {
+                    Instance.Warning("   ⚠️ Beta API: Could not retrieve Endpoint Protection/Office Apps data - defaulting to ConfigMgr");
+                }
+
                 summary.TotalCoManagedDevices = coManagedDevices.Count;
                 
                 // Initialize workload adoption counters
@@ -345,6 +363,9 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     var features = device.ConfigurationManagerClientEnabledFeatures;
                     
+                    // Get Beta API data for this device (if available)
+                    var hasBetaData = betaWorkloadData.TryGetValue(device.Id ?? "", out var betaData);
+                    
                     var workloadAuth = new DeviceWorkloadAuthority
                     {
                         DeviceId = device.Id ?? "",
@@ -358,9 +379,9 @@ namespace ZeroTrustMigrationAddin.Services
                         DeviceConfigurationManagedByConfigMgr = !(features?.DeviceConfiguration ?? false),
                         CompliancePolicyManagedByConfigMgr = !(features?.CompliancePolicy ?? false),
                         WindowsUpdateManagedByConfigMgr = !(features?.WindowsUpdateForBusiness ?? false),
-                        // Note: Endpoint Protection and Office Apps may not be in all API versions
-                        EndpointProtectionManagedByConfigMgr = true, // Default to ConfigMgr if not available in API
-                        OfficeAppsManagedByConfigMgr = true // Default to ConfigMgr if not available in API
+                        // Endpoint Protection and Office Apps from Beta API (or default to ConfigMgr if not available)
+                        EndpointProtectionManagedByConfigMgr = hasBetaData ? !(betaData.endpointProtection ?? false) : true,
+                        OfficeAppsManagedByConfigMgr = hasBetaData ? !(betaData.officeApps ?? false) : true
                     };
 
                     summary.Devices.Add(workloadAuth);
@@ -409,6 +430,89 @@ namespace ZeroTrustMigrationAddin.Services
             }
 
             return summary;
+        }
+
+        /// <summary>
+        /// Query Beta API for endpointProtection and officeApps workload properties.
+        /// These properties are not available in v1.0 API.
+        /// Returns a dictionary mapping deviceId to (endpointProtection, officeApps) values.
+        /// </summary>
+        private async Task<Dictionary<string, (bool? endpointProtection, bool? officeApps)>> GetBetaWorkloadDataAsync(List<string> deviceIds)
+        {
+            var result = new Dictionary<string, (bool? endpointProtection, bool? officeApps)>();
+            
+            if (_graphClient == null || !deviceIds.Any())
+                return result;
+            
+            try
+            {
+                Instance.Info("   🔄 Querying Beta API for Endpoint Protection & Office Apps workloads...");
+                
+                // Build Beta API URL - query co-managed devices with configurationManagerClientEnabledFeatures
+                var betaUrl = "https://graph.microsoft.com/beta/deviceManagement/managedDevices?" +
+                    "$select=id,configurationManagerClientEnabledFeatures&" +
+                    "$filter=managementAgent eq 'configurationManagerClientMdm'";
+                
+                Instance.LogGraphQuery("GetBetaWorkloadData", "/beta/deviceManagement/managedDevices", 
+                    new[] { "id", "configurationManagerClientEnabledFeatures" });
+                
+                // Use the Graph client's request adapter to make the Beta call with proper authentication
+                var requestInfo = new Microsoft.Kiota.Abstractions.RequestInformation
+                {
+                    HttpMethod = Microsoft.Kiota.Abstractions.Method.GET,
+                    UrlTemplate = betaUrl
+                };
+                
+                var response = await _graphClient.RequestAdapter.SendPrimitiveAsync<System.IO.Stream>(requestInfo);
+                
+                if (response != null)
+                {
+                    using var reader = new System.IO.StreamReader(response);
+                    var json = await reader.ReadToEndAsync();
+                    
+                    // Parse the JSON response to extract endpointProtection and officeApps
+                    var doc = System.Text.Json.JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("value", out var devices))
+                    {
+                        foreach (var device in devices.EnumerateArray())
+                        {
+                            if (device.TryGetProperty("id", out var idProp) && 
+                                device.TryGetProperty("configurationManagerClientEnabledFeatures", out var features))
+                            {
+                                var deviceId = idProp.GetString();
+                                if (!string.IsNullOrEmpty(deviceId) && features.ValueKind != System.Text.Json.JsonValueKind.Null)
+                                {
+                                    bool? endpointProtection = null;
+                                    bool? officeApps = null;
+                                    
+                                    if (features.TryGetProperty("endpointProtection", out var epProp) && 
+                                        epProp.ValueKind == System.Text.Json.JsonValueKind.True || epProp.ValueKind == System.Text.Json.JsonValueKind.False)
+                                        endpointProtection = epProp.GetBoolean();
+                                    
+                                    if (features.TryGetProperty("officeApps", out var oaProp) && 
+                                        oaProp.ValueKind == System.Text.Json.JsonValueKind.True || oaProp.ValueKind == System.Text.Json.JsonValueKind.False)
+                                        officeApps = oaProp.GetBoolean();
+                                    
+                                    // Only add if we got at least one value
+                                    if (endpointProtection.HasValue || officeApps.HasValue)
+                                    {
+                                        result[deviceId] = (endpointProtection, officeApps);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Instance.Info($"   📊 Beta API returned data for {result.Count} devices");
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"   ⚠️ Beta API call failed (will use defaults): {ex.Message}");
+                // Don't throw - just return empty result and fall back to defaults
+            }
+            
+            return result;
         }
 
         /// <summary>
