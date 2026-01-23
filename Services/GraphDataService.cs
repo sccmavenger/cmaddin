@@ -349,16 +349,18 @@ namespace ZeroTrustMigrationAddin.Services
                     {
                         DeviceId = device.Id ?? "",
                         DeviceName = device.DeviceName ?? "Unknown",
-                        // Note: TRUE means ConfigMgr manages it, FALSE means Intune manages it
-                        InventoryManagedByConfigMgr = features?.Inventory ?? true,
-                        ModernAppsManagedByConfigMgr = features?.ModernApps ?? true,
-                        ResourceAccessManagedByConfigMgr = features?.ResourceAccess ?? true,
-                        DeviceConfigurationManagedByConfigMgr = features?.DeviceConfiguration ?? true,
-                        CompliancePolicyManagedByConfigMgr = features?.CompliancePolicy ?? true,
-                        WindowsUpdateManagedByConfigMgr = features?.WindowsUpdateForBusiness ?? true,
+                        // Per Microsoft Graph API docs: TRUE means Intune manages, FALSE means ConfigMgr manages
+                        // https://learn.microsoft.com/en-us/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
+                        // So we INVERT the value: ManagedByConfigMgr = NOT(features.Property)
+                        InventoryManagedByConfigMgr = !(features?.Inventory ?? false),
+                        ModernAppsManagedByConfigMgr = !(features?.ModernApps ?? false),
+                        ResourceAccessManagedByConfigMgr = !(features?.ResourceAccess ?? false),
+                        DeviceConfigurationManagedByConfigMgr = !(features?.DeviceConfiguration ?? false),
+                        CompliancePolicyManagedByConfigMgr = !(features?.CompliancePolicy ?? false),
+                        WindowsUpdateManagedByConfigMgr = !(features?.WindowsUpdateForBusiness ?? false),
                         // Note: Endpoint Protection and Office Apps may not be in all API versions
-                        EndpointProtectionManagedByConfigMgr = true, // Default to ConfigMgr if not available
-                        OfficeAppsManagedByConfigMgr = true // Default to ConfigMgr if not available
+                        EndpointProtectionManagedByConfigMgr = true, // Default to ConfigMgr if not available in API
+                        OfficeAppsManagedByConfigMgr = true // Default to ConfigMgr if not available in API
                     };
 
                     summary.Devices.Add(workloadAuth);

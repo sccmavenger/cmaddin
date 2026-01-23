@@ -318,8 +318,11 @@ namespace ZeroTrustMigrationAddin.Models
     /// Source: managedDevice.configurationManagerClientEnabledFeatures
     /// Docs: https://learn.microsoft.com/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
     /// 
-    /// When a property is TRUE, ConfigMgr manages that workload.
-    /// When a property is FALSE, Intune manages that workload.
+    /// Note: In the Graph API configurationManagerClientEnabledFeatures:
+    ///   TRUE = Intune manages the workload
+    ///   FALSE = ConfigMgr manages the workload
+    /// This model INVERTS that: ManagedByConfigMgr properties are true when ConfigMgr manages.
+    /// See: https://learn.microsoft.com/en-us/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
     /// </summary>
     public class DeviceWorkloadAuthority
     {
