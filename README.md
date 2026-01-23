@@ -94,120 +94,41 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ## 🆕 What's New
 
+### Version 3.17.50 (January 22, 2026)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### Version 3.16.40 (January 19, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
+### Fixed - Emoji Rendering (Square Boxes) 🎨
+Added `Segoe UI Emoji` font support to 18 XAML files to fix square box emoji rendering on Windows systems. WPF's default text rendering doesn't support color emojis properly - this fix ensures emojis display correctly throughout the UI.
 
 ---
 
-### Version 3.16.39 (January 19, 2026)
+### Version 3.17.49 (January 22, 2026)
 
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
+### Fixed - Broken "Learn More" Links (GitHub Issue #2) 🔗
+Fixed broken Microsoft Learn URLs that were returning 404 errors. Updated Cloud-Native Readiness and Office Cloud Policy documentation links to their new paths.
 
 ---
 
-### Version 3.16.38 (January 19, 2026)
+### Version 3.17.45 (January 22, 2026)
 
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
+### Fixed - Mock Data Math Inconsistency 📊
+Fixed `TotalDevices` calculation in mock data. Now correctly shows 106,500 (Co-managed + ConfigMgr Only) instead of incorrectly including Cloud Native devices which have no ConfigMgr record.
 
 ---
 
-### Version 3.16.37 (January 19, 2026)
+### Version 3.17.43 (January 22, 2026)
 
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
+### Fixed - Overview Tile Binding Inconsistency 🐛
+Fixed the Overview tab's "Co-managed" tile to show actual co-managed devices (55,900) instead of combined Intune total (64,400). Now matches Enrollment tab's 3-category display.
 
 ---
 
-### Version 3.16.35 (January 19, 2026)
+### Version 3.17.41 (January 22, 2026)
 
-### Added
-- 
+### Fixed - Co-managed Mock Data Showing 0 🐛
+Fixed Co-managed category showing 0 devices in mock/disconnected mode.
 
-### Changed
-- 
-
-### Fixed
--
+### Changed - Tab Order Reordering 🗂️
+Reordered tabs to: Overview → Enrollment → Cloud Readiness (was: Overview → Cloud Readiness → Enrollment).
 
 ---
 
