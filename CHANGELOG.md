@@ -1,5 +1,33 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.54] - 2026-01-23
+
+### Fixed - MDE (msSense) Devices Incorrectly Counted as Cloud Native 🐛
+
+**Issue Reported by:** Panu  
+**Root Cause:** Microsoft Defender for Endpoint (MDE) creates device records in Entra/Intune when deployed on servers for granular policy. These devices have `ManagementAgent = msSense` (`MsSense` in Graph SDK) and were being counted as "Cloud Native" workstations because they appear in Intune with no ConfigMgr record.
+
+**Impact:** Cloud Native device counts were inflated by server-originated MDE device records.
+
+**Solution:** Added `ManagementAgent != MsSense` filter to exclude MDE devices from all workstation counts:
+- Main device enrollment counting (`intuneEligibleDevices`)
+- Intune Windows enrolled count
+- Total Intune Windows count  
+- Cloud Native calculation
+- Compliance dashboard filtering
+
+**Technical Details:**
+- `ManagementAgentType.MsSense` = MDE/msSense devices in Graph SDK
+- JSON value in Graph API responses: `"managementAgent": "msSense"`
+- These are typically servers with Microsoft Defender for Endpoint
+- They should NOT be counted as Windows 10/11 workstations for migration purposes
+- Added logging: `⚠️ Excluding X MDE (msSense) devices from workstation count`
+
+**Files Modified:**
+- `Services/GraphDataService.cs` - Added MDE exclusion to 5 device filtering locations
+
+---
+
 ## [3.17.52] - 2026-01-23
 
 ### Changed - Removed Dashboard Tabs Section from Admin Guide 📖
