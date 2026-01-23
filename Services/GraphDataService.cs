@@ -654,11 +654,23 @@ namespace ZeroTrustMigrationAddin.Services
                     throw; // Re-throw to handle at higher level
                 }
 
-                // Filter to Windows workstations only (not servers)
+                // Filter to Windows workstations only (not servers, not MDE/msSense)
+                // MDE (Microsoft Defender for Endpoint) creates device records for servers using granular policy
+                // These have ManagementAgent = MsSense and should NOT be counted as workstations
+                var mdeDeviceCount = allIntuneDevices.Count(d => 
+                    d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.MsSense);
+                
+                if (mdeDeviceCount > 0)
+                {
+                    Instance.Info($"⚠️ Excluding {mdeDeviceCount} MDE (msSense) devices from workstation count");
+                    Instance.Info($"   These are typically servers with Microsoft Defender for Endpoint");
+                }
+                
                 var intuneEligibleDevices = allIntuneDevices.Where(d => 
                     d.OperatingSystem != null && 
                     d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
-                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase) &&
+                    d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense // Exclude MDE devices
                 ).ToList();
 
                 // STEP 2.5: Detect co-management via ManagementAgent (OPTION A - Most Reliable)
@@ -729,13 +741,14 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info("==============================================");
 
                 // STEP 3: Calculate enrollment metrics
-                // Count ONLY Windows 10/11 devices that are Intune-enrolled or co-managed
+                // Count ONLY Windows 10/11 devices that are Intune-enrolled or co-managed (excluding MDE)
                 int intuneWindowsEnrolledCount = intuneEligibleDevices.Count(d => 
                     (d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.Mdm ||
                      d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm) &&
                     d.OperatingSystem != null && 
                     d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
-                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase));
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase) &&
+                    d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense);
 
                 // Determine the authoritative device count
                 int totalDevices;
@@ -748,7 +761,8 @@ namespace ZeroTrustMigrationAddin.Services
                 int intuneWindowsCount = allIntuneDevices.Count(d => 
                     d.OperatingSystem != null && 
                     d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
-                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase));
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase) &&
+                    d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense);
 
                 if (configMgrCount > 0)
                 {
@@ -906,7 +920,7 @@ namespace ZeroTrustMigrationAddin.Services
                 int configMgrCount2 = configMgrDevices != null ? configMgrDevices.Count : 0;
                 if (configMgrCount2 > 0)
                 {
-                    // In co-management: Cloud native = Intune devices NOT in ConfigMgr
+                    // In co-management: Cloud native = Intune devices NOT in ConfigMgr (excluding MDE devices)
                     var configMgrNames = new HashSet<string>(
                         configMgrDevices?.Where(d => !string.IsNullOrEmpty(d.Name))
                             .Select(d => d.Name.ToLowerInvariant()) ?? Enumerable.Empty<string>(),
@@ -915,9 +929,10 @@ namespace ZeroTrustMigrationAddin.Services
                     cloudNativeCount = intuneEligibleDevices.Count(d => 
                         !string.IsNullOrEmpty(d.DeviceName) &&
                         !configMgrNames.Contains(d.DeviceName.ToLowerInvariant()) &&
-                        !string.IsNullOrEmpty(d.AzureADDeviceId)); // Has AAD identity
+                        !string.IsNullOrEmpty(d.AzureADDeviceId) && // Has AAD identity
+                        d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense); // Exclude MDE
                         
-                    Instance.Info($"☁️ Cloud Native (Intune-only, no ConfigMgr): {cloudNativeCount}");
+                    Instance.Info($"☁️ Cloud Native (Intune-only, no ConfigMgr, no MDE): {cloudNativeCount}");
                 }
                 else
                 {
@@ -997,13 +1012,15 @@ namespace ZeroTrustMigrationAddin.Services
                 var allDevices = complianceStatus?.Value ?? new List<Microsoft.Graph.Models.ManagedDevice>();
                 
                 // ⚠️ CRITICAL: Filter to ONLY Windows 10/11 workstations (Intune-eligible devices)
+                // Excludes: Servers, MDE (msSense) devices
                 var devices = allDevices.Where(d => 
                     d.OperatingSystem != null && 
                     (
                         d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
                         d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
                     ) &&
-                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase) &&
+                    d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense // Exclude MDE
                 ).ToList();
                 
                 Instance.LogGraphQuery("GetComplianceDashboard (Result)", "/deviceManagement/managedDevices", selectFields, 
