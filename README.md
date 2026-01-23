@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.51** | January 22, 2026
+**Version 3.17.53** | January 23, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -94,6 +94,35 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ## 🆕 What's New
 
+
+
+### Version 3.17.52 (January 23, 2026)
+
+### Changed - Removed Dashboard Tabs Section from Admin Guide 📖
+
+Removed the "Dashboard Tabs" section from AdminUserGuide.html as it was outdated and redundant.
+
+**Files Modified:**
+- `AdminUserGuide.html` - Removed section id="dashboard-tabs" and TOC link
+
+### Added - Clickable Device Counts in Cloud Readiness Signals 🖱️
+
+Added drill-down functionality to Cloud Readiness signal tiles. Users can now click on blocker device counts (e.g., "2 devices") to view the list of affected devices in a dialog.
+
+**Features:**
+- Click "X devices" in any Cloud Readiness signal blocker to see device details
+- Uses existing DeviceListDialog for consistent UX
+- Supports both live Graph API data and mock data for demonstrations
+- Hover effect (underline) provides visual feedback for clickable counts
+
+**Files Modified:**
+- `Views/CloudReadinessTab.xaml` - Added click handler and hover styles to device count TextBlock
+- `Views/CloudReadinessTab.xaml.cs` - Added `BlockerDeviceCount_Click` handler with blocker-specific device filtering
+- `ViewModels/DeviceListViewModel.cs` - Added constructor overload for custom dialog titles
+
+---
+
+---
 
 ### Version 3.17.49 (January 22, 2026)
 
@@ -207,35 +236,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 **Files Modified:**
 - `Views/DashboardWindow.xaml` - Fixed Overview tile binding from `IntuneEnrolledDevices` to `CoManagedDevices`
-
----
-
----
-
-### Version 3.17.41 (January 22, 2026)
-
-### Fixed - Co-managed Mock Data Showing 0 🐛
-
-**Issue:** The Enrollment tab's Co-managed category was showing 0 devices when in mock/disconnected mode because the `CoManagedDevices` property was not being set.
-
-**Fix:** Added `CoManagedDevices = 55900` to mock data (TelemetryService) and `CoManagedDevices = coManagedCount` to live data (GraphDataService).
-
-**Files Modified:**
-- `Services/TelemetryService.cs` - Added CoManagedDevices to mock DeviceEnrollment
-- `Services/GraphDataService.cs` - Added CoManagedDevices to live DeviceEnrollment return
-
-### Changed - Tab Order Reordering 🗂️
-
-**Request:** Reorder tabs to: Overview → Enrollment → Cloud Readiness
-
-**Before:** Overview, Cloud Readiness, Enrollment
-
-**After:** Overview, Enrollment, Cloud Readiness
-
-**Telemetry:** Safe - telemetry tracks tab names (not indices), so reordering doesn't break analytics.
-
-**Files Modified:**
-- `Views/DashboardWindow.xaml` - Moved Enrollment tab before Cloud Readiness tab
 
 ---
 
@@ -1351,6 +1351,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-01-22  
-**Version**: 3.17.51  
+**Last Updated**: 2026-01-23  
+**Version**: 3.17.53  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
