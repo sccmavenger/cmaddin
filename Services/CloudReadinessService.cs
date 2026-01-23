@@ -506,6 +506,13 @@ namespace ZeroTrustMigrationAddin.Services
                         }
                     }
                     
+                    // Get device names that still have workloads on ConfigMgr
+                    var devicesWithWorkloadsOnConfigMgr = workloadAuthority.Devices
+                        .Where(d => !d.AllWorkloadsManagedByIntune)
+                        .Select(d => d.DeviceName)
+                        .Where(n => !string.IsNullOrEmpty(n))
+                        .ToList();
+                    
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "comanaged-workloads-on-configmgr",
@@ -515,7 +522,8 @@ namespace ZeroTrustMigrationAddin.Services
                         PercentageAffected = SafeBlockerPercentage(coManagedNotReady, signal.TotalDevices),
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Move remaining co-management workload sliders to Intune",
-                        RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-switch-workloads"
+                        RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-switch-workloads",
+                        AffectedDeviceNames = devicesWithWorkloadsOnConfigMgr!
                     });
                 }
                 
