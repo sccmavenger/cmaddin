@@ -38,6 +38,20 @@ namespace ZeroTrustMigrationAddin.ViewModels
             ExportCommand = new RelayCommand(ExecuteExport, CanExecuteExport);
         }
 
+        /// <summary>
+        /// Constructor with custom title for blocker device lists.
+        /// </summary>
+        public DeviceListViewModel(string customTitle, List<ManagedDevice> devices)
+        {
+            _allDevices = devices ?? new List<ManagedDevice>();
+            _filteredDevices = new ObservableCollection<ManagedDevice>(_allDevices);
+
+            Title = customTitle;
+            Subtitle = $"Showing {devices.Count} devices affected by this blocker";
+
+            ExportCommand = new RelayCommand(ExecuteExport, CanExecuteExport);
+        }
+
         public string Title { get; }
         public string Subtitle { get; }
 

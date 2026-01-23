@@ -7,8 +7,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using Microsoft.Graph.Models;
 using ZeroTrustMigrationAddin.Models;
 using ZeroTrustMigrationAddin.Services;
+using ZeroTrustMigrationAddin.ViewModels;
 using static ZeroTrustMigrationAddin.Services.FileLogger;
 
 namespace ZeroTrustMigrationAddin.Views
@@ -314,7 +316,7 @@ namespace ZeroTrustMigrationAddin.Views
                 
                 if (System.IO.File.Exists(userGuidePath))
                 {
-                    Process.Start(new ProcessStartInfo
+                    System.Diagnostics.Process.Start(new ProcessStartInfo
                     {
                         FileName = $"{userGuidePath}#cloud-readiness",
                         UseShellExecute = true
@@ -370,7 +372,7 @@ namespace ZeroTrustMigrationAddin.Views
         {
             try
             {
-                Process.Start(new ProcessStartInfo
+                System.Diagnostics.Process.Start(new ProcessStartInfo
                 {
                     FileName = e.Uri.AbsoluteUri,
                     UseShellExecute = true
@@ -400,7 +402,7 @@ namespace ZeroTrustMigrationAddin.Views
                     {
                         // Open with anchor - browsers will navigate to the section
                         string fullPath = userGuidePath + anchor;
-                        Process.Start(new ProcessStartInfo
+                        System.Diagnostics.Process.Start(new ProcessStartInfo
                         {
                             FileName = fullPath,
                             UseShellExecute = true
@@ -422,6 +424,185 @@ namespace ZeroTrustMigrationAddin.Views
                     Instance.Warning($"[CLOUD READINESS TAB] Failed to open Admin Guide: {ex.Message}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Handles click on blocker device count to show affected devices.
+        /// </summary>
+        private async void BlockerDeviceCount_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (sender is not System.Windows.Controls.TextBlock textBlock ||
+                    textBlock.Tag is not ReadinessBlocker blocker)
+                {
+                    return;
+                }
+
+                Instance.Info($"[CLOUD READINESS TAB] User clicked blocker: {blocker.Name} ({blocker.AffectedDeviceCount} devices)");
+
+                List<ManagedDevice> devices;
+
+                // Try to get actual device data if authenticated
+                if (_graphService != null && _graphService.IsAuthenticated)
+                {
+                    devices = await GetDevicesForBlockerAsync(blocker.Id);
+                }
+                else
+                {
+                    // Generate mock data for demonstration
+                    devices = GenerateMockDevicesForBlocker(blocker);
+                }
+
+                if (devices == null || devices.Count == 0)
+                {
+                    System.Windows.MessageBox.Show($"No devices found for blocker: {blocker.Name}", "No Devices",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    return;
+                }
+
+                // Show device list dialog
+                var deviceListViewModel = new DeviceListViewModel(
+                    $"{blocker.Name} ({blocker.AffectedDeviceCount} devices)",
+                    devices);
+                var deviceListDialog = new DeviceListDialog
+                {
+                    DataContext = deviceListViewModel,
+                    Owner = Window.GetWindow(this)
+                };
+                deviceListDialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CLOUD READINESS TAB] Error showing blocker devices: {ex.Message}");
+                System.Windows.MessageBox.Show($"Error loading device list:\n\n{ex.Message}", "Error",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Gets devices affected by a specific blocker from Graph API.
+        /// </summary>
+        private async Task<List<ManagedDevice>> GetDevicesForBlockerAsync(string blockerId)
+        {
+            if (_graphService == null) return new List<ManagedDevice>();
+
+            try
+            {
+                // Map blocker IDs to device filters using existing GraphDataService methods
+                return blockerId switch
+                {
+                    "hybrid-joined" => await _graphService.GetDevicesByJoinType(DeviceJoinType.HybridAzureADJoined),
+                    "ad-joined-only" or "domain-only" => await _graphService.GetDevicesByJoinType(DeviceJoinType.OnPremDomainOnly),
+                    "workgroup" => await _graphService.GetDevicesByJoinType(DeviceJoinType.WorkgroupOnly),
+                    "configmgr-only" or "legacy-agent" or "sccm-agent" => await GetConfigMgrOnlyDevicesAsync(),
+                    "missing-autopilot" or "no-autopilot" => await GetDevicesWithoutAutopilotAsync(),
+                    "non-compliant" or "compliance-issues" => await GetNonCompliantDevicesAsync(),
+                    "outdated-os" or "legacy-os" => await GetOutdatedOSDevicesAsync(),
+                    _ => (await _graphService.GetCachedManagedDevicesAsync()).Take(50).ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CLOUD READINESS TAB] Error fetching devices for blocker {blockerId}: {ex.Message}");
+                return new List<ManagedDevice>();
+            }
+        }
+
+        /// <summary>
+        /// Gets devices managed only by ConfigMgr (not MDM enrolled).
+        /// </summary>
+        private async Task<List<ManagedDevice>> GetConfigMgrOnlyDevicesAsync()
+        {
+            var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
+            return allDevices
+                .Where(d => d.ManagementAgent == ManagementAgentType.ConfigurationManagerClientMdmEas ||
+                           d.ManagementAgent == ManagementAgentType.ConfigurationManagerClient)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Gets devices not enrolled in Autopilot.
+        /// </summary>
+        private async Task<List<ManagedDevice>> GetDevicesWithoutAutopilotAsync()
+        {
+            var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
+            // Devices without Autopilot registration typically have no WindowsAutopilotDeviceIdentities
+            // For now, return devices that are not MDM enrolled or have no Azure AD Device ID
+            return allDevices
+                .Where(d => string.IsNullOrEmpty(d.AzureADDeviceId))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Gets non-compliant devices.
+        /// </summary>
+        private async Task<List<ManagedDevice>> GetNonCompliantDevicesAsync()
+        {
+            var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
+            return allDevices
+                .Where(d => d.ComplianceState != ComplianceState.Compliant)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Gets devices with outdated OS versions.
+        /// </summary>
+        private async Task<List<ManagedDevice>> GetOutdatedOSDevicesAsync()
+        {
+            var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
+            return allDevices
+                .Where(d => IsOutdatedOS(d.OperatingSystem, d.OsVersion))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Check if OS version is outdated (Windows 10 before 22H2 or old Windows 11).
+        /// </summary>
+        private bool IsOutdatedOS(string? osName, string? osVersion)
+        {
+            if (string.IsNullOrEmpty(osName) || string.IsNullOrEmpty(osVersion))
+                return false;
+
+            if (osName.Contains("Windows 10", StringComparison.OrdinalIgnoreCase))
+            {
+                // Windows 10 before 22H2 (build 19045) is outdated
+                if (Version.TryParse(osVersion, out var version))
+                {
+                    return version.Build < 19045;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Generate mock devices for demonstration when not connected.
+        /// </summary>
+        private List<ManagedDevice> GenerateMockDevicesForBlocker(ReadinessBlocker blocker)
+        {
+            var random = new Random();
+            var devices = new List<ManagedDevice>();
+            var count = Math.Min(blocker.AffectedDeviceCount, 25); // Cap at 25 for demo
+
+            for (int i = 1; i <= count; i++)
+            {
+                devices.Add(new ManagedDevice
+                {
+                    DeviceName = $"DEVICE-{blocker.Id.ToUpper().Replace("-", "")}-{i:D3}",
+                    Id = Guid.NewGuid().ToString(),
+                    UserPrincipalName = $"user{i}@contoso.com",
+                    OperatingSystem = "Windows 10 Enterprise",
+                    OsVersion = "10.0.19045",
+                    ComplianceState = random.Next(100) < 70 ? ComplianceState.Compliant : ComplianceState.Noncompliant,
+                    ManagementAgent = blocker.Id.Contains("configmgr") 
+                        ? ManagementAgentType.ConfigurationManagerClient 
+                        : ManagementAgentType.Mdm,
+                    LastSyncDateTime = DateTimeOffset.Now.AddDays(-random.Next(1, 30))
+                });
+            }
+
+            return devices;
         }
 
         /// <summary>

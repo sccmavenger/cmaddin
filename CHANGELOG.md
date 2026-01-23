@@ -1,5 +1,31 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.52] - 2026-01-23
+
+### Changed - Removed Dashboard Tabs Section from Admin Guide 📖
+
+Removed the "Dashboard Tabs" section from AdminUserGuide.html as it was outdated and redundant.
+
+**Files Modified:**
+- `AdminUserGuide.html` - Removed section id="dashboard-tabs" and TOC link
+
+### Added - Clickable Device Counts in Cloud Readiness Signals 🖱️
+
+Added drill-down functionality to Cloud Readiness signal tiles. Users can now click on blocker device counts (e.g., "2 devices") to view the list of affected devices in a dialog.
+
+**Features:**
+- Click "X devices" in any Cloud Readiness signal blocker to see device details
+- Uses existing DeviceListDialog for consistent UX
+- Supports both live Graph API data and mock data for demonstrations
+- Hover effect (underline) provides visual feedback for clickable counts
+
+**Files Modified:**
+- `Views/CloudReadinessTab.xaml` - Added click handler and hover styles to device count TextBlock
+- `Views/CloudReadinessTab.xaml.cs` - Added `BlockerDeviceCount_Click` handler with blocker-specific device filtering
+- `ViewModels/DeviceListViewModel.cs` - Added constructor overload for custom dialog titles
+
+---
+
 ## [3.17.49] - 2026-01-22
 
 ### Fixed - Emoji Rendering (Square Boxes) 🎨
