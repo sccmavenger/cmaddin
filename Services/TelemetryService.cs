@@ -44,8 +44,8 @@ namespace ZeroTrustMigrationAddin.Services
 
             return new DeviceEnrollment
             {
-                TotalDevices = 115000,
-                IntuneEnrolledDevices = 64400,
+                TotalDevices = 106500, // ConfigMgr baseline = Co-managed + ConfigMgr Only (NOT Cloud Native)
+                IntuneEnrolledDevices = 64400, // All Intune devices = Co-managed + Cloud Native
                 ConfigMgrOnlyDevices = 50600,
                 CoManagedDevices = 55900, // Devices in both ConfigMgr + Intune
                 CloudNativeDevices = 8500, // Entra joined + Intune only, no ConfigMgr record
