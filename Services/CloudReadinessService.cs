@@ -417,10 +417,12 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Assesses Cloud-Native readiness (Entra Join + Intune only, no ConfigMgr).
-        /// A device is ready for cloud-native when:
-        /// 1. Already cloud-native (AAD-joined, Intune-only, no ConfigMgr) OR
-        /// 2. Co-managed with ALL workloads moved to Intune (can remove ConfigMgr client)
+        /// Assesses Cloud-Native readiness for devices with a ConfigMgr record.
+        /// 
+        /// CRITERIA:
+        /// - Assessment scope: ONLY devices with a record in ConfigMgr (migration targets)
+        /// - Cloud-Native Ready: ConfigMgr devices that are co-managed with ALL workloads on Intune
+        /// - Born-in-Cloud devices (Entra + Intune, no ConfigMgr) are already cloud native and excluded from scope
         /// 
         /// Uses Graph API configurationManagerClientEnabledFeatures for per-device workload authority.
         /// </summary>
@@ -444,21 +446,29 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Instance.Info("   Fetching enrollment data and workload authority...");
                 var enrollmentData = await _graphService.GetDeviceEnrollmentAsync();
-                var devices = await _configMgrService.GetWindows1011DevicesAsync();
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
                 
                 // Get per-device workload authority for co-managed devices
                 Instance.Info("   Querying co-management workload authority via Graph API...");
                 var workloadAuthority = await _graphService.GetCoManagedWorkloadAuthorityAsync();
 
-                signal.TotalDevices = enrollmentData?.TotalDevices ?? devices?.Count ?? 0;
+                // IMPORTANT: Assessment scope = ONLY devices with a ConfigMgr record
+                // Born-in-cloud devices (Entra + Intune, no ConfigMgr) are already cloud native
+                var configMgrDeviceCount = configMgrDevices?.Count ?? 0;
+                var bornInCloudCount = enrollmentData?.CloudNativeDevices ?? 0;
                 
-                Instance.Info($"   📱 Total devices: {signal.TotalDevices}");
+                // Total devices for this assessment = ConfigMgr devices only (migration targets)
+                signal.TotalDevices = configMgrDeviceCount;
+                
+                Instance.Info($"   📱 ASSESSMENT SCOPE:");
+                Instance.Info($"      ConfigMgr devices (migration targets): {configMgrDeviceCount}");
+                Instance.Info($"      Born-in-Cloud (already cloud native, excluded): {bornInCloudCount}");
                 Instance.Info("");
                 Instance.Info("   DEVICE MANAGEMENT STATE BREAKDOWN:");
-                Instance.Info($"      ☁️ Already Cloud-Native (Intune-only, no ConfigMgr): {enrollmentData?.CloudNativeDevices ?? 0}");
-                Instance.Info($"      ✅ Entra ID Joined (ready for cloud-native): {enrollmentData?.AzureADOnlyDevices ?? 0}");
+                Instance.Info($"      ☁️ Born-in-Cloud (Entra + Intune, no ConfigMgr): {bornInCloudCount} ← Already done!");
                 Instance.Info($"      🔄 Co-Managed (ConfigMgr + Intune): {enrollmentData?.CoManagedDevices ?? 0}");
-                Instance.Info($"         └─ All workloads on Intune (ready to remove ConfigMgr): {workloadAuthority.DevicesReadyForCloudNative}");
+                Instance.Info($"         └─ All workloads on Intune (CLOUD-NATIVE READY): {workloadAuthority.DevicesReadyForCloudNative}");
+                Instance.Info($"         └─ Some workloads on ConfigMgr: {workloadAuthority.TotalCoManagedDevices - workloadAuthority.DevicesReadyForCloudNative}");
                 Instance.Info($"      🟡 Hybrid Entra ID Joined: {enrollmentData?.HybridJoinedDevices ?? 0}");
                 Instance.Info($"      🔴 ConfigMgr-Only (not in Intune): {enrollmentData?.ConfigMgrOnlyDevices ?? 0}");
                 Instance.Info($"      🔴 On-Prem AD Only (no cloud identity): {enrollmentData?.OnPremDomainOnlyDevices ?? 0}");
@@ -466,26 +476,23 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 if (signal.TotalDevices == 0)
                 {
-                    Instance.Warning("   ⚠️ No devices found for cloud-native assessment");
+                    Instance.Warning("   ⚠️ No ConfigMgr devices found - nothing to migrate");
+                    Instance.Info($"   ☁️ You have {bornInCloudCount} born-in-cloud devices that are already cloud native");
+                    signal.ReadyDevices = 0;
                     return signal;
                 }
 
                 var blockers = new List<ReadinessBlocker>();
 
-                // Already cloud-native devices (AAD-only + Intune-only)
-                var alreadyCloudNative = enrollmentData?.CloudNativeDevices ?? 0;
-                
-                // AAD-joined devices with Intune (these are cloud-native candidates)
-                var aadJoinedWithIntune = enrollmentData?.AzureADOnlyDevices ?? 0;
-                
-                // Co-managed devices with ALL workloads on Intune (ready to remove ConfigMgr client)
+                // Cloud-Native Ready = ConfigMgr devices that are co-managed with ALL workloads on Intune
+                // These devices can have the ConfigMgr client removed and become fully cloud native
                 var coManagedReadyForCloudNative = workloadAuthority.DevicesReadyForCloudNative;
                 
                 // Co-managed devices still with some workloads on ConfigMgr
                 var coManagedNotReady = workloadAuthority.TotalCoManagedDevices - coManagedReadyForCloudNative;
                 
                 Instance.Info("");
-                Instance.Info("   BLOCKERS ANALYSIS:");
+                Instance.Info("   BLOCKERS ANALYSIS (ConfigMgr devices not yet cloud-native ready):");
                 
                 // Co-managed devices with workloads still on ConfigMgr
                 if (coManagedNotReady > 0)
@@ -527,27 +534,27 @@ namespace ZeroTrustMigrationAddin.Services
                     });
                 }
                 
-                // Hybrid joined devices need identity migration
-                var hybridJoined = enrollmentData?.HybridJoinedDevices ?? 0;
-                if (hybridJoined > 0)
+                // ConfigMgr-only devices (not enrolled in Intune at all)
+                var configMgrOnly = enrollmentData?.ConfigMgrOnlyDevices ?? 0;
+                if (configMgrOnly > 0)
                 {
-                    Instance.Info($"      🟡 Hybrid Entra ID Joined: {hybridJoined} devices");
-                    Instance.Info($"         → These devices have on-prem AD dependencies");
-                    Instance.Info($"         → Need to migrate from Hybrid to cloud-only Entra ID join");
+                    Instance.Info($"      🔴 ConfigMgr Only (not in Intune): {configMgrOnly} devices");
+                    Instance.Info($"         → Managed by ConfigMgr but not enrolled in Intune");
+                    Instance.Info($"         → Enable co-management to start cloud journey");
                     blockers.Add(new ReadinessBlocker
                     {
-                        Id = "hybrid-joined",
-                        Name = "Hybrid Entra ID Joined",
-                        Description = "These devices are Hybrid joined and have on-premises AD dependencies.",
-                        AffectedDeviceCount = hybridJoined,
-                        PercentageAffected = SafeBlockerPercentage(hybridJoined, signal.TotalDevices),
-                        Severity = BlockerSeverity.Medium,
-                        RemediationAction = "Plan migration from Hybrid to cloud-only Entra ID join",
-                        RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/device-join-plan"
+                        Id = "configmgr-only",
+                        Name = "ConfigMgr Only (Not in Intune)",
+                        Description = "These devices are managed by ConfigMgr but not enrolled in Intune.",
+                        AffectedDeviceCount = configMgrOnly,
+                        PercentageAffected = SafeBlockerPercentage(configMgrOnly, signal.TotalDevices),
+                        Severity = BlockerSeverity.High,
+                        RemediationAction = "Enable co-management and enroll in Intune",
+                        RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-enable"
                     });
                 }
 
-                // On-prem only devices
+                // On-prem only devices (no cloud identity)
                 var onPremOnly = enrollmentData?.OnPremDomainOnlyDevices ?? 0;
                 if (onPremOnly > 0)
                 {
@@ -567,29 +574,19 @@ namespace ZeroTrustMigrationAddin.Services
                     });
                 }
 
-                // ConfigMgr-only devices (not enrolled in Intune)
-                var configMgrOnly = enrollmentData?.ConfigMgrOnlyDevices ?? 0;
-                if (configMgrOnly > 0)
+                // Hybrid joined is NOT a blocker for cloud-native readiness
+                // It's the expected state during migration - they can still be co-managed with all workloads on Intune
+                var hybridJoined = enrollmentData?.HybridJoinedDevices ?? 0;
+                if (hybridJoined > 0)
                 {
-                    Instance.Info($"      🔴 ConfigMgr Only (not in Intune): {configMgrOnly} devices");
-                    Instance.Info($"         → Managed by ConfigMgr but not enrolled in Intune");
-                    Instance.Info($"         → Enable co-management to start cloud journey");
-                    blockers.Add(new ReadinessBlocker
-                    {
-                        Id = "configmgr-only",
-                        Name = "ConfigMgr Only (Not in Intune)",
-                        Description = "These devices are managed by ConfigMgr but not enrolled in Intune.",
-                        AffectedDeviceCount = configMgrOnly,
-                        PercentageAffected = SafeBlockerPercentage(configMgrOnly, signal.TotalDevices),
-                        Severity = BlockerSeverity.Medium,
-                        RemediationAction = "Enable co-management and enroll in Intune",
-                        RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-enable"
-                    });
+                    Instance.Info($"      ℹ️ Hybrid Entra ID Joined: {hybridJoined} devices");
+                    Instance.Info($"         → This is expected during migration (not a blocker)");
+                    Instance.Info($"         → Can still achieve cloud-native ready with all workloads on Intune");
+                    // Note: NOT adding as a blocker - Hybrid join + all workloads on Intune = cloud-native ready
                 }
 
-                // Ready devices = Already cloud-native + AAD-only with Intune + Co-managed with ALL workloads on Intune
-                var totalReady = alreadyCloudNative + aadJoinedWithIntune + coManagedReadyForCloudNative;
-                signal.ReadyDevices = SafeReadyDevices(totalReady, signal.TotalDevices, "CloudNative");
+                // Ready devices = ConfigMgr devices that are co-managed with ALL workloads on Intune
+                signal.ReadyDevices = SafeReadyDevices(coManagedReadyForCloudNative, signal.TotalDevices, "CloudNative");
                 signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = GenerateCloudNativeRecommendations(signal, blockers, workloadAuthority);
@@ -597,11 +594,9 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info("");
                 Instance.Info($"   ═══════════════════════════════════════════════════════════════");
                 Instance.Info($"   ☁️ CLOUD-NATIVE READINESS RESULT: {signal.ReadinessPercentage}%");
-                Instance.Info($"      Ready devices: {signal.ReadyDevices} / {signal.TotalDevices}");
-                Instance.Info($"      Breakdown:");
-                Instance.Info($"         - Already cloud-native: {alreadyCloudNative}");
-                Instance.Info($"         - AAD-joined with Intune: {aadJoinedWithIntune}");
-                Instance.Info($"         - Co-managed, all workloads on Intune: {coManagedReadyForCloudNative}");
+                Instance.Info($"      Assessment scope: {signal.TotalDevices} ConfigMgr devices");
+                Instance.Info($"      Cloud-native ready: {signal.ReadyDevices} (co-managed, ALL workloads on Intune)");
+                Instance.Info($"      Born-in-cloud (already done): {bornInCloudCount} (excluded from scope)");
                 Instance.Info($"      Blockers found: {blockers.Count}");
                 Instance.Info($"   ═══════════════════════════════════════════════════════════════");
             }

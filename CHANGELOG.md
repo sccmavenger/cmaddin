@@ -1,5 +1,33 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.57] - 2026-01-23
+
+### Fixed - Cloud-Native Readiness Criteria Updated 🎯
+
+**Issue:** Cloud-Native Readiness tile was showing incorrect percentages and scope. The criteria needed to focus on ConfigMgr devices being migrated, not all devices.
+
+**New Criteria:**
+- **Assessment Scope:** ONLY devices with a record in ConfigMgr (these are migration targets)
+- **Cloud-Native Ready:** ConfigMgr devices that are co-managed with ALL workloads moved to Intune
+- **Born-in-Cloud Devices:** Entra + Intune with NO ConfigMgr record = already cloud native, excluded from scope
+- **Hybrid Joined:** No longer a blocker (expected during migration, can still have all workloads on Intune)
+
+**Remaining Blockers:**
+1. Co-Managed with Workloads on ConfigMgr (need to move workloads to Intune)
+2. ConfigMgr Only - Not in Intune (need to enable co-management)
+3. On-Premises AD Only (need Hybrid Entra ID Join first)
+
+**Technical Summary:**
+- Denominator = ConfigMgr devices only (migration targets)
+- Numerator = Co-managed devices with ALL workloads on Intune
+- Born-in-cloud devices excluded from assessment (already done)
+- Hybrid Joined removed as blocker (it's the expected state during migration)
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Updated `GetCloudNativeReadinessSignalAsync()` method
+
+---
+
 ## [3.17.54] - 2026-01-23
 
 ### Fixed - MDE (msSense) Devices Incorrectly Counted as Cloud Native 🐛

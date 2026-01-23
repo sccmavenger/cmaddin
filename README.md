@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.56** | January 23, 2026
+**Version 3.17.58** | January 23, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -98,6 +98,37 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.57 (January 23, 2026)
+
+### Fixed - Cloud-Native Readiness Criteria Updated 🎯
+
+**Issue:** Cloud-Native Readiness tile was showing incorrect percentages and scope. The criteria needed to focus on ConfigMgr devices being migrated, not all devices.
+
+**New Criteria:**
+- **Assessment Scope:** ONLY devices with a record in ConfigMgr (these are migration targets)
+- **Cloud-Native Ready:** ConfigMgr devices that are co-managed with ALL workloads moved to Intune
+- **Born-in-Cloud Devices:** Entra + Intune with NO ConfigMgr record = already cloud native, excluded from scope
+- **Hybrid Joined:** No longer a blocker (expected during migration, can still have all workloads on Intune)
+
+**Remaining Blockers:**
+1. Co-Managed with Workloads on ConfigMgr (need to move workloads to Intune)
+2. ConfigMgr Only - Not in Intune (need to enable co-management)
+3. On-Premises AD Only (need Hybrid Entra ID Join first)
+
+**Technical Summary:**
+- Denominator = ConfigMgr devices only (migration targets)
+- Numerator = Co-managed devices with ALL workloads on Intune
+- Born-in-cloud devices excluded from assessment (already done)
+- Hybrid Joined removed as blocker (it's the expected state during migration)
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Updated `GetCloudNativeReadinessSignalAsync()` method
+
+---
+
+---
 
 ### Version 3.17.54 (January 23, 2026)
 
@@ -219,35 +250,6 @@ Added drill-down functionality to Cloud Readiness signal tiles. Users can now cl
 - `ViewModels/DashboardViewModel.cs` - Fixed Office Cloud Policy URL (also broken)
 
 **GitHub Issue:** https://github.com/sccmavenger/cmaddin/issues/2
-
----
-
----
-
-### Version 3.17.45 (January 22, 2026)
-
-### Fixed - Mock Data Math Inconsistency 📊
-
-**Issue:** In mock data, `TotalDevices` (115,000) didn't match the sum of `CoManagedDevices` (55,900) + `ConfigMgrOnlyDevices` (50,600) = 106,500.
-
-**Root Cause:** Cloud Native devices (8,500) were incorrectly included in `TotalDevices`, but Cloud Native means NO ConfigMgr record.
-
-**Semantic Clarification:**
-- **TotalDevices** = ConfigMgr baseline (devices WITH ConfigMgr records)
-- **TotalDevices** = Co-managed + ConfigMgr Only = 106,500
-- **Cloud Native** (8,500) are Intune-only with NO ConfigMgr record
-
-**Math Now Correct:**
-| Property | Value | Formula |
-|----------|-------|--------|
-| TotalDevices | 106,500 | Co-managed + ConfigMgr Only |
-| Co-managed | 55,900 | In both ConfigMgr + Intune |
-| ConfigMgr Only | 50,600 | In ConfigMgr only |
-| Cloud Native | 8,500 | In Intune only (no ConfigMgr) |
-| IntuneEnrolledDevices | 64,400 | Co-managed + Cloud Native |
-
-**Files Modified:**
-- `Services/TelemetryService.cs` - Fixed TotalDevices from 115,000 to 106,500
 
 ---
 
@@ -1364,5 +1366,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-23  
-**Version**: 3.17.56  
+**Version**: 3.17.58  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
