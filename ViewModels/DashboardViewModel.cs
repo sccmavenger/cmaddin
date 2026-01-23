@@ -3856,7 +3856,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 EstimatedTime = "1-2 weeks",
                 RiskLevel = "Low",
                 DependsOn = new List<string> { "Device Configuration", "Windows Update for Business" },
-                LearnMoreUrl = "https://learn.microsoft.com/microsoft-365-apps/deploy/overview-office-cloud-policy-service"
+                LearnMoreUrl = "https://learn.microsoft.com/microsoft-365-apps/admin-center/overview-cloud-policy"
             });
 
             // 7. Client Apps (Last - Most complex)

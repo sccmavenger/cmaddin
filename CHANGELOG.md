@@ -1,5 +1,33 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.47] - 2026-01-22
+
+### Fixed - Broken "Learn More" Links (GitHub Issue #2) 🔗
+
+**Issue:** "Learn more about Cloud-Native Readiness" link returned 404 error.
+
+**Reporter:** @abndrew82 (App Version 3.17.36.0)
+
+**Root Cause:** Microsoft moved documentation to new paths in the solutions/admin-center sections.
+
+**Fixes Applied:**
+| Location | Old URL | New URL |
+|----------|---------|---------|
+| CloudReadinessService.cs | `.../mem/intune/fundamentals/cloud-native-endpoints-overview` | `.../mem/solutions/cloud-native-endpoints/cloud-native-endpoints-overview` |
+| CloudReadinessTab.xaml.cs | `.../mem/intune/fundamentals/cloud-native-endpoints-overview` | `.../mem/solutions/cloud-native-endpoints/cloud-native-endpoints-overview` |
+| DashboardViewModel.cs | `.../microsoft-365-apps/deploy/overview-office-cloud-policy-service` | `.../microsoft-365-apps/admin-center/overview-cloud-policy` |
+
+**URL Audit:** Validated all other Microsoft Learn URLs in codebase - all working correctly.
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Updated LearnMoreUrl to new Microsoft Learn path
+- `Views/CloudReadinessTab.xaml.cs` - Updated LearnMoreUrl in mock data
+- `ViewModels/DashboardViewModel.cs` - Fixed Office Cloud Policy URL (also broken)
+
+**GitHub Issue:** https://github.com/sccmavenger/cmaddin/issues/2
+
+---
+
 ## [3.17.45] - 2026-01-22
 
 ### Fixed - Mock Data Math Inconsistency 📊

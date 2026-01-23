@@ -136,7 +136,7 @@ namespace ZeroTrustMigrationAddin.Views
                         TotalDevices = 1250,
                         ReadyDevices = 312,
                         RelatedWorkload = "Device Management",
-                        LearnMoreUrl = "https://learn.microsoft.com/mem/intune/fundamentals/cloud-native-endpoints-overview",
+                        LearnMoreUrl = "https://learn.microsoft.com/mem/solutions/cloud-native-endpoints/cloud-native-endpoints-overview",
                         TopBlockers = new List<ReadinessBlocker>
                         {
                             new ReadinessBlocker { Name = "Hybrid Entra ID Joined", AffectedDeviceCount = 688, Severity = BlockerSeverity.Medium },

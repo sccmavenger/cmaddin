@@ -431,7 +431,7 @@ namespace ZeroTrustMigrationAddin.Services
                 Description = "Ready for cloud-only management",
                 Icon = "☁️",
                 RelatedWorkload = "Device Management",
-                LearnMoreUrl = "https://learn.microsoft.com/mem/intune/fundamentals/cloud-native-endpoints-overview"
+                LearnMoreUrl = "https://learn.microsoft.com/mem/solutions/cloud-native-endpoints/cloud-native-endpoints-overview"
             };
 
             try
