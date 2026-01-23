@@ -481,9 +481,23 @@ namespace ZeroTrustMigrationAddin.Views
 
                 if (devices == null || devices.Count == 0)
                 {
-                    System.Windows.MessageBox.Show($"No devices found for blocker: {blocker.Name}", "No Devices",
-                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-                    return;
+                    // If we have device names from the blocker, create placeholder devices to display
+                    if (blocker.AffectedDeviceNames.Any())
+                    {
+                        Instance.Info($"[CLOUD READINESS TAB] Creating placeholder devices from {blocker.AffectedDeviceNames.Count} device names");
+                        devices = blocker.AffectedDeviceNames.Select(name => new ManagedDevice
+                        {
+                            DeviceName = name,
+                            OperatingSystem = "Windows",
+                            ManagementAgent = ManagementAgentType.ConfigurationManagerClient
+                        }).ToList();
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show($"No devices found for blocker: {blocker.Name}", "No Devices",
+                            System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                        return;
+                    }
                 }
 
                 // Show device list dialog
@@ -616,6 +630,7 @@ namespace ZeroTrustMigrationAddin.Views
                     "non-compliant" or "compliance-issues" => await GetNonCompliantDevicesAsync(),
                     "outdated-os" or "legacy-os" or "unsupported-os" or "old-os-wufb" or "unsupported-mde-os" => await GetOutdatedOSDevicesAsync(),
                     "not-in-intune" => await GetNotInIntuneDevicesAsync(),
+                    "no-tpm20" => new List<ManagedDevice>(), // TPM data comes from ConfigMgr, use AffectedDeviceNames fallback
                     _ => (await _graphService.GetCachedManagedDevicesAsync()).Take(50).ToList()
                 };
             }
