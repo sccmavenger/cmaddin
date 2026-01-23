@@ -1,5 +1,24 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.39] - 2026-01-22
+
+### Changed - Enrollment Progress Now Shows 3 Device Categories 📊
+
+**Feedback:** Panu requested that the Enrollment Progress section show 3 device categories instead of 2, matching the Overview page tile numbers.
+
+**Before:** 2 categories - "Intune" (combined total) and "ConfigMgr Only"
+
+**After:** 3 categories with colored dot indicators:
+- **Intune Only** (blue #0078D4) → `CloudNativeDevices` - Devices managed only by Intune
+- **Co-managed** (green #107C10) → `CoManagedDevices` - Devices in both ConfigMgr and Intune
+- **ConfigMgr Only** (orange #D83B01) → `ConfigMgrOnlyDevices` - Devices only in ConfigMgr
+- **Total Devices** remains at bottom as summary
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Updated Enrollment Progress Metrics Summary section
+
+---
+
 ## [3.17.37] - 2026-01-22
 
 ### Fixed - Telemetry Version Numbers Being Masked as IP Addresses 📊

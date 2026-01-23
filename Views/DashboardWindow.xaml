@@ -1653,21 +1653,42 @@
                                             <!-- Metrics Summary -->
                                             <Border Background="White" CornerRadius="6" Padding="15" Margin="0,0,0,0">
                                                 <StackPanel>
-                                                    <Grid Margin="0,0,0,10">
+                                                    <!-- Intune Only (Cloud-Native) -->
+                                                    <Grid Margin="0,0,0,8">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*"/>
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="Intune" FontSize="12" Foreground="#666666"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding DeviceEnrollment.IntuneEnrolledDevices, StringFormat={}{0:N0}}" 
+                                                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                            <Ellipse Width="10" Height="10" Fill="#0078D4" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="Intune Only" FontSize="12" Foreground="#666666" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                        <TextBlock Grid.Column="1" Text="{Binding DeviceEnrollment.CloudNativeDevices, StringFormat={}{0:N0}}" 
+                                                                   FontSize="14" FontWeight="Bold" Foreground="#0078D4"/>
+                                                    </Grid>
+                                                    <!-- Co-managed -->
+                                                    <Grid Margin="0,0,0,8">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                            <Ellipse Width="10" Height="10" Fill="#107C10" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="Co-managed" FontSize="12" Foreground="#666666" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                        <TextBlock Grid.Column="1" Text="{Binding DeviceEnrollment.CoManagedDevices, StringFormat={}{0:N0}}" 
                                                                    FontSize="14" FontWeight="Bold" Foreground="#107C10"/>
                                                     </Grid>
-                                                    <Grid Margin="0,0,0,10">
+                                                    <!-- ConfigMgr Only -->
+                                                    <Grid Margin="0,0,0,8">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*"/>
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="ConfigMgr Only" FontSize="12" Foreground="#666666"/>
+                                                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                            <Ellipse Width="10" Height="10" Fill="#D83B01" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="ConfigMgr Only" FontSize="12" Foreground="#666666" VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                         <TextBlock Grid.Column="1" Text="{Binding DeviceEnrollment.ConfigMgrOnlyDevices, StringFormat={}{0:N0}}" 
                                                                    FontSize="14" FontWeight="Bold" Foreground="#D83B01"/>
                                                     </Grid>
@@ -1679,7 +1700,7 @@
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock Grid.Column="0" Text="Total Devices" FontSize="12" Foreground="#333333" FontWeight="SemiBold"/>
                                                         <TextBlock Grid.Column="1" Text="{Binding DeviceEnrollment.TotalDevices, StringFormat={}{0:N0}}" 
-                                                                   FontSize="14" FontWeight="Bold" Foreground="#0078D4"/>
+                                                                   FontSize="14" FontWeight="Bold" Foreground="#333333"/>
                                                     </Grid>
                                                 </StackPanel>
                                             </Border>
