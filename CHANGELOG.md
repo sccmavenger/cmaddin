@@ -1,5 +1,24 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.43] - 2026-01-22
+
+### Fixed - Overview Tile Binding Inconsistency 🐛
+
+**Issue:** The Overview tab's "Comanaged" tile was binding to `IntuneEnrolledDevices` (which includes BOTH co-managed + cloud-native), but the label implied it should only show co-managed devices.
+
+**Before:** "Comanaged" tile showed 64,400 (IntuneEnrolledDevices = 55,900 + 8,500)
+
+**After:** "Co-managed" tile shows 55,900 (CoManagedDevices only)
+
+**Result:** Overview tile now matches Enrollment tab's 3-category display for consistency.
+
+**Telemetry Verification:** ✅ Tab navigation telemetry uses tab header names (not indices), so the tab reordering in v3.17.41 did NOT break telemetry.
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Fixed Overview tile binding from `IntuneEnrolledDevices` to `CoManagedDevices`
+
+---
+
 ## [3.17.41] - 2026-01-22
 
 ### Fixed - Co-managed Mock Data Showing 0 🐛
