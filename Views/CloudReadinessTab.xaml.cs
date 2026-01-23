@@ -499,12 +499,14 @@ namespace ZeroTrustMigrationAddin.Views
                 return blockerId switch
                 {
                     "hybrid-joined" => await _graphService.GetDevicesByJoinType(DeviceJoinType.HybridAzureADJoined),
-                    "ad-joined-only" or "domain-only" => await _graphService.GetDevicesByJoinType(DeviceJoinType.OnPremDomainOnly),
-                    "workgroup" => await _graphService.GetDevicesByJoinType(DeviceJoinType.WorkgroupOnly),
+                    "ad-joined-only" or "domain-only" or "on-prem-only" or "no-cloud-identity" => await _graphService.GetDevicesByJoinType(DeviceJoinType.OnPremDomainOnly),
+                    "workgroup" or "workgroup-devices" => await _graphService.GetDevicesByJoinType(DeviceJoinType.WorkgroupOnly),
                     "configmgr-only" or "legacy-agent" or "sccm-agent" => await GetConfigMgrOnlyDevicesAsync(),
-                    "missing-autopilot" or "no-autopilot" => await GetDevicesWithoutAutopilotAsync(),
+                    "comanaged-workloads-on-configmgr" => await GetCoManagedDevicesAsync(),
+                    "missing-autopilot" or "no-autopilot" or "not-autopilot-registered" => await GetDevicesWithoutAutopilotAsync(),
                     "non-compliant" or "compliance-issues" => await GetNonCompliantDevicesAsync(),
-                    "outdated-os" or "legacy-os" => await GetOutdatedOSDevicesAsync(),
+                    "outdated-os" or "legacy-os" or "unsupported-os" or "old-os-wufb" or "unsupported-mde-os" => await GetOutdatedOSDevicesAsync(),
+                    "not-in-intune" => await GetNotInIntuneDevicesAsync(),
                     _ => (await _graphService.GetCachedManagedDevicesAsync()).Take(50).ToList()
                 };
             }
@@ -572,6 +574,31 @@ namespace ZeroTrustMigrationAddin.Views
             var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
             return allDevices
                 .Where(d => d.ComplianceState != ComplianceState.Compliant)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Gets co-managed devices (ConfigMgr + Intune).
+        /// </summary>
+        private async Task<List<ManagedDevice>> GetCoManagedDevicesAsync()
+        {
+            var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
+            return allDevices
+                .Where(d => d.ManagementAgent == ManagementAgentType.ConfigurationManagerClientMdm ||
+                           d.ManagementAgent == ManagementAgentType.ConfigurationManagerClientMdmEas)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Gets devices not enrolled in Intune.
+        /// </summary>
+        private async Task<List<ManagedDevice>> GetNotInIntuneDevicesAsync()
+        {
+            var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
+            return allDevices
+                .Where(d => d.ManagementAgent != ManagementAgentType.Mdm &&
+                           d.ManagementAgent != ManagementAgentType.ConfigurationManagerClientMdm &&
+                           d.ManagementAgent != ManagementAgentType.ConfigurationManagerClientMdmEas)
                 .ToList();
         }
 
