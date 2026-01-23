@@ -69,7 +69,7 @@
             
             <StackPanel Grid.Column="0">
                 <TextBlock x:Name="TitleText" 
-                           Text="Co-Managed with Workloads on ConfigMgr" 
+                           Text="Device workload view" 
                            FontSize="22" FontWeight="SemiBold" 
                            Foreground="#333"/>
                 <TextBlock x:Name="SubtitleText" 
