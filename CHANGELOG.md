@@ -1,5 +1,32 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.41] - 2026-01-22
+
+### Fixed - Co-managed Mock Data Showing 0 🐛
+
+**Issue:** The Enrollment tab's Co-managed category was showing 0 devices when in mock/disconnected mode because the `CoManagedDevices` property was not being set.
+
+**Fix:** Added `CoManagedDevices = 55900` to mock data (TelemetryService) and `CoManagedDevices = coManagedCount` to live data (GraphDataService).
+
+**Files Modified:**
+- `Services/TelemetryService.cs` - Added CoManagedDevices to mock DeviceEnrollment
+- `Services/GraphDataService.cs` - Added CoManagedDevices to live DeviceEnrollment return
+
+### Changed - Tab Order Reordering 🗂️
+
+**Request:** Reorder tabs to: Overview → Enrollment → Cloud Readiness
+
+**Before:** Overview, Cloud Readiness, Enrollment
+
+**After:** Overview, Enrollment, Cloud Readiness
+
+**Telemetry:** Safe - telemetry tracks tab names (not indices), so reordering doesn't break analytics.
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Moved Enrollment tab before Cloud Readiness tab
+
+---
+
 ## [3.17.39] - 2026-01-22
 
 ### Changed - Enrollment Progress Now Shows 3 Device Categories 📊

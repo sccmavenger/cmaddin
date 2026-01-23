@@ -938,6 +938,7 @@ namespace ZeroTrustMigrationAddin.Services
                     TotalDevices = totalDevices,
                     IntuneEnrolledDevices = cloudManagedCount, // Co-managed or Intune-managed Windows devices
                     ConfigMgrOnlyDevices = configMgrOnlyCount,
+                    CoManagedDevices = coManagedCount, // Devices in both ConfigMgr + Intune
                     CloudNativeDevices = cloudNativeCount, // Entra/AAD + Intune, no ConfigMgr record
                     TrendData = trendData,
                     // Device join type categorization
