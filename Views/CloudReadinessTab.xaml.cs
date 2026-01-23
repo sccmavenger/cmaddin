@@ -552,7 +552,7 @@ namespace ZeroTrustMigrationAddin.Views
                     Owner = Window.GetWindow(this)
                 };
                 dialog.SetDevices(devicesWithWorkloads, 
-                    $"Co-Managed with Workloads on ConfigMgr ({devicesWithWorkloads.Count} devices)",
+                    $"Device workload view ({devicesWithWorkloads.Count} devices)",
                     "These devices need workloads moved to Microsoft Intune to become cloud-native ready");
                 dialog.ShowDialog();
             }
