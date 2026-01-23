@@ -723,15 +723,20 @@ namespace ZeroTrustMigrationAddin.Views
         }
 
         /// <summary>
-        /// Gets devices not enrolled in Intune.
+        /// Gets Windows devices not enrolled in Intune MDM.
+        /// This blocker is about ConfigMgr Windows devices needing Intune enrollment.
         /// </summary>
         private async Task<List<ManagedDevice>> GetNotInIntuneDevicesAsync()
         {
             var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
             return allDevices
-                .Where(d => d.ManagementAgent != ManagementAgentType.Mdm &&
-                           d.ManagementAgent != ManagementAgentType.ConfigurationManagerClientMdm &&
-                           d.ManagementAgent != ManagementAgentType.ConfigurationManagerClientMdmEas)
+                .Where(d => 
+                    // Must be a Windows device (the blocker is about ConfigMgr Windows devices)
+                    (d.OperatingSystem?.Contains("Windows", StringComparison.OrdinalIgnoreCase) ?? false) &&
+                    // Not enrolled in Intune MDM (only ConfigMgr agent or no MDM)
+                    d.ManagementAgent != ManagementAgentType.Mdm &&
+                    d.ManagementAgent != ManagementAgentType.ConfigurationManagerClientMdm &&
+                    d.ManagementAgent != ManagementAgentType.ConfigurationManagerClientMdmEas)
                 .ToList();
         }
 
