@@ -523,7 +523,7 @@ namespace ZeroTrustMigrationAddin.Services
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "comanaged-workloads-on-configmgr",
-                        Name = "Co-managed with all workloads moved to Microsoft Intune",
+                        Name = "Co-managed with workloads in ConfigMgr",
                         Description = $"These devices are co-managed but still have workloads managed by ConfigMgr: {string.Join(", ", workloadsNotOnIntune.Take(3))}",
                         AffectedDeviceCount = coManagedNotReady,
                         PercentageAffected = SafeBlockerPercentage(coManagedNotReady, signal.TotalDevices),

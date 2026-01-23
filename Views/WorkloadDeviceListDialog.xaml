@@ -73,7 +73,7 @@
                            FontSize="22" FontWeight="SemiBold" 
                            Foreground="#333"/>
                 <TextBlock x:Name="SubtitleText" 
-                           Text="These devices need workloads moved to Microsoft Intune to become cloud-native ready" 
+                           Text="Co-managed with workloads in ConfigMgr" 
                            FontSize="13" Foreground="#666"
                            Margin="0,5,0,0"/>
             </StackPanel>

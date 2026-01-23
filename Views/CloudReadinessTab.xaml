@@ -228,7 +228,7 @@
                                 <TextBlock Margin="0,0,0,12" FontSize="10" Foreground="#888888" 
                                            TextWrapping="Wrap"
                                            Visibility="{Binding IsCloudNativeSignal, Converter={StaticResource BoolToVisibilityConverter}}"
-                                           Text="Co-Managed with all workloads moved to Microsoft Intune"/>
+                                           Text="Co-managed with workloads in ConfigMgr"/>
                                 
                                 <!-- Spacer for non-Cloud-Native signals -->
                                 <Border Margin="0,0,0,12" Height="0">
