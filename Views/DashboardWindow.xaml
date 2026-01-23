@@ -9,6 +9,7 @@
         WindowStartupLocation="CenterScreen"
         SizeToContent="Manual"
         Background="#F5F5F5"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial"
         Loaded="Window_Loaded">
 
     <Window.Resources>
@@ -62,6 +63,7 @@
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Background" Value="#0078D4"/>
             <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Segoe UI Emoji, Segoe UI, Arial"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="15,8"/>
             <Setter Property="Margin" Value="5"/>
@@ -238,6 +240,7 @@
                         <Setter Property="Padding" Value="20,12"/>
                         <Setter Property="FontSize" Value="14"/>
                         <Setter Property="FontWeight" Value="Normal"/>
+                        <Setter Property="FontFamily" Value="Segoe UI Emoji, Segoe UI, Arial"/>
                         <Setter Property="Background" Value="#F0F0F0"/>
                         <Setter Property="Foreground" Value="#666666"/>
                         <Setter Property="BorderThickness" Value="0"/>

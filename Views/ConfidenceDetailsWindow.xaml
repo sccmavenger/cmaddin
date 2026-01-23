@@ -4,7 +4,8 @@
         Title="Enrollment Confidence - Full Analysis" 
         Height="600" Width="800"
         WindowStartupLocation="CenterOwner"
-        Background="#F3F4F6">
+        Background="#F3F4F6"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial">
     
     <Window.Resources>
         <Style x:Key="CategoryHeader" TargetType="TextBlock">

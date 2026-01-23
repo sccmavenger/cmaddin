@@ -7,7 +7,8 @@
         Width="600" Height="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Background="#F5F5F5">
+        Background="#F5F5F5"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial">
     
     <Window.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>

@@ -7,6 +7,7 @@
         WindowStyle="SingleBorderWindow"
         ResizeMode="NoResize"
         Background="#F3F3F3"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial"
         ShowInTaskbar="False">
     
     <Window.Resources>
