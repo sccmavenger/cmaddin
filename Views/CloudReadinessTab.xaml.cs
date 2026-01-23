@@ -488,7 +488,7 @@ namespace ZeroTrustMigrationAddin.Views
                         devices = blocker.AffectedDeviceNames.Select(name => new ManagedDevice
                         {
                             DeviceName = name,
-                            OperatingSystem = "Windows",
+                            OperatingSystem = "Windows (version unknown - device not in Intune)",
                             ManagementAgent = ManagementAgentType.ConfigurationManagerClient
                         }).ToList();
                     }
@@ -767,7 +767,8 @@ namespace ZeroTrustMigrationAddin.Views
         }
 
         /// <summary>
-        /// Generate mock devices for demonstration when not connected.
+        /// Generate mock devices for demonstration when not connected or when device details unavailable.
+        /// Note: These are sample devices for UI demonstration - real device names are not available from ConfigMgr counts.
         /// </summary>
         private List<ManagedDevice> GenerateMockDevicesForBlocker(ReadinessBlocker blocker)
         {
@@ -775,20 +776,22 @@ namespace ZeroTrustMigrationAddin.Views
             var devices = new List<ManagedDevice>();
             var count = Math.Min(blocker.AffectedDeviceCount, 25); // Cap at 25 for demo
 
+            Instance.Info($"[CLOUD READINESS TAB] Generating {count} sample devices for: {blocker.Name} (device names not available from source data)");
+
             for (int i = 1; i <= count; i++)
             {
                 devices.Add(new ManagedDevice
                 {
-                    DeviceName = $"DEVICE-{blocker.Id.ToUpper().Replace("-", "")}-{i:D3}",
+                    DeviceName = $"[Sample Device {i}]",
                     Id = Guid.NewGuid().ToString(),
-                    UserPrincipalName = $"user{i}@contoso.com",
-                    OperatingSystem = "Windows 10 Enterprise",
-                    OsVersion = "10.0.19045",
-                    ComplianceState = random.Next(100) < 70 ? ComplianceState.Compliant : ComplianceState.Noncompliant,
+                    UserPrincipalName = "(not available)",
+                    OperatingSystem = "Windows (version unknown)",
+                    OsVersion = "N/A",
+                    ComplianceState = ComplianceState.Unknown,
                     ManagementAgent = blocker.Id.Contains("configmgr") 
                         ? ManagementAgentType.ConfigurationManagerClient 
                         : ManagementAgentType.Mdm,
-                    LastSyncDateTime = DateTimeOffset.Now.AddDays(-random.Next(1, 30))
+                    LastSyncDateTime = null
                 });
             }
 
