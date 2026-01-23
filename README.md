@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.50** | January 22, 2026
+**Version 3.17.51** | January 22, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -94,41 +94,150 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ## 🆕 What's New
 
-### Version 3.17.50 (January 22, 2026)
-
-### Fixed - Emoji Rendering (Square Boxes) 🎨
-Added `Segoe UI Emoji` font support to 18 XAML files to fix square box emoji rendering on Windows systems. WPF's default text rendering doesn't support color emojis properly - this fix ensures emojis display correctly throughout the UI.
-
----
 
 ### Version 3.17.49 (January 22, 2026)
 
+### Fixed - Emoji Rendering (Square Boxes) 🎨
+
+**Issue:** Emojis displayed as square boxes on some Windows systems due to WPF's default font not supporting color emojis.
+
+**Solution:** Added `FontFamily="Segoe UI Emoji, Segoe UI, Arial"` font fallback to all Windows and UserControls.
+
+**Technical Details:**
+- WPF's default text rendering doesn't handle color emojis properly
+- "Segoe UI Emoji" is built into Windows 10/11 and provides full color emoji support
+- Font fallback chain ensures emojis render correctly while text uses Segoe UI
+
+**Files Modified (18 XAML files):**
+- `Views/DashboardWindow.xaml` - Window + TabItem style + ActionButton style
+- `Views/EnrollmentSimulatorWindow.xaml`
+- `Views/FeedbackWindow.xaml`
+- `Views/DiagnosticsWindow.xaml`
+- `Views/RecommendationsWindow.xaml`
+- `Views/ConfigMgrServerDialog.xaml`
+- `Views/ConfidenceDetailsWindow.xaml`
+- `Views/CloudReadinessTab.xaml`
+- `Views/AISettingsWindow.xaml`
+- `Views/MigrationImpactCard.xaml`
+- `Views/MigrationImpactReportWindow.xaml`
+- `Views/UpdateProgressWindow.xaml`
+- `Views/UpdateNotificationWindow.xaml`
+- `Views/DeviceListDialog.xaml`
+- `Views/EnrollmentConfidenceCard.xaml`
+- `Views/EnrollmentMomentumView.xaml`
+- `Views/EnrollmentPlaybooksView.xaml`
+- `Views/EnrollmentSimulatorCard.xaml`
+
+---
+
+---
+
+### Version 3.17.47 (January 22, 2026)
+
 ### Fixed - Broken "Learn More" Links (GitHub Issue #2) 🔗
-Fixed broken Microsoft Learn URLs that were returning 404 errors. Updated Cloud-Native Readiness and Office Cloud Policy documentation links to their new paths.
+
+**Issue:** "Learn more about Cloud-Native Readiness" link returned 404 error.
+
+**Reporter:** @abndrew82 (App Version 3.17.36.0)
+
+**Root Cause:** Microsoft moved documentation to new paths in the solutions/admin-center sections.
+
+**Fixes Applied:**
+| Location | Old URL | New URL |
+|----------|---------|---------|
+| CloudReadinessService.cs | `.../mem/intune/fundamentals/cloud-native-endpoints-overview` | `.../mem/solutions/cloud-native-endpoints/cloud-native-endpoints-overview` |
+| CloudReadinessTab.xaml.cs | `.../mem/intune/fundamentals/cloud-native-endpoints-overview` | `.../mem/solutions/cloud-native-endpoints/cloud-native-endpoints-overview` |
+| DashboardViewModel.cs | `.../microsoft-365-apps/deploy/overview-office-cloud-policy-service` | `.../microsoft-365-apps/admin-center/overview-cloud-policy` |
+
+**URL Audit:** Validated all other Microsoft Learn URLs in codebase - all working correctly.
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Updated LearnMoreUrl to new Microsoft Learn path
+- `Views/CloudReadinessTab.xaml.cs` - Updated LearnMoreUrl in mock data
+- `ViewModels/DashboardViewModel.cs` - Fixed Office Cloud Policy URL (also broken)
+
+**GitHub Issue:** https://github.com/sccmavenger/cmaddin/issues/2
+
+---
 
 ---
 
 ### Version 3.17.45 (January 22, 2026)
 
 ### Fixed - Mock Data Math Inconsistency 📊
-Fixed `TotalDevices` calculation in mock data. Now correctly shows 106,500 (Co-managed + ConfigMgr Only) instead of incorrectly including Cloud Native devices which have no ConfigMgr record.
+
+**Issue:** In mock data, `TotalDevices` (115,000) didn't match the sum of `CoManagedDevices` (55,900) + `ConfigMgrOnlyDevices` (50,600) = 106,500.
+
+**Root Cause:** Cloud Native devices (8,500) were incorrectly included in `TotalDevices`, but Cloud Native means NO ConfigMgr record.
+
+**Semantic Clarification:**
+- **TotalDevices** = ConfigMgr baseline (devices WITH ConfigMgr records)
+- **TotalDevices** = Co-managed + ConfigMgr Only = 106,500
+- **Cloud Native** (8,500) are Intune-only with NO ConfigMgr record
+
+**Math Now Correct:**
+| Property | Value | Formula |
+|----------|-------|--------|
+| TotalDevices | 106,500 | Co-managed + ConfigMgr Only |
+| Co-managed | 55,900 | In both ConfigMgr + Intune |
+| ConfigMgr Only | 50,600 | In ConfigMgr only |
+| Cloud Native | 8,500 | In Intune only (no ConfigMgr) |
+| IntuneEnrolledDevices | 64,400 | Co-managed + Cloud Native |
+
+**Files Modified:**
+- `Services/TelemetryService.cs` - Fixed TotalDevices from 115,000 to 106,500
+
+---
 
 ---
 
 ### Version 3.17.43 (January 22, 2026)
 
 ### Fixed - Overview Tile Binding Inconsistency 🐛
-Fixed the Overview tab's "Co-managed" tile to show actual co-managed devices (55,900) instead of combined Intune total (64,400). Now matches Enrollment tab's 3-category display.
+
+**Issue:** The Overview tab's "Comanaged" tile was binding to `IntuneEnrolledDevices` (which includes BOTH co-managed + cloud-native), but the label implied it should only show co-managed devices.
+
+**Before:** "Comanaged" tile showed 64,400 (IntuneEnrolledDevices = 55,900 + 8,500)
+
+**After:** "Co-managed" tile shows 55,900 (CoManagedDevices only)
+
+**Result:** Overview tile now matches Enrollment tab's 3-category display for consistency.
+
+**Telemetry Verification:** ✅ Tab navigation telemetry uses tab header names (not indices), so the tab reordering in v3.17.41 did NOT break telemetry.
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Fixed Overview tile binding from `IntuneEnrolledDevices` to `CoManagedDevices`
+
+---
 
 ---
 
 ### Version 3.17.41 (January 22, 2026)
 
 ### Fixed - Co-managed Mock Data Showing 0 🐛
-Fixed Co-managed category showing 0 devices in mock/disconnected mode.
+
+**Issue:** The Enrollment tab's Co-managed category was showing 0 devices when in mock/disconnected mode because the `CoManagedDevices` property was not being set.
+
+**Fix:** Added `CoManagedDevices = 55900` to mock data (TelemetryService) and `CoManagedDevices = coManagedCount` to live data (GraphDataService).
+
+**Files Modified:**
+- `Services/TelemetryService.cs` - Added CoManagedDevices to mock DeviceEnrollment
+- `Services/GraphDataService.cs` - Added CoManagedDevices to live DeviceEnrollment return
 
 ### Changed - Tab Order Reordering 🗂️
-Reordered tabs to: Overview → Enrollment → Cloud Readiness (was: Overview → Cloud Readiness → Enrollment).
+
+**Request:** Reorder tabs to: Overview → Enrollment → Cloud Readiness
+
+**Before:** Overview, Cloud Readiness, Enrollment
+
+**After:** Overview, Enrollment, Cloud Readiness
+
+**Telemetry:** Safe - telemetry tracks tab names (not indices), so reordering doesn't break analytics.
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Moved Enrollment tab before Cloud Readiness tab
+
+---
 
 ---
 
@@ -1243,5 +1352,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-22  
-**Version**: 3.17.50  
+**Version**: 3.17.51  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
