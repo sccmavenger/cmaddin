@@ -237,6 +237,7 @@ namespace ZeroTrustMigrationAddin.Services
                 var unsupportedOsCount = devicesWithNoOsData.Count + devicesBelowMinBuild.Count;
                 if (unsupportedOsCount > 0)
                 {
+                    var unsupportedOsDevices = devicesWithNoOsData.Concat(devicesBelowMinBuild).ToList();
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "unsupported-os",
@@ -246,7 +247,8 @@ namespace ZeroTrustMigrationAddin.Services
                         PercentageAffected = SafeBlockerPercentage(unsupportedOsCount, signal.TotalDevices),
                         Severity = BlockerSeverity.High,
                         RemediationAction = "Upgrade to Windows 10 1809+ or Windows 11",
-                        RemediationUrl = "https://learn.microsoft.com/windows/release-health/"
+                        RemediationUrl = "https://learn.microsoft.com/windows/release-health/",
+                        AffectedDeviceNames = unsupportedOsDevices.Select(d => d.Name).Where(n => !string.IsNullOrEmpty(n)).ToList()!
                     });
                 }
 
@@ -352,7 +354,14 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info($"      ❌ TPM Missing or Disabled: {devicesWithTpmDisabled.Count} devices");
                 Instance.Info($"      ❌ TPM 1.2 (needs upgrade): {devicesWithTpm12.Count} devices");
 
-                var noTpm20 = signal.TotalDevices - devicesWithTpm20.Count;
+                // Collect devices without TPM 2.0
+                var devicesWithoutTpm20 = windows10Devices.Where(d => 
+                    !tpmLookup.TryGetValue(d.ResourceId, out var tpm) || 
+                    !tpm.IsPresent || !tpm.IsEnabled ||
+                    string.IsNullOrEmpty(tpm.SpecVersion) || 
+                    !(tpm.SpecVersion.StartsWith("2.") || tpm.SpecVersion.Contains("2.0"))).ToList();
+
+                var noTpm20 = devicesWithoutTpm20.Count;
                 if (noTpm20 > 0)
                 {
                     Instance.Info($"      → {noTpm20} devices cannot upgrade to Windows 11 due to TPM");
@@ -365,14 +374,11 @@ namespace ZeroTrustMigrationAddin.Services
                         PercentageAffected = SafeBlockerPercentage(noTpm20, signal.TotalDevices),
                         Severity = BlockerSeverity.Critical,
                         RemediationAction = "Enable TPM 2.0 in BIOS or plan hardware refresh",
-                        RemediationUrl = "https://support.microsoft.com/windows/enable-tpm-2-0-on-your-pc"
+                        RemediationUrl = "https://support.microsoft.com/windows/enable-tpm-2-0-on-your-pc",
+                        AffectedDeviceNames = devicesWithoutTpm20.Select(d => d.Name).Where(n => !string.IsNullOrEmpty(n)).ToList()!
                     });
                     
-                    foreach (var d in windows10Devices.Where(d => 
-                        !tpmLookup.TryGetValue(d.ResourceId, out var tpm) || 
-                        !tpm.IsPresent || !tpm.IsEnabled ||
-                        string.IsNullOrEmpty(tpm.SpecVersion) || 
-                        !(tpm.SpecVersion.StartsWith("2.") || tpm.SpecVersion.Contains("2.0"))))
+                    foreach (var d in devicesWithoutTpm20)
                     {
                         readyDeviceIds.Remove(d.ResourceId);
                     }

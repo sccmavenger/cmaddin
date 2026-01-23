@@ -77,6 +77,12 @@ namespace ZeroTrustMigrationAddin.Models
         public string RemediationAction { get; set; } = string.Empty;
         public string RemediationUrl { get; set; } = string.Empty;
         
+        /// <summary>
+        /// List of device names affected by this blocker.
+        /// Used for drill-down display when user clicks blocker count.
+        /// </summary>
+        public List<string> AffectedDeviceNames { get; set; } = new();
+        
         public string SeverityIcon => Severity switch
         {
             BlockerSeverity.Critical => "🔴",
