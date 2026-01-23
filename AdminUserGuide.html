@@ -247,7 +247,7 @@
             <h2><span class="emoji">🎯</span> Overview</h2>
             
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.58 - January 23, 2026</strong>
+                <strong>🎉 Version 3.17.60 - January 23, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -799,7 +799,7 @@
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.58 - January 23, 2026</strong>
+                <strong>🎉 Version 3.17.60 - January 23, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -894,17 +894,29 @@
             </div>
 
             <h3 id="signal-cloud-native">☁️ Cloud-Native Readiness</h3>
-            <p><strong>What it measures:</strong> Devices ready for full cloud-native management (Intune-only, no ConfigMgr dependency). This includes devices that can safely have their ConfigMgr agent removed.</p>
+            <p><strong>What it measures:</strong> Progress toward full cloud-native management for devices currently managed by ConfigMgr. The goal is to move all workloads to Microsoft Intune so the ConfigMgr agent can be safely removed.</p>
             
-            <p><strong>A device is "Cloud-Native Ready" if it meets ANY of these criteria:</strong></p>
-            <ol>
-                <li><strong>Already cloud-native</strong> - Entra ID joined, Intune-only, no ConfigMgr client</li>
-                <li><strong>Entra ID joined with Intune</strong> - Cloud identity ready, no hybrid dependency</li>
-                <li><strong>Co-managed with ALL workloads on Intune</strong> - Can remove ConfigMgr client (NEW!)</li>
-            </ol>
+            <div class="alert alert-warning">
+                <strong>📊 Assessment Scope:</strong> This signal assesses <strong>only devices with a ConfigMgr record</strong> (your migration targets). "Born-in-cloud" devices (Entra + Intune with no ConfigMgr history) are already cloud-native and are excluded from this assessment.
+            </div>
+
+            <p><strong>A ConfigMgr device is "Cloud-Native Ready" when:</strong></p>
+            <ul>
+                <li>✅ <strong>Co-Managed with ALL workloads moved to Microsoft Intune</strong></li>
+            </ul>
+            
+            <p>This means all 8 co-management workload sliders are set to Intune, allowing the ConfigMgr client to be safely removed.</p>
+
+            <h4>Workload Device Drill-Down</h4>
+            <p>Click the <strong>"X devices"</strong> link next to the "Co-Managed with Workloads on ConfigMgr" blocker to see a detailed view of which workloads are on ConfigMgr vs. Intune for each device. The dialog shows:</p>
+            <ul>
+                <li><strong>✅ Green checkmarks</strong> - Workload managed by Intune (good)</li>
+                <li><strong>⚙️ Orange gears</strong> - Workload still on ConfigMgr (needs migration)</li>
+            </ul>
+            <p>Use this to identify which workload sliders need to be moved in the ConfigMgr console.</p>
 
             <h4>Co-Management Workload Authority</h4>
-            <p>For co-managed devices, the dashboard queries the Graph API to determine which workloads are managed by ConfigMgr vs. Intune. A device with ALL 8 workloads on Intune is considered "ready for cloud-native" because the ConfigMgr agent can be safely removed.</p>
+            <p>For co-managed devices, the dashboard queries the Graph API to determine which workloads are managed by ConfigMgr vs. Intune. A device with ALL 8 workloads on Intune is considered "cloud-native ready" because the ConfigMgr agent can be safely removed.</p>
 
             <table>
                 <thead>
@@ -961,7 +973,7 @@
                 <tbody>
                     <tr>
                         <td><strong>Total Devices</strong></td>
-                        <td>All Windows 10/11 devices being assessed</td>
+                        <td>Windows 10/11 devices with a ConfigMgr record (migration scope)</td>
                         <td>ConfigMgr Admin Service</td>
                     </tr>
                     <tr>
@@ -971,7 +983,7 @@
                     </tr>
                     <tr>
                         <td><strong>Ready Devices</strong></td>
-                        <td>Cloud-native + Entra-only + Co-managed with all workloads on Intune</td>
+                        <td>Co-managed devices with ALL workloads on Intune</td>
                         <td>Graph API (Intune Managed Devices)</td>
                     </tr>
                 </tbody>
@@ -979,10 +991,14 @@
 
             <h4>Blockers Checked</h4>
             <ul>
-                <li><strong>Co-Managed with Workloads on ConfigMgr (High):</strong> Device has one or more workloads still managed by ConfigMgr. Move workloads to Intune before removing ConfigMgr agent.</li>
-                <li><strong>Hybrid Joined (Medium):</strong> Device is hybrid Entra ID joined. Consider migration path to Entra ID join-only.</li>
-                <li><strong>ConfigMgr Only (High):</strong> Device not yet enrolled in Intune. Enable co-management or direct enrollment.</li>
+                <li><strong>Co-Managed with Workloads on ConfigMgr (Medium):</strong> Device has one or more workloads still managed by ConfigMgr. Move workload sliders to Intune in the ConfigMgr console.</li>
+                <li><strong>ConfigMgr Only - Not in Intune (High):</strong> Device not yet enrolled in Intune. Enable co-management to start the cloud journey.</li>
+                <li><strong>On-Premises AD Only (High):</strong> Device has no cloud identity. Configure Hybrid Entra ID Join as the first step.</li>
             </ul>
+
+            <div class="alert alert-info">
+                <strong>💡 Note:</strong> Hybrid Entra ID Joined devices are <strong>not</strong> blockers for cloud-native readiness. They can still achieve cloud-native status with all workloads on Intune. The identity migration (Hybrid → Entra ID Join) is a separate consideration.
+            </div>
 
             <div class="alert alert-info">
                 <strong>💡 Tip:</strong> The workload authority data comes from Graph API <code>configurationManagerClientEnabledFeatures</code>. If a property is <code>true</code>, ConfigMgr manages that workload. If <code>false</code>, Intune manages it.
@@ -1260,7 +1276,7 @@
         </section>
 
         <footer>
-            <p>Zero Trust Migration Journey Add-in v3.17.58 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Zero Trust Migration Journey Add-in v3.17.60 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>

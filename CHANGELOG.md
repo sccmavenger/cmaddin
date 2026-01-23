@@ -1,5 +1,38 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.59] - 2026-01-23
+
+### Added - Workload Device List Dialog & UI Improvements 📊
+
+**New Features:**
+
+1. **Workload Device List Dialog** - Click the device count for "Co-Managed with Workloads on ConfigMgr" blocker to see a detailed view showing which workloads are on ConfigMgr vs. Intune for each device:
+   - ✅ Green checkmarks = Workload on Intune (good)
+   - ⚙️ Orange gears = Workload still on ConfigMgr (needs migration)
+   - 8 workload columns: Compliance, Device Config, Windows Update, Endpoint Protection, Modern Apps, Office Apps, Resource Access, Inventory
+   - Export to CSV functionality
+   - Search by device name
+
+2. **Cloud-Native Tile Criteria Text** - Added "Co-Managed with all workloads moved to Microsoft Intune" text below device count to clarify what "ready" means for this signal.
+
+3. **AdminUserGuide.html Updated** - Comprehensive documentation of:
+   - New assessment scope (ConfigMgr devices only)
+   - Workload drill-down feature
+   - Updated blocker descriptions
+   - Clarification that Hybrid Joined is not a blocker
+
+**Files Added:**
+- `Views/WorkloadDeviceListDialog.xaml` - New dialog for workload authority display
+- `Views/WorkloadDeviceListDialog.xaml.cs` - Code-behind with WorkloadDeviceViewModel
+
+**Files Modified:**
+- `Views/CloudReadinessTab.xaml` - Added criteria description text for Cloud-Native signal
+- `Views/CloudReadinessTab.xaml.cs` - Added workload caching and new dialog handling
+- `Models/CloudReadinessModels.cs` - Added `IsCloudNativeSignal` property
+- `AdminUserGuide.html` - Updated Cloud-Native Readiness documentation
+
+---
+
 ## [3.17.57] - 2026-01-23
 
 ### Fixed - Cloud-Native Readiness Criteria Updated 🎯

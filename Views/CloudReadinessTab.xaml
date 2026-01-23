@@ -217,12 +217,32 @@
                                 </Grid>
                                 
                                 <!-- Device Count -->
-                                <TextBlock Margin="0,0,0,12" FontSize="12" Foreground="#666666">
+                                <TextBlock Margin="0,0,0,4" FontSize="12" Foreground="#666666">
                                     <Run Text="{Binding ReadyDevices, Mode=OneWay}"/>
                                     <Run Text=" of "/>
                                     <Run Text="{Binding TotalDevices, Mode=OneWay}"/>
                                     <Run Text=" devices ready"/>
                                 </TextBlock>
+                                
+                                <!-- Criteria description for Cloud-Native signal -->
+                                <TextBlock Margin="0,0,0,12" FontSize="10" Foreground="#888888" 
+                                           TextWrapping="Wrap"
+                                           Visibility="{Binding IsCloudNativeSignal, Converter={StaticResource BoolToVisibilityConverter}}"
+                                           Text="Co-Managed with all workloads moved to Microsoft Intune"/>
+                                
+                                <!-- Spacer for non-Cloud-Native signals -->
+                                <Border Margin="0,0,0,12" Height="0">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCloudNativeSignal}" Value="False">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
                                 
                                 <!-- Top Blockers (if any) -->
                                 <ItemsControl ItemsSource="{Binding TopBlockers}" Margin="0,0,0,10">

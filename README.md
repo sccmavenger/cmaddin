@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.58** | January 23, 2026
+**Version 3.17.60** | January 23, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -99,6 +99,42 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.59 (January 23, 2026)
+
+### Added - Workload Device List Dialog & UI Improvements 📊
+
+**New Features:**
+
+1. **Workload Device List Dialog** - Click the device count for "Co-Managed with Workloads on ConfigMgr" blocker to see a detailed view showing which workloads are on ConfigMgr vs. Intune for each device:
+   - ✅ Green checkmarks = Workload on Intune (good)
+   - ⚙️ Orange gears = Workload still on ConfigMgr (needs migration)
+   - 8 workload columns: Compliance, Device Config, Windows Update, Endpoint Protection, Modern Apps, Office Apps, Resource Access, Inventory
+   - Export to CSV functionality
+   - Search by device name
+
+2. **Cloud-Native Tile Criteria Text** - Added "Co-Managed with all workloads moved to Microsoft Intune" text below device count to clarify what "ready" means for this signal.
+
+3. **AdminUserGuide.html Updated** - Comprehensive documentation of:
+   - New assessment scope (ConfigMgr devices only)
+   - Workload drill-down feature
+   - Updated blocker descriptions
+   - Clarification that Hybrid Joined is not a blocker
+
+**Files Added:**
+- `Views/WorkloadDeviceListDialog.xaml` - New dialog for workload authority display
+- `Views/WorkloadDeviceListDialog.xaml.cs` - Code-behind with WorkloadDeviceViewModel
+
+**Files Modified:**
+- `Views/CloudReadinessTab.xaml` - Added criteria description text for Cloud-Native signal
+- `Views/CloudReadinessTab.xaml.cs` - Added workload caching and new dialog handling
+- `Models/CloudReadinessModels.cs` - Added `IsCloudNativeSignal` property
+- `AdminUserGuide.html` - Updated Cloud-Native Readiness documentation
+
+---
+
+---
 
 ### Version 3.17.57 (January 23, 2026)
 
@@ -220,36 +256,6 @@ Added drill-down functionality to Cloud Readiness signal tiles. Users can now cl
 - `Views/EnrollmentMomentumView.xaml`
 - `Views/EnrollmentPlaybooksView.xaml`
 - `Views/EnrollmentSimulatorCard.xaml`
-
----
-
----
-
-### Version 3.17.47 (January 22, 2026)
-
-### Fixed - Broken "Learn More" Links (GitHub Issue #2) 🔗
-
-**Issue:** "Learn more about Cloud-Native Readiness" link returned 404 error.
-
-**Reporter:** @abndrew82 (App Version 3.17.36.0)
-
-**Root Cause:** Microsoft moved documentation to new paths in the solutions/admin-center sections.
-
-**Fixes Applied:**
-| Location | Old URL | New URL |
-|----------|---------|---------|
-| CloudReadinessService.cs | `.../mem/intune/fundamentals/cloud-native-endpoints-overview` | `.../mem/solutions/cloud-native-endpoints/cloud-native-endpoints-overview` |
-| CloudReadinessTab.xaml.cs | `.../mem/intune/fundamentals/cloud-native-endpoints-overview` | `.../mem/solutions/cloud-native-endpoints/cloud-native-endpoints-overview` |
-| DashboardViewModel.cs | `.../microsoft-365-apps/deploy/overview-office-cloud-policy-service` | `.../microsoft-365-apps/admin-center/overview-cloud-policy` |
-
-**URL Audit:** Validated all other Microsoft Learn URLs in codebase - all working correctly.
-
-**Files Modified:**
-- `Services/CloudReadinessService.cs` - Updated LearnMoreUrl to new Microsoft Learn path
-- `Views/CloudReadinessTab.xaml.cs` - Updated LearnMoreUrl in mock data
-- `ViewModels/DashboardViewModel.cs` - Fixed Office Cloud Policy URL (also broken)
-
-**GitHub Issue:** https://github.com/sccmavenger/cmaddin/issues/2
 
 ---
 
@@ -1366,5 +1372,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-23  
-**Version**: 3.17.58  
+**Version**: 3.17.60  
 **Maintainer:** Zero Trust Migration Journey Add-in Team

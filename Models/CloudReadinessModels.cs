@@ -26,6 +26,12 @@ namespace ZeroTrustMigrationAddin.Models
             ? Math.Min(100, Math.Round((double)ReadyDevices / TotalDevices * 100, 1)) 
             : 0;
         
+        /// <summary>
+        /// Returns true if this is the Cloud-Native Readiness signal.
+        /// Used for UI to show specific criteria text.
+        /// </summary>
+        public bool IsCloudNativeSignal => Id == "cloud-native";
+        
         // Visual properties
         public string ReadinessLevel => ReadinessPercentage switch
         {
