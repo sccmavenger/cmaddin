@@ -19,6 +19,7 @@ namespace ZeroTrustMigrationAddin.Views
     /// Interaction logic for CloudReadinessTab.xaml
     /// Displays cloud readiness signals for migration workloads.
     /// v3.17.0 - Cloud Readiness Signals feature
+    /// v3.17.59 - Added workload device list dialog for co-managed workloads blocker
     /// </summary>
     public partial class CloudReadinessTab : UserControl
     {
@@ -26,6 +27,9 @@ namespace ZeroTrustMigrationAddin.Views
         private CloudReadinessDashboard? _currentDashboard;
         private GraphDataService? _graphService;
         private ConfigMgrAdminService? _configMgrService;
+        
+        // Cache workload authority data for drill-down display
+        private WorkloadAuthoritySummary? _cachedWorkloadAuthority;
 
         public CloudReadinessTab()
         {
@@ -63,6 +67,13 @@ namespace ZeroTrustMigrationAddin.Views
             {
                 Instance.Info("[CLOUD READINESS TAB] Starting cloud readiness assessment...");
                 LoadingOverlay.Visibility = Visibility.Visible;
+                
+                // Fetch workload authority data and cache it for drill-down
+                if (_graphService != null)
+                {
+                    _cachedWorkloadAuthority = await _graphService.GetCoManagedWorkloadAuthorityAsync();
+                    Instance.Info($"[CLOUD READINESS TAB] Cached {_cachedWorkloadAuthority?.Devices.Count ?? 0} devices with workload authority");
+                }
                 
                 _currentDashboard = await _readinessService.GetCloudReadinessDashboardAsync();
                 UpdateUI(_currentDashboard);
@@ -428,6 +439,7 @@ namespace ZeroTrustMigrationAddin.Views
 
         /// <summary>
         /// Handles click on blocker device count to show affected devices.
+        /// For co-managed workloads blocker, shows the WorkloadDeviceListDialog with per-device workload authority.
         /// </summary>
         private async void BlockerDeviceCount_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -440,6 +452,13 @@ namespace ZeroTrustMigrationAddin.Views
                 }
 
                 Instance.Info($"[CLOUD READINESS TAB] User clicked blocker: {blocker.Name} ({blocker.AffectedDeviceCount} devices)");
+
+                // Special handling for co-managed workloads blocker - show workload authority dialog
+                if (blocker.Id == "comanaged-workloads-on-configmgr")
+                {
+                    await ShowWorkloadDeviceListDialog(blocker);
+                    return;
+                }
 
                 List<ManagedDevice> devices;
 
@@ -484,6 +503,96 @@ namespace ZeroTrustMigrationAddin.Views
                 System.Windows.MessageBox.Show($"Error loading device list:\n\n{ex.Message}", "Error",
                     System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// Shows the WorkloadDeviceListDialog for co-managed devices with workload authority details.
+        /// </summary>
+        private async Task ShowWorkloadDeviceListDialog(ReadinessBlocker blocker)
+        {
+            try
+            {
+                List<DeviceWorkloadAuthority> devicesWithWorkloads;
+
+                // Use cached data if available, otherwise fetch
+                if (_cachedWorkloadAuthority?.Devices != null && _cachedWorkloadAuthority.Devices.Any())
+                {
+                    // Filter to only devices that have workloads on ConfigMgr
+                    devicesWithWorkloads = _cachedWorkloadAuthority.Devices
+                        .Where(d => !d.AllWorkloadsManagedByIntune)
+                        .ToList();
+                    Instance.Info($"[CLOUD READINESS TAB] Using cached workload data: {devicesWithWorkloads.Count} devices");
+                }
+                else if (_graphService != null && _graphService.IsAuthenticated)
+                {
+                    // Fetch fresh workload authority data
+                    var workloadAuthority = await _graphService.GetCoManagedWorkloadAuthorityAsync();
+                    devicesWithWorkloads = workloadAuthority.Devices
+                        .Where(d => !d.AllWorkloadsManagedByIntune)
+                        .ToList();
+                    Instance.Info($"[CLOUD READINESS TAB] Fetched fresh workload data: {devicesWithWorkloads.Count} devices");
+                }
+                else
+                {
+                    // Generate mock data for demonstration
+                    devicesWithWorkloads = GenerateMockWorkloadDevices(blocker.AffectedDeviceCount);
+                    Instance.Info($"[CLOUD READINESS TAB] Using mock workload data: {devicesWithWorkloads.Count} devices");
+                }
+
+                if (devicesWithWorkloads.Count == 0)
+                {
+                    System.Windows.MessageBox.Show($"No devices found with workloads on ConfigMgr.", "No Devices",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    return;
+                }
+
+                // Show the workload device list dialog
+                var dialog = new WorkloadDeviceListDialog
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                dialog.SetDevices(devicesWithWorkloads, 
+                    $"Co-Managed with Workloads on ConfigMgr ({devicesWithWorkloads.Count} devices)",
+                    "These devices need workloads moved to Microsoft Intune to become cloud-native ready");
+                dialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CLOUD READINESS TAB] Error showing workload dialog: {ex.Message}");
+                System.Windows.MessageBox.Show($"Error loading workload data:\n\n{ex.Message}", "Error",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Generates mock workload device data for demonstration.
+        /// </summary>
+        private List<DeviceWorkloadAuthority> GenerateMockWorkloadDevices(int count)
+        {
+            var devices = new List<DeviceWorkloadAuthority>();
+            var random = new Random();
+            var deviceNames = new[] { "DESKTOP-", "LAPTOP-", "PC-", "WS-" };
+
+            for (int i = 0; i < count; i++)
+            {
+                var prefix = deviceNames[random.Next(deviceNames.Length)];
+                devices.Add(new DeviceWorkloadAuthority
+                {
+                    DeviceId = Guid.NewGuid().ToString(),
+                    DeviceName = $"{prefix}{random.Next(1000, 9999)}",
+                    // Randomly assign some workloads to ConfigMgr
+                    CompliancePolicyManagedByConfigMgr = random.Next(2) == 1,
+                    DeviceConfigurationManagedByConfigMgr = random.Next(2) == 1,
+                    WindowsUpdateManagedByConfigMgr = random.Next(3) == 1, // Less likely
+                    EndpointProtectionManagedByConfigMgr = random.Next(2) == 1,
+                    ModernAppsManagedByConfigMgr = random.Next(2) == 1,
+                    OfficeAppsManagedByConfigMgr = random.Next(3) == 1,
+                    ResourceAccessManagedByConfigMgr = random.Next(3) == 1,
+                    InventoryManagedByConfigMgr = random.Next(4) == 1 // Least likely
+                });
+            }
+
+            return devices;
         }
 
         /// <summary>
