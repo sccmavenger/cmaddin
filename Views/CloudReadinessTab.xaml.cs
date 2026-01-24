@@ -769,19 +769,58 @@ namespace ZeroTrustMigrationAddin.Views
         /// <summary>
         /// Gets Windows devices not enrolled in Intune MDM.
         /// This blocker is about ConfigMgr Windows devices needing Intune enrollment.
+        /// Compares ConfigMgr device list with Intune device list to find devices missing from Intune.
         /// </summary>
         private async Task<List<ManagedDevice>> GetNotInIntuneDevicesAsync()
         {
-            var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
-            return allDevices
-                .Where(d => 
-                    // Must be a Windows device (the blocker is about ConfigMgr Windows devices)
-                    (d.OperatingSystem?.Contains("Windows", StringComparison.OrdinalIgnoreCase) ?? false) &&
-                    // Not enrolled in Intune MDM (only ConfigMgr agent or no MDM)
-                    d.ManagementAgent != ManagementAgentType.Mdm &&
-                    d.ManagementAgent != ManagementAgentType.ConfigurationManagerClientMdm &&
-                    d.ManagementAgent != ManagementAgentType.ConfigurationManagerClientMdmEas)
-                .ToList();
+            // Devices "not in Intune" won't appear in Graph API results by definition.
+            // We need to compare ConfigMgr devices with Intune devices to find the difference.
+            
+            if (_configMgrService == null || !_configMgrService.IsConfigured)
+            {
+                Instance.Warning("[CLOUD READINESS TAB] ConfigMgr not configured - cannot get not-in-Intune devices");
+                return new List<ManagedDevice>();
+            }
+
+            try
+            {
+                // Get all devices from ConfigMgr
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                if (configMgrDevices == null || !configMgrDevices.Any())
+                {
+                    return new List<ManagedDevice>();
+                }
+
+                // Get all devices from Intune
+                var intuneDevices = await _graphService!.GetCachedManagedDevicesAsync();
+                
+                // Create a set of device names in Intune (case-insensitive)
+                var intuneDeviceNames = new HashSet<string>(
+                    intuneDevices.Where(d => !string.IsNullOrEmpty(d.DeviceName))
+                                 .Select(d => d.DeviceName!),
+                    StringComparer.OrdinalIgnoreCase);
+
+                // Find ConfigMgr devices NOT in Intune
+                var notInIntuneDevices = configMgrDevices
+                    .Where(d => !string.IsNullOrEmpty(d.Name) && !intuneDeviceNames.Contains(d.Name))
+                    .Select(d => new ManagedDevice
+                    {
+                        DeviceName = d.Name,
+                        OperatingSystem = "Windows (ConfigMgr managed - not in Intune)",
+                        ManagementAgent = ManagementAgentType.ConfigurationManagerClient,
+                        ComplianceState = ComplianceState.Unknown
+                    })
+                    .Take(100) // Limit to prevent UI overload
+                    .ToList();
+
+                Instance.Info($"[CLOUD READINESS TAB] Found {notInIntuneDevices.Count} devices not in Intune");
+                return notInIntuneDevices;
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CLOUD READINESS TAB] Error getting not-in-Intune devices: {ex.Message}");
+                return new List<ManagedDevice>();
+            }
         }
 
         /// <summary>
