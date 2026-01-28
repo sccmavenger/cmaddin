@@ -854,18 +854,29 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public string[] EnrollmentTrendLabels { get; set; } = Array.Empty<string>();
         
         // Trend data quality indicator
-        private bool _isTrendDataProjected = true;
-        private string _trendDataQualityMessage = "📈 Projected trend (collecting historical data...)";
+        private bool _isTrendDataProjected = false;
+        private bool _hasTrendDataToDisplay = false;
+        private string _trendDataQualityMessage = "📊 Collecting historical data...";
         private int _trendRealDataPoints = 0;
         private int _trendDaysOfHistory = 0;
         
         /// <summary>
-        /// Indicates if the trend graph is showing projected (estimated) data vs real historical data.
+        /// DEPRECATED - Always false now. Projections have been removed.
         /// </summary>
         public bool IsTrendDataProjected
         {
             get => _isTrendDataProjected;
             set => SetProperty(ref _isTrendDataProjected, value);
+        }
+        
+        /// <summary>
+        /// Indicates if there is enough historical data to display the trend chart.
+        /// When false, the chart should be hidden and a message shown instead.
+        /// </summary>
+        public bool HasTrendDataToDisplay
+        {
+            get => _hasTrendDataToDisplay;
+            set => SetProperty(ref _hasTrendDataToDisplay, value);
         }
         
         /// <summary>
@@ -2408,7 +2419,29 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         private void UpdateEnrollmentChart()
         {
-            if (DeviceEnrollment?.TrendData != null)
+            // Update trend data quality indicators first
+            if (DeviceEnrollment?.TrendDisplayOptions != null)
+            {
+                IsTrendDataProjected = DeviceEnrollment.TrendDisplayOptions.IsProjected;
+                TrendDataQualityMessage = DeviceEnrollment.TrendDisplayOptions.DataQualityMessage;
+                TrendRealDataPoints = DeviceEnrollment.TrendDisplayOptions.RealDataPoints;
+                TrendDaysOfHistory = DeviceEnrollment.TrendDisplayOptions.DaysOfRealData;
+                HasTrendDataToDisplay = DeviceEnrollment.TrendDisplayOptions.HasSufficientData;
+                
+                FileLogger.Instance.Info($"[CHART] Enrollment trend (UpdateEnrollmentChart): HasData={HasTrendDataToDisplay}, RealPoints={TrendRealDataPoints}, Days={TrendDaysOfHistory}");
+            }
+            else
+            {
+                // Default to no data if no options available
+                IsTrendDataProjected = false;
+                TrendDataQualityMessage = "📊 Historical tracking not yet initialized";
+                TrendRealDataPoints = 0;
+                TrendDaysOfHistory = 0;
+                HasTrendDataToDisplay = false;
+            }
+            
+            // Only populate chart if we have real trend data to display
+            if (DeviceEnrollment?.TrendData != null && DeviceEnrollment.TrendData.Length > 0 && HasTrendDataToDisplay)
             {
                 var intuneValues = new ChartValues<int>();
                 var cloudNativeValues = new ChartValues<int>();
@@ -2428,27 +2461,21 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 EnrollmentTrendSeries[2].Values = configMgrValues;
                 EnrollmentTrendLabels = labels.ToArray();
                 
-                // Update trend data quality indicators
-                if (DeviceEnrollment.TrendDisplayOptions != null)
-                {
-                    IsTrendDataProjected = DeviceEnrollment.TrendDisplayOptions.IsProjected;
-                    TrendDataQualityMessage = DeviceEnrollment.TrendDisplayOptions.DataQualityMessage;
-                    TrendRealDataPoints = DeviceEnrollment.TrendDisplayOptions.RealDataPoints;
-                    TrendDaysOfHistory = DeviceEnrollment.TrendDisplayOptions.DaysOfRealData;
-                    
-                    FileLogger.Instance.Info($"[CHART] Enrollment trend (UpdateEnrollmentChart): Projected={IsTrendDataProjected}, RealPoints={TrendRealDataPoints}, Days={TrendDaysOfHistory}");
-                }
-                else
-                {
-                    // Default to projected if no options available
-                    IsTrendDataProjected = true;
-                    TrendDataQualityMessage = "📈 Projected trend (historical tracking not yet initialized)";
-                    TrendRealDataPoints = 0;
-                    TrendDaysOfHistory = 0;
-                }
+                OnPropertyChanged(nameof(EnrollmentTrendSeries));
+                OnPropertyChanged(nameof(EnrollmentTrendLabels));
+            }
+            else
+            {
+                // Clear chart data when insufficient history
+                EnrollmentTrendSeries[0].Values = new ChartValues<int>();
+                EnrollmentTrendSeries[1].Values = new ChartValues<int>();
+                EnrollmentTrendSeries[2].Values = new ChartValues<int>();
+                EnrollmentTrendLabels = Array.Empty<string>();
                 
                 OnPropertyChanged(nameof(EnrollmentTrendSeries));
                 OnPropertyChanged(nameof(EnrollmentTrendLabels));
+                
+                FileLogger.Instance.Info($"[CHART] Enrollment trend chart hidden - insufficient historical data");
             }
         }
 
@@ -2464,7 +2491,24 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         private void UpdateCharts()
         {
-            if (DeviceEnrollment?.TrendData != null)
+            // Update trend data quality indicators first
+            if (DeviceEnrollment?.TrendDisplayOptions != null)
+            {
+                IsTrendDataProjected = DeviceEnrollment.TrendDisplayOptions.IsProjected;
+                TrendDataQualityMessage = DeviceEnrollment.TrendDisplayOptions.DataQualityMessage;
+                TrendRealDataPoints = DeviceEnrollment.TrendDisplayOptions.RealDataPoints;
+                TrendDaysOfHistory = DeviceEnrollment.TrendDisplayOptions.DaysOfRealData;
+                HasTrendDataToDisplay = DeviceEnrollment.TrendDisplayOptions.HasSufficientData;
+                
+                FileLogger.Instance.Info($"[CHART] Enrollment trend (UpdateCharts): HasData={HasTrendDataToDisplay}, RealPoints={TrendRealDataPoints}, Days={TrendDaysOfHistory}");
+            }
+            else
+            {
+                HasTrendDataToDisplay = false;
+            }
+            
+            // Only populate chart if we have real trend data to display
+            if (DeviceEnrollment?.TrendData != null && DeviceEnrollment.TrendData.Length > 0 && HasTrendDataToDisplay)
             {
                 var intuneValues = new ChartValues<int>();
                 var cloudNativeValues = new ChartValues<int>();
@@ -2484,16 +2528,16 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 EnrollmentTrendSeries[2].Values = configMgrValues;
                 EnrollmentTrendLabels = labels.ToArray();
                 
-                // Update trend data quality indicators in UpdateCharts
-                if (DeviceEnrollment.TrendDisplayOptions != null)
-                {
-                    IsTrendDataProjected = DeviceEnrollment.TrendDisplayOptions.IsProjected;
-                    TrendDataQualityMessage = DeviceEnrollment.TrendDisplayOptions.DataQualityMessage;
-                    TrendRealDataPoints = DeviceEnrollment.TrendDisplayOptions.RealDataPoints;
-                    TrendDaysOfHistory = DeviceEnrollment.TrendDisplayOptions.DaysOfRealData;
-                    
-                    FileLogger.Instance.Info($"[CHART] Enrollment trend (UpdateCharts): Projected={IsTrendDataProjected}, RealPoints={TrendRealDataPoints}, Days={TrendDaysOfHistory}");
-                }
+                OnPropertyChanged(nameof(EnrollmentTrendSeries));
+                OnPropertyChanged(nameof(EnrollmentTrendLabels));
+            }
+            else
+            {
+                // Clear chart data when insufficient history
+                EnrollmentTrendSeries[0].Values = new ChartValues<int>();
+                EnrollmentTrendSeries[1].Values = new ChartValues<int>();
+                EnrollmentTrendSeries[2].Values = new ChartValues<int>();
+                EnrollmentTrendLabels = Array.Empty<string>();
                 
                 OnPropertyChanged(nameof(EnrollmentTrendSeries));
                 OnPropertyChanged(nameof(EnrollmentTrendLabels));

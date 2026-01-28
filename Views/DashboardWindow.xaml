@@ -467,13 +467,13 @@
                                 </StackPanel>
                                 
                                 <!-- Trend Data Quality Indicator -->
-                                <Border Background="{Binding IsTrendDataProjected, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#FFF3CD|#D4EDDA}"
-                                        BorderBrush="{Binding IsTrendDataProjected, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#FFEEBA|#C3E6CB}"
+                                <Border Background="{Binding HasTrendDataToDisplay, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#D4EDDA|#E8F4FD}"
+                                        BorderBrush="{Binding HasTrendDataToDisplay, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#C3E6CB|#BEE5EB}"
                                         BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,5,0,5">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding TrendDataQualityMessage}" 
                                                    FontSize="11" 
-                                                   Foreground="{Binding IsTrendDataProjected, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#856404|#155724}"
+                                                   Foreground="{Binding HasTrendDataToDisplay, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#155724|#0C5460}"
                                                    VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding TrendRealDataPoints, StringFormat=' ({0} data points)'}" 
                                                    FontSize="10" 
@@ -483,8 +483,10 @@
                                     </StackPanel>
                                 </Border>
                                 
+                                <!-- Chart - only visible when we have sufficient data -->
                                 <lvc:CartesianChart Height="250" Series="{Binding EnrollmentTrendSeries, Mode=OneWay}" 
-                                                    LegendLocation="None">
+                                                    LegendLocation="None"
+                                                    Visibility="{Binding HasTrendDataToDisplay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                     <lvc:CartesianChart.AxisX>
                                         <lvc:Axis Labels="{Binding EnrollmentTrendLabels, Mode=OneWay}"/>
                                     </lvc:CartesianChart.AxisX>
@@ -492,6 +494,23 @@
                                         <lvc:Axis Title="Windows 10/11 Devices" MinValue="0"/>
                                     </lvc:CartesianChart.AxisY>
                                 </lvc:CartesianChart>
+                                
+                                <!-- No Data Message - only visible when insufficient history -->
+                                <Border Height="250" CornerRadius="6" Background="#F8F9FA" 
+                                        BorderBrush="#DEE2E6" BorderThickness="1"
+                                        Visibility="{Binding HasTrendDataToDisplay, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                                        <TextBlock Text="Collecting Historical Data" FontSize="16" FontWeight="SemiBold" 
+                                                   Foreground="#495057" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Enrollment trends will appear here after 7 days of tracking." 
+                                                   FontSize="12" Foreground="#6C757D" HorizontalAlignment="Center" 
+                                                   TextWrapping="Wrap" MaxWidth="300" TextAlignment="Center" Margin="0,0,0,5"/>
+                                        <TextBlock Text="Data is recorded automatically when this dashboard is opened." 
+                                                   FontSize="11" Foreground="#ADB5BD" HorizontalAlignment="Center" 
+                                                   TextWrapping="Wrap" MaxWidth="300" TextAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
                                 
                                 <!-- Help Link -->
                                 <Button Content="❓ Learn more" 

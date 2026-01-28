@@ -480,4 +480,25 @@ namespace ZeroTrustMigrationAddin.Converters
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Converts bool to Visibility (INVERSE) - Collapsed when true, Visible when false
+    /// Used for showing elements when a condition is NOT met
+    /// </summary>
+    public class InverseBooleanToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return boolValue ? Visibility.Collapsed : Visibility.Visible;
+            }
+            return Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

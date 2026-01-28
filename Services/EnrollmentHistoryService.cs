@@ -30,6 +30,9 @@ namespace ZeroTrustMigrationAddin.Services
         
         // Maximum snapshots to retain (about 2 years of daily data)
         private const int MaxSnapshots = 730;
+        
+        // Minimum days of history required to show real trend data
+        private const int MinimumDaysForHistory = 7;
 
         private EnrollmentHistoryService()
         {
@@ -214,6 +217,7 @@ namespace ZeroTrustMigrationAddin.Services
             if (history.HasSufficientHistory && realSnapshots.Count >= 2)
             {
                 options.IsProjected = false;
+                options.HasSufficientData = true;
                 options.DataQualityMessage = $"📊 Real data from {options.DaysOfRealData} days of tracking ({options.RealDataPoints} data points)";
                 
                 FileLogger.Instance.Info($"[HISTORY] ✅ Using REAL historical data for trend graph");
@@ -223,27 +227,28 @@ namespace ZeroTrustMigrationAddin.Services
             }
             else
             {
-                // Not enough history - use projected data with clear indicator
-                options.IsProjected = true;
+                // Not enough history - return empty array with informative message (NO fake/projected data)
+                options.IsProjected = false;
+                options.HasSufficientData = false;
+                
+                // Calculate days until sufficient data
+                int daysUntilSufficient = Math.Max(0, MinimumDaysForHistory - options.DaysOfRealData);
+                options.DaysUntilSufficientData = daysUntilSufficient;
                 
                 if (options.RealDataPoints == 0)
                 {
-                    options.DataQualityMessage = "📈 Projected trend (no historical data yet - check back in 7 days)";
-                }
-                else if (options.DaysOfRealData < 7)
-                {
-                    options.DataQualityMessage = $"📈 Projected trend ({options.DaysOfRealData} days tracked - need 7+ days for real trends)";
+                    options.DataQualityMessage = $"📊 Collecting historical data - trend will appear after 7 days of tracking";
                 }
                 else
                 {
-                    options.DataQualityMessage = $"📈 Projected trend (only {options.RealDataPoints} data points - need more for accuracy)";
+                    options.DataQualityMessage = $"📊 {options.DaysOfRealData} day(s) tracked - trend will appear after {daysUntilSufficient} more day(s)";
                 }
 
-                FileLogger.Instance.Warning($"[HISTORY] ⚠️ Using PROJECTED data for trend graph - insufficient history");
-                FileLogger.Instance.Info($"[HISTORY]    Reason: {options.DataQualityMessage}");
+                FileLogger.Instance.Info($"[HISTORY] 📊 Insufficient history for trend graph - returning empty data (NO projections)");
+                FileLogger.Instance.Info($"[HISTORY]    Days tracked: {options.DaysOfRealData}, Need: {MinimumDaysForHistory}, Remaining: {daysUntilSufficient}");
                 
-                var trends = GenerateProjectedTrendData(currentTotal, currentCloudManaged, currentConfigMgrOnly, currentCloudNative);
-                return (trends, options);
+                // Return empty array - no fake/projected data
+                return (Array.Empty<EnrollmentTrend>(), options);
             }
         }
 
@@ -313,54 +318,6 @@ namespace ZeroTrustMigrationAddin.Services
 
             FileLogger.Instance.Info($"[HISTORY] Generated {trends.Count} real trend data points");
             
-            return trends.ToArray();
-        }
-
-        /// <summary>
-        /// Generate projected trend data when we don't have enough history.
-        /// This is clearly labeled as projected/estimated.
-        /// </summary>
-        private EnrollmentTrend[] GenerateProjectedTrendData(
-            int currentTotal, 
-            int currentCloudManaged, 
-            int currentConfigMgrOnly, 
-            int currentCloudNative)
-        {
-            FileLogger.Instance.Warning($"[HISTORY] ⚠️ Generating PROJECTED trend data (not real historical data)");
-            FileLogger.Instance.Info($"[HISTORY]    Current values: Total={currentTotal}, CloudManaged={currentCloudManaged}, ConfigMgrOnly={currentConfigMgrOnly}, CloudNative={currentCloudNative}");
-            
-            var trends = new List<EnrollmentTrend>();
-            var baseDate = DateTime.Now.AddMonths(-6);
-
-            // Use actual cloud native count if provided, otherwise estimate
-            if (currentCloudNative == 0 && currentCloudManaged > 0)
-                currentCloudNative = (int)(currentCloudManaged * 0.12);
-
-            for (int i = 0; i <= 6; i++)
-            {
-                double progress = i / 6.0;
-
-                // Cloud-managed devices grow over time (co-management progress)
-                int cloudManagedAtMonth = (int)(currentCloudManaged * progress);
-
-                // Cloud native grows faster (newer devices)
-                int cloudNativeAtMonth = (int)(currentCloudNative * (0.3 + progress * 0.7));
-
-                // ConfigMgr-only decreases as devices become co-managed
-                int configMgrAtMonth = currentTotal - cloudManagedAtMonth;
-                configMgrAtMonth = Math.Max(0, configMgrAtMonth);
-
-                trends.Add(new EnrollmentTrend
-                {
-                    Month = baseDate.AddMonths(i),
-                    IntuneDevices = cloudManagedAtMonth,
-                    CloudNativeDevices = cloudNativeAtMonth,
-                    ConfigMgrDevices = configMgrAtMonth
-                });
-                
-                FileLogger.Instance.Debug($"[HISTORY]    Month {i} (PROJECTED): CM={cloudManagedAtMonth}, Native={cloudNativeAtMonth}, ConfigMgr={configMgrAtMonth}");
-            }
-
             return trends.ToArray();
         }
 

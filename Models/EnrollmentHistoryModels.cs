@@ -195,9 +195,14 @@ namespace ZeroTrustMigrationAddin.Models
     public class TrendDisplayOptions
     {
         /// <summary>
-        /// True if showing projected data (insufficient history)
+        /// True if showing projected data (insufficient history) - DEPRECATED, always false now
         /// </summary>
         public bool IsProjected { get; set; }
+
+        /// <summary>
+        /// True if there is enough historical data to display a real trend
+        /// </summary>
+        public bool HasSufficientData { get; set; }
 
         /// <summary>
         /// Number of real data points available
@@ -208,6 +213,11 @@ namespace ZeroTrustMigrationAddin.Models
         /// Days of actual historical data
         /// </summary>
         public int DaysOfRealData { get; set; }
+
+        /// <summary>
+        /// Days remaining until sufficient data is collected (0 if already sufficient)
+        /// </summary>
+        public int DaysUntilSufficientData { get; set; }
 
         /// <summary>
         /// Message to display to user about data quality

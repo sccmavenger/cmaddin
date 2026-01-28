@@ -29,6 +29,7 @@
             <converters:RecommendationPriorityConverter x:Key="RecommendationPriorityConverter"/>
             <converters:PercentageToStrokeDashConverter x:Key="PercentageToStrokeDashConverter"/>
             <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -1,5 +1,54 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.76] - 2026-01-28
+
+### Changed - Remove Projected Trends (Real Data Only) 📊
+
+**Breaking Change: No More Projected/Fake Trend Data**
+
+The enrollment trend chart now shows **ONLY real historical data**. When insufficient history exists (< 7 days), the chart displays a friendly placeholder message instead of fake projected lines.
+
+**What Changed:**
+
+1. **Removed Projected Trend Generation**
+   - Deleted `GenerateProjectedTrendData()` method entirely
+   - `GetTrendDataAsync()` now returns empty array when insufficient history
+   - No more fake/simulated trend lines that could mislead customers
+
+2. **New "Collecting Data" Placeholder**
+   - When < 7 days of history: Shows card with "📊 Collecting Historical Data" message
+   - Explains "Enrollment trends will appear here after 7 days of tracking"
+   - Notes "Data is recorded automatically when this dashboard is opened"
+
+3. **Improved Status Banner**
+   - Blue info banner when collecting data: "📊 X day(s) tracked - trend will appear after Y more day(s)"
+   - Green success banner when sufficient data: "📊 Real data from X days of tracking (Y data points)"
+   - No more yellow "Projected" warnings (projections removed entirely)
+
+4. **New ViewModel Property**
+   - Added `HasTrendDataToDisplay` boolean to control chart visibility
+   - Chart binds to this property for show/hide logic
+   - `IsTrendDataProjected` deprecated (always false now)
+
+5. **New Converter**
+   - Added `InverseBooleanToVisibilityConverter` for showing placeholder when no data
+
+**Files Modified:**
+- `Services/EnrollmentHistoryService.cs` - Removed projection logic, return empty array instead
+- `Models/EnrollmentHistoryModels.cs` - Added `HasSufficientData` and `DaysUntilSufficientData` to `TrendDisplayOptions`
+- `ViewModels/DashboardViewModel.cs` - Added `HasTrendDataToDisplay`, updated chart update methods
+- `Views/DashboardWindow.xaml` - Added chart visibility binding and no-data placeholder
+- `Converters/ValueConverters.cs` - Added `InverseBooleanToVisibilityConverter`
+- `App.xaml` - Registered new converter
+
+**Why This Matters:**
+- New installations see an honest "collecting data" message instead of fake trends
+- No more customer confusion about 6-month graphs appearing on day 1
+- Clear communication about when real trend data will be available
+- Maintains trust by only showing actual data
+
+---
+
 ## [3.17.74] - 2026-01-28
 
 ### Added - Real Historical Trend Data & Strategic Telemetry 📊📈
