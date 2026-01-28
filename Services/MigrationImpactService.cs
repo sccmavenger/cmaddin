@@ -144,10 +144,13 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 // Set defaults for ConfigMgr-only scenarios
-                if (inputs.TotalDevices == 0)
+                // IMPORTANT: Only use demo data if NOT authenticated. If authenticated but 0 devices, that's real data.
+                bool isAuthenticated = _graphService?.IsAuthenticated ?? false;
+                
+                if (inputs.TotalDevices == 0 && !isAuthenticated)
                 {
-                    Instance.Info("[MIGRATION IMPACT] No device data from Graph - using DEMO/ESTIMATION mode");
-                    // Demo/estimation mode
+                    Instance.Info("[MIGRATION IMPACT] No device data and NOT authenticated - using DEMO mode");
+                    // Demo/estimation mode - ONLY when not connected
                     inputs.TotalDevices = 1000;
                     inputs.EnrolledDevices = 350;
                     inputs.CoManagedDevices = 350;
@@ -173,10 +176,17 @@ namespace ZeroTrustMigrationAddin.Services
                     inputs.HealthyClients = 870;
                     inputs.UnhealthyClients = 130;
                     inputs.PatchComplianceRate = 78;
+                    inputs.IsDemo = true; // Mark as demo data
+                }
+                else if (inputs.TotalDevices == 0 && isAuthenticated)
+                {
+                    Instance.Warning("[MIGRATION IMPACT] Authenticated but 0 devices returned - using REAL empty data (not demo)");
+                    inputs.IsDemo = false; // This is real data, just empty
                 }
                 else
                 {
                     Instance.Info($"[MIGRATION IMPACT] Inputs gathered successfully: TotalDevices={inputs.TotalDevices}, Enrolled={inputs.EnrolledDevices}, Compliance={inputs.CurrentComplianceRate:F1}%");
+                    inputs.IsDemo = false;
                 }
             }
             catch (Exception ex)

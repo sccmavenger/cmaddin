@@ -343,5 +343,11 @@ namespace ZeroTrustMigrationAddin.Models
         public int HealthyClients { get; set; }
         public int UnhealthyClients { get; set; }
         public double PatchComplianceRate { get; set; }
+        
+        // Data source indicator
+        /// <summary>
+        /// True if this data is demo/mock data (not connected), false if real data from Graph/ConfigMgr.
+        /// </summary>
+        public bool IsDemo { get; set; }
     }
 }

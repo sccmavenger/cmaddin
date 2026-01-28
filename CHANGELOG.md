@@ -1,57 +1,25 @@
 # Zero Trust Migration Journey - Change Log
 
-## [3.17.74] - 2026-01-28
+## [3.17.76] - 2026-01-28
 
-### Added - Strategic Telemetry for Leadership Dashboards 📊
+### Fixed - No Fake Data After Authentication 🔒
 
-**New Telemetry Events:**
+Fixed issue where mock/demo data could appear after Graph and ConfigMgr authentication.
 
-Added strategic telemetry to help leadership teams track migration progress across their fleet:
+**Changes:**
+- MigrationImpactService now checks `IsAuthenticated` before using demo data
+- MigrationImpactCard shows error state instead of demo data when calculation fails post-auth
+- Added `IsDemo` property to track data source in MigrationImpactInputs
 
-1. **StrategicMetrics Event**
-   - Estate size bands (privacy-safe: "100-249", "1000-2499", etc.)
-   - Enrollment percentage and percentage bands
-   - Cloud-managed, cloud-native, and ConfigMgr-only percentages
-   - Daily migration velocity
-   - Trend direction (Accelerating, Steady, Slowing, Stalled)
+**Rule:** Mock data is ONLY acceptable when the tool first opens and before authentication. Once Graph and ConfigMgr are authenticated, no code should ever display fake data or fall back to fake data.
 
-2. **EstateSnapshot Event**
-   - Total device count
-   - Cloud-managed device count
-   - ConfigMgr-only device count
-   - Cloud-native device count
-   - Used for global aggregation across all customers
+---
 
-3. **MigrationMilestone Event**
-   - Tracks when customers hit key milestones: 10%, 25%, 50%, 75%, 90%, 100%
-   - Includes estate size and device counts
+## [3.17.75] - 2026-01-28
 
-4. **BlockerResolution Event**
-   - Tracks when migration blockers are resolved
-   - Includes blocker type, resolution method, affected device count
+### Added - Internal Telemetry Improvements
 
-5. **WorkloadTransition Event**
-   - Tracks workload authority changes (ConfigMgr → Intune)
-   - Includes workload name, from/to states, affected devices
-
-6. **SessionSummary Event**
-   - Session duration (with privacy bands)
-   - Tabs viewed during session
-   - Actions performed count
-
-**Helper Functions:**
-- `GetEstateSizeBand()` - Converts device counts to privacy-safe bands
-- `GetPercentageBand()` - Converts percentages to groupable bands
-- `GetSessionDurationBand()` - Converts duration to bands for aggregation
-
-**Files Modified:**
-- `Services/AzureTelemetryService.cs` - Added 6 new strategic telemetry methods
-- `Services/GraphDataService.cs` - Calls strategic telemetry on device enrollment fetch
-
-**Privacy Notes:**
-- No PII is ever sent
-- Device counts are converted to size bands where appropriate
-- All data is anonymized via SHA256-hashed machine GUID
+Internal telemetry enhancements for tracking migration progress.
 
 ---
 
