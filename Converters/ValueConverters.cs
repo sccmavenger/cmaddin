@@ -457,4 +457,27 @@ namespace ZeroTrustMigrationAddin.Converters
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Converts int to Visibility - Visible when > 0, Collapsed otherwise
+    /// Used for showing/hiding elements based on count values
+    /// </summary>
+    public class IntToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            int count = 0;
+            if (value is int i)
+                count = i;
+            else if (value is double d)
+                count = (int)d;
+            
+            return count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

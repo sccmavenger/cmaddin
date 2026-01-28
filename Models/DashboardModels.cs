@@ -22,6 +22,11 @@ namespace ZeroTrustMigrationAddin.Models
         public double IntuneEnrollmentPercentage => TotalDevices > 0 ? (double)IntuneEnrolledDevices / TotalDevices * 100 : 0;
         public EnrollmentTrend[] TrendData { get; set; } = Array.Empty<EnrollmentTrend>();
         
+        /// <summary>
+        /// Options for displaying trend data - indicates if real or projected
+        /// </summary>
+        public TrendDisplayOptions? TrendDisplayOptions { get; set; }
+        
         // Device Join Type Properties
         public int HybridJoinedDevices { get; set; }
         public int AzureADOnlyDevices { get; set; }

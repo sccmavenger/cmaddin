@@ -371,6 +371,143 @@ namespace ZeroTrustMigrationAddin.Services
 
         #endregion
 
+        #region Strategic Telemetry for Leadership
+
+        /// <summary>
+        /// Track blocker resolution for leadership dashboards.
+        /// Shows which blockers are being resolved and how quickly.
+        /// </summary>
+        public void TrackBlockerResolution(string blockerType, int devicesAffected, string resolution)
+        {
+            TrackEvent("BlockerResolution", new Dictionary<string, string>
+            {
+                ["BlockerType"] = blockerType,
+                ["Resolution"] = resolution
+            }, new Dictionary<string, double>
+            {
+                ["DevicesAffected"] = devicesAffected
+            });
+        }
+
+        /// <summary>
+        /// Track workload transition milestone for leadership dashboards.
+        /// </summary>
+        public void TrackWorkloadTransition(string workloadName, string fromState, string toState, int devicesAffected)
+        {
+            TrackEvent("WorkloadTransition", new Dictionary<string, string>
+            {
+                ["WorkloadName"] = workloadName,
+                ["FromState"] = fromState,
+                ["ToState"] = toState
+            }, new Dictionary<string, double>
+            {
+                ["DevicesAffected"] = devicesAffected
+            });
+        }
+
+        /// <summary>
+        /// Track feature engagement for product development insights.
+        /// </summary>
+        public void TrackFeatureEngagement(string featureName, string action, Dictionary<string, string>? additionalProperties = null)
+        {
+            var properties = additionalProperties ?? new Dictionary<string, string>();
+            properties["FeatureName"] = featureName;
+            properties["Action"] = action;
+            
+            TrackEvent("FeatureEngagement", properties);
+        }
+
+        /// <summary>
+        /// Track migration milestone reached (e.g., 25%, 50%, 75%, 100%).
+        /// </summary>
+        public void TrackMigrationMilestone(double enrollmentPercentage, int totalDevices, int migratedDevices)
+        {
+            // Determine milestone
+            int milestone = enrollmentPercentage switch
+            {
+                >= 100 => 100,
+                >= 90 => 90,
+                >= 75 => 75,
+                >= 50 => 50,
+                >= 25 => 25,
+                >= 10 => 10,
+                >= 1 => 1,
+                _ => 0
+            };
+
+            string estateSize = totalDevices switch
+            {
+                < 100 => "Small",
+                < 500 => "Medium",
+                < 1000 => "Large",
+                < 5000 => "Enterprise",
+                _ => "Mega"
+            };
+
+            TrackEvent("MigrationMilestone", new Dictionary<string, string>
+            {
+                ["Milestone"] = $"{milestone}%",
+                ["EstateSize"] = estateSize
+            }, new Dictionary<string, double>
+            {
+                ["EnrollmentPercentage"] = Math.Round(enrollmentPercentage, 1),
+                ["MilestoneValue"] = milestone
+            });
+            
+            FileLogger.Instance.Info($"[TELEMETRY] Migration milestone tracked: {milestone}% ({enrollmentPercentage:F1}% actual)");
+        }
+
+        /// <summary>
+        /// Track session summary when user closes the app.
+        /// Provides insight into tool usage patterns.
+        /// </summary>
+        public void TrackSessionSummary(TimeSpan sessionDuration, int tabsViewed, int actionsPerformed, bool dataRefreshed)
+        {
+            TrackEvent("SessionSummary", new Dictionary<string, string>
+            {
+                ["DataRefreshed"] = dataRefreshed.ToString()
+            }, new Dictionary<string, double>
+            {
+                ["SessionMinutes"] = Math.Round(sessionDuration.TotalMinutes, 1),
+                ["TabsViewed"] = tabsViewed,
+                ["ActionsPerformed"] = actionsPerformed
+            });
+        }
+
+        /// <summary>
+        /// Track AI recommendation engagement for understanding AI value.
+        /// </summary>
+        public void TrackAIRecommendation(string recommendationType, string action, bool wasHelpful)
+        {
+            TrackEvent("AIRecommendation", new Dictionary<string, string>
+            {
+                ["RecommendationType"] = recommendationType,
+                ["Action"] = action,
+                ["WasHelpful"] = wasHelpful.ToString()
+            });
+        }
+
+        /// <summary>
+        /// Track data source connection for understanding deployment scenarios.
+        /// </summary>
+        public void TrackDataSourceConnection(string dataSource, bool success, string? errorType = null)
+        {
+            var properties = new Dictionary<string, string>
+            {
+                ["DataSource"] = dataSource,
+                ["Success"] = success.ToString()
+            };
+
+            if (errorType != null)
+            {
+                properties["ErrorType"] = errorType;
+            }
+
+            TrackEvent("DataSourceConnection", properties);
+        }
+
+        #endregion
+
         public bool IsEnabled => _isEnabled;
     }
 }

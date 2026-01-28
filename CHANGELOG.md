@@ -1,5 +1,59 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.74] - 2026-01-28
+
+### Added - Real Historical Trend Data & Strategic Telemetry 📊📈
+
+**Major Enhancement: Real Historical Data for Enrollment Trends**
+
+Previously, the enrollment trend graph showed **projected/simulated** data based on current counts, which caused confusion for new installations. Now the tool tracks **real historical data** over time.
+
+**New Features:**
+
+1. **Historical Data Storage** (`EnrollmentHistoryService`)
+   - Stores enrollment snapshots every 12+ hours to `%LOCALAPPDATA%\ZeroTrustMigrationAddin\enrollment-history.json`
+   - Tracks: TotalDevices, CloudManagedDevices, ConfigMgrOnlyDevices, CloudNativeDevices
+   - Retains up to 730 data points (~2 years of history)
+   - Calculates migration velocity (7/30/90 day), trend direction, estimated completion
+
+2. **Trend Data Quality Indicator** (UI)
+   - Yellow banner when showing projected data: "📈 Projected trend (no historical data yet - check back in 7 days)"
+   - Green banner when showing real data: "📊 Real data from X days of tracking (Y data points)"
+   - Clear distinction between real vs estimated trends
+
+3. **Strategic Telemetry for Leadership** (`AzureTelemetryService`)
+   - `StrategicMetrics` event: Estate size bands, enrollment %, daily velocity, trend direction
+   - `EstateSnapshot` event: Anonymized device counts for global aggregation
+   - `TrackMigrationMilestone()`: Track 10%, 25%, 50%, 75%, 90%, 100% milestones
+   - `TrackBlockerResolution()`: Track when blockers are resolved
+   - `TrackWorkloadTransition()`: Track workload state changes
+   - `TrackSessionSummary()`: Usage patterns (session duration, tabs viewed)
+
+4. **Enhanced Logging**
+   - `[TREND]` prefix for all trend-related operations
+   - `[HISTORY]` prefix for historical data storage operations
+   - Clear indication of data source: `✅ REAL HISTORICAL DATA` vs `⚠️ PROJECTED DATA`
+
+**Files Added:**
+- `Models/EnrollmentHistoryModels.cs` - Data models for historical snapshots and summary stats
+- `Services/EnrollmentHistoryService.cs` - Singleton service for persisting/loading historical data
+
+**Files Modified:**
+- `Services/GraphDataService.cs` - Integrated historical data recording and trend generation
+- `Services/AzureTelemetryService.cs` - Added strategic telemetry methods for leadership
+- `Models/DashboardModels.cs` - Added `TrendDisplayOptions` property to `DeviceEnrollment`
+- `ViewModels/DashboardViewModel.cs` - Added trend quality indicator properties
+- `Views/DashboardWindow.xaml` - Added trend quality banner above enrollment chart
+- `Converters/ValueConverters.cs` - Added `IntToVisibilityConverter`
+
+**Why This Matters:**
+- New installations no longer show misleading 6-month trends
+- Leadership can track real migration velocity across all installations
+- Customers can see actual progress over time
+- Debugging trend issues is now possible via detailed logging
+
+---
+
 ## [3.17.59] - 2026-01-23
 
 ### Added - Workload Device List Dialog & UI Improvements 📊

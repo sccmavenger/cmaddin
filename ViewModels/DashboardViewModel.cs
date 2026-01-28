@@ -853,6 +853,48 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public SeriesCollection EnrollmentTrendSeries { get; set; } = new SeriesCollection();
         public string[] EnrollmentTrendLabels { get; set; } = Array.Empty<string>();
         
+        // Trend data quality indicator
+        private bool _isTrendDataProjected = true;
+        private string _trendDataQualityMessage = "📈 Projected trend (collecting historical data...)";
+        private int _trendRealDataPoints = 0;
+        private int _trendDaysOfHistory = 0;
+        
+        /// <summary>
+        /// Indicates if the trend graph is showing projected (estimated) data vs real historical data.
+        /// </summary>
+        public bool IsTrendDataProjected
+        {
+            get => _isTrendDataProjected;
+            set => SetProperty(ref _isTrendDataProjected, value);
+        }
+        
+        /// <summary>
+        /// Message explaining the data quality of the trend graph.
+        /// </summary>
+        public string TrendDataQualityMessage
+        {
+            get => _trendDataQualityMessage;
+            set => SetProperty(ref _trendDataQualityMessage, value);
+        }
+        
+        /// <summary>
+        /// Number of real data points used in the trend graph.
+        /// </summary>
+        public int TrendRealDataPoints
+        {
+            get => _trendRealDataPoints;
+            set => SetProperty(ref _trendRealDataPoints, value);
+        }
+        
+        /// <summary>
+        /// Days of historical data available.
+        /// </summary>
+        public int TrendDaysOfHistory
+        {
+            get => _trendDaysOfHistory;
+            set => SetProperty(ref _trendDaysOfHistory, value);
+        }
+        
         // Chart series visibility toggles
         private bool _isComanagedSeriesVisible = true;
         private bool _isCloudNativeSeriesVisible = true;
@@ -2386,6 +2428,25 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 EnrollmentTrendSeries[2].Values = configMgrValues;
                 EnrollmentTrendLabels = labels.ToArray();
                 
+                // Update trend data quality indicators
+                if (DeviceEnrollment.TrendDisplayOptions != null)
+                {
+                    IsTrendDataProjected = DeviceEnrollment.TrendDisplayOptions.IsProjected;
+                    TrendDataQualityMessage = DeviceEnrollment.TrendDisplayOptions.DataQualityMessage;
+                    TrendRealDataPoints = DeviceEnrollment.TrendDisplayOptions.RealDataPoints;
+                    TrendDaysOfHistory = DeviceEnrollment.TrendDisplayOptions.DaysOfRealData;
+                    
+                    FileLogger.Instance.Info($"[CHART] Enrollment trend (UpdateEnrollmentChart): Projected={IsTrendDataProjected}, RealPoints={TrendRealDataPoints}, Days={TrendDaysOfHistory}");
+                }
+                else
+                {
+                    // Default to projected if no options available
+                    IsTrendDataProjected = true;
+                    TrendDataQualityMessage = "📈 Projected trend (historical tracking not yet initialized)";
+                    TrendRealDataPoints = 0;
+                    TrendDaysOfHistory = 0;
+                }
+                
                 OnPropertyChanged(nameof(EnrollmentTrendSeries));
                 OnPropertyChanged(nameof(EnrollmentTrendLabels));
             }
@@ -2422,6 +2483,17 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 EnrollmentTrendSeries[1].Values = cloudNativeValues;
                 EnrollmentTrendSeries[2].Values = configMgrValues;
                 EnrollmentTrendLabels = labels.ToArray();
+                
+                // Update trend data quality indicators in UpdateCharts
+                if (DeviceEnrollment.TrendDisplayOptions != null)
+                {
+                    IsTrendDataProjected = DeviceEnrollment.TrendDisplayOptions.IsProjected;
+                    TrendDataQualityMessage = DeviceEnrollment.TrendDisplayOptions.DataQualityMessage;
+                    TrendRealDataPoints = DeviceEnrollment.TrendDisplayOptions.RealDataPoints;
+                    TrendDaysOfHistory = DeviceEnrollment.TrendDisplayOptions.DaysOfRealData;
+                    
+                    FileLogger.Instance.Info($"[CHART] Enrollment trend (UpdateCharts): Projected={IsTrendDataProjected}, RealPoints={TrendRealDataPoints}, Days={TrendDaysOfHistory}");
+                }
                 
                 OnPropertyChanged(nameof(EnrollmentTrendSeries));
                 OnPropertyChanged(nameof(EnrollmentTrendLabels));

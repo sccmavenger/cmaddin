@@ -1049,8 +1049,31 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info("=================================================");
 
-                // Generate trend data showing migration from ConfigMgr to cloud (co-managed/Intune)
-                var trendData = GenerateTrendData(totalDevices, cloudManagedCount, configMgrOnlyCount, cloudNativeCount);
+                // Record this data point in enrollment history for real trend tracking
+                Instance.Info("[TREND] Recording enrollment snapshot for historical tracking...");
+                var isRealData = _graphClient != null && _configMgrService.IsConfigured;
+                await EnrollmentHistoryService.Instance.RecordSnapshotAsync(
+                    totalDevices, cloudManagedCount, configMgrOnlyCount, cloudNativeCount, isRealData);
+
+                // Get trend data - uses real historical data if available, otherwise projected
+                Instance.Info("[TREND] Generating trend data from enrollment history...");
+                var (trendData, trendOptions) = await EnrollmentHistoryService.Instance.GetTrendDataAsync(
+                    totalDevices, cloudManagedCount, configMgrOnlyCount, cloudNativeCount);
+                
+                // Log trend data source clearly
+                if (trendOptions.IsProjected)
+                {
+                    Instance.Warning($"[TREND] ⚠️ PROJECTED DATA: {trendOptions.DataQualityMessage}");
+                    Instance.Warning($"[TREND]    Real data points: {trendOptions.RealDataPoints}, Days of history: {trendOptions.DaysOfRealData}");
+                }
+                else
+                {
+                    Instance.Info($"[TREND] ✅ REAL HISTORICAL DATA: {trendOptions.DataQualityMessage}");
+                    Instance.Info($"[TREND]    Data points: {trendOptions.RealDataPoints}, First recorded: {trendOptions.FirstDataDate:yyyy-MM-dd}");
+                }
+
+                // Send strategic telemetry for leadership dashboards
+                await SendStrategicTelemetryAsync(totalDevices, cloudManagedCount, configMgrOnlyCount, cloudNativeCount);
 
                 System.Diagnostics.Debug.WriteLine($"=== FINAL RESULT: Total={totalDevices}, CloudManaged={cloudManagedCount}, ConfigMgrOnly={configMgrOnlyCount} ===");
 
@@ -1062,6 +1085,7 @@ namespace ZeroTrustMigrationAddin.Services
                     CoManagedDevices = coManagedCount, // Devices in both ConfigMgr + Intune
                     CloudNativeDevices = cloudNativeCount, // Entra/AAD + Intune, no ConfigMgr record
                     TrendData = trendData,
+                    TrendDisplayOptions = trendOptions, // NEW: Indicates if data is real or projected
                     // Device join type categorization
                     HybridJoinedDevices = hybridJoinedCount,
                     AzureADOnlyDevices = azureADOnlyCount,
@@ -1628,6 +1652,148 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
+        /// <summary>
+        /// Send strategic telemetry metrics for leadership dashboards.
+        /// All data is anonymized - no PII, device names, or tenant identifiers.
+        /// </summary>
+        private async Task SendStrategicTelemetryAsync(int totalDevices, int cloudManagedDevices, int configMgrOnlyDevices, int cloudNativeDevices)
+        {
+            try
+            {
+                Instance.Info("[TELEMETRY] Sending strategic metrics for leadership dashboards...");
+                
+                // Get historical summary stats
+                var summaryStats = await EnrollmentHistoryService.Instance.GetSummaryStatsAsync();
+                
+                // Calculate enrollment percentage (anonymized - just the percentage, not device counts)
+                double enrollmentPercentage = totalDevices > 0 
+                    ? Math.Round((double)cloudManagedDevices / totalDevices * 100, 1) 
+                    : 0;
+                
+                // Categorize estate size (anonymized buckets, not exact counts)
+                string estateSize = totalDevices switch
+                {
+                    < 100 => "Small (<100)",
+                    < 500 => "Medium (100-499)",
+                    < 1000 => "Large (500-999)",
+                    < 5000 => "Enterprise (1K-5K)",
+                    < 20000 => "Major Enterprise (5K-20K)",
+                    _ => "Mega Enterprise (20K+)"
+                };
+
+                // Build telemetry properties (all anonymized)
+                var properties = new Dictionary<string, string>
+                {
+                    ["EstateSize"] = estateSize,
+                    ["EnrollmentBand"] = GetEnrollmentBand(enrollmentPercentage),
+                    ["HasConfigMgr"] = (_configMgrService?.IsConfigured ?? false).ToString(),
+                    ["HasIntune"] = (_graphClient != null).ToString(),
+                    ["TrendDirection"] = summaryStats?.TrendDirection ?? "Unknown",
+                    ["DaysTracking"] = (summaryStats?.DaysSinceFirstData ?? 0).ToString(),
+                    ["IsActiveInstallation"] = (summaryStats?.IsActive ?? true).ToString()
+                };
+
+                // Build numeric metrics (anonymized ranges, not exact values)
+                var metrics = new Dictionary<string, double>
+                {
+                    ["EnrollmentPercentage"] = enrollmentPercentage,
+                    ["CloudNativePercentage"] = totalDevices > 0 ? Math.Round((double)cloudNativeDevices / totalDevices * 100, 1) : 0,
+                    ["DailyMigrationVelocity"] = summaryStats?.AverageDailyVelocity ?? 0,
+                    ["WeeklyMigrationCount"] = summaryStats?.DevicesMigratedLast7Days ?? 0,
+                    ["MonthlyMigrationCount"] = summaryStats?.DevicesMigratedLast30Days ?? 0,
+                    ["DataPointsCollected"] = summaryStats?.TotalDataPoints ?? 0,
+                    ["EstimatedDaysToCompletion"] = summaryStats?.EstimatedDaysToCompletion ?? -1
+                };
+
+                // Send to Azure Application Insights
+                AzureTelemetryService.Instance.TrackEvent("StrategicMetrics", properties, metrics);
+                
+                // Also send estate snapshot for aggregation
+                AzureTelemetryService.Instance.TrackEvent("EstateSnapshot", new Dictionary<string, string>
+                {
+                    ["EstateSize"] = estateSize,
+                    ["EnrollmentBand"] = GetEnrollmentBand(enrollmentPercentage),
+                    ["ManagementScenario"] = GetManagementScenario()
+                }, new Dictionary<string, double>
+                {
+                    ["TotalDevicesBucket"] = GetDeviceBucket(totalDevices),
+                    ["EnrollmentPercentage"] = enrollmentPercentage
+                });
+
+                Instance.Info($"[TELEMETRY] ✅ Strategic metrics sent:");
+                Instance.Info($"[TELEMETRY]    Estate size: {estateSize}");
+                Instance.Info($"[TELEMETRY]    Enrollment band: {GetEnrollmentBand(enrollmentPercentage)}");
+                Instance.Info($"[TELEMETRY]    Daily velocity: {summaryStats?.AverageDailyVelocity ?? 0:F1} devices/day");
+                Instance.Info($"[TELEMETRY]    Trend direction: {summaryStats?.TrendDirection ?? "Unknown"}");
+            }
+            catch (Exception ex)
+            {
+                // Telemetry failures should not break the app
+                Instance.Warning($"[TELEMETRY] Failed to send strategic metrics: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Categorize enrollment percentage into bands for anonymous aggregation.
+        /// </summary>
+        private string GetEnrollmentBand(double percentage)
+        {
+            return percentage switch
+            {
+                0 => "0% (Not Started)",
+                < 10 => "1-9% (Starting)",
+                < 25 => "10-24% (Early)",
+                < 50 => "25-49% (Progressing)",
+                < 75 => "50-74% (Advancing)",
+                < 90 => "75-89% (Near Complete)",
+                < 100 => "90-99% (Final Push)",
+                _ => "100% (Complete)"
+            };
+        }
+
+        /// <summary>
+        /// Determine management scenario based on connected services.
+        /// </summary>
+        private string GetManagementScenario()
+        {
+            bool hasConfigMgr = _configMgrService?.IsConfigured ?? false;
+            bool hasIntune = _graphClient != null;
+
+            return (hasConfigMgr, hasIntune) switch
+            {
+                (true, true) => "Co-Management",
+                (true, false) => "ConfigMgr Only",
+                (false, true) => "Intune Only",
+                _ => "Disconnected"
+            };
+        }
+
+        /// <summary>
+        /// Convert device count to anonymous bucket for telemetry.
+        /// </summary>
+        private double GetDeviceBucket(int deviceCount)
+        {
+            return deviceCount switch
+            {
+                < 50 => 25,
+                < 100 => 75,
+                < 250 => 175,
+                < 500 => 375,
+                < 1000 => 750,
+                < 2500 => 1750,
+                < 5000 => 3750,
+                < 10000 => 7500,
+                < 25000 => 17500,
+                < 50000 => 37500,
+                _ => 50000
+            };
+        }
+
+        /// <summary>
+        /// DEPRECATED: Use EnrollmentHistoryService.GetTrendDataAsync() instead.
+        /// This method now only generates projected data as a fallback.
+        /// </summary>
+        [Obsolete("Use EnrollmentHistoryService.GetTrendDataAsync() for real historical data")]
         private EnrollmentTrend[] GenerateTrendData(int currentTotal, int currentCloudManaged, int currentConfigMgrOnly, int currentCloudNative = 0)
         {
             // Generate 6 months of trend data showing co-management journey

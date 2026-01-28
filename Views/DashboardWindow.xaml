@@ -29,6 +29,7 @@
         <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
         <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
         <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
+        <converters:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
 
         <Style x:Key="SectionCard" TargetType="Border">
             <Setter Property="Background" Value="White"/>
@@ -464,6 +465,24 @@
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
+                                
+                                <!-- Trend Data Quality Indicator -->
+                                <Border Background="{Binding IsTrendDataProjected, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#FFF3CD|#D4EDDA}"
+                                        BorderBrush="{Binding IsTrendDataProjected, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#FFEEBA|#C3E6CB}"
+                                        BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,5,0,5">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding TrendDataQualityMessage}" 
+                                                   FontSize="11" 
+                                                   Foreground="{Binding IsTrendDataProjected, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#856404|#155724}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding TrendRealDataPoints, StringFormat=' ({0} data points)'}" 
+                                                   FontSize="10" 
+                                                   Foreground="#666666"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding TrendRealDataPoints, Converter={StaticResource IntToVisibilityConverter}}"/>
+                                    </StackPanel>
+                                </Border>
+                                
                                 <lvc:CartesianChart Height="250" Series="{Binding EnrollmentTrendSeries, Mode=OneWay}" 
                                                     LegendLocation="None">
                                     <lvc:CartesianChart.AxisX>
