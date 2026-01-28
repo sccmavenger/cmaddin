@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.73** | January 23, 2026
+**Version 3.17.75** | January 28, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -113,6 +113,63 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.74 (January 28, 2026)
+
+### Added - Real Historical Trend Data & Strategic Telemetry 📊📈
+
+**Major Enhancement: Real Historical Data for Enrollment Trends**
+
+Previously, the enrollment trend graph showed **projected/simulated** data based on current counts, which caused confusion for new installations. Now the tool tracks **real historical data** over time.
+
+**New Features:**
+
+1. **Historical Data Storage** (`EnrollmentHistoryService`)
+   - Stores enrollment snapshots every 12+ hours to `%LOCALAPPDATA%\ZeroTrustMigrationAddin\enrollment-history.json`
+   - Tracks: TotalDevices, CloudManagedDevices, ConfigMgrOnlyDevices, CloudNativeDevices
+   - Retains up to 730 data points (~2 years of history)
+   - Calculates migration velocity (7/30/90 day), trend direction, estimated completion
+
+2. **Trend Data Quality Indicator** (UI)
+   - Yellow banner when showing projected data: "📈 Projected trend (no historical data yet - check back in 7 days)"
+   - Green banner when showing real data: "📊 Real data from X days of tracking (Y data points)"
+   - Clear distinction between real vs estimated trends
+
+3. **Strategic Telemetry for Leadership** (`AzureTelemetryService`)
+   - `StrategicMetrics` event: Estate size bands, enrollment %, daily velocity, trend direction
+   - `EstateSnapshot` event: Anonymized device counts for global aggregation
+   - `TrackMigrationMilestone()`: Track 10%, 25%, 50%, 75%, 90%, 100% milestones
+   - `TrackBlockerResolution()`: Track when blockers are resolved
+   - `TrackWorkloadTransition()`: Track workload state changes
+   - `TrackSessionSummary()`: Usage patterns (session duration, tabs viewed)
+
+4. **Enhanced Logging**
+   - `[TREND]` prefix for all trend-related operations
+   - `[HISTORY]` prefix for historical data storage operations
+   - Clear indication of data source: `✅ REAL HISTORICAL DATA` vs `⚠️ PROJECTED DATA`
+
+**Files Added:**
+- `Models/EnrollmentHistoryModels.cs` - Data models for historical snapshots and summary stats
+- `Services/EnrollmentHistoryService.cs` - Singleton service for persisting/loading historical data
+
+**Files Modified:**
+- `Services/GraphDataService.cs` - Integrated historical data recording and trend generation
+- `Services/AzureTelemetryService.cs` - Added strategic telemetry methods for leadership
+- `Models/DashboardModels.cs` - Added `TrendDisplayOptions` property to `DeviceEnrollment`
+- `ViewModels/DashboardViewModel.cs` - Added trend quality indicator properties
+- `Views/DashboardWindow.xaml` - Added trend quality banner above enrollment chart
+- `Converters/ValueConverters.cs` - Added `IntToVisibilityConverter`
+
+**Why This Matters:**
+- New installations no longer show misleading 6-month trends
+- Leadership can track real migration velocity across all installations
+- Customers can see actual progress over time
+- Debugging trend issues is now possible via detailed logging
+
+---
+
+---
 
 ### Version 3.17.59 (January 23, 2026)
 
@@ -232,43 +289,6 @@ Added drill-down functionality to Cloud Readiness signal tiles. Users can now cl
 - `Views/CloudReadinessTab.xaml` - Added click handler and hover styles to device count TextBlock
 - `Views/CloudReadinessTab.xaml.cs` - Added `BlockerDeviceCount_Click` handler with blocker-specific device filtering
 - `ViewModels/DeviceListViewModel.cs` - Added constructor overload for custom dialog titles
-
----
-
----
-
-### Version 3.17.49 (January 22, 2026)
-
-### Fixed - Emoji Rendering (Square Boxes) 🎨
-
-**Issue:** Emojis displayed as square boxes on some Windows systems due to WPF's default font not supporting color emojis.
-
-**Solution:** Added `FontFamily="Segoe UI Emoji, Segoe UI, Arial"` font fallback to all Windows and UserControls.
-
-**Technical Details:**
-- WPF's default text rendering doesn't handle color emojis properly
-- "Segoe UI Emoji" is built into Windows 10/11 and provides full color emoji support
-- Font fallback chain ensures emojis render correctly while text uses Segoe UI
-
-**Files Modified (18 XAML files):**
-- `Views/DashboardWindow.xaml` - Window + TabItem style + ActionButton style
-- `Views/EnrollmentSimulatorWindow.xaml`
-- `Views/FeedbackWindow.xaml`
-- `Views/DiagnosticsWindow.xaml`
-- `Views/RecommendationsWindow.xaml`
-- `Views/ConfigMgrServerDialog.xaml`
-- `Views/ConfidenceDetailsWindow.xaml`
-- `Views/CloudReadinessTab.xaml`
-- `Views/AISettingsWindow.xaml`
-- `Views/MigrationImpactCard.xaml`
-- `Views/MigrationImpactReportWindow.xaml`
-- `Views/UpdateProgressWindow.xaml`
-- `Views/UpdateNotificationWindow.xaml`
-- `Views/DeviceListDialog.xaml`
-- `Views/EnrollmentConfidenceCard.xaml`
-- `Views/EnrollmentMomentumView.xaml`
-- `Views/EnrollmentPlaybooksView.xaml`
-- `Views/EnrollmentSimulatorCard.xaml`
 
 ---
 
@@ -1384,6 +1404,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-01-23  
-**Version**: 3.17.73  
+**Last Updated**: 2026-01-28  
+**Version**: 3.17.75  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
