@@ -47,8 +47,31 @@ namespace ZeroTrustMigrationAddin.Views
             catch (Exception ex)
             {
                 Instance.Error($"[MIGRATION IMPACT CARD] Error computing impact: {ex.Message}");
-                LoadDefaultData();
+                
+                // If authenticated, show error message instead of demo data
+                bool isAuthenticated = graphService?.IsAuthenticated ?? false;
+                if (isAuthenticated)
+                {
+                    ShowErrorState(ex.Message);
+                }
+                else
+                {
+                    LoadDefaultData();
+                }
             }
+        }
+
+        private void ShowErrorState(string errorMessage)
+        {
+            // Show error state instead of fake demo data when authenticated but calculation failed
+            CurrentScoreText.Text = "--";
+            ProjectedScoreText.Text = "--";
+            ImprovementText.Text = "--";
+            SummaryText.Text = $"Unable to calculate migration impact. Error: {errorMessage}\n\n" +
+                               "Please try refreshing the data or check the Diagnostics window for more details.";
+            
+            CategoryList.ItemsSource = null;
+            BenefitsList.ItemsSource = null;
         }
 
         private void LoadDefaultData()
