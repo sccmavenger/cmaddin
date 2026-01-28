@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.75** | January 28, 2026
+**Version 3.17.77** | January 28, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -114,6 +114,58 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.76 (January 28, 2026)
+
+### Changed - Remove Projected Trends (Real Data Only) 📊
+
+**Breaking Change: No More Projected/Fake Trend Data**
+
+The enrollment trend chart now shows **ONLY real historical data**. When insufficient history exists (< 7 days), the chart displays a friendly placeholder message instead of fake projected lines.
+
+**What Changed:**
+
+1. **Removed Projected Trend Generation**
+   - Deleted `GenerateProjectedTrendData()` method entirely
+   - `GetTrendDataAsync()` now returns empty array when insufficient history
+   - No more fake/simulated trend lines that could mislead customers
+
+2. **New "Collecting Data" Placeholder**
+   - When < 7 days of history: Shows card with "📊 Collecting Historical Data" message
+   - Explains "Enrollment trends will appear here after 7 days of tracking"
+   - Notes "Data is recorded automatically when this dashboard is opened"
+
+3. **Improved Status Banner**
+   - Blue info banner when collecting data: "📊 X day(s) tracked - trend will appear after Y more day(s)"
+   - Green success banner when sufficient data: "📊 Real data from X days of tracking (Y data points)"
+   - No more yellow "Projected" warnings (projections removed entirely)
+
+4. **New ViewModel Property**
+   - Added `HasTrendDataToDisplay` boolean to control chart visibility
+   - Chart binds to this property for show/hide logic
+   - `IsTrendDataProjected` deprecated (always false now)
+
+5. **New Converter**
+   - Added `InverseBooleanToVisibilityConverter` for showing placeholder when no data
+
+**Files Modified:**
+- `Services/EnrollmentHistoryService.cs` - Removed projection logic, return empty array instead
+- `Models/EnrollmentHistoryModels.cs` - Added `HasSufficientData` and `DaysUntilSufficientData` to `TrendDisplayOptions`
+- `ViewModels/DashboardViewModel.cs` - Added `HasTrendDataToDisplay`, updated chart update methods
+- `Views/DashboardWindow.xaml` - Added chart visibility binding and no-data placeholder
+- `Converters/ValueConverters.cs` - Added `InverseBooleanToVisibilityConverter`
+- `App.xaml` - Registered new converter
+
+**Why This Matters:**
+- New installations see an honest "collecting data" message instead of fake trends
+- No more customer confusion about 6-month graphs appearing on day 1
+- Clear communication about when real trend data will be available
+- Maintains trust by only showing actual data
+
+---
+
+---
 
 ### Version 3.17.74 (January 28, 2026)
 
@@ -261,34 +313,6 @@ Previously, the enrollment trend graph showed **projected/simulated** data based
 
 **Files Modified:**
 - `Services/GraphDataService.cs` - Added MDE exclusion to 5 device filtering locations
-
----
-
----
-
-### Version 3.17.52 (January 23, 2026)
-
-### Changed - Removed Dashboard Tabs Section from Admin Guide 📖
-
-Removed the "Dashboard Tabs" section from AdminUserGuide.html as it was outdated and redundant.
-
-**Files Modified:**
-- `AdminUserGuide.html` - Removed section id="dashboard-tabs" and TOC link
-
-### Added - Clickable Device Counts in Cloud Readiness Signals 🖱️
-
-Added drill-down functionality to Cloud Readiness signal tiles. Users can now click on blocker device counts (e.g., "2 devices") to view the list of affected devices in a dialog.
-
-**Features:**
-- Click "X devices" in any Cloud Readiness signal blocker to see device details
-- Uses existing DeviceListDialog for consistent UX
-- Supports both live Graph API data and mock data for demonstrations
-- Hover effect (underline) provides visual feedback for clickable counts
-
-**Files Modified:**
-- `Views/CloudReadinessTab.xaml` - Added click handler and hover styles to device count TextBlock
-- `Views/CloudReadinessTab.xaml.cs` - Added `BlockerDeviceCount_Click` handler with blocker-specific device filtering
-- `ViewModels/DeviceListViewModel.cs` - Added constructor overload for custom dialog titles
 
 ---
 
@@ -1405,5 +1429,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-28  
-**Version**: 3.17.75  
+**Version**: 3.17.77  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
