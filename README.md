@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.73** | January 23, 2026
+**Version 3.17.75** | January 28, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -113,6 +113,64 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.74 (January 28, 2026)
+
+### Added - Strategic Telemetry for Leadership Dashboards 📊
+
+**New Telemetry Events:**
+
+Added strategic telemetry to help leadership teams track migration progress across their fleet:
+
+1. **StrategicMetrics Event**
+   - Estate size bands (privacy-safe: "100-249", "1000-2499", etc.)
+   - Enrollment percentage and percentage bands
+   - Cloud-managed, cloud-native, and ConfigMgr-only percentages
+   - Daily migration velocity
+   - Trend direction (Accelerating, Steady, Slowing, Stalled)
+
+2. **EstateSnapshot Event**
+   - Total device count
+   - Cloud-managed device count
+   - ConfigMgr-only device count
+   - Cloud-native device count
+   - Used for global aggregation across all customers
+
+3. **MigrationMilestone Event**
+   - Tracks when customers hit key milestones: 10%, 25%, 50%, 75%, 90%, 100%
+   - Includes estate size and device counts
+
+4. **BlockerResolution Event**
+   - Tracks when migration blockers are resolved
+   - Includes blocker type, resolution method, affected device count
+
+5. **WorkloadTransition Event**
+   - Tracks workload authority changes (ConfigMgr → Intune)
+   - Includes workload name, from/to states, affected devices
+
+6. **SessionSummary Event**
+   - Session duration (with privacy bands)
+   - Tabs viewed during session
+   - Actions performed count
+
+**Helper Functions:**
+- `GetEstateSizeBand()` - Converts device counts to privacy-safe bands
+- `GetPercentageBand()` - Converts percentages to groupable bands
+- `GetSessionDurationBand()` - Converts duration to bands for aggregation
+
+**Files Modified:**
+- `Services/AzureTelemetryService.cs` - Added 6 new strategic telemetry methods
+- `Services/GraphDataService.cs` - Calls strategic telemetry on device enrollment fetch
+
+**Privacy Notes:**
+- No PII is ever sent
+- Device counts are converted to size bands where appropriate
+- All data is anonymized via SHA256-hashed machine GUID
+
+---
+
+---
 
 ### Version 3.17.59 (January 23, 2026)
 
@@ -232,43 +290,6 @@ Added drill-down functionality to Cloud Readiness signal tiles. Users can now cl
 - `Views/CloudReadinessTab.xaml` - Added click handler and hover styles to device count TextBlock
 - `Views/CloudReadinessTab.xaml.cs` - Added `BlockerDeviceCount_Click` handler with blocker-specific device filtering
 - `ViewModels/DeviceListViewModel.cs` - Added constructor overload for custom dialog titles
-
----
-
----
-
-### Version 3.17.49 (January 22, 2026)
-
-### Fixed - Emoji Rendering (Square Boxes) 🎨
-
-**Issue:** Emojis displayed as square boxes on some Windows systems due to WPF's default font not supporting color emojis.
-
-**Solution:** Added `FontFamily="Segoe UI Emoji, Segoe UI, Arial"` font fallback to all Windows and UserControls.
-
-**Technical Details:**
-- WPF's default text rendering doesn't handle color emojis properly
-- "Segoe UI Emoji" is built into Windows 10/11 and provides full color emoji support
-- Font fallback chain ensures emojis render correctly while text uses Segoe UI
-
-**Files Modified (18 XAML files):**
-- `Views/DashboardWindow.xaml` - Window + TabItem style + ActionButton style
-- `Views/EnrollmentSimulatorWindow.xaml`
-- `Views/FeedbackWindow.xaml`
-- `Views/DiagnosticsWindow.xaml`
-- `Views/RecommendationsWindow.xaml`
-- `Views/ConfigMgrServerDialog.xaml`
-- `Views/ConfidenceDetailsWindow.xaml`
-- `Views/CloudReadinessTab.xaml`
-- `Views/AISettingsWindow.xaml`
-- `Views/MigrationImpactCard.xaml`
-- `Views/MigrationImpactReportWindow.xaml`
-- `Views/UpdateProgressWindow.xaml`
-- `Views/UpdateNotificationWindow.xaml`
-- `Views/DeviceListDialog.xaml`
-- `Views/EnrollmentConfidenceCard.xaml`
-- `Views/EnrollmentMomentumView.xaml`
-- `Views/EnrollmentPlaybooksView.xaml`
-- `Views/EnrollmentSimulatorCard.xaml`
 
 ---
 
@@ -1384,6 +1405,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-01-23  
-**Version**: 3.17.73  
+**Last Updated**: 2026-01-28  
+**Version**: 3.17.75  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
