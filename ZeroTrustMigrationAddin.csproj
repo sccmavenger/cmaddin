@@ -6,13 +6,13 @@
     <Nullable>enable</Nullable>
     <AssemblyName>ZeroTrustMigrationAddin</AssemblyName>
     <!-- Version Information -->
-    <Version>3.17.73</Version>
-    <AssemblyVersion>3.17.73.0</AssemblyVersion>
-    <FileVersion>3.17.73.0</FileVersion>
+    <Version>3.17.74</Version>
+    <AssemblyVersion>3.17.74.0</AssemblyVersion>
+    <FileVersion>3.17.74.0</FileVersion>
     <Product>Zero Trust Migration Journey Dashboard</Product>
     <Company>Microsoft Configuration Manager</Company>
     <Copyright>Copyright © 2025</Copyright>
-    <Description>ConfigMgr to Intune migration progress dashboard - Real data only after authentication</Description>
+    <Description>ConfigMgr to Intune migration progress dashboard with strategic telemetry</Description>
     <!-- Self-contained deployment settings -->
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

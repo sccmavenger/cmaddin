@@ -1,5 +1,60 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.74] - 2026-01-28
+
+### Added - Strategic Telemetry for Leadership Dashboards 📊
+
+**New Telemetry Events:**
+
+Added strategic telemetry to help leadership teams track migration progress across their fleet:
+
+1. **StrategicMetrics Event**
+   - Estate size bands (privacy-safe: "100-249", "1000-2499", etc.)
+   - Enrollment percentage and percentage bands
+   - Cloud-managed, cloud-native, and ConfigMgr-only percentages
+   - Daily migration velocity
+   - Trend direction (Accelerating, Steady, Slowing, Stalled)
+
+2. **EstateSnapshot Event**
+   - Total device count
+   - Cloud-managed device count
+   - ConfigMgr-only device count
+   - Cloud-native device count
+   - Used for global aggregation across all customers
+
+3. **MigrationMilestone Event**
+   - Tracks when customers hit key milestones: 10%, 25%, 50%, 75%, 90%, 100%
+   - Includes estate size and device counts
+
+4. **BlockerResolution Event**
+   - Tracks when migration blockers are resolved
+   - Includes blocker type, resolution method, affected device count
+
+5. **WorkloadTransition Event**
+   - Tracks workload authority changes (ConfigMgr → Intune)
+   - Includes workload name, from/to states, affected devices
+
+6. **SessionSummary Event**
+   - Session duration (with privacy bands)
+   - Tabs viewed during session
+   - Actions performed count
+
+**Helper Functions:**
+- `GetEstateSizeBand()` - Converts device counts to privacy-safe bands
+- `GetPercentageBand()` - Converts percentages to groupable bands
+- `GetSessionDurationBand()` - Converts duration to bands for aggregation
+
+**Files Modified:**
+- `Services/AzureTelemetryService.cs` - Added 6 new strategic telemetry methods
+- `Services/GraphDataService.cs` - Calls strategic telemetry on device enrollment fetch
+
+**Privacy Notes:**
+- No PII is ever sent
+- Device counts are converted to size bands where appropriate
+- All data is anonymized via SHA256-hashed machine GUID
+
+---
+
 ## [3.17.59] - 2026-01-23
 
 ### Added - Workload Device List Dialog & UI Improvements 📊

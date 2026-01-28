@@ -222,6 +222,281 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
+        #region Strategic Telemetry for Leadership Dashboards
+
+        /// <summary>
+        /// Track strategic migration metrics for leadership dashboards.
+        /// Sends estate size bands (not exact counts) and migration progress percentages.
+        /// </summary>
+        public void TrackStrategicMetrics(
+            int totalDevices,
+            int cloudManagedDevices,
+            int configMgrOnlyDevices,
+            int cloudNativeDevices,
+            double enrollmentPercentage,
+            double dailyVelocity,
+            string trendDirection)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                // Convert exact counts to size bands for privacy
+                var estateSizeBand = GetEstateSizeBand(totalDevices);
+                
+                var properties = new Dictionary<string, string>
+                {
+                    ["EstateSizeBand"] = estateSizeBand,
+                    ["TrendDirection"] = trendDirection, // "Accelerating", "Steady", "Slowing", "Stalled"
+                    ["EnrollmentBand"] = GetPercentageBand(enrollmentPercentage),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["EnrollmentPercentage"] = Math.Round(enrollmentPercentage, 1),
+                    ["CloudManagedPercentage"] = totalDevices > 0 ? Math.Round((double)cloudManagedDevices / totalDevices * 100, 1) : 0,
+                    ["CloudNativePercentage"] = totalDevices > 0 ? Math.Round((double)cloudNativeDevices / totalDevices * 100, 1) : 0,
+                    ["ConfigMgrOnlyPercentage"] = totalDevices > 0 ? Math.Round((double)configMgrOnlyDevices / totalDevices * 100, 1) : 0,
+                    ["DailyVelocity"] = Math.Round(dailyVelocity, 2)
+                };
+
+                _telemetryClient.TrackEvent("StrategicMetrics", properties, metrics);
+                
+                FileLogger.Instance.Info($"[TELEMETRY] StrategicMetrics: Estate={estateSizeBand}, Enrollment={enrollmentPercentage:F1}%, Velocity={dailyVelocity:F2}/day, Trend={trendDirection}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track strategic metrics: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track estate snapshot for global aggregation (anonymized device counts).
+        /// Used for understanding overall migration progress across all customers.
+        /// </summary>
+        public void TrackEstateSnapshot(
+            int totalDevices,
+            int cloudManagedDevices,
+            int configMgrOnlyDevices,
+            int cloudNativeDevices)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var estateSizeBand = GetEstateSizeBand(totalDevices);
+                
+                var properties = new Dictionary<string, string>
+                {
+                    ["EstateSizeBand"] = estateSizeBand,
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["TotalDevices"] = totalDevices,
+                    ["CloudManagedDevices"] = cloudManagedDevices,
+                    ["ConfigMgrOnlyDevices"] = configMgrOnlyDevices,
+                    ["CloudNativeDevices"] = cloudNativeDevices
+                };
+
+                _telemetryClient.TrackEvent("EstateSnapshot", properties, metrics);
+                
+                FileLogger.Instance.Debug($"[TELEMETRY] EstateSnapshot: Total={totalDevices}, CloudManaged={cloudManagedDevices}, ConfigMgrOnly={configMgrOnlyDevices}, CloudNative={cloudNativeDevices}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track estate snapshot: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track migration milestone achievements (10%, 25%, 50%, 75%, 90%, 100%).
+        /// </summary>
+        public void TrackMigrationMilestone(int milestonePercentage, int totalDevices, int cloudManagedDevices)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["Milestone"] = $"{milestonePercentage}%",
+                    ["EstateSizeBand"] = GetEstateSizeBand(totalDevices),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["MilestonePercentage"] = milestonePercentage,
+                    ["TotalDevices"] = totalDevices,
+                    ["CloudManagedDevices"] = cloudManagedDevices
+                };
+
+                _telemetryClient.TrackEvent("MigrationMilestone", properties, metrics);
+                
+                FileLogger.Instance.Info($"[TELEMETRY] 🎉 MigrationMilestone: {milestonePercentage}% reached! ({cloudManagedDevices}/{totalDevices} devices)");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track migration milestone: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track blocker resolution events.
+        /// </summary>
+        public void TrackBlockerResolution(string blockerType, string resolution, int affectedDevices)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["BlockerType"] = blockerType,
+                    ["Resolution"] = resolution,
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["AffectedDevices"] = affectedDevices
+                };
+
+                _telemetryClient.TrackEvent("BlockerResolution", properties, metrics);
+                
+                FileLogger.Instance.Info($"[TELEMETRY] BlockerResolution: {blockerType} resolved via {resolution}, {affectedDevices} devices unblocked");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track blocker resolution: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track workload transition events (e.g., workload moved from ConfigMgr to Intune).
+        /// </summary>
+        public void TrackWorkloadTransition(string workloadName, string fromState, string toState, int affectedDevices)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["WorkloadName"] = workloadName,
+                    ["FromState"] = fromState,
+                    ["ToState"] = toState,
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["AffectedDevices"] = affectedDevices
+                };
+
+                _telemetryClient.TrackEvent("WorkloadTransition", properties, metrics);
+                
+                FileLogger.Instance.Info($"[TELEMETRY] WorkloadTransition: {workloadName} changed from {fromState} to {toState}, {affectedDevices} devices affected");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track workload transition: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track session summary when user closes the app.
+        /// </summary>
+        public void TrackSessionSummary(TimeSpan sessionDuration, List<string> tabsViewed, int actionsPerformed)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["TabsViewed"] = string.Join(",", tabsViewed),
+                    ["SessionDurationBand"] = GetSessionDurationBand(sessionDuration),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["SessionDurationMinutes"] = sessionDuration.TotalMinutes,
+                    ["TabsViewedCount"] = tabsViewed.Count,
+                    ["ActionsPerformed"] = actionsPerformed
+                };
+
+                _telemetryClient.TrackEvent("SessionSummary", properties, metrics);
+                
+                FileLogger.Instance.Info($"[TELEMETRY] SessionSummary: Duration={sessionDuration.TotalMinutes:F1}min, Tabs={tabsViewed.Count}, Actions={actionsPerformed}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track session summary: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Convert device count to size band for privacy (e.g., "100-500", "500-1000").
+        /// </summary>
+        private string GetEstateSizeBand(int deviceCount)
+        {
+            return deviceCount switch
+            {
+                < 50 => "1-49",
+                < 100 => "50-99",
+                < 250 => "100-249",
+                < 500 => "250-499",
+                < 1000 => "500-999",
+                < 2500 => "1000-2499",
+                < 5000 => "2500-4999",
+                < 10000 => "5000-9999",
+                < 25000 => "10000-24999",
+                < 50000 => "25000-49999",
+                < 100000 => "50000-99999",
+                _ => "100000+"
+            };
+        }
+
+        /// <summary>
+        /// Convert percentage to band for grouping (e.g., "0-10%", "10-25%").
+        /// </summary>
+        private string GetPercentageBand(double percentage)
+        {
+            return percentage switch
+            {
+                < 10 => "0-10%",
+                < 25 => "10-25%",
+                < 50 => "25-50%",
+                < 75 => "50-75%",
+                < 90 => "75-90%",
+                < 100 => "90-99%",
+                _ => "100%"
+            };
+        }
+
+        /// <summary>
+        /// Convert session duration to band for grouping.
+        /// </summary>
+        private string GetSessionDurationBand(TimeSpan duration)
+        {
+            return duration.TotalMinutes switch
+            {
+                < 1 => "Under 1 min",
+                < 5 => "1-5 min",
+                < 15 => "5-15 min",
+                < 30 => "15-30 min",
+                < 60 => "30-60 min",
+                _ => "Over 1 hour"
+            };
+        }
+
+        #endregion
+
         /// <summary>
         /// Flush all pending telemetry immediately. Call before app shutdown.
         /// </summary>

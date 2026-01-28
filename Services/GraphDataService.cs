@@ -1054,6 +1054,35 @@ namespace ZeroTrustMigrationAddin.Services
 
                 System.Diagnostics.Debug.WriteLine($"=== FINAL RESULT: Total={totalDevices}, CloudManaged={cloudManagedCount}, ConfigMgrOnly={configMgrOnlyCount} ===");
 
+                // Send strategic telemetry for leadership dashboards
+                try
+                {
+                    var enrollmentPercentage = totalDevices > 0 ? (double)cloudManagedCount / totalDevices * 100 : 0;
+                    
+                    // Track estate snapshot (raw counts for aggregation)
+                    AzureTelemetryService.Instance.TrackEstateSnapshot(
+                        totalDevices,
+                        cloudManagedCount,
+                        configMgrOnlyCount,
+                        cloudNativeCount);
+                    
+                    // Track strategic metrics (percentages and trends for dashboards)
+                    AzureTelemetryService.Instance.TrackStrategicMetrics(
+                        totalDevices,
+                        cloudManagedCount,
+                        configMgrOnlyCount,
+                        cloudNativeCount,
+                        enrollmentPercentage,
+                        0, // Daily velocity - requires historical data
+                        "Unknown"); // Trend direction - requires historical data
+                    
+                    Instance.Info($"[TELEMETRY] Strategic metrics sent: {totalDevices} total, {enrollmentPercentage:F1}% enrolled");
+                }
+                catch (Exception telemetryEx)
+                {
+                    Instance.Warning($"[TELEMETRY] Failed to send strategic metrics: {telemetryEx.Message}");
+                }
+
                 return new DeviceEnrollment
                 {
                     TotalDevices = totalDevices,
