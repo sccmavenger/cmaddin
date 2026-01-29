@@ -124,22 +124,7 @@ namespace ZeroTrustMigrationAddin.Views
                             new ReadinessBlocker { Name = "Not Entra ID Joined", AffectedDeviceCount = 120, Severity = BlockerSeverity.High }
                         }
                     },
-                    new CloudReadinessSignal
-                    {
-                        Id = "windows11",
-                        Name = "Windows 11 Readiness",
-                        Description = "Ready for Windows 11 upgrade",
-                        Icon = "🪟",
-                        TotalDevices = 1250,
-                        ReadyDevices = 875,
-                        RelatedWorkload = "OS Deployment",
-                        LearnMoreUrl = "https://learn.microsoft.com/windows/whats-new/windows-11-requirements",
-                        TopBlockers = new List<ReadinessBlocker>
-                        {
-                            new ReadinessBlocker { Name = "Missing TPM 2.0", AffectedDeviceCount = 250, Severity = BlockerSeverity.Critical },
-                            new ReadinessBlocker { Name = "Incompatible CPU", AffectedDeviceCount = 125, Severity = BlockerSeverity.Critical }
-                        }
-                    },
+                    // Windows 11, Identity, WUfB, Endpoint Security signals hidden per Rob's feedback (2026-01-29)
                     new CloudReadinessSignal
                     {
                         Id = "cloud-native",
@@ -158,48 +143,18 @@ namespace ZeroTrustMigrationAddin.Views
                     },
                     new CloudReadinessSignal
                     {
-                        Id = "identity",
-                        Name = "Identity Readiness",
-                        Description = "Ready for cloud identity (Entra ID)",
-                        Icon = "🔐",
-                        TotalDevices = 1250,
-                        ReadyDevices = 1100,
-                        RelatedWorkload = "Identity Management",
-                        LearnMoreUrl = "https://learn.microsoft.com/entra/identity/devices/overview",
-                        TopBlockers = new List<ReadinessBlocker>
-                        {
-                            new ReadinessBlocker { Name = "On-Premises AD Only", AffectedDeviceCount = 100, Severity = BlockerSeverity.High },
-                            new ReadinessBlocker { Name = "Workgroup Devices", AffectedDeviceCount = 50, Severity = BlockerSeverity.Medium }
-                        }
-                    },
-                    new CloudReadinessSignal
-                    {
-                        Id = "wufb",
-                        Name = "Update Management Readiness",
-                        Description = "Ready for Windows Update for Business",
+                        Id = "autopatch",
+                        Name = "Autopatch Readiness",
+                        Description = "Ready for Windows Autopatch automated updates",
                         Icon = "🔄",
                         TotalDevices = 1250,
-                        ReadyDevices = 1000,
+                        ReadyDevices = 875,
                         RelatedWorkload = "Update Management",
-                        LearnMoreUrl = "https://learn.microsoft.com/windows/deployment/update/waas-manage-updates-wufb",
+                        LearnMoreUrl = "https://learn.microsoft.com/windows/deployment/windows-autopatch/overview/windows-autopatch-overview",
                         TopBlockers = new List<ReadinessBlocker>
                         {
-                            new ReadinessBlocker { Name = "Not Enrolled in Intune", AffectedDeviceCount = 250, Severity = BlockerSeverity.Medium }
-                        }
-                    },
-                    new CloudReadinessSignal
-                    {
-                        Id = "endpoint-security",
-                        Name = "Endpoint Security Readiness",
-                        Description = "Ready for Microsoft Defender for Endpoint",
-                        Icon = "🛡️",
-                        TotalDevices = 1250,
-                        ReadyDevices = 1200,
-                        RelatedWorkload = "Endpoint Security",
-                        LearnMoreUrl = "https://learn.microsoft.com/microsoft-365/security/defender-endpoint/microsoft-defender-endpoint",
-                        TopBlockers = new List<ReadinessBlocker>
-                        {
-                            new ReadinessBlocker { Name = "Unsupported OS Version", AffectedDeviceCount = 50, Severity = BlockerSeverity.Medium }
+                            new ReadinessBlocker { Name = "Not Enrolled in Intune", AffectedDeviceCount = 250, Severity = BlockerSeverity.High },
+                            new ReadinessBlocker { Name = "Windows Update Workload on ConfigMgr", AffectedDeviceCount = 125, Severity = BlockerSeverity.High }
                         }
                     }
                 }
