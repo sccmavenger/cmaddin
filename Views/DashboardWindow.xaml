@@ -496,14 +496,6 @@
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                                
-                                <!-- Help Link -->
-                                <Button Content="❓ Learn more" 
-                                        Style="{StaticResource TileHelpButton}"
-                                        Command="{Binding OpenUserGuideSectionCommand}"
-                                        CommandParameter="enrollment"
-                                        ToolTip="Open help for Device Enrollment"
-                                        Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
@@ -672,14 +664,6 @@
                                         </Border>
                                     </Grid>
                                 </Border>
-                                
-                                <!-- Help Link -->
-                                <Button Content="❓ Learn more" 
-                                        Style="{StaticResource TileHelpButton}"
-                                        Command="{Binding OpenUserGuideSectionCommand}"
-                                        CommandParameter="enrollment"
-                                        ToolTip="Open help for Device Identity"
-                                        Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 

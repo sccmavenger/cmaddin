@@ -1,5 +1,43 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.79] - 2026-01-28
+
+### Fixed - Accurate ConfigMgr-Only Trend Line 📊
+
+**Bug:** ConfigMgr-only devices showed as existing 6 months back even when added last week.
+
+**Root Cause:** Previous implementation assumed current ConfigMgr total existed historically.
+
+**Fix:** Now uses `SMS_R_System.CreationDate` from ConfigMgr to track when devices were actually first discovered.
+
+**Data Sources (all real, no fake data):**
+| Line | Data Source | Property |
+|------|-------------|----------|
+| Co-managed | Intune Graph API | `enrolledDateTime` |
+| Cloud Native | Intune Graph API | `enrolledDateTime` |
+| ConfigMgr-only | ConfigMgr Admin Service | `CreationDate` |
+
+**Technical Details:**
+- Added `CreationDate` to Admin Service query `$select`
+- Cross-references device names between ConfigMgr and Intune
+- Device shows as ConfigMgr-only from its `CreationDate` until its Intune `enrolledDateTime`
+
+**Source:** [SMS_R_System Server WMI Class](https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/clients/manage/sms_r_system-server-wmi-class) - Microsoft documentation confirms `CreationDate` is "the date the record was first created, when the resource was first discovered."
+
+**Files Modified:**
+- `Services/ConfigMgrAdminService.cs` - Added `CreationDate` to models and query
+- `Services/GraphDataService.cs` - Updated `GenerateRealTrendData()` to use both dates
+
+---
+
+## [3.17.78] - 2026-01-28
+
+### Changed - Removed Learn More Links from Overview Tab
+
+Removed "❓ Learn more" buttons from Device Enrollment and Device Identity sections on the Overview tab.
+
+---
+
 ## [3.17.77] - 2026-01-28
 
 ### Changed - Real Enrollment Trend Data 📊

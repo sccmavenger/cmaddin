@@ -1049,11 +1049,12 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info("=================================================");
 
-                // Generate trend data from REAL enrolledDateTime values (no more fake data!)
+                // Generate trend data from REAL dates:
+                // - Intune enrolledDateTime for co-managed/cloud-native
+                // - ConfigMgr CreationDate for when devices were first discovered
                 var (trendData, hasSufficientData, insufficientDataReason) = GenerateRealTrendData(
                     allIntuneDevices, 
-                    totalDevices, 
-                    configMgrOnlyCount);
+                    configMgrDevices);
 
                 System.Diagnostics.Debug.WriteLine($"=== FINAL RESULT: Total={totalDevices}, CloudManaged={cloudManagedCount}, ConfigMgrOnly={configMgrOnlyCount} ===");
 
@@ -1663,22 +1664,22 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Generates REAL trend data from actual enrolledDateTime values.
-        /// Groups devices by week based on their Intune enrollment date.
+        /// Generates REAL trend data from actual dates:
+        /// - Intune enrolledDateTime for co-managed/cloud-native devices
+        /// - ConfigMgr CreationDate for when devices were first discovered
+        /// Groups devices by week for trend visualization.
         /// </summary>
         /// <param name="intuneDevices">All Intune-managed devices with enrolledDateTime</param>
-        /// <param name="currentTotal">Total device count (ConfigMgr baseline)</param>
-        /// <param name="currentConfigMgrOnly">Current ConfigMgr-only count</param>
-        /// <returns>Trend data based on real enrollment dates, or empty if insufficient data</returns>
+        /// <param name="configMgrDevices">All ConfigMgr devices with CreationDate</param>
+        /// <returns>Trend data based on real dates, or empty if insufficient data</returns>
         private (EnrollmentTrend[] TrendData, bool HasSufficientData, string? InsufficientDataReason) GenerateRealTrendData(
             List<Microsoft.Graph.Models.ManagedDevice> intuneDevices,
-            int currentTotal,
-            int currentConfigMgrOnly)
+            List<ConfigMgrDevice>? configMgrDevices)
         {
-            Instance.Info("[TREND] Generating REAL trend data from enrolledDateTime values");
+            Instance.Info("[TREND] Generating REAL trend data from enrolledDateTime and CreationDate values");
             
-            // Get devices with valid enrollment dates (Windows workstations only, excluding MDE)
-            var devicesWithDates = intuneDevices
+            // Get Intune devices with valid enrollment dates (Windows workstations only, excluding MDE)
+            var intuneDevicesWithDates = intuneDevices
                 .Where(d => d.EnrolledDateTime.HasValue &&
                            d.OperatingSystem != null &&
                            d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
@@ -1686,7 +1687,7 @@ namespace ZeroTrustMigrationAddin.Services
                            d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense)
                 .Select(d => new 
                 {
-                    Device = d,
+                    DeviceName = d.DeviceName?.ToLowerInvariant() ?? "",
                     EnrollDate = d.EnrolledDateTime!.Value.DateTime,
                     IsCoManaged = d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm,
                     IsCloudNative = d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.Mdm
@@ -1694,28 +1695,60 @@ namespace ZeroTrustMigrationAddin.Services
                 .OrderBy(d => d.EnrollDate)
                 .ToList();
 
-            Instance.Info($"[TREND] Found {devicesWithDates.Count} devices with valid enrolledDateTime");
+            Instance.Info($"[TREND] Found {intuneDevicesWithDates.Count} Intune devices with valid enrolledDateTime");
 
-            if (devicesWithDates.Count == 0)
+            // Get ConfigMgr devices with valid CreationDate
+            var configMgrDevicesWithDates = (configMgrDevices ?? new List<ConfigMgrDevice>())
+                .Where(d => d.CreationDate.HasValue)
+                .Select(d => new
+                {
+                    DeviceName = d.Name.ToLowerInvariant(),
+                    CreationDate = d.CreationDate!.Value,
+                    IsCoManaged = d.IsCoManaged
+                })
+                .OrderBy(d => d.CreationDate)
+                .ToList();
+
+            Instance.Info($"[TREND] Found {configMgrDevicesWithDates.Count} ConfigMgr devices with valid CreationDate");
+
+            // Build set of co-managed device names for cross-reference
+            var coManagedNames = new HashSet<string>(
+                intuneDevicesWithDates.Where(d => d.IsCoManaged).Select(d => d.DeviceName),
+                StringComparer.OrdinalIgnoreCase);
+
+            // Check if we have enough data
+            if (intuneDevicesWithDates.Count == 0 && configMgrDevicesWithDates.Count == 0)
             {
-                Instance.Warning("[TREND] No devices have enrolledDateTime - cannot generate real trend data");
+                Instance.Warning("[TREND] No devices have date information - cannot generate real trend data");
                 return (Array.Empty<EnrollmentTrend>(), false, 
-                    "No enrollment history available. Devices need enrolledDateTime to display trends.");
+                    "No enrollment history available. Devices need enrolledDateTime or CreationDate to display trends.");
             }
 
-            // Determine date range
-            var oldestEnrollment = devicesWithDates.Min(d => d.EnrollDate);
-            var newestEnrollment = devicesWithDates.Max(d => d.EnrollDate);
-            var dateRange = newestEnrollment - oldestEnrollment;
+            // Determine overall date range from both sources
+            var allDates = new List<DateTime>();
+            if (intuneDevicesWithDates.Any())
+            {
+                allDates.Add(intuneDevicesWithDates.Min(d => d.EnrollDate));
+                allDates.Add(intuneDevicesWithDates.Max(d => d.EnrollDate));
+            }
+            if (configMgrDevicesWithDates.Any())
+            {
+                allDates.Add(configMgrDevicesWithDates.Min(d => d.CreationDate));
+                allDates.Add(configMgrDevicesWithDates.Max(d => d.CreationDate));
+            }
 
-            Instance.Info($"[TREND] Enrollment date range: {oldestEnrollment:yyyy-MM-dd} to {newestEnrollment:yyyy-MM-dd} ({dateRange.TotalDays:F0} days)");
+            var oldestDate = allDates.Min();
+            var newestDate = allDates.Max();
+            var dateRange = newestDate - oldestDate;
+
+            Instance.Info($"[TREND] Overall date range: {oldestDate:yyyy-MM-dd} to {newestDate:yyyy-MM-dd} ({dateRange.TotalDays:F0} days)");
 
             // Need at least 2 weeks of data for meaningful trends
             if (dateRange.TotalDays < 14)
             {
-                Instance.Warning($"[TREND] Only {dateRange.TotalDays:F0} days of enrollment history - need at least 14 days");
+                Instance.Warning($"[TREND] Only {dateRange.TotalDays:F0} days of history - need at least 14 days");
                 return (Array.Empty<EnrollmentTrend>(), false,
-                    "Not enough enrollment history to display trends. Devices need at least 2 weeks of enrollment data to calculate meaningful patterns.");
+                    "Not enough enrollment history to display trends. Devices need at least 2 weeks of data to calculate meaningful patterns.");
             }
 
             // Build weekly buckets for the last 13 weeks (90 days)
@@ -1723,10 +1756,10 @@ namespace ZeroTrustMigrationAddin.Services
             var now = DateTime.Now;
             var startDate = now.AddDays(-90); // Go back 90 days (13 weeks)
             
-            // If oldest enrollment is more recent, start from there
-            if (oldestEnrollment > startDate)
+            // If oldest date is more recent, start from there
+            if (oldestDate > startDate)
             {
-                startDate = oldestEnrollment;
+                startDate = oldestDate;
             }
 
             // Calculate weekly snapshots
@@ -1735,14 +1768,27 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var weekEnd = currentWeekStart.AddDays(7);
                 
-                // Count cumulative enrollments up to this week
-                var coManagedByWeek = devicesWithDates
+                // Count cumulative Intune enrollments up to this week
+                var coManagedByWeek = intuneDevicesWithDates
                     .Count(d => d.EnrollDate <= weekEnd && d.IsCoManaged);
-                var cloudNativeByWeek = devicesWithDates
+                var cloudNativeByWeek = intuneDevicesWithDates
                     .Count(d => d.EnrollDate <= weekEnd && d.IsCloudNative);
                 
-                // ConfigMgr-only = total minus those enrolled in Intune (co-managed)
-                var configMgrOnlyByWeek = Math.Max(0, currentTotal - coManagedByWeek);
+                // Count ConfigMgr devices that existed by this week AND are NOT co-managed
+                // A device is ConfigMgr-only if:
+                // 1. It was discovered in ConfigMgr by this date (CreationDate <= weekEnd)
+                // 2. AND it's not in the co-managed list, OR it wasn't enrolled in Intune yet
+                var configMgrOnlyByWeek = configMgrDevicesWithDates
+                    .Count(d => d.CreationDate <= weekEnd && 
+                               !coManagedNames.Contains(d.DeviceName));
+                
+                // Also count devices that ARE co-managed now but weren't enrolled in Intune yet at this point
+                var notYetEnrolledByWeek = configMgrDevicesWithDates
+                    .Count(d => d.CreationDate <= weekEnd && 
+                               coManagedNames.Contains(d.DeviceName) &&
+                               !intuneDevicesWithDates.Any(i => i.DeviceName == d.DeviceName && i.EnrollDate <= weekEnd));
+                
+                configMgrOnlyByWeek += notYetEnrolledByWeek;
 
                 trends.Add(new EnrollmentTrend
                 {
@@ -1755,15 +1801,15 @@ namespace ZeroTrustMigrationAddin.Services
                 currentWeekStart = weekEnd;
             }
 
-            Instance.Info($"[TREND] Generated {trends.Count} weekly data points from REAL enrollment data");
+            Instance.Info($"[TREND] Generated {trends.Count} weekly data points from REAL data");
             
             // Log some sample data points
             if (trends.Any())
             {
                 var first = trends.First();
                 var last = trends.Last();
-                Instance.Info($"[TREND]   First week ({first.Month:MMM dd}): Co-managed={first.IntuneDevices}, CloudNative={first.CloudNativeDevices}, ConfigMgr={first.ConfigMgrDevices}");
-                Instance.Info($"[TREND]   Last week ({last.Month:MMM dd}): Co-managed={last.IntuneDevices}, CloudNative={last.CloudNativeDevices}, ConfigMgr={last.ConfigMgrDevices}");
+                Instance.Info($"[TREND]   First week ({first.Month:MMM dd}): Co-managed={first.IntuneDevices}, CloudNative={first.CloudNativeDevices}, ConfigMgr-only={first.ConfigMgrDevices}");
+                Instance.Info($"[TREND]   Last week ({last.Month:MMM dd}): Co-managed={last.IntuneDevices}, CloudNative={last.CloudNativeDevices}, ConfigMgr-only={last.ConfigMgrDevices}");
             }
 
             return (trends.ToArray(), true, null);
