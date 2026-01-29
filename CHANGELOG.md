@@ -1,4 +1,71 @@
-# Zero Trust Migration Journey - Change Log
+# Cloud Native Readiness Tool - Change Log
+
+## [3.17.81] - 2026-01-29
+
+### Changed - Cloud Readiness Signals Updated per Rob's Feedback
+
+**Summary:**
+- Hidden Identity, WUfB, and Endpoint Security readiness signals
+- Added new **Autopatch Readiness** signal
+- Cloud Readiness tab now shows: Autopilot, Cloud-Native, Autopatch (3 signals)
+
+**New Autopatch Readiness Signal:**
+Assesses device readiness for Windows Autopatch automated updates.
+
+**What it checks (via Graph API):**
+1. **OS Edition** - Enterprise, Education, or Pro required (Home not supported)
+2. **Intune Enrollment** - Required for Autopatch policy delivery
+3. **Windows Update Workload** - Must be managed by Intune (not ConfigMgr) for co-managed devices
+4. **Entra ID Join Status** - Devices must have cloud identity (AAD or Hybrid joined)
+
+**Requirements Research:**
+Based on official Microsoft documentation:
+- https://learn.microsoft.com/windows/deployment/windows-autopatch/prepare/windows-autopatch-prerequisites
+- https://learn.microsoft.com/graph/windowsupdates-concept-overview
+
+**What we CAN check via Graph API:**
+- ✅ User/tenant licenses (GET /users/{id}/licenseDetails, GET /subscribedSkus)
+- ✅ Tenant MDM auto-enrollment config (GET /policies/mobileDeviceManagementPolicies - beta)
+- ✅ Autopatch enrollment status (GET /admin/windows/updates/updatableAssets - beta)
+- ✅ OS edition from ConfigMgr device caption
+- ✅ Co-management workload authority
+
+**What we CANNOT check:**
+- ❌ Windows diagnostic data level (policy config only, not actual device state)
+- ❌ Network connectivity to Microsoft Update endpoints
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Hidden Identity/WUfB/EndpointSecurity, added GetAutopatchReadinessSignalAsync()
+- `Views/CloudReadinessTab.xaml.cs` - Updated demo data to match new signal set
+
+---
+
+## [3.17.80] - 2026-01-29
+
+### Changed - Tool Renamed & Windows 11 Assessment Hidden
+
+**Feedback from Rob:**
+
+1. **Tool Renamed to "Cloud Native Readiness Tool"**
+   - Window title: "Cloud Native Readiness Tool"
+   - ConfigMgr Console menu: "Cloud Native Readiness Tool" 
+   - Product name in .csproj updated
+   - README title updated
+
+2. **Windows 11 Assessment Hidden from Cloud Readiness Tab**
+   - Windows 11 readiness signal removed from Cloud Readiness dashboard
+   - Focus is now purely on cloud-native migration readiness
+   - Remaining signals: Autopilot, Cloud-Native, Identity, WUfB, Endpoint Security
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Window title
+- `ZeroTrustMigrationAddin.xml` - ConfigMgr Console display name
+- `ZeroTrustMigrationAddin.csproj` - Product name, description, version
+- `README.md` - Title and version
+- `Services/CloudReadinessService.cs` - Commented out Windows 11 signal
+- `Views/CloudReadinessTab.xaml.cs` - Removed from demo data
+
+---
 
 ## [3.17.79] - 2026-01-28
 

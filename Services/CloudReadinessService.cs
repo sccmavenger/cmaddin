@@ -64,21 +64,24 @@ namespace ZeroTrustMigrationAddin.Services
             try
             {
                 // Run all assessments in parallel for better performance
+                // NOTE: Windows 11, Identity, WUfB, Endpoint Security hidden per Rob's feedback (2026-01-29)
                 var autopilotTask = GetAutopilotReadinessSignalAsync();
-                var windows11Task = GetWindows11ReadinessSignalAsync();
+                // var windows11Task = GetWindows11ReadinessSignalAsync(); // Hidden - not part of cloud-native readiness
                 var cloudNativeTask = GetCloudNativeReadinessSignalAsync();
-                var identityTask = GetIdentityReadinessSignalAsync();
-                var wufbTask = GetWufbReadinessSignalAsync();
-                var endpointSecurityTask = GetEndpointSecurityReadinessSignalAsync();
+                var autopatchTask = GetAutopatchReadinessSignalAsync();
+                // var identityTask = GetIdentityReadinessSignalAsync(); // Hidden per Rob's feedback
+                // var wufbTask = GetWufbReadinessSignalAsync(); // Hidden per Rob's feedback
+                // var endpointSecurityTask = GetEndpointSecurityReadinessSignalAsync(); // Hidden per Rob's feedback
 
-                await Task.WhenAll(autopilotTask, windows11Task, cloudNativeTask, identityTask, wufbTask, endpointSecurityTask);
+                await Task.WhenAll(autopilotTask, cloudNativeTask, autopatchTask);
 
                 dashboard.Signals.Add(await autopilotTask);
-                dashboard.Signals.Add(await windows11Task);
+                // dashboard.Signals.Add(await windows11Task); // Hidden per Rob's feedback
                 dashboard.Signals.Add(await cloudNativeTask);
-                dashboard.Signals.Add(await identityTask);
-                dashboard.Signals.Add(await wufbTask);
-                dashboard.Signals.Add(await endpointSecurityTask);
+                dashboard.Signals.Add(await autopatchTask);
+                // dashboard.Signals.Add(await identityTask); // Hidden per Rob's feedback
+                // dashboard.Signals.Add(await wufbTask); // Hidden per Rob's feedback
+                // dashboard.Signals.Add(await endpointSecurityTask); // Hidden per Rob's feedback
 
                 Instance.Info("╔══════════════════════════════════════════════════════════════════════════════════════════╗");
                 Instance.Info("║                       CLOUD READINESS ASSESSMENT SUMMARY                                 ║");
@@ -603,6 +606,242 @@ namespace ZeroTrustMigrationAddin.Services
             catch (Exception ex)
             {
                 Instance.Error($"Cloud-Native readiness assessment failed: {ex.Message}");
+                Instance.Error($"Stack trace: {ex.StackTrace}");
+            }
+
+            return signal;
+        }
+
+        /// <summary>
+        /// Assesses Windows Autopatch readiness.
+        /// Requirements per Microsoft docs:
+        /// - Windows 10/11 Enterprise or Education edition (Pro also supported per Autopatch docs)
+        /// - Entra ID joined or Hybrid Entra ID joined
+        /// - Intune enrolled (or co-managed with Windows Update workload on Intune)
+        /// - Co-management workloads: Windows Update, Device Configuration, Office Click-to-Run must be Intune
+        /// 
+        /// What we CAN check via Graph API:
+        /// - OS Edition (Enterprise/Education/Pro)
+        /// - Entra ID join status
+        /// - Intune enrollment status
+        /// - Co-management workload authority
+        /// 
+        /// What we CANNOT check:
+        /// - User licensing (E3/E5/Business Premium) - would require per-user license query
+        /// - Windows diagnostic data level (requires device-level policy check)
+        /// - Network connectivity to Windows Update endpoints
+        /// </summary>
+        public async Task<CloudReadinessSignal> GetAutopatchReadinessSignalAsync()
+        {
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 🔄 WINDOWS AUTOPATCH READINESS ASSESSMENT                                               │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+            
+            var signal = new CloudReadinessSignal
+            {
+                Id = "autopatch",
+                Name = "Autopatch Readiness",
+                Description = "Ready for Windows Autopatch automated updates",
+                Icon = "🔄",
+                RelatedWorkload = "Update Management",
+                LearnMoreUrl = "https://learn.microsoft.com/windows/deployment/windows-autopatch/overview/windows-autopatch-overview"
+            };
+
+            try
+            {
+                Instance.Info("   Fetching device and enrollment data...");
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                var osDetails = await _configMgrService.GetOSDetailsAsync();
+                var enrollmentData = await _graphService.GetDeviceEnrollmentAsync();
+                var workloadAuthority = await _graphService.GetCoManagedWorkloadAuthorityAsync();
+
+                var configMgrCount = configMgrDevices?.Count ?? 0;
+                
+                Instance.Info($"   📱 ConfigMgr Windows 10/11 devices: {configMgrCount}");
+                Instance.Info($"   📊 OS detail records retrieved: {osDetails?.Count ?? 0}");
+                
+                signal.TotalDevices = configMgrCount;
+                
+                if (signal.TotalDevices == 0)
+                {
+                    Instance.Warning("   ⚠️ No ConfigMgr devices found for Autopatch assessment");
+                    return signal;
+                }
+
+                var blockers = new List<ReadinessBlocker>();
+                var osLookup = osDetails?.ToDictionary(o => o.ResourceId) ?? new Dictionary<int, OSDetails>();
+                var safeConfigMgrDevices = configMgrDevices ?? new List<ConfigMgrDevice>();
+
+                // CHECK 1: OS Edition - Autopatch requires Enterprise, Education, or Pro for Workstations
+                Instance.Info("");
+                Instance.Info("   [CHECK 1/4] OS EDITION (Enterprise, Education, Pro for Workstations)");
+                
+                // Note: We can infer edition from OS caption in ConfigMgr
+                var enterpriseDevices = safeConfigMgrDevices.Where(d => 
+                    d.OperatingSystem?.Contains("Enterprise", StringComparison.OrdinalIgnoreCase) == true ||
+                    d.OperatingSystem?.Contains("Education", StringComparison.OrdinalIgnoreCase) == true).ToList();
+                var proDevices = safeConfigMgrDevices.Where(d => 
+                    d.OperatingSystem?.Contains("Pro", StringComparison.OrdinalIgnoreCase) == true &&
+                    d.OperatingSystem?.Contains("Enterprise", StringComparison.OrdinalIgnoreCase) != true).ToList();
+                var homeDevices = safeConfigMgrDevices.Where(d => 
+                    d.OperatingSystem?.Contains("Home", StringComparison.OrdinalIgnoreCase) == true).ToList();
+                var unknownEdition = safeConfigMgrDevices.Where(d =>
+                    d.OperatingSystem?.Contains("Enterprise", StringComparison.OrdinalIgnoreCase) != true &&
+                    d.OperatingSystem?.Contains("Education", StringComparison.OrdinalIgnoreCase) != true &&
+                    d.OperatingSystem?.Contains("Pro", StringComparison.OrdinalIgnoreCase) != true &&
+                    d.OperatingSystem?.Contains("Home", StringComparison.OrdinalIgnoreCase) != true).ToList();
+
+                var supportedEditionCount = enterpriseDevices.Count + proDevices.Count;
+                var unsupportedEditionCount = homeDevices.Count;
+
+                Instance.Info($"      ✅ Enterprise/Education: {enterpriseDevices.Count} devices");
+                Instance.Info($"      ✅ Pro (supported for Autopatch): {proDevices.Count} devices");
+                Instance.Info($"      ❌ Home (not supported): {homeDevices.Count} devices");
+                Instance.Info($"      ⚠️ Unknown edition: {unknownEdition.Count} devices");
+
+                if (unsupportedEditionCount > 0)
+                {
+                    blockers.Add(new ReadinessBlocker
+                    {
+                        Id = "unsupported-edition",
+                        Name = "Windows Home Edition",
+                        Description = "Windows Autopatch requires Enterprise, Education, or Pro edition. Home edition is not supported.",
+                        AffectedDeviceCount = unsupportedEditionCount,
+                        PercentageAffected = SafeBlockerPercentage(unsupportedEditionCount, signal.TotalDevices),
+                        Severity = BlockerSeverity.Critical,
+                        RemediationAction = "Upgrade to Windows 10/11 Pro, Enterprise, or Education",
+                        RemediationUrl = "https://learn.microsoft.com/windows/deployment/windows-autopatch/prepare/windows-autopatch-prerequisites",
+                        AffectedDeviceNames = homeDevices.Select(d => d.Name).Where(n => !string.IsNullOrEmpty(n)).ToList()!
+                    });
+                }
+
+                // CHECK 2: Intune Enrollment - Required for Autopatch
+                Instance.Info("");
+                Instance.Info("   [CHECK 2/4] INTUNE ENROLLMENT (required for Autopatch)");
+                
+                var coManagedCount = enrollmentData?.CoManagedDevices ?? 0;
+                var intuneOnlyCount = enrollmentData?.CloudNativeDevices ?? 0;
+                var configMgrOnlyCount = enrollmentData?.ConfigMgrOnlyDevices ?? 0;
+                var enrolledInIntune = coManagedCount + intuneOnlyCount;
+                
+                Instance.Info($"      ✅ Enrolled in Intune (cloud-native): {intuneOnlyCount} devices");
+                Instance.Info($"      ✅ Enrolled in Intune (co-managed): {coManagedCount} devices");
+                Instance.Info($"      ❌ ConfigMgr-only (not in Intune): {configMgrOnlyCount} devices");
+
+                if (configMgrOnlyCount > 0)
+                {
+                    blockers.Add(new ReadinessBlocker
+                    {
+                        Id = "not-enrolled-intune",
+                        Name = "Not Enrolled in Intune",
+                        Description = "Windows Autopatch requires Intune enrollment for policy delivery and update management.",
+                        AffectedDeviceCount = configMgrOnlyCount,
+                        PercentageAffected = SafeBlockerPercentage(configMgrOnlyCount, signal.TotalDevices),
+                        Severity = BlockerSeverity.High,
+                        RemediationAction = "Enable co-management and enroll devices in Intune",
+                        RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-enable"
+                    });
+                }
+
+                // CHECK 3: Windows Update workload on Intune (for co-managed devices)
+                Instance.Info("");
+                Instance.Info("   [CHECK 3/4] WINDOWS UPDATE WORKLOAD (must be Intune for co-managed)");
+                
+                var wuWorkloadOnIntune = workloadAuthority.WorkloadIntuneAdoptionCounts.GetValueOrDefault("Windows Update", 0);
+                var wuWorkloadOnConfigMgr = workloadAuthority.TotalCoManagedDevices - wuWorkloadOnIntune;
+                
+                Instance.Info($"      ✅ Windows Update workload on Intune: {wuWorkloadOnIntune} devices");
+                Instance.Info($"      ❌ Windows Update workload on ConfigMgr: {wuWorkloadOnConfigMgr} devices");
+
+                if (wuWorkloadOnConfigMgr > 0)
+                {
+                    var devicesWithWuOnConfigMgr = workloadAuthority.Devices
+                        .Where(d => d.WindowsUpdateManagedByConfigMgr)
+                        .Select(d => d.DeviceName)
+                        .Where(n => !string.IsNullOrEmpty(n))
+                        .ToList();
+
+                    blockers.Add(new ReadinessBlocker
+                    {
+                        Id = "wu-workload-configmgr",
+                        Name = "Windows Update Workload on ConfigMgr",
+                        Description = "Windows Autopatch requires the Windows Update for Business workload to be managed by Intune.",
+                        AffectedDeviceCount = wuWorkloadOnConfigMgr,
+                        PercentageAffected = SafeBlockerPercentage(wuWorkloadOnConfigMgr, signal.TotalDevices),
+                        Severity = BlockerSeverity.High,
+                        RemediationAction = "Move Windows Update workload slider to Intune in co-management settings",
+                        RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-switch-workloads",
+                        AffectedDeviceNames = devicesWithWuOnConfigMgr!
+                    });
+                }
+
+                // CHECK 4: Entra ID Join Status
+                Instance.Info("");
+                Instance.Info("   [CHECK 4/4] ENTRA ID JOIN STATUS (required for Autopatch)");
+                
+                var entraJoinedCount = (enrollmentData?.AzureADOnlyDevices ?? 0) + (enrollmentData?.HybridJoinedDevices ?? 0);
+                var noCloudIdentity = (enrollmentData?.OnPremDomainOnlyDevices ?? 0) + (enrollmentData?.WorkgroupDevices ?? 0);
+                
+                Instance.Info($"      ✅ Entra ID Joined (AAD-only): {enrollmentData?.AzureADOnlyDevices ?? 0} devices");
+                Instance.Info($"      ✅ Hybrid Entra ID Joined: {enrollmentData?.HybridJoinedDevices ?? 0} devices");
+                Instance.Info($"      ❌ On-Prem AD Only: {enrollmentData?.OnPremDomainOnlyDevices ?? 0} devices");
+                Instance.Info($"      ❌ Workgroup (no identity): {enrollmentData?.WorkgroupDevices ?? 0} devices");
+
+                if (noCloudIdentity > 0)
+                {
+                    blockers.Add(new ReadinessBlocker
+                    {
+                        Id = "no-entra-identity",
+                        Name = "No Entra ID Identity",
+                        Description = "Windows Autopatch requires devices to be Entra ID joined or Hybrid Entra ID joined.",
+                        AffectedDeviceCount = noCloudIdentity,
+                        PercentageAffected = SafeBlockerPercentage(noCloudIdentity, signal.TotalDevices),
+                        Severity = BlockerSeverity.High,
+                        RemediationAction = "Configure Hybrid Entra ID Join or Azure AD Join for these devices",
+                        RemediationUrl = "https://learn.microsoft.com/entra/identity/devices/hybrid-join-plan"
+                    });
+                }
+
+                // Calculate ready devices: must meet ALL criteria
+                // - Supported edition (Enterprise/Education/Pro)
+                // - Enrolled in Intune
+                // - Windows Update workload on Intune (if co-managed)
+                // - Entra ID joined
+                
+                // Ready = Devices in Intune with WU workload on Intune and supported edition
+                var readyDevices = Math.Min(
+                    supportedEditionCount,
+                    Math.Min(
+                        enrolledInIntune,
+                        intuneOnlyCount + wuWorkloadOnIntune // Cloud-native OR co-managed with WU on Intune
+                    )
+                );
+                
+                // Also subtract devices without cloud identity
+                readyDevices = Math.Max(0, readyDevices - noCloudIdentity);
+                
+                signal.ReadyDevices = SafeReadyDevices(readyDevices, signal.TotalDevices, "Autopatch");
+                signal.TopBlockers = blockers.OrderByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
+                
+                signal.Recommendations = new List<string>
+                {
+                    "Windows Autopatch automates quality and feature updates with minimal IT effort.",
+                    configMgrOnlyCount > 0 ? $"Enable co-management for {configMgrOnlyCount} ConfigMgr-only devices to enable Autopatch." : null!,
+                    wuWorkloadOnConfigMgr > 0 ? $"Move Windows Update workload to Intune for {wuWorkloadOnConfigMgr} co-managed devices." : null!,
+                    unsupportedEditionCount > 0 ? $"Upgrade {unsupportedEditionCount} Home edition devices to Pro/Enterprise." : null!,
+                    signal.ReadinessPercentage >= 80 ? "Most devices are Autopatch-ready! Consider enrolling in Windows Autopatch." : null!
+                }.Where(r => !string.IsNullOrEmpty(r)).ToList();
+
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   🔄 AUTOPATCH READINESS RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Ready devices: {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      Blockers found: {blockers.Count}");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Autopatch readiness assessment failed: {ex.Message}");
                 Instance.Error($"Stack trace: {ex.StackTrace}");
             }
 

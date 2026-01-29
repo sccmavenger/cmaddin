@@ -1,6 +1,6 @@
-# ConfigMgr Zero Trust Migration Journey Progress Add-in
+# Cloud Native Readiness Tool
 
-**Version 3.17.79** | January 28, 2026
+**Version 3.17.83** | January 29, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -118,6 +118,79 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.81 (January 29, 2026)
+
+### Changed - Cloud Readiness Signals Updated per Rob's Feedback
+
+**Summary:**
+- Hidden Identity, WUfB, and Endpoint Security readiness signals
+- Added new **Autopatch Readiness** signal
+- Cloud Readiness tab now shows: Autopilot, Cloud-Native, Autopatch (3 signals)
+
+**New Autopatch Readiness Signal:**
+Assesses device readiness for Windows Autopatch automated updates.
+
+**What it checks (via Graph API):**
+1. **OS Edition** - Enterprise, Education, or Pro required (Home not supported)
+2. **Intune Enrollment** - Required for Autopatch policy delivery
+3. **Windows Update Workload** - Must be managed by Intune (not ConfigMgr) for co-managed devices
+4. **Entra ID Join Status** - Devices must have cloud identity (AAD or Hybrid joined)
+
+**Requirements Research:**
+Based on official Microsoft documentation:
+- https://learn.microsoft.com/windows/deployment/windows-autopatch/prepare/windows-autopatch-prerequisites
+- https://learn.microsoft.com/graph/windowsupdates-concept-overview
+
+**What we CAN check via Graph API:**
+- ✅ User/tenant licenses (GET /users/{id}/licenseDetails, GET /subscribedSkus)
+- ✅ Tenant MDM auto-enrollment config (GET /policies/mobileDeviceManagementPolicies - beta)
+- ✅ Autopatch enrollment status (GET /admin/windows/updates/updatableAssets - beta)
+- ✅ OS edition from ConfigMgr device caption
+- ✅ Co-management workload authority
+
+**What we CANNOT check:**
+- ❌ Windows diagnostic data level (policy config only, not actual device state)
+- ❌ Network connectivity to Microsoft Update endpoints
+
+**Files Modified:**
+- `Services/CloudReadinessService.cs` - Hidden Identity/WUfB/EndpointSecurity, added GetAutopatchReadinessSignalAsync()
+- `Views/CloudReadinessTab.xaml.cs` - Updated demo data to match new signal set
+
+---
+
+---
+
+### Version 3.17.80 (January 29, 2026)
+
+### Changed - Tool Renamed & Windows 11 Assessment Hidden
+
+**Feedback from Rob:**
+
+1. **Tool Renamed to "Cloud Native Readiness Tool"**
+   - Window title: "Cloud Native Readiness Tool"
+   - ConfigMgr Console menu: "Cloud Native Readiness Tool" 
+   - Product name in .csproj updated
+   - README title updated
+
+2. **Windows 11 Assessment Hidden from Cloud Readiness Tab**
+   - Windows 11 readiness signal removed from Cloud Readiness dashboard
+   - Focus is now purely on cloud-native migration readiness
+   - Remaining signals: Autopilot, Cloud-Native, Identity, WUfB, Endpoint Security
+
+**Files Modified:**
+- `Views/DashboardWindow.xaml` - Window title
+- `ZeroTrustMigrationAddin.xml` - ConfigMgr Console display name
+- `ZeroTrustMigrationAddin.csproj` - Product name, description, version
+- `README.md` - Title and version
+- `Services/CloudReadinessService.cs` - Commented out Windows 11 signal
+- `Views/CloudReadinessTab.xaml.cs` - Removed from demo data
+
+---
+
+---
+
 ### Version 3.17.79 (January 28, 2026)
 
 ### Fixed - Accurate ConfigMgr-Only Trend Line 📊
@@ -192,33 +265,6 @@ The enrollment trend graph now uses actual device enrollment dates from Intune's
 - `Views/DashboardWindow.xaml` - Conditional display of chart vs "not enough data" message
 
 **To Roll Back:** Tell Copilot "Roll back the enrollment trend changes" to restore simulated data.
-
----
-
----
-
-### Version 3.17.76 (January 28, 2026)
-
-### Fixed - No Fake Data After Authentication 🔒
-
-Fixed issue where mock/demo data could appear after Graph and ConfigMgr authentication.
-
-**Changes:**
-- MigrationImpactService now checks `IsAuthenticated` before using demo data
-- MigrationImpactCard shows error state instead of demo data when calculation fails post-auth
-- Added `IsDemo` property to track data source in MigrationImpactInputs
-
-**Rule:** Mock data is ONLY acceptable when the tool first opens and before authentication. Once Graph and ConfigMgr are authenticated, no code should ever display fake data or fall back to fake data.
-
----
-
----
-
-### Version 3.17.75 (January 28, 2026)
-
-### Added - Internal Telemetry Improvements
-
-Internal telemetry enhancements for tracking migration progress.
 
 ---
 
@@ -1334,6 +1380,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-01-28  
-**Version**: 3.17.79  
+**Last Updated**: 2026-01-29  
+**Version**: 3.17.83  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
