@@ -666,10 +666,11 @@ namespace ZeroTrustMigrationAddin.Services
                 HttpResponseMessage response;
                 
                 // Try query with $select first (preferred - less data transfer)
+                // Include CreationDate to track when device was first discovered in ConfigMgr
                 query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')" +
-                    "&$select=ResourceId,Name,OperatingSystemNameandVersion,LastActiveTime,ClientVersion,ResourceDomainORWorkgroup";
+                    "&$select=ResourceId,Name,OperatingSystemNameandVersion,LastActiveTime,ClientVersion,ResourceDomainORWorkgroup,CreationDate";
 
                 Instance.LogAdminServiceQuery("GetWindows1011Devices", query);
                 Instance.Info("=== ConfigMgr Admin Service REST API Query ===");
@@ -745,8 +746,19 @@ namespace ZeroTrustMigrationAddin.Services
                             ClientVersion = device.ClientVersion,
                             IsCoManaged = false, // Will be set by cross-referencing with Intune
                             CoManagementFlags = 0, // Will be populated from SMS_Client if needed
-                            DomainOrWorkgroup = device.ResourceDomainORWorkgroup
+                            DomainOrWorkgroup = device.ResourceDomainORWorkgroup,
+                            CreationDate = device.CreationDate // When device was first discovered in ConfigMgr
                         });
+                    }
+                    
+                    // Log CreationDate info for debugging
+                    var devicesWithCreationDate = devices.Count(d => d.CreationDate.HasValue);
+                    FileLogger.Instance.Info($"   📅 Devices with CreationDate: {devicesWithCreationDate}/{devices.Count}");
+                    if (devices.Any(d => d.CreationDate.HasValue))
+                    {
+                        var oldest = devices.Where(d => d.CreationDate.HasValue).Min(d => d.CreationDate);
+                        var newest = devices.Where(d => d.CreationDate.HasValue).Max(d => d.CreationDate);
+                        FileLogger.Instance.Info($"      Oldest: {oldest:yyyy-MM-dd}, Newest: {newest:yyyy-MM-dd}");
                     }
                     
                     FileLogger.Instance.Info($"   📋 Note: Co-management status will be determined by cross-checking with Intune");
@@ -2198,6 +2210,10 @@ namespace ZeroTrustMigrationAddin.Services
         public DateTime? LastActiveTime { get; set; }
         public string? ClientVersion { get; set; }
         public string? ResourceDomainORWorkgroup { get; set; }
+        /// <summary>
+        /// When the device was first discovered/added to ConfigMgr
+        /// </summary>
+        public DateTime? CreationDate { get; set; }
         // Note: SMS_R_System doesn't have CoManagementFlags
         // Use SMS_Client for co-management details
     }
@@ -2254,6 +2270,10 @@ namespace ZeroTrustMigrationAddin.Services
         public bool IsCoManaged { get; set; }
         public int CoManagementFlags { get; set; }
         public string? DomainOrWorkgroup { get; set; }
+        /// <summary>
+        /// When the device was first discovered/added to ConfigMgr (from SMS_R_System.CreationDate)
+        /// </summary>
+        public DateTime? CreationDate { get; set; }
     }
 
     public class ConfigMgrApplication
