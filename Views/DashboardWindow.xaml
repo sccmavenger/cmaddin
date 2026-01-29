@@ -464,8 +464,11 @@
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
+                                
+                                <!-- Trend Chart (shown when sufficient data available) -->
                                 <lvc:CartesianChart Height="250" Series="{Binding EnrollmentTrendSeries, Mode=OneWay}" 
-                                                    LegendLocation="None">
+                                                    LegendLocation="None"
+                                                    Visibility="{Binding HasSufficientTrendData, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <lvc:CartesianChart.AxisX>
                                         <lvc:Axis Labels="{Binding EnrollmentTrendLabels, Mode=OneWay}"/>
                                     </lvc:CartesianChart.AxisX>
@@ -473,6 +476,26 @@
                                         <lvc:Axis Title="Windows 10/11 Devices" MinValue="0"/>
                                     </lvc:CartesianChart.AxisY>
                                 </lvc:CartesianChart>
+                                
+                                <!-- Not Enough Data Message (shown when insufficient enrollment history) -->
+                                <Border Height="250" Background="#F5F5F5" CornerRadius="8" 
+                                        Visibility="{Binding HasSufficientTrendData, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}">
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
+                                        <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                                        <TextBlock Text="Not Enough Enrollment History" 
+                                                   FontSize="16" FontWeight="SemiBold" 
+                                                   Foreground="#424242" 
+                                                   HorizontalAlignment="Center" 
+                                                   Margin="0,0,0,10"/>
+                                        <TextBlock Text="{Binding TrendDataUnavailableReason}" 
+                                                   FontSize="12" 
+                                                   Foreground="#757575" 
+                                                   TextWrapping="Wrap" 
+                                                   TextAlignment="Center"
+                                                   MaxWidth="400"
+                                                   HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
                                 
                                 <!-- Help Link -->
                                 <Button Content="❓ Learn more" 

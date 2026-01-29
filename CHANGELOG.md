@@ -1,5 +1,40 @@
 # Zero Trust Migration Journey - Change Log
 
+## [3.17.77] - 2026-01-28
+
+### Changed - Real Enrollment Trend Data 📊
+
+**Replaced simulated trend data with REAL data from `enrolledDateTime`.**
+
+The enrollment trend graph now uses actual device enrollment dates from Intune's Graph API instead of generating fake historical projections. This provides accurate visibility into your actual migration progress.
+
+**What Changed:**
+- Trend chart now shows REAL weekly enrollment patterns based on `enrolledDateTime`
+- Uses weekly granularity (13 data points over ~90 days) for optimal trend visibility
+- Shows "Not enough enrollment history" message when < 2 weeks of data exists
+- Removed synthetic/simulated historical data generation
+
+**Technical Details:**
+- **Data Source:** Graph API `/deviceManagement/managedDevices` → `enrolledDateTime` property
+- **Granularity:** Weekly buckets (cumulative counts per week)
+- **Time Range:** Last 90 days of enrollment history
+- **Minimum Data:** 2 weeks of enrollment dates required to display chart
+
+**Why Weekly?**
+- Daily = too noisy (single enrollments create spiky charts)
+- Monthly = too sparse (only 3 data points)
+- Weekly = right balance for trend visibility
+
+**Files Modified:**
+- `Services/GraphDataService.cs` - New `GenerateRealTrendData()` method
+- `Models/DashboardModels.cs` - Added `HasSufficientTrendData`, `TrendDataUnavailableReason`
+- `ViewModels/DashboardViewModel.cs` - Expose trend availability to UI
+- `Views/DashboardWindow.xaml` - Conditional display of chart vs "not enough data" message
+
+**To Roll Back:** Tell Copilot "Roll back the enrollment trend changes" to restore simulated data.
+
+---
+
 ## [3.17.76] - 2026-01-28
 
 ### Fixed - No Fake Data After Authentication 🔒
