@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.77** | January 28, 2026
+**Version 3.17.78** | January 28, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -116,6 +116,44 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.77 (January 28, 2026)
+
+### Changed - Real Enrollment Trend Data 📊
+
+**Replaced simulated trend data with REAL data from `enrolledDateTime`.**
+
+The enrollment trend graph now uses actual device enrollment dates from Intune's Graph API instead of generating fake historical projections. This provides accurate visibility into your actual migration progress.
+
+**What Changed:**
+- Trend chart now shows REAL weekly enrollment patterns based on `enrolledDateTime`
+- Uses weekly granularity (13 data points over ~90 days) for optimal trend visibility
+- Shows "Not enough enrollment history" message when < 2 weeks of data exists
+- Removed synthetic/simulated historical data generation
+
+**Technical Details:**
+- **Data Source:** Graph API `/deviceManagement/managedDevices` → `enrolledDateTime` property
+- **Granularity:** Weekly buckets (cumulative counts per week)
+- **Time Range:** Last 90 days of enrollment history
+- **Minimum Data:** 2 weeks of enrollment dates required to display chart
+
+**Why Weekly?**
+- Daily = too noisy (single enrollments create spiky charts)
+- Monthly = too sparse (only 3 data points)
+- Weekly = right balance for trend visibility
+
+**Files Modified:**
+- `Services/GraphDataService.cs` - New `GenerateRealTrendData()` method
+- `Models/DashboardModels.cs` - Added `HasSufficientTrendData`, `TrendDataUnavailableReason`
+- `ViewModels/DashboardViewModel.cs` - Expose trend availability to UI
+- `Views/DashboardWindow.xaml` - Conditional display of chart vs "not enough data" message
+
+**To Roll Back:** Tell Copilot "Roll back the enrollment trend changes" to restore simulated data.
+
+---
+
+---
+
 ### Version 3.17.76 (January 28, 2026)
 
 ### Fixed - No Fake Data After Authentication 🔒
@@ -203,36 +241,6 @@ Internal telemetry enhancements for tracking migration progress.
 
 **Files Modified:**
 - `Services/CloudReadinessService.cs` - Updated `GetCloudNativeReadinessSignalAsync()` method
-
----
-
----
-
-### Version 3.17.54 (January 23, 2026)
-
-### Fixed - MDE (msSense) Devices Incorrectly Counted as Cloud Native 🐛
-
-**Issue Reported by:** Panu  
-**Root Cause:** Microsoft Defender for Endpoint (MDE) creates device records in Entra/Intune when deployed on servers for granular policy. These devices have `ManagementAgent = msSense` (`MsSense` in Graph SDK) and were being counted as "Cloud Native" workstations because they appear in Intune with no ConfigMgr record.
-
-**Impact:** Cloud Native device counts were inflated by server-originated MDE device records.
-
-**Solution:** Added `ManagementAgent != MsSense` filter to exclude MDE devices from all workstation counts:
-- Main device enrollment counting (`intuneEligibleDevices`)
-- Intune Windows enrolled count
-- Total Intune Windows count  
-- Cloud Native calculation
-- Compliance dashboard filtering
-
-**Technical Details:**
-- `ManagementAgentType.MsSense` = MDE/msSense devices in Graph SDK
-- JSON value in Graph API responses: `"managementAgent": "msSense"`
-- These are typically servers with Microsoft Defender for Endpoint
-- They should NOT be counted as Windows 10/11 workstations for migration purposes
-- Added logging: `⚠️ Excluding X MDE (msSense) devices from workstation count`
-
-**Files Modified:**
-- `Services/GraphDataService.cs` - Added MDE exclusion to 5 device filtering locations
 
 ---
 
@@ -1349,5 +1357,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-28  
-**Version**: 3.17.77  
+**Version**: 3.17.78  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
