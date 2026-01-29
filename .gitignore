@@ -80,6 +80,9 @@ Logs/
 telemetry/
 
 # Internal documentation (not for public GitHub)
+# Entire docs folder - contains internal strategy/presentation materials
+docs/
+
 # Strategy documents
 MISSION.md
 
@@ -119,14 +122,33 @@ TELEMETRY_QUERIES.md
 ZeroTrustMigrationAddin-v*.zip
 ZeroTrustMigrationAddin-v*.msi
 
+# Entire builds folder - all artifacts are regenerated each build
+builds/
+
+# Current manifest.json - auto-generated each build
+manifest.json
+
 # Old manifest backups
 manifest-v*.json
 
 # Build cleanup script
 Clean-OldBuilds.ps1
 
-# Research documents
-research/~$nfiguration Manager Customer - Middle-Stage.docx
-research/ConfigMgr Intune Journey Execu.pdf
+# Additional internal scripts
+Build-And-Distribute-v1-backup.ps1
+Clean-OldGitHubReleases.ps1
+Delete-CachedManifest.ps1
+Test-OctokitAPI.ps1
+
+# Internal commit template
+.gitmessage
+
+# Internal documentation
+DECISIONS.md
+DIAGNOSTIC_LOGGING.md
+RELEASE_NOTES_*.md
+
+# Research folder - entire folder contains internal strategy docs
+research/
 research/Configuration Manager Customer - Cloud Journey.pdf
 research/Configuration Manager Customer - Middle-Stage.pdf
