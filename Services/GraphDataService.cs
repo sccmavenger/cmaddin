@@ -1049,8 +1049,11 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info("=================================================");
 
-                // Generate trend data showing migration from ConfigMgr to cloud (co-managed/Intune)
-                var trendData = GenerateTrendData(totalDevices, cloudManagedCount, configMgrOnlyCount, cloudNativeCount);
+                // Generate trend data from REAL enrolledDateTime values (no more fake data!)
+                var (trendData, hasSufficientData, insufficientDataReason) = GenerateRealTrendData(
+                    allIntuneDevices, 
+                    totalDevices, 
+                    configMgrOnlyCount);
 
                 System.Diagnostics.Debug.WriteLine($"=== FINAL RESULT: Total={totalDevices}, CloudManaged={cloudManagedCount}, ConfigMgrOnly={configMgrOnlyCount} ===");
 
@@ -1091,6 +1094,8 @@ namespace ZeroTrustMigrationAddin.Services
                     CoManagedDevices = coManagedCount, // Devices in both ConfigMgr + Intune
                     CloudNativeDevices = cloudNativeCount, // Entra/AAD + Intune, no ConfigMgr record
                     TrendData = trendData,
+                    HasSufficientTrendData = hasSufficientData,
+                    TrendDataUnavailableReason = insufficientDataReason,
                     // Device join type categorization
                     HybridJoinedDevices = hybridJoinedCount,
                     AzureADOnlyDevices = azureADOnlyCount,
@@ -1657,43 +1662,111 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
-        private EnrollmentTrend[] GenerateTrendData(int currentTotal, int currentCloudManaged, int currentConfigMgrOnly, int currentCloudNative = 0)
+        /// <summary>
+        /// Generates REAL trend data from actual enrolledDateTime values.
+        /// Groups devices by week based on their Intune enrollment date.
+        /// </summary>
+        /// <param name="intuneDevices">All Intune-managed devices with enrolledDateTime</param>
+        /// <param name="currentTotal">Total device count (ConfigMgr baseline)</param>
+        /// <param name="currentConfigMgrOnly">Current ConfigMgr-only count</param>
+        /// <returns>Trend data based on real enrollment dates, or empty if insufficient data</returns>
+        private (EnrollmentTrend[] TrendData, bool HasSufficientData, string? InsufficientDataReason) GenerateRealTrendData(
+            List<Microsoft.Graph.Models.ManagedDevice> intuneDevices,
+            int currentTotal,
+            int currentConfigMgrOnly)
         {
-            // Generate 6 months of trend data showing co-management journey
-            // Cloud-managed = co-managed or Intune-only Windows devices (the progress metric)
-            // ConfigMgr-only = devices not yet moved to cloud
-            var trends = new List<EnrollmentTrend>();
-            var baseDate = DateTime.Now.AddMonths(-6);
+            Instance.Info("[TREND] Generating REAL trend data from enrolledDateTime values");
             
-            // Use actual cloud native count if provided, otherwise estimate
-            if (currentCloudNative == 0 && currentCloudManaged > 0)
-                currentCloudNative = (int)(currentCloudManaged * 0.12);
-
-            for (int i = 0; i <= 6; i++)
-            {
-                double progress = i / 6.0;
-                
-                // Cloud-managed devices grow over time (co-management progress)
-                int cloudManagedAtMonth = (int)(currentCloudManaged * progress);
-                
-                // Cloud native grows faster (newer devices)
-                int cloudNativeAtMonth = (int)(currentCloudNative * (0.3 + progress * 0.7));
-                
-                // ConfigMgr-only decreases as devices become co-managed
-                // Start from total devices (all were ConfigMgr-only) and decrease to current
-                int configMgrAtMonth = currentTotal - cloudManagedAtMonth;
-                configMgrAtMonth = Math.Max(0, configMgrAtMonth); // Ensure non-negative
-                
-                trends.Add(new EnrollmentTrend
+            // Get devices with valid enrollment dates (Windows workstations only, excluding MDE)
+            var devicesWithDates = intuneDevices
+                .Where(d => d.EnrolledDateTime.HasValue &&
+                           d.OperatingSystem != null &&
+                           d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
+                           !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase) &&
+                           d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense)
+                .Select(d => new 
                 {
-                    Month = baseDate.AddMonths(i),
-                    IntuneDevices = cloudManagedAtMonth, // Co-managed/cloud-managed (progress)
-                    CloudNativeDevices = cloudNativeAtMonth, // Entra joined, Intune only
-                    ConfigMgrDevices = configMgrAtMonth  // Not yet co-managed
-                });
+                    Device = d,
+                    EnrollDate = d.EnrolledDateTime!.Value.DateTime,
+                    IsCoManaged = d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm,
+                    IsCloudNative = d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.Mdm
+                })
+                .OrderBy(d => d.EnrollDate)
+                .ToList();
+
+            Instance.Info($"[TREND] Found {devicesWithDates.Count} devices with valid enrolledDateTime");
+
+            if (devicesWithDates.Count == 0)
+            {
+                Instance.Warning("[TREND] No devices have enrolledDateTime - cannot generate real trend data");
+                return (Array.Empty<EnrollmentTrend>(), false, 
+                    "No enrollment history available. Devices need enrolledDateTime to display trends.");
             }
 
-            return trends.ToArray();
+            // Determine date range
+            var oldestEnrollment = devicesWithDates.Min(d => d.EnrollDate);
+            var newestEnrollment = devicesWithDates.Max(d => d.EnrollDate);
+            var dateRange = newestEnrollment - oldestEnrollment;
+
+            Instance.Info($"[TREND] Enrollment date range: {oldestEnrollment:yyyy-MM-dd} to {newestEnrollment:yyyy-MM-dd} ({dateRange.TotalDays:F0} days)");
+
+            // Need at least 2 weeks of data for meaningful trends
+            if (dateRange.TotalDays < 14)
+            {
+                Instance.Warning($"[TREND] Only {dateRange.TotalDays:F0} days of enrollment history - need at least 14 days");
+                return (Array.Empty<EnrollmentTrend>(), false,
+                    "Not enough enrollment history to display trends. Devices need at least 2 weeks of enrollment data to calculate meaningful patterns.");
+            }
+
+            // Build weekly buckets for the last 13 weeks (90 days)
+            var trends = new List<EnrollmentTrend>();
+            var now = DateTime.Now;
+            var startDate = now.AddDays(-90); // Go back 90 days (13 weeks)
+            
+            // If oldest enrollment is more recent, start from there
+            if (oldestEnrollment > startDate)
+            {
+                startDate = oldestEnrollment;
+            }
+
+            // Calculate weekly snapshots
+            var currentWeekStart = startDate;
+            while (currentWeekStart <= now)
+            {
+                var weekEnd = currentWeekStart.AddDays(7);
+                
+                // Count cumulative enrollments up to this week
+                var coManagedByWeek = devicesWithDates
+                    .Count(d => d.EnrollDate <= weekEnd && d.IsCoManaged);
+                var cloudNativeByWeek = devicesWithDates
+                    .Count(d => d.EnrollDate <= weekEnd && d.IsCloudNative);
+                
+                // ConfigMgr-only = total minus those enrolled in Intune (co-managed)
+                var configMgrOnlyByWeek = Math.Max(0, currentTotal - coManagedByWeek);
+
+                trends.Add(new EnrollmentTrend
+                {
+                    Month = currentWeekStart, // Using "Month" field for weekly date
+                    IntuneDevices = coManagedByWeek,
+                    CloudNativeDevices = cloudNativeByWeek,
+                    ConfigMgrDevices = configMgrOnlyByWeek
+                });
+
+                currentWeekStart = weekEnd;
+            }
+
+            Instance.Info($"[TREND] Generated {trends.Count} weekly data points from REAL enrollment data");
+            
+            // Log some sample data points
+            if (trends.Any())
+            {
+                var first = trends.First();
+                var last = trends.Last();
+                Instance.Info($"[TREND]   First week ({first.Month:MMM dd}): Co-managed={first.IntuneDevices}, CloudNative={first.CloudNativeDevices}, ConfigMgr={first.ConfigMgrDevices}");
+                Instance.Info($"[TREND]   Last week ({last.Month:MMM dd}): Co-managed={last.IntuneDevices}, CloudNative={last.CloudNativeDevices}, ConfigMgr={last.ConfigMgrDevices}");
+            }
+
+            return (trends.ToArray(), true, null);
         }
 
         public bool IsAuthenticated => _graphClient != null;

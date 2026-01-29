@@ -853,6 +853,17 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public SeriesCollection EnrollmentTrendSeries { get; set; } = new SeriesCollection();
         public string[] EnrollmentTrendLabels { get; set; } = Array.Empty<string>();
         
+        /// <summary>
+        /// Indicates if there is sufficient enrollment history to display the trend chart.
+        /// When false, shows a message explaining why.
+        /// </summary>
+        public bool HasSufficientTrendData => DeviceEnrollment?.HasSufficientTrendData ?? true;
+        
+        /// <summary>
+        /// Reason why trend data is unavailable. Displayed to user when HasSufficientTrendData is false.
+        /// </summary>
+        public string TrendDataUnavailableReason => DeviceEnrollment?.TrendDataUnavailableReason ?? string.Empty;
+        
         // Chart series visibility toggles
         private bool _isComanagedSeriesVisible = true;
         private bool _isCloudNativeSeriesVisible = true;
@@ -2366,7 +2377,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         private void UpdateEnrollmentChart()
         {
-            if (DeviceEnrollment?.TrendData != null)
+            // Notify UI about trend data availability
+            OnPropertyChanged(nameof(HasSufficientTrendData));
+            OnPropertyChanged(nameof(TrendDataUnavailableReason));
+            
+            if (DeviceEnrollment?.TrendData != null && DeviceEnrollment.TrendData.Length > 0)
             {
                 var intuneValues = new ChartValues<int>();
                 var cloudNativeValues = new ChartValues<int>();
@@ -2378,7 +2393,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     intuneValues.Add(trend.IntuneDevices);
                     cloudNativeValues.Add(trend.CloudNativeDevices);
                     configMgrValues.Add(trend.ConfigMgrDevices);
-                    labels.Add(trend.Month.ToString("MMM yyyy"));
+                    labels.Add(trend.Month.ToString("MMM d"));
                 }
 
                 EnrollmentTrendSeries[0].Values = intuneValues;
@@ -2403,7 +2418,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         private void UpdateCharts()
         {
-            if (DeviceEnrollment?.TrendData != null)
+            // Notify UI about trend data availability (for showing/hiding "not enough data" message)
+            OnPropertyChanged(nameof(HasSufficientTrendData));
+            OnPropertyChanged(nameof(TrendDataUnavailableReason));
+            
+            if (DeviceEnrollment?.TrendData != null && DeviceEnrollment.TrendData.Length > 0)
             {
                 var intuneValues = new ChartValues<int>();
                 var cloudNativeValues = new ChartValues<int>();
@@ -2415,7 +2434,8 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     intuneValues.Add(trend.IntuneDevices);
                     cloudNativeValues.Add(trend.CloudNativeDevices);
                     configMgrValues.Add(trend.ConfigMgrDevices);
-                    labels.Add(trend.Month.ToString("MMM yyyy"));
+                    // Use shorter format for weekly data (now showing weeks, not months)
+                    labels.Add(trend.Month.ToString("MMM d"));
                 }
 
                 EnrollmentTrendSeries[0].Values = intuneValues;

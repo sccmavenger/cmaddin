@@ -22,6 +22,18 @@ namespace ZeroTrustMigrationAddin.Models
         public double IntuneEnrollmentPercentage => TotalDevices > 0 ? (double)IntuneEnrolledDevices / TotalDevices * 100 : 0;
         public EnrollmentTrend[] TrendData { get; set; } = Array.Empty<EnrollmentTrend>();
         
+        /// <summary>
+        /// Indicates if there is sufficient enrollment history to display trend data.
+        /// False when less than 2 weeks of enrolledDateTime data exists.
+        /// </summary>
+        public bool HasSufficientTrendData { get; set; } = true;
+        
+        /// <summary>
+        /// Message explaining why trend data is unavailable.
+        /// Only populated when HasSufficientTrendData is false.
+        /// </summary>
+        public string? TrendDataUnavailableReason { get; set; }
+        
         // Device Join Type Properties
         public int HybridJoinedDevices { get; set; }
         public int AzureADOnlyDevices { get; set; }
