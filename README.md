@@ -1,6 +1,6 @@
 # ConfigMgr Zero Trust Migration Journey Progress Add-in
 
-**Version 3.17.78** | January 28, 2026
+**Version 3.17.79** | January 28, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -117,6 +117,49 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.79 (January 28, 2026)
+
+### Fixed - Accurate ConfigMgr-Only Trend Line 📊
+
+**Bug:** ConfigMgr-only devices showed as existing 6 months back even when added last week.
+
+**Root Cause:** Previous implementation assumed current ConfigMgr total existed historically.
+
+**Fix:** Now uses `SMS_R_System.CreationDate` from ConfigMgr to track when devices were actually first discovered.
+
+**Data Sources (all real, no fake data):**
+| Line | Data Source | Property |
+|------|-------------|----------|
+| Co-managed | Intune Graph API | `enrolledDateTime` |
+| Cloud Native | Intune Graph API | `enrolledDateTime` |
+| ConfigMgr-only | ConfigMgr Admin Service | `CreationDate` |
+
+**Technical Details:**
+- Added `CreationDate` to Admin Service query `$select`
+- Cross-references device names between ConfigMgr and Intune
+- Device shows as ConfigMgr-only from its `CreationDate` until its Intune `enrolledDateTime`
+
+**Source:** [SMS_R_System Server WMI Class](https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/clients/manage/sms_r_system-server-wmi-class) - Microsoft documentation confirms `CreationDate` is "the date the record was first created, when the resource was first discovered."
+
+**Files Modified:**
+- `Services/ConfigMgrAdminService.cs` - Added `CreationDate` to models and query
+- `Services/GraphDataService.cs` - Updated `GenerateRealTrendData()` to use both dates
+
+---
+
+---
+
+### Version 3.17.78 (January 28, 2026)
+
+### Changed - Removed Learn More Links from Overview Tab
+
+Removed "❓ Learn more" buttons from Device Enrollment and Device Identity sections on the Overview tab.
+
+---
+
+---
+
 ### Version 3.17.77 (January 28, 2026)
 
 ### Changed - Real Enrollment Trend Data 📊
@@ -176,71 +219,6 @@ Fixed issue where mock/demo data could appear after Graph and ConfigMgr authenti
 ### Added - Internal Telemetry Improvements
 
 Internal telemetry enhancements for tracking migration progress.
-
----
-
----
-
-### Version 3.17.59 (January 23, 2026)
-
-### Added - Workload Device List Dialog & UI Improvements 📊
-
-**New Features:**
-
-1. **Workload Device List Dialog** - Click the device count for "Co-Managed with Workloads on ConfigMgr" blocker to see a detailed view showing which workloads are on ConfigMgr vs. Intune for each device:
-   - ✅ Green checkmarks = Workload on Intune (good)
-   - ⚙️ Orange gears = Workload still on ConfigMgr (needs migration)
-   - 8 workload columns: Compliance, Device Config, Windows Update, Endpoint Protection, Modern Apps, Office Apps, Resource Access, Inventory
-   - Export to CSV functionality
-   - Search by device name
-
-2. **Cloud-Native Tile Criteria Text** - Added "Co-Managed with all workloads moved to Microsoft Intune" text below device count to clarify what "ready" means for this signal.
-
-3. **AdminUserGuide.html Updated** - Comprehensive documentation of:
-   - New assessment scope (ConfigMgr devices only)
-   - Workload drill-down feature
-   - Updated blocker descriptions
-   - Clarification that Hybrid Joined is not a blocker
-
-**Files Added:**
-- `Views/WorkloadDeviceListDialog.xaml` - New dialog for workload authority display
-- `Views/WorkloadDeviceListDialog.xaml.cs` - Code-behind with WorkloadDeviceViewModel
-
-**Files Modified:**
-- `Views/CloudReadinessTab.xaml` - Added criteria description text for Cloud-Native signal
-- `Views/CloudReadinessTab.xaml.cs` - Added workload caching and new dialog handling
-- `Models/CloudReadinessModels.cs` - Added `IsCloudNativeSignal` property
-- `AdminUserGuide.html` - Updated Cloud-Native Readiness documentation
-
----
-
----
-
-### Version 3.17.57 (January 23, 2026)
-
-### Fixed - Cloud-Native Readiness Criteria Updated 🎯
-
-**Issue:** Cloud-Native Readiness tile was showing incorrect percentages and scope. The criteria needed to focus on ConfigMgr devices being migrated, not all devices.
-
-**New Criteria:**
-- **Assessment Scope:** ONLY devices with a record in ConfigMgr (these are migration targets)
-- **Cloud-Native Ready:** ConfigMgr devices that are co-managed with ALL workloads moved to Intune
-- **Born-in-Cloud Devices:** Entra + Intune with NO ConfigMgr record = already cloud native, excluded from scope
-- **Hybrid Joined:** No longer a blocker (expected during migration, can still have all workloads on Intune)
-
-**Remaining Blockers:**
-1. Co-Managed with Workloads on ConfigMgr (need to move workloads to Intune)
-2. ConfigMgr Only - Not in Intune (need to enable co-management)
-3. On-Premises AD Only (need Hybrid Entra ID Join first)
-
-**Technical Summary:**
-- Denominator = ConfigMgr devices only (migration targets)
-- Numerator = Co-managed devices with ALL workloads on Intune
-- Born-in-cloud devices excluded from assessment (already done)
-- Hybrid Joined removed as blocker (it's the expected state during migration)
-
-**Files Modified:**
-- `Services/CloudReadinessService.cs` - Updated `GetCloudNativeReadinessSignalAsync()` method
 
 ---
 
@@ -1357,5 +1335,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-28  
-**Version**: 3.17.78  
+**Version**: 3.17.79  
 **Maintainer:** Zero Trust Migration Journey Add-in Team
