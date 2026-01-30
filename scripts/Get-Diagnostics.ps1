@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Shows diagnostic information for troubleshooting the Cloud Native Readiness Tool.
+    Shows diagnostic information for troubleshooting the Cloud Native Assessment.
 
 .DESCRIPTION
     Displays version info, log locations, cached files, and recent log entries
@@ -10,7 +10,7 @@
     .\Get-Diagnostics.ps1
 
 .NOTES
-    Author: Cloud Native Readiness Tool Team
+    Author: Cloud Native Assessment Team
     Version: 1.0.0
 #>
 
@@ -18,7 +18,7 @@ $ErrorActionPreference = "SilentlyContinue"
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║     Cloud Native Readiness Tool - Diagnostics                ║" -ForegroundColor Cyan
+Write-Host "║     Cloud Native Assessment - Diagnostics                    ║" -ForegroundColor Cyan
 Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 

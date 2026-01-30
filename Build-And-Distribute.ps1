@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Complete automated build, test, and distribution script for Zero Trust Migration Journey Add-in
+    Complete automated build, test, and distribution script for Cloud Native Assessment
     
 .DESCRIPTION
     Enterprise-grade build automation that:
@@ -81,7 +81,7 @@
     
 .NOTES
     File Name      : Build-And-Distribute.ps1
-    Author         : Zero Trust Migration Journey Development Team
+    Author         : Cloud Native Assessment Development Team
     Prerequisite   : PowerShell 5.1+, .NET 8.0 SDK, gh CLI (optional)
     Version        : 2.0.0
     
@@ -127,7 +127,7 @@ Start-Transcript -Path $buildLogPath -Append
 # Display banner
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║  Zero Trust Migration Journey Add-in - Enterprise Build & Distribution  ║" -ForegroundColor Cyan
+Write-Host "║  Cloud Native Assessment - Enterprise Build & Distribution  ║" -ForegroundColor Cyan
 Write-Host "║  Version 2.0.0 - Enhanced Automation                      ║" -ForegroundColor Cyan
 Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
@@ -332,7 +332,7 @@ function ConvertTo-VersionedChangelog {
 
 "@
     
-    $content = $content -replace '(# Zero Trust Migration Journey - Change Log)', "`${1}`n$unreleasedTemplate"
+    $content = $content -replace '(# Cloud Native Assessment - Change Log)', "`${1}`n$unreleasedTemplate"
     
     [System.IO.File]::WriteAllText($ChangelogPath, $content)
 }
@@ -682,7 +682,7 @@ try {
         $content = $content -replace '(?s)<div class="alert alert-success">.*?</div>', $alertHtml.Trim()
         
         # Update the footer version
-        $content = $content -replace "(Zero Trust Migration Journey Add-in\s+v)[\d.]+", "`${1}$newVersion"
+        $content = $content -replace "(Cloud Native Assessment\s+v)[\d.]+", "`${1}$newVersion"
         
         [System.IO.File]::WriteAllText($adminGuidePath, $content)
         Write-Host "      ✅ Generated from CHANGELOG.md (alert + footer)" -ForegroundColor Green
@@ -1203,7 +1203,7 @@ if ($PublishToGitHub) {
     # Generate release notes if not provided
     if (!$ReleaseNotes) {
         $ReleaseNotes = @"
-## Zero Trust Migration Journey Add-in v$newVersion
+## Cloud Native Assessment v$newVersion
 
 ### Changes
 - See CHANGELOG.md for detailed changes
@@ -1269,7 +1269,7 @@ Package Size: $packageSize MB
         }
         
         $releaseArgs += @(
-            "--title", "Zero Trust Migration Journey Add-in v$newVersion",
+            "--title", "Cloud Native Assessment v$newVersion",
             "--notes-file", $notesFile
         )
         

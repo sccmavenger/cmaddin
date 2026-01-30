@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides complete instructions for building and deploying the **Zero Trust Migration Journey Dashboard** MSI installer, created to replace the PowerShell-based installation method with an enterprise-ready Windows Installer package.
+This document provides complete instructions for building and deploying the **Cloud Native Assessment** MSI installer, created to replace the PowerShell-based installation method with an enterprise-ready Windows Installer package.
 
 ---
 
@@ -10,7 +10,7 @@ This document provides complete instructions for building and deploying the **Ze
 
 ### ✅ Complete Product Rebranding
 - **Old Name:** Cloud Journey Progress Dashboard / CloudJourneyAddin
-- **New Name:** Zero Trust Migration Journey Dashboard / ZeroTrustMigrationAddin
+- **New Name:** Cloud Native Assessment / ZeroTrustMigrationAddin
 - **Files Updated:** 120+ files across code, documentation, scripts, and manifests
 
 ### ✅ ConfigMgr Console Ribbon Button
@@ -18,7 +18,7 @@ This document provides complete instructions for building and deploying the **Ze
 - **Visibility:** Button now appears in both:
   - ConfigMgr Console Home ribbon (always visible)
   - Right-click context menus (as before)
-- **Display Name:** "Zero Trust Migration Journey"
+- **Display Name:** "Cloud Native Assessment"
 - **Mnemonic:** "Zero Trust"
 
 ### ✅ WiX Toolset MSI Installer Project
@@ -266,10 +266,10 @@ Test-Path "$env:ProgramFiles(x86)\Microsoft Configuration Manager\AdminConsole\b
 Test-Path "$env:ProgramFiles(x86)\Microsoft Configuration Manager\AdminConsole\XmlStorage\Extensions\Actions\ZeroTrustMigrationAddin.xml"
 
 # Verify shortcut
-Test-Path "$env:USERPROFILE\Desktop\Zero Trust Migration Journey.lnk"
+Test-Path \"$env:USERPROFILE\\Desktop\\Cloud Native Assessment.lnk\"
 
 # Check Add/Remove Programs entry
-Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*Zero Trust*" }
+Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like \"*Cloud Native*\" }
 
 # Launch application
 & "$env:ProgramFiles(x86)\Microsoft Configuration Manager\AdminConsole\bin\ZeroTrustMigrationAddin\ZeroTrustMigrationAddin.exe"

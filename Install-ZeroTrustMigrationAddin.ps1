@@ -1,7 +1,7 @@
 
 <#
 .SYNOPSIS
-    Automated installer for ConfigMgr Zero Trust Migration Journey Progress Add-in
+    Automated installer for ConfigMgr Cloud Native Assessment Add-in
 .DESCRIPTION
     This script automatically:
     - Checks for prerequisites
@@ -35,7 +35,7 @@ function Write-Warning { Write-Host "[WARN] $args" -ForegroundColor Yellow }
 function Write-Error { Write-Host "[ERROR] $args" -ForegroundColor Red }
 
 Write-Host "`n===================================================" -ForegroundColor Cyan
-Write-Host "   ConfigMgr Zero Trust Migration Journey Progress Add-in Installer" -ForegroundColor Cyan
+Write-Host "   ConfigMgr Cloud Native Assessment Add-in Installer" -ForegroundColor Cyan
 Write-Host "===================================================`n" -ForegroundColor Cyan
 
 # ============================================================================
@@ -158,7 +158,7 @@ if (-not $dotnetVersions) {
 # Step 4: Build the Application
 # ============================================================================
 if (-not $SkipBuild) {
-    Write-Info "Building Zero Trust Migration Journey Add-in with all dependencies..."
+    Write-Info "Building Cloud Native Assessment Add-in with all dependencies..."
     
     $projectPath = Join-Path $PSScriptRoot "ZeroTrustMigrationAddin.csproj"
     
@@ -279,10 +279,10 @@ Set-Content -Path $xmlDest -Value $xmlContent
 Write-Info "Creating uninstaller..."
 
 $uninstallScript = @"
-# Zero Trust Migration Journey Add-in Uninstaller
+# Cloud Native Assessment Add-in Uninstaller
 `$ErrorActionPreference = "Stop"
 
-Write-Host "Uninstalling Zero Trust Migration Journey Add-in..." -ForegroundColor Yellow
+Write-Host "Uninstalling Cloud Native Assessment Add-in..." -ForegroundColor Yellow
 
 # Close ConfigMgr Console if running
 `$process = Get-Process -Name "Microsoft.ConfigurationManagement" -ErrorAction SilentlyContinue
@@ -306,7 +306,7 @@ if (Test-Path `$binPath) {
     Write-Host "✓ Removed application files" -ForegroundColor Green
 }
 
-Write-Host "`nZero Trust Migration Journey Add-in has been uninstalled." -ForegroundColor Green
+Write-Host "`nCloud Native Assessment Add-in has been uninstalled." -ForegroundColor Green
 Write-Host "You can now restart ConfigMgr Console." -ForegroundColor Cyan
 Pause
 "@
@@ -357,7 +357,7 @@ Write-Host "  - Files Deployed: $fileCount" -ForegroundColor White
 
 Write-Host "`nNext Steps:" -ForegroundColor Yellow
 Write-Host "  1. Launch ConfigMgr Console" -ForegroundColor White
-Write-Host "  2. Look for Zero Trust Migration Journey Progress in the ribbon" -ForegroundColor White
+Write-Host "  2. Look for Cloud Native Assessment in the ribbon" -ForegroundColor White
 Write-Host "  3. Click to open the dashboard" -ForegroundColor White
 
 Write-Host "`nTo uninstall, run: .\Uninstall-ZeroTrustMigrationAddin.ps1" -ForegroundColor Gray

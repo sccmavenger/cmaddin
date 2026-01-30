@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:ZeroTrustMigrationAddin.ViewModels"
         xmlns:converters="clr-namespace:ZeroTrustMigrationAddin.Converters"
-        Title="Update Available - Zero Trust Migration Journey"
+        Title="Update Available - Cloud Native Assessment"
         Width="600" Height="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"

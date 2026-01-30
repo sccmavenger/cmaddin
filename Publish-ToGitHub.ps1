@@ -47,7 +47,7 @@ $scriptDir = $PSScriptRoot
 
 Write-Host ""
 Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║  Zero Trust Migration Journey - GitHub Publish             ║" -ForegroundColor Cyan
+Write-Host "║  Cloud Native Assessment - GitHub Publish                   ║" -ForegroundColor Cyan
 Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 
@@ -197,12 +197,12 @@ Write-Host ""
 Write-Host "🚀 Publishing to GitHub..." -ForegroundColor Yellow
 
 $releaseTag = "v$newVersion"
-$releaseTitle = "Zero Trust Migration Journey v$newVersion"
+$releaseTitle = "Cloud Native Assessment v$newVersion"
 
 # Prepare release notes
 if (-not $ReleaseNotes) {
     $ReleaseNotes = @"
-## Zero Trust Migration Journey Add-in v$newVersion
+## Cloud Native Assessment v$newVersion
 
 ### 📦 Installation
 

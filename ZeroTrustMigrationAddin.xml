@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ActionDescription Class="Executable" DisplayName="Cloud Native Readiness Tool" MnemonicDisplayName="Cloud Native">
+<ActionDescription Class="Executable" DisplayName="Cloud Native Assessment" MnemonicDisplayName="Cloud Native">
   <ShowOn>
     <string>DefaultHomeTab</string>
     <string>ContextMenu</string>

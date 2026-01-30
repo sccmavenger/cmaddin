@@ -343,7 +343,7 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 bodyBuilder.AppendLine("---");
-                bodyBuilder.AppendLine("*Submitted via Zero Trust Migration Journey Dashboard*");
+                bodyBuilder.AppendLine("*Submitted via Cloud Native Assessment*");
 
                 var newIssue = new NewIssue($"[{feedbackType}] {title}") { Body = bodyBuilder.ToString() };
                 

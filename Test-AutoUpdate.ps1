@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║     Zero Trust Migration Journey Auto-Update Manual Test Launcher       ║" -ForegroundColor Cyan
+Write-Host "║     Cloud Native Assessment Auto-Update Manual Test Launcher           ║" -ForegroundColor Cyan
 Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 

@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Updates Zero Trust Migration Journey to latest version
+    Updates Cloud Native Assessment to latest version
 .DESCRIPTION
     Updates existing ZeroTrustMigrationAddin installation with new version from extracted folder or zip
 .EXAMPLE
@@ -10,7 +10,7 @@
 #>
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Zero Trust Migration Journey - Update Tool" -ForegroundColor Cyan
+Write-Host "Cloud Native Assessment - Update Tool" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -188,7 +188,7 @@ try {
 $runningProcess = Get-Process -Name "ZeroTrustMigrationAddin" -ErrorAction SilentlyContinue
 if ($runningProcess) {
     Write-Host ""
-    Write-Host "[WARN] Zero Trust Migration Journey is currently running!" -ForegroundColor Yellow
+    Write-Host "[WARN] Cloud Native Assessment is currently running!" -ForegroundColor Yellow
     Write-Host "[INFO] The application must be closed to update." -ForegroundColor Yellow
     $closeApp = Read-Host "Close application now? (Y/N)"
     if ($closeApp -eq "Y") {
@@ -374,5 +374,5 @@ if ($filesUpdated.Count -gt 0 -and $filesUpdated.Count -le 20) {
 }
 
 Write-Host ""
-Write-Host "You can now launch Zero Trust Migration Journey from the ConfigMgr Console." -ForegroundColor Yellow
+Write-Host "You can now launch Cloud Native Assessment from the ConfigMgr Console." -ForegroundColor Yellow
 Write-Host ""
