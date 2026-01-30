@@ -12,6 +12,13 @@
 - 
 
 
+## [3.17.86] - 2026-01-30
+
+### Changed
+- Updated main header banner and window title bar to "Cloud Native Assessment"
+- Updated tagline to "Assess your readiness for cloud-native device management"
+
+
 ## [3.17.85] - 2026-01-30
 
 ### Changed
