@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.85** | January 30, 2026
+**Version 3.17.86** | January 30, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -122,6 +122,19 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.85 (January 30, 2026)
+
+### Changed
+- **Tool Renamed to "Cloud Native Assessment"** per Rob's feedback
+  - Window title: "Cloud Native Assessment"
+  - ConfigMgr Console menu: "Cloud Native Assessment"
+  - All documentation, scripts, and installers updated
+  - Replaced all legacy "Zero Trust Migration Journey" branding (~56 references)
+  - Replaced all "Cloud Native Readiness Tool" branding
+
+---
+
 ### Version 3.17.84 (January 30, 2026)
 
 ### Added
@@ -210,38 +223,6 @@ Based on official Microsoft documentation:
 - `README.md` - Title and version
 - `Services/CloudReadinessService.cs` - Commented out Windows 11 signal
 - `Views/CloudReadinessTab.xaml.cs` - Removed from demo data
-
----
-
----
-
-### Version 3.17.79 (January 28, 2026)
-
-### Fixed - Accurate ConfigMgr-Only Trend Line 📊
-
-**Bug:** ConfigMgr-only devices showed as existing 6 months back even when added last week.
-
-**Root Cause:** Previous implementation assumed current ConfigMgr total existed historically.
-
-**Fix:** Now uses `SMS_R_System.CreationDate` from ConfigMgr to track when devices were actually first discovered.
-
-**Data Sources (all real, no fake data):**
-| Line | Data Source | Property |
-|------|-------------|----------|
-| Co-managed | Intune Graph API | `enrolledDateTime` |
-| Cloud Native | Intune Graph API | `enrolledDateTime` |
-| ConfigMgr-only | ConfigMgr Admin Service | `CreationDate` |
-
-**Technical Details:**
-- Added `CreationDate` to Admin Service query `$select`
-- Cross-references device names between ConfigMgr and Intune
-- Device shows as ConfigMgr-only from its `CreationDate` until its Intune `enrolledDateTime`
-
-**Source:** [SMS_R_System Server WMI Class](https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/clients/manage/sms_r_system-server-wmi-class) - Microsoft documentation confirms `CreationDate` is "the date the record was first created, when the resource was first discovered."
-
-**Files Modified:**
-- `Services/ConfigMgrAdminService.cs` - Added `CreationDate` to models and query
-- `Services/GraphDataService.cs` - Updated `GenerateRealTrendData()` to use both dates
 
 ---
 
@@ -1358,5 +1339,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-30  
-**Version**: 3.17.85  
+**Version**: 3.17.86  
 **Maintainer:** Cloud Native Assessment Team

@@ -20,7 +20,7 @@ namespace ZeroTrustMigrationAddin.Views
                 
                 // Set window title with current version
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                Title = $"Zero Trust Journey Dashboard v{version?.Major}.{version?.Minor}.{version?.Build}";
+                Title = $"Cloud Native Assessment v{version?.Major}.{version?.Minor}.{version?.Build}";
                 
                 var telemetryService = new TelemetryService();
                 var viewModel = new DashboardViewModel(telemetryService, tabVisibilityOptions);
