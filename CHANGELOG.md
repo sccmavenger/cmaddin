@@ -1,5 +1,23 @@
 # Cloud Native Readiness Tool - Change Log
 
+## [3.17.84] - 2026-01-30
+
+### Added
+- New `scripts/` folder with helper scripts for testers
+- `Reset-AutoUpdate.ps1` - Clears cached manifests and temp files when auto-update fails
+- `Get-Diagnostics.ps1` - Shows version info, log locations, and recent activity
+- **Stale/Orphaned Device Detection** - Identifies devices in Intune that don't exist in ConfigMgr
+  - Logs device name, last Intune sync date, days since sync
+  - Provides recommendation to remove from Intune or re-enroll ConfigMgr client
+  - Addresses tester feedback about confusing ConfigMgr vs Co-managed count mismatch
+
+## [3.17.83] - 2026-01-29
+
+### Changed - Cloud Readiness Signals Updated + Published to GitHub
+- Hidden Identity, WUfB, and Endpoint Security readiness signals
+- Added new Autopatch Readiness signal
+- Published to GitHub releases
+
 ## [3.17.81] - 2026-01-29
 
 ### Changed - Cloud Readiness Signals Updated per Rob's Feedback
@@ -786,7 +804,7 @@ ReadinessPercentage = (ReadyDevices / TotalDevices) * 100
 
 ---
 
-## [Unreleased]
+## [3.17.84] - 2026-01-30
 
 ### Fixed - LIVE DATA Indicator Shows Incorrectly (Panu Feedback)
 
@@ -1010,7 +1028,7 @@ A comprehensive new tab that assesses your environment's readiness for various c
 
 ---
 
-## [Unreleased]
+## [3.17.84] - 2026-01-30
 
 ### Changed - Moved Migration Impact Forecast to Overview Tab
 - Relocated the Migration Impact Forecast card from the Enrollment tab to the Overview tab
