@@ -1,6 +1,6 @@
 # Cloud Native Readiness Tool
 
-**Version 3.17.83** | January 29, 2026
+**Version 3.17.84** | January 30, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -120,6 +120,16 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.83 (January 29, 2026)
+
+### Changed - Cloud Readiness Signals Updated + Published to GitHub
+- Hidden Identity, WUfB, and Endpoint Security readiness signals
+- Added new Autopatch Readiness signal
+- Published to GitHub releases
+
+---
+
 ### Version 3.17.81 (January 29, 2026)
 
 ### Changed - Cloud Readiness Signals Updated per Rob's Feedback
@@ -228,43 +238,6 @@ Based on official Microsoft documentation:
 ### Changed - Removed Learn More Links from Overview Tab
 
 Removed "❓ Learn more" buttons from Device Enrollment and Device Identity sections on the Overview tab.
-
----
-
----
-
-### Version 3.17.77 (January 28, 2026)
-
-### Changed - Real Enrollment Trend Data 📊
-
-**Replaced simulated trend data with REAL data from `enrolledDateTime`.**
-
-The enrollment trend graph now uses actual device enrollment dates from Intune's Graph API instead of generating fake historical projections. This provides accurate visibility into your actual migration progress.
-
-**What Changed:**
-- Trend chart now shows REAL weekly enrollment patterns based on `enrolledDateTime`
-- Uses weekly granularity (13 data points over ~90 days) for optimal trend visibility
-- Shows "Not enough enrollment history" message when < 2 weeks of data exists
-- Removed synthetic/simulated historical data generation
-
-**Technical Details:**
-- **Data Source:** Graph API `/deviceManagement/managedDevices` → `enrolledDateTime` property
-- **Granularity:** Weekly buckets (cumulative counts per week)
-- **Time Range:** Last 90 days of enrollment history
-- **Minimum Data:** 2 weeks of enrollment dates required to display chart
-
-**Why Weekly?**
-- Daily = too noisy (single enrollments create spiky charts)
-- Monthly = too sparse (only 3 data points)
-- Weekly = right balance for trend visibility
-
-**Files Modified:**
-- `Services/GraphDataService.cs` - New `GenerateRealTrendData()` method
-- `Models/DashboardModels.cs` - Added `HasSufficientTrendData`, `TrendDataUnavailableReason`
-- `ViewModels/DashboardViewModel.cs` - Expose trend availability to UI
-- `Views/DashboardWindow.xaml` - Conditional display of chart vs "not enough data" message
-
-**To Roll Back:** Tell Copilot "Roll back the enrollment trend changes" to restore simulated data.
 
 ---
 
@@ -1380,6 +1353,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-01-29  
-**Version**: 3.17.83  
+**Last Updated**: 2026-01-30  
+**Version**: 3.17.84  
 **Maintainer:** Zero Trust Migration Journey Add-in Team

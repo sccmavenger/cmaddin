@@ -879,10 +879,52 @@ namespace ZeroTrustMigrationAddin.Services
                     cloudManagedCount = Math.Min(coManagedCount, configMgrCount); // Cap at ConfigMgr count
                     Instance.Info($"✅ Using ConfigMgr as source (co-management scenario): {totalDevices} total devices");
                     Instance.Info($"   ConfigMgr devices: {configMgrCount}, Co-managed (cloud progress): {cloudManagedCount}, ConfigMgr-only: {configMgrOnlyCount}");
-                    if (coManagedCount > configMgrCount)
+                    
+                    // STALE/ORPHANED DEVICE DETECTION
+                    // Identify devices that exist in Intune as co-managed but NOT in ConfigMgr
+                    if (coManagedCount > configMgrCount && configMgrDevices != null)
                     {
-                        Instance.Warning($"   ⚠️ Note: Intune reports {coManagedCount} co-managed devices but only {configMgrCount} in ConfigMgr");
-                        Instance.Warning($"      This can happen when devices were removed from ConfigMgr but remain in Intune");
+                        var configMgrDeviceNames = new HashSet<string>(
+                            configMgrDevices
+                                .Where(d => !string.IsNullOrEmpty(d.Name))
+                                .Select(d => d.Name.ToLowerInvariant()),
+                            StringComparer.OrdinalIgnoreCase);
+                        
+                        var orphanedIntuneDevices = coManagedIntuneDevices
+                            .Where(d => !string.IsNullOrEmpty(d.DeviceName) && 
+                                       !configMgrDeviceNames.Contains(d.DeviceName.ToLowerInvariant()))
+                            .ToList();
+                        
+                        int orphanCount = orphanedIntuneDevices.Count;
+                        
+                        Instance.Warning($"");
+                        Instance.Warning($"   ╔══════════════════════════════════════════════════════════════════════════════╗");
+                        Instance.Warning($"   ║ ⚠️ STALE/ORPHANED DEVICES DETECTED: {orphanCount} device(s)                              ║");
+                        Instance.Warning($"   ╠══════════════════════════════════════════════════════════════════════════════╣");
+                        Instance.Warning($"   ║ Intune reports {coManagedCount} co-managed but ConfigMgr only has {configMgrCount} devices         ║");
+                        Instance.Warning($"   ╚══════════════════════════════════════════════════════════════════════════════╝");
+                        
+                        foreach (var device in orphanedIntuneDevices)
+                        {
+                            var lastSync = device.LastSyncDateTime?.DateTime;
+                            var daysSinceSync = lastSync.HasValue ? (int)(DateTime.UtcNow - lastSync.Value).TotalDays : -1;
+                            var syncInfo = daysSinceSync >= 0 
+                                ? $"{lastSync:yyyy-MM-dd} ({daysSinceSync} days ago)" 
+                                : "Unknown";
+                            
+                            Instance.Warning($"      • {device.DeviceName}");
+                            Instance.Warning($"        Reason: Exists in Intune as co-managed but NOT found in ConfigMgr");
+                            Instance.Warning($"        Last Intune Sync: {syncInfo}");
+                            Instance.Warning($"        Recommendation: Remove from Intune or re-enroll ConfigMgr client");
+                            Instance.Warning($"");
+                        }
+                        
+                        if (orphanCount == 0 && coManagedCount > configMgrCount)
+                        {
+                            // Device names match but counts differ - could be case sensitivity or timing
+                            Instance.Warning($"      Note: All device names matched, but count mismatch persists.");
+                            Instance.Warning($"      This may be due to case-sensitivity or data refresh timing.");
+                        }
                     }
                     System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {cloudManagedCount} co-managed, {configMgrOnlyCount} not yet co-managed");
                 }
