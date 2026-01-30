@@ -1,4 +1,4 @@
-# Zero Trust Migration Journey Dashboard - MSI Installer
+# Cloud Native Assessment - MSI Installer
 
 This directory contains the WiX Toolset source files for building the MSI installer.
 

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Resets the auto-update system for Cloud Native Readiness Tool.
+    Resets the auto-update system for Cloud Native Assessment.
 
 .DESCRIPTION
     Use this script when auto-update gets stuck or fails mid-update.
@@ -17,7 +17,7 @@
     .\Reset-AutoUpdate.ps1 -Force
 
 .NOTES
-    Author: Cloud Native Readiness Tool Team
+    Author: Cloud Native Assessment Team
     Version: 1.0.0
 #>
 
@@ -29,7 +29,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║     Cloud Native Readiness Tool - Auto-Update Reset          ║" -ForegroundColor Cyan
+Write-Host "║     Cloud Native Assessment - Auto-Update Reset              ║" -ForegroundColor Cyan
 Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 
@@ -95,7 +95,7 @@ Write-Host ""
 Write-Host "✅ Auto-update reset complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor White
-Write-Host "  1. Launch the Cloud Native Readiness Tool" -ForegroundColor Gray
+Write-Host "  1. Launch the Cloud Native Assessment" -ForegroundColor Gray
 Write-Host "  2. The app will check for updates on startup" -ForegroundColor Gray
 Write-Host "  3. If an update is available, it will download automatically" -ForegroundColor Gray
 Write-Host "  4. DO NOT close the app while 'Applying update...' is shown" -ForegroundColor Yellow

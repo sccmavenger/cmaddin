@@ -301,7 +301,7 @@ namespace ZeroTrustMigrationAddin.Services
                 var sb = new StringBuilder();
                 
                 sb.AppendLine("=".PadRight(80, '='));
-                sb.AppendLine("Zero Trust Migration Journey - Query Log Export");
+                sb.AppendLine("Cloud Native Assessment - Query Log Export");
                 sb.AppendLine($"Exported: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 sb.AppendLine("=".PadRight(80, '='));
                 sb.AppendLine();

@@ -1,4 +1,26 @@
-# Cloud Native Readiness Tool - Change Log
+# Cloud Native Assessment - Change Log
+
+## [Unreleased]
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.17.85] - 2026-01-30
+
+### Changed
+- **Tool Renamed to "Cloud Native Assessment"** per Rob's feedback
+  - Window title: "Cloud Native Assessment"
+  - ConfigMgr Console menu: "Cloud Native Assessment"
+  - All documentation, scripts, and installers updated
+  - Replaced all legacy "Zero Trust Migration Journey" branding (~56 references)
+  - Replaced all "Cloud Native Readiness Tool" branding
 
 ## [3.17.84] - 2026-01-30
 

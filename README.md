@@ -1,6 +1,6 @@
-# Cloud Native Readiness Tool
+# Cloud Native Assessment
 
-**Version 3.17.84** | January 30, 2026
+**Version 3.17.85** | January 30, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -45,7 +45,7 @@
 ### For ConfigMgr Administrators - Zero Setup Required!
 
 1. **Download and run** the MSI installer from [GitHub Releases](https://github.com/sccmavenger/cmaddin/releases/latest)
-2. **Launch ConfigMgr Console** and look for "Zero Trust Migration Journey Progress" in the ribbon
+2. **Launch ConfigMgr Console** and look for "Cloud Native Assessment" in the ribbon
 
 **That's it!** The MSI installer automatically:
 - ✅ Installs to the correct ConfigMgr Console location
@@ -120,6 +120,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.84 (January 30, 2026)
+
+### Added
+- New `scripts/` folder with helper scripts for testers
+- `Reset-AutoUpdate.ps1` - Clears cached manifests and temp files when auto-update fails
+- `Get-Diagnostics.ps1` - Shows version info, log locations, and recent activity
+- **Stale/Orphaned Device Detection** - Identifies devices in Intune that don't exist in ConfigMgr
+  - Logs device name, last Intune sync date, days since sync
+  - Provides recommendation to remove from Intune or re-enroll ConfigMgr client
+  - Addresses tester feedback about confusing ConfigMgr vs Co-managed count mismatch
+
+---
 
 ### Version 3.17.83 (January 29, 2026)
 
@@ -233,16 +247,6 @@ Based on official Microsoft documentation:
 
 ---
 
-### Version 3.17.78 (January 28, 2026)
-
-### Changed - Removed Learn More Links from Overview Tab
-
-Removed "❓ Learn more" buttons from Device Enrollment and Device Identity sections on the Overview tab.
-
----
-
----
-
 > 📋 **[View Complete Changelog](#-changelog-highlights)** for all version history
 
 
@@ -250,7 +254,7 @@ Removed "❓ Learn more" buttons from Device Enrollment and Device Identity sect
 
 ## 📊 Dashboard Overview
 
-The Zero Trust Migration Journey Dashboard is your intelligent command center for migrating from ConfigMgr to Microsoft Intune. It combines real-time data from **both ConfigMgr and Intune** with AI-powered insights to accelerate your cloud migration journey.
+The Cloud Native Assessment is your intelligent command center for migrating from ConfigMgr to Microsoft Intune. It combines real-time data from **both ConfigMgr and Intune** with AI-powered insights to accelerate your cloud migration journey.
 
 ### Key Features
 
@@ -310,7 +314,7 @@ The Zero Trust Migration Journey Dashboard is your intelligent command center fo
 ### What You Need to Do (Takes 5 Minutes)
 
 **Step 1: Open the Dashboard**
-- Find "Zero Trust Migration Journey Progress" in your ConfigMgr Console ribbon
+- Find "Cloud Native Assessment" in your ConfigMgr Console ribbon
 - Or double-click the desktop shortcut
 
 **Step 2: Connect to Your Intune Data**
@@ -885,7 +889,7 @@ The automated installer handles everything:
 
 After installation:
 1. Launch ConfigMgr Console
-2. Look for "Zero Trust Migration Journey Progress" in ribbon/toolbar
+2. Look for "Cloud Native Assessment" in ribbon/toolbar
 3. Click to open dashboard
 
 ---
@@ -1332,7 +1336,7 @@ Microsoft Internal Use
 ### Documentation Files (Archived)
 
 Historical documentation moved to `/documents` folder:
-- Configuration Manager Customer - Zero Trust Migration Journey.docx
+- Configuration Manager Customer - Cloud Native Assessment.docx
 - Configuration Manager Customer - Middle-Stage.docx
 - Configuration Manager Middle View.docx
 
@@ -1354,5 +1358,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-30  
-**Version**: 3.17.84  
-**Maintainer:** Zero Trust Migration Journey Add-in Team
+**Version**: 3.17.85  
+**Maintainer:** Cloud Native Assessment Team

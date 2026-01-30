@@ -3,7 +3,7 @@
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   
   <!-- Package Configuration (WiX v4+ syntax) -->
-  <Package Name="Zero Trust Migration Journey Dashboard"
+  <Package Name="Cloud Native Assessment"
            Language="1033"
            Version="3.16.14.0"
            Manufacturer="Microsoft Configuration Manager"
@@ -48,12 +48,12 @@
     <StandardDirectory Id="DesktopFolder" />
     
     <StandardDirectory Id="ProgramMenuFolder">
-      <Directory Id="ApplicationProgramsFolder" Name="Zero Trust Migration Journey" />
+      <Directory Id="ApplicationProgramsFolder" Name="Cloud Native Assessment" />
     </StandardDirectory>
 
     <!-- Feature: Core Application -->
     <Feature Id="ProductFeature"
-             Title="Zero Trust Migration Journey Dashboard"
+             Title="Cloud Native Assessment"
              Description="Core application files"
              Level="1"
              AllowAbsent="no"
@@ -103,7 +103,7 @@
     <ComponentGroup Id="DesktopShortcutComponent" Directory="DesktopFolder">
       <Component Id="DesktopShortcut" Guid="B2C3D4E5-F6A7-8901-BCDE-F12345678901">
         <Shortcut Id="DesktopShortcut"
-                  Name="Zero Trust Migration Journey"
+                  Name="Cloud Native Assessment"
                   Description="ConfigMgr to Intune migration dashboard"
                   Target="[INSTALLFOLDER]ZeroTrustMigrationAddin.exe"
                   WorkingDirectory="INSTALLFOLDER" />
@@ -122,7 +122,7 @@
     <ComponentGroup Id="StartMenuComponents" Directory="ApplicationProgramsFolder">
       <Component Id="StartMenuShortcut" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012">
         <Shortcut Id="StartMenuShortcut"
-                  Name="Zero Trust Migration Journey"
+                  Name="Cloud Native Assessment"
                   Description="ConfigMgr to Intune migration dashboard"
                   Target="[INSTALLFOLDER]ZeroTrustMigrationAddin.exe"
                   WorkingDirectory="INSTALLFOLDER" />

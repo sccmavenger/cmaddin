@@ -5,7 +5,7 @@
 
 ## Overview
 
-The Zero Trust Migration Journey is designed with privacy and security as core principles. This document provides complete transparency about what data is collected, transmitted, and stored by the application.
+The Cloud Native Assessment is designed with privacy and security as core principles. This document provides complete transparency about what data is collected, transmitted, and stored by the application.
 
 ---
 

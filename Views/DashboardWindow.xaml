@@ -4,7 +4,7 @@
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:ZeroTrustMigrationAddin.Converters"
         xmlns:views="clr-namespace:ZeroTrustMigrationAddin.Views"
-        Title="Cloud Native Readiness Tool" 
+        Title="Cloud Native Assessment" 
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         SizeToContent="Manual"

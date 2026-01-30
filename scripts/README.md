@@ -1,4 +1,4 @@
-# Helper Scripts for Cloud Native Readiness Tool
+# Helper Scripts for Cloud Native Assessment
 
 This folder contains helper scripts for testers and administrators.
 

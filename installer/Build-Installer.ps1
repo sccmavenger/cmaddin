@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Builds the Zero Trust Migration Journey Dashboard MSI installer
+    Builds the Cloud Native Assessment MSI installer
 
 .DESCRIPTION
     This script automates building the WiX-based MSI installer package.
@@ -53,7 +53,7 @@ function Write-Success($message) { Write-Host "✓ $message" -ForegroundColor Gr
 function Write-Warning($message) { Write-Host "⚠ $message" -ForegroundColor Yellow }
 function Write-Failure($message) { Write-Host "✗ $message" -ForegroundColor Red }
 
-Write-Header "Zero Trust Migration Journey Dashboard - MSI Installer Build"
+Write-Header \"Cloud Native Assessment - MSI Installer Build\"
 
 # Check prerequisites
 Write-Host "`nChecking prerequisites..."
