@@ -1899,8 +1899,13 @@
                                 </Grid>
                             </Border>
 
-                            <!-- SMART ENROLLMENT MANAGEMENT (Merged Device Readiness + Agent) -->
-                            <Border x:Name="DeviceReadinessSection" Style="{StaticResource SectionCard}">
+                            <!-- SMART ENROLLMENT MANAGEMENT (Merged Device Readiness + Agent)
+                                 STATUS: HIDDEN (January 2026)
+                                 REASON: Feature needs refinement before broader release
+                                 TO RESTORE: Use /showtabs:smartenrollment command-line argument
+                            -->
+                            <Border x:Name="DeviceReadinessSection" Style="{StaticResource SectionCard}"
+                                    Visibility="{Binding ShowSmartEnrollmentSection}">
                                 <StackPanel>
                                     <!-- Main Header -->
                                     <TextBlock Text="🎯 Smart Enrollment Management" Style="{StaticResource SectionTitle}"/>

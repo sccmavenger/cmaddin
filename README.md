@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.88** | January 30, 2026
+**Version 3.17.88** | January 31, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -125,16 +125,19 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
 ### Version 3.17.87 (January 30, 2026)
 
-### Added
-- 
-
 ### Changed
-- 
+- Removed unverified "Inventory" workload from co-management workload tracking
+- Co-management workload count reduced from 8 to 7 (only Microsoft-documented workloads)
+- Updated presentation brief and documentation to reflect 7 workloads
 
-### Fixed
--
+### Technical
+- Removed `InventoryManagedByConfigMgr` from `DeviceWorkloadAuthority` model
+- Updated `TotalWorkloads` constant from 8 to 7
+- Removed Inventory column from workload device list dialog
+- Updated CSV export to exclude Inventory column
 
 ---
 
@@ -1290,6 +1293,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-01-30  
+**Last Updated**: 2026-01-31  
 **Version**: 3.17.88  
 **Maintainer:** Cloud Native Assessment Team

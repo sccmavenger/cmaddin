@@ -88,6 +88,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private Visibility _showAIActionsTab = Visibility.Visible;
         private Visibility _showCloudReadinessTab = Visibility.Visible;
         private Visibility _showMigrationImpactCard = Visibility.Collapsed; // Hidden per ADR-007
+        private Visibility _showSmartEnrollmentSection = Visibility.Collapsed; // Hidden: needs refinement
 
         public DashboardViewModel(TelemetryService telemetryService, TabVisibilityOptions? tabVisibilityOptions = null)
         {
@@ -105,6 +106,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 _showAIActionsTab = tabVisibilityOptions.ShowAIActionsTab;
                 _showCloudReadinessTab = tabVisibilityOptions.ShowCloudReadinessTab;
                 _showMigrationImpactCard = tabVisibilityOptions.ShowMigrationImpactCard;
+                _showSmartEnrollmentSection = tabVisibilityOptions.ShowSmartEnrollmentSection;
             }
             
             // Initialize AI Recommendation Service - Azure OpenAI is now required
@@ -451,6 +453,16 @@ namespace ZeroTrustMigrationAddin.ViewModels
         {
             get => _showMigrationImpactCard;
             set => SetProperty(ref _showMigrationImpactCard, value);
+        }
+
+        /// <summary>
+        /// Shows or hides the Smart Enrollment Management section.
+        /// Hidden by default: Feature needs refinement before broader release.
+        /// </summary>
+        public Visibility ShowSmartEnrollmentSection
+        {
+            get => _showSmartEnrollmentSection;
+            set => SetProperty(ref _showSmartEnrollmentSection, value);
         }
 
         // Phase 1 AI Enhancement Properties

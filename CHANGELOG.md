@@ -12,6 +12,19 @@
 - 
 
 
+## [3.17.88] - 2026-01-31
+
+### Added
+- 
+
+### Changed
+- Hidden Smart Enrollment Management section (needs refinement before broader release)
+- Can be re-enabled via `/showtabs:smartenrollment` command-line argument
+
+### Fixed
+- 
+
+
 ## [3.17.87] - 2026-01-30
 
 ### Changed
