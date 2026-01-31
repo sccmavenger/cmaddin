@@ -49,6 +49,12 @@ namespace ZeroTrustMigrationAddin.Models
         public Visibility ShowMigrationImpactCard { get; set; } = Visibility.Collapsed;
 
         /// <summary>
+        /// Shows or hides the Smart Enrollment Management section on the Enrollment tab.
+        /// Hidden by default: Feature needs refinement before broader release.
+        /// </summary>
+        public Visibility ShowSmartEnrollmentSection { get; set; } = Visibility.Collapsed;
+
+        /// <summary>
         /// Parse command-line arguments to determine tab visibility.
         /// 
         /// Usage examples:
@@ -98,6 +104,10 @@ namespace ZeroTrustMigrationAddin.Models
                             case "impact":
                                 options.ShowMigrationImpactCard = Visibility.Collapsed;
                                 break;
+                            case "smartenrollment":
+                            case "agent":
+                                options.ShowSmartEnrollmentSection = Visibility.Collapsed;
+                                break;
                         }
                     }
                 }
@@ -113,6 +123,7 @@ namespace ZeroTrustMigrationAddin.Models
                     options.ShowAIActionsTab = Visibility.Collapsed;
                     options.ShowCloudReadinessTab = Visibility.Collapsed;
                     options.ShowMigrationImpactCard = Visibility.Collapsed;
+                    options.ShowSmartEnrollmentSection = Visibility.Collapsed;
 
                     // Then show only specified tabs
                     var tabsToShow = lowerArg.Substring(lowerArg.IndexOf(':') + 1).Split(',');
@@ -145,6 +156,10 @@ namespace ZeroTrustMigrationAddin.Models
                             case "migrationimpact":
                             case "impact":
                                 options.ShowMigrationImpactCard = Visibility.Visible;
+                                break;
+                            case "smartenrollment":
+                            case "agent":
+                                options.ShowSmartEnrollmentSection = Visibility.Visible;
                                 break;
                         }
                     }
