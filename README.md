@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.87** | January 30, 2026
+**Version 3.17.88** | January 30, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -124,6 +124,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.87 (January 30, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.86 (January 30, 2026)
 
 ### Changed
@@ -163,48 +177,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Hidden Identity, WUfB, and Endpoint Security readiness signals
 - Added new Autopatch Readiness signal
 - Published to GitHub releases
-
----
-
-### Version 3.17.81 (January 29, 2026)
-
-### Changed - Cloud Readiness Signals Updated per Rob's Feedback
-
-**Summary:**
-- Hidden Identity, WUfB, and Endpoint Security readiness signals
-- Added new **Autopatch Readiness** signal
-- Cloud Readiness tab now shows: Autopilot, Cloud-Native, Autopatch (3 signals)
-
-**New Autopatch Readiness Signal:**
-Assesses device readiness for Windows Autopatch automated updates.
-
-**What it checks (via Graph API):**
-1. **OS Edition** - Enterprise, Education, or Pro required (Home not supported)
-2. **Intune Enrollment** - Required for Autopatch policy delivery
-3. **Windows Update Workload** - Must be managed by Intune (not ConfigMgr) for co-managed devices
-4. **Entra ID Join Status** - Devices must have cloud identity (AAD or Hybrid joined)
-
-**Requirements Research:**
-Based on official Microsoft documentation:
-- https://learn.microsoft.com/windows/deployment/windows-autopatch/prepare/windows-autopatch-prerequisites
-- https://learn.microsoft.com/graph/windowsupdates-concept-overview
-
-**What we CAN check via Graph API:**
-- ✅ User/tenant licenses (GET /users/{id}/licenseDetails, GET /subscribedSkus)
-- ✅ Tenant MDM auto-enrollment config (GET /policies/mobileDeviceManagementPolicies - beta)
-- ✅ Autopatch enrollment status (GET /admin/windows/updates/updatableAssets - beta)
-- ✅ OS edition from ConfigMgr device caption
-- ✅ Co-management workload authority
-
-**What we CANNOT check:**
-- ❌ Windows diagnostic data level (policy config only, not actual device state)
-- ❌ Network connectivity to Microsoft Update endpoints
-
-**Files Modified:**
-- `Services/CloudReadinessService.cs` - Hidden Identity/WUfB/EndpointSecurity, added GetAutopatchReadinessSignalAsync()
-- `Views/CloudReadinessTab.xaml.cs` - Updated demo data to match new signal set
-
----
 
 ---
 
@@ -1319,5 +1291,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-30  
-**Version**: 3.17.87  
+**Version**: 3.17.88  
 **Maintainer:** Cloud Native Assessment Team
