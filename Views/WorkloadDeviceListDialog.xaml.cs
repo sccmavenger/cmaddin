@@ -89,8 +89,8 @@ namespace ZeroTrustMigrationAddin.Views
                 {
                     var sb = new StringBuilder();
                     
-                    // Header
-                    sb.AppendLine("Device Name,Workloads on Intune,Compliance Policy,Device Configuration,Windows Update,Endpoint Protection,Modern Apps,Office Apps,Resource Access,Inventory");
+                    // Header (7 documented co-management workloads)
+                    sb.AppendLine("Device Name,Workloads on Intune,Compliance Policy,Device Configuration,Windows Update,Endpoint Protection,Modern Apps,Office Apps,Resource Access");
                     
                     // Data rows
                     foreach (var device in _filteredDevices)
@@ -102,8 +102,7 @@ namespace ZeroTrustMigrationAddin.Views
                             $"{GetWorkloadValue(device.EndpointProtectionManagedByConfigMgr)}," +
                             $"{GetWorkloadValue(device.ModernAppsManagedByConfigMgr)}," +
                             $"{GetWorkloadValue(device.OfficeAppsManagedByConfigMgr)}," +
-                            $"{GetWorkloadValue(device.ResourceAccessManagedByConfigMgr)}," +
-                            $"{GetWorkloadValue(device.InventoryManagedByConfigMgr)}");
+                            $"{GetWorkloadValue(device.ResourceAccessManagedByConfigMgr)}");
                     }
                     
                     File.WriteAllText(dialog.FileName, sb.ToString());
@@ -150,7 +149,6 @@ namespace ZeroTrustMigrationAddin.Views
         public bool ModernAppsManagedByConfigMgr => _device.ModernAppsManagedByConfigMgr;
         public bool OfficeAppsManagedByConfigMgr => _device.OfficeAppsManagedByConfigMgr;
         public bool ResourceAccessManagedByConfigMgr => _device.ResourceAccessManagedByConfigMgr;
-        public bool InventoryManagedByConfigMgr => _device.InventoryManagedByConfigMgr;
 
         // Display text (✅ or ⚙️)
         public string CompliancePolicyDisplay => _device.CompliancePolicyManagedByConfigMgr ? "⚙️" : "✅";
@@ -160,7 +158,6 @@ namespace ZeroTrustMigrationAddin.Views
         public string ModernAppsDisplay => _device.ModernAppsManagedByConfigMgr ? "⚙️" : "✅";
         public string OfficeAppsDisplay => _device.OfficeAppsManagedByConfigMgr ? "⚙️" : "✅";
         public string ResourceAccessDisplay => _device.ResourceAccessManagedByConfigMgr ? "⚙️" : "✅";
-        public string InventoryDisplay => _device.InventoryManagedByConfigMgr ? "⚙️" : "✅";
 
         // Tooltips
         public string CompliancePolicyTooltip => _device.CompliancePolicyManagedByConfigMgr 
@@ -184,8 +181,5 @@ namespace ZeroTrustMigrationAddin.Views
         public string ResourceAccessTooltip => _device.ResourceAccessManagedByConfigMgr 
             ? "Resource Access (VPN, Wi-Fi, Email): Managed by ConfigMgr" 
             : "Resource Access (VPN, Wi-Fi, Email): Managed by Intune ✓";
-        public string InventoryTooltip => _device.InventoryManagedByConfigMgr 
-            ? "Hardware/Software Inventory: Managed by ConfigMgr" 
-            : "Hardware/Software Inventory: Managed by Intune ✓";
     }
 }

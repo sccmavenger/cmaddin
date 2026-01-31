@@ -389,31 +389,6 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                
-                <!-- Inventory -->
-                <DataGridTemplateColumn Header="Inventory" Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding InventoryDisplay}" 
-                                       HorizontalAlignment="Center"
-                                       ToolTip="{Binding InventoryTooltip}">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding InventoryManagedByConfigMgr}" Value="False">
-                                                <Setter Property="Foreground" Value="#107C10"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding InventoryManagedByConfigMgr}" Value="True">
-                                                <Setter Property="Foreground" Value="#CA5010"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
 

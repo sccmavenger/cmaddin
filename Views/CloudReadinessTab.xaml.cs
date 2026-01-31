@@ -558,15 +558,14 @@ namespace ZeroTrustMigrationAddin.Views
                 {
                     DeviceId = Guid.NewGuid().ToString(),
                     DeviceName = $"{prefix}{random.Next(1000, 9999)}",
-                    // Randomly assign some workloads to ConfigMgr
+                    // Randomly assign some workloads to ConfigMgr (7 documented workloads)
                     CompliancePolicyManagedByConfigMgr = random.Next(2) == 1,
                     DeviceConfigurationManagedByConfigMgr = random.Next(2) == 1,
                     WindowsUpdateManagedByConfigMgr = random.Next(3) == 1, // Less likely
                     EndpointProtectionManagedByConfigMgr = random.Next(2) == 1,
                     ModernAppsManagedByConfigMgr = random.Next(2) == 1,
                     OfficeAppsManagedByConfigMgr = random.Next(3) == 1,
-                    ResourceAccessManagedByConfigMgr = random.Next(3) == 1,
-                    InventoryManagedByConfigMgr = random.Next(4) == 1 // Least likely
+                    ResourceAccessManagedByConfigMgr = random.Next(3) == 1
                 });
             }
 
