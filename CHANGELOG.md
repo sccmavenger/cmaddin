@@ -12,28 +12,18 @@
 - 
 
 
-## [3.17.88] - 2026-01-30
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
-- 
-
-
 ## [3.17.87] - 2026-01-30
 
-### Added
-- 
-
 ### Changed
-- 
+- Removed unverified "Inventory" workload from co-management workload tracking
+- Co-management workload count reduced from 8 to 7 (only Microsoft-documented workloads)
+- Updated presentation brief and documentation to reflect 7 workloads
 
-### Fixed
-- 
+### Technical
+- Removed `InventoryManagedByConfigMgr` from `DeviceWorkloadAuthority` model
+- Updated `TotalWorkloads` constant from 8 to 7
+- Removed Inventory column from workload device list dialog
+- Updated CSV export to exclude Inventory column
 
 
 ## [3.17.86] - 2026-01-30
