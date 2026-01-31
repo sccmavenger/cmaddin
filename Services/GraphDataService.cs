@@ -343,10 +343,9 @@ namespace ZeroTrustMigrationAddin.Services
 
                 summary.TotalCoManagedDevices = coManagedDevices.Count;
                 
-                // Initialize workload adoption counters
+                // Initialize workload adoption counters (7 documented co-management workloads)
                 summary.WorkloadIntuneAdoptionCounts = new Dictionary<string, int>
                 {
-                    ["Inventory"] = 0,
                     ["Modern Apps"] = 0,
                     ["Resource Access"] = 0,
                     ["Device Configuration"] = 0,
@@ -373,7 +372,7 @@ namespace ZeroTrustMigrationAddin.Services
                         // Per Microsoft Graph API docs: TRUE means Intune manages, FALSE means ConfigMgr manages
                         // https://learn.microsoft.com/en-us/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
                         // So we INVERT the value: ManagedByConfigMgr = NOT(features.Property)
-                        InventoryManagedByConfigMgr = !(features?.Inventory ?? false),
+                        // Note: 7 documented workloads - Inventory workload excluded (not verifiable in Microsoft docs)
                         ModernAppsManagedByConfigMgr = !(features?.ModernApps ?? false),
                         ResourceAccessManagedByConfigMgr = !(features?.ResourceAccess ?? false),
                         DeviceConfigurationManagedByConfigMgr = !(features?.DeviceConfiguration ?? false),
@@ -386,8 +385,7 @@ namespace ZeroTrustMigrationAddin.Services
 
                     summary.Devices.Add(workloadAuth);
 
-                    // Count workloads managed by Intune
-                    if (!workloadAuth.InventoryManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Inventory"]++;
+                    // Count workloads managed by Intune (7 documented workloads)
                     if (!workloadAuth.ModernAppsManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Modern Apps"]++;
                     if (!workloadAuth.ResourceAccessManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Resource Access"]++;
                     if (!workloadAuth.DeviceConfigurationManagedByConfigMgr) summary.WorkloadIntuneAdoptionCounts["Device Configuration"]++;

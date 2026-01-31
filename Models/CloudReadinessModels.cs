@@ -329,9 +329,6 @@ namespace ZeroTrustMigrationAddin.Models
         public string DeviceId { get; set; } = string.Empty;
         public string DeviceName { get; set; } = string.Empty;
         
-        /// <summary>Hardware/software inventory managed by ConfigMgr (true) or Intune (false)</summary>
-        public bool InventoryManagedByConfigMgr { get; set; }
-        
         /// <summary>Modern apps (Win32, LOB) managed by ConfigMgr (true) or Intune (false)</summary>
         public bool ModernAppsManagedByConfigMgr { get; set; }
         
@@ -358,7 +355,6 @@ namespace ZeroTrustMigrationAddin.Models
         /// This means the device is ready to become cloud-native (remove ConfigMgr client).
         /// </summary>
         public bool AllWorkloadsManagedByIntune =>
-            !InventoryManagedByConfigMgr &&
             !ModernAppsManagedByConfigMgr &&
             !ResourceAccessManagedByConfigMgr &&
             !DeviceConfigurationManagedByConfigMgr &&
@@ -375,7 +371,6 @@ namespace ZeroTrustMigrationAddin.Models
             get
             {
                 int count = 0;
-                if (!InventoryManagedByConfigMgr) count++;
                 if (!ModernAppsManagedByConfigMgr) count++;
                 if (!ResourceAccessManagedByConfigMgr) count++;
                 if (!DeviceConfigurationManagedByConfigMgr) count++;
@@ -387,8 +382,8 @@ namespace ZeroTrustMigrationAddin.Models
             }
         }
 
-        /// <summary>Total workloads (8 co-management workloads)</summary>
-        public const int TotalWorkloads = 8;
+        /// <summary>Total workloads (7 co-management workloads)</summary>
+        public const int TotalWorkloads = 7;
 
         /// <summary>
         /// Returns a list of workloads still managed by ConfigMgr (blockers for cloud-native).
@@ -398,7 +393,6 @@ namespace ZeroTrustMigrationAddin.Models
             get
             {
                 var blockers = new List<string>();
-                if (InventoryManagedByConfigMgr) blockers.Add("Inventory");
                 if (ModernAppsManagedByConfigMgr) blockers.Add("Modern Apps");
                 if (ResourceAccessManagedByConfigMgr) blockers.Add("Resource Access");
                 if (DeviceConfigurationManagedByConfigMgr) blockers.Add("Device Configuration");

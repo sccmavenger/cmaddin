@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.86** | January 30, 2026
+**Version 3.17.87** | January 30, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -123,6 +123,15 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.86 (January 30, 2026)
+
+### Changed
+- Updated main header banner and window title bar to "Cloud Native Assessment"
+- Updated tagline to "Assess your readiness for cloud-native device management"
+
+---
+
 ### Version 3.17.85 (January 30, 2026)
 
 ### Changed
@@ -194,35 +203,6 @@ Based on official Microsoft documentation:
 **Files Modified:**
 - `Services/CloudReadinessService.cs` - Hidden Identity/WUfB/EndpointSecurity, added GetAutopatchReadinessSignalAsync()
 - `Views/CloudReadinessTab.xaml.cs` - Updated demo data to match new signal set
-
----
-
----
-
-### Version 3.17.80 (January 29, 2026)
-
-### Changed - Tool Renamed & Windows 11 Assessment Hidden
-
-**Feedback from Rob:**
-
-1. **Tool Renamed to "Cloud Native Readiness Tool"**
-   - Window title: "Cloud Native Readiness Tool"
-   - ConfigMgr Console menu: "Cloud Native Readiness Tool" 
-   - Product name in .csproj updated
-   - README title updated
-
-2. **Windows 11 Assessment Hidden from Cloud Readiness Tab**
-   - Windows 11 readiness signal removed from Cloud Readiness dashboard
-   - Focus is now purely on cloud-native migration readiness
-   - Remaining signals: Autopilot, Cloud-Native, Identity, WUfB, Endpoint Security
-
-**Files Modified:**
-- `Views/DashboardWindow.xaml` - Window title
-- `ZeroTrustMigrationAddin.xml` - ConfigMgr Console display name
-- `ZeroTrustMigrationAddin.csproj` - Product name, description, version
-- `README.md` - Title and version
-- `Services/CloudReadinessService.cs` - Commented out Windows 11 signal
-- `Views/CloudReadinessTab.xaml.cs` - Removed from demo data
 
 ---
 
@@ -1339,5 +1319,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-01-30  
-**Version**: 3.17.86  
+**Version**: 3.17.87  
 **Maintainer:** Cloud Native Assessment Team

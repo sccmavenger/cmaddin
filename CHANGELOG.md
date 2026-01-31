@@ -12,6 +12,18 @@
 - 
 
 
+## [3.17.87] - 2026-01-30
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
 ## [3.17.86] - 2026-01-30
 
 ### Changed
@@ -579,7 +591,7 @@ Added drill-down functionality to Cloud Readiness signal tiles. Users can now cl
 
 **Documentation Updates:**
 - Updated AdminUserGuide.html with comprehensive Cloud-Native Readiness documentation
-- Added detailed workload authority table showing all 8 co-management workloads
+- Added detailed workload authority table showing all 7 co-management workloads
 - Documented the 3 criteria for "Cloud-Native Ready" devices
 - Added technical details section to INTERNAL_HIDDEN_FEATURES.md
 
