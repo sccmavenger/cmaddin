@@ -667,9 +667,11 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Migration Impact Forecast - HIDDEN per ADR-007: projected values need citable sources -->
+                        <!-- Migration Impact Forecast - HIDDEN per ADR-007: projected values need citable sources
+                             TO RESTORE: Change Visibility="Collapsed" to Visibility="Visible"
+                        -->
                         <views:MigrationImpactCard x:Name="MigrationImpactCard" Margin="0,0,0,15"
-                                                   Visibility="{Binding ShowMigrationImpactCard}"/>
+                                                   Visibility="Collapsed"/>
 
                         <!-- 3a. Generate Migration Plan Prompt (shows when no plan exists) -->
                         <Border Style="{StaticResource SectionCard}"
@@ -1902,10 +1904,10 @@
                             <!-- SMART ENROLLMENT MANAGEMENT (Merged Device Readiness + Agent)
                                  STATUS: HIDDEN (January 2026)
                                  REASON: Feature needs refinement before broader release
-                                 TO RESTORE: Use /showtabs:smartenrollment command-line argument
+                                 TO RESTORE: Change Visibility="Collapsed" to Visibility="Visible"
                             -->
                             <Border x:Name="DeviceReadinessSection" Style="{StaticResource SectionCard}"
-                                    Visibility="{Binding ShowSmartEnrollmentSection}">
+                                    Visibility="Collapsed">
                                 <StackPanel>
                                     <!-- Main Header -->
                                     <TextBlock Text="🎯 Smart Enrollment Management" Style="{StaticResource SectionTitle}"/>
