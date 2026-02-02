@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.88** | January 31, 2026
+**Version 3.17.89** | February 1, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -126,6 +126,21 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.88 (January 31, 2026)
+
+### Added
+- 
+
+### Changed
+- Hidden Smart Enrollment Management section (needs refinement before broader release)
+- Can be re-enabled via `/showtabs:smartenrollment` command-line argument
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.87 (January 30, 2026)
 
 ### Changed
@@ -171,15 +186,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Logs device name, last Intune sync date, days since sync
   - Provides recommendation to remove from Intune or re-enroll ConfigMgr client
   - Addresses tester feedback about confusing ConfigMgr vs Co-managed count mismatch
-
----
-
-### Version 3.17.83 (January 29, 2026)
-
-### Changed - Cloud Readiness Signals Updated + Published to GitHub
-- Hidden Identity, WUfB, and Endpoint Security readiness signals
-- Added new Autopatch Readiness signal
-- Published to GitHub releases
 
 ---
 
@@ -1293,6 +1299,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-01-31  
-**Version**: 3.17.88  
+**Last Updated**: 2026-02-01  
+**Version**: 3.17.89  
 **Maintainer:** Cloud Native Assessment Team

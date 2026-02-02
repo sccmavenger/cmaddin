@@ -25,6 +25,79 @@ namespace ZeroTrustMigrationAddin.Views
         public EnrollmentSimulatorCard()
         {
             InitializeComponent();
+            // Show mock data immediately for demonstration when not connected
+            LoadMockData();
+        }
+
+        /// <summary>
+        /// Load mock data for demonstration when services are not connected.
+        /// This data disappears when real services are connected.
+        /// </summary>
+        private void LoadMockData()
+        {
+            Instance.Info("[SIMULATOR CARD] Loading mock data for demonstration...");
+            
+            // Create mock result for demonstration
+            _lastResult = new EnrollmentSimulationResult
+            {
+                TotalDevices = 1250,
+                UnenrolledDevices = 125,
+                WouldBeCompliantCount = 78,
+                WouldFailCount = 47,
+                CurrentComplianceRate = 72.0,
+                ProjectedComplianceRate = 89.0,
+                ProjectedCompliantDevices = 1113,
+                DataFreshnessScore = 85.0,
+                GapSummaries = new List<GapSummary>
+                {
+                    new GapSummary
+                    {
+                        Icon = "🔐",
+                        Requirement = "BitLocker Encryption Required",
+                        RemediationAction = "Enable BitLocker via GPO or Intune policy",
+                        DeviceCount = 23,
+                        RemediationEffort = "Medium"
+                    },
+                    new GapSummary
+                    {
+                        Icon = "🔄",
+                        Requirement = "Windows Update Compliance",
+                        RemediationAction = "Deploy missing security updates",
+                        DeviceCount = 18,
+                        RemediationEffort = "Low"
+                    },
+                    new GapSummary
+                    {
+                        Icon = "🛡️",
+                        Requirement = "Antivirus Status Active",
+                        RemediationAction = "Verify Defender is enabled and reporting",
+                        DeviceCount = 12,
+                        RemediationEffort = "Low"
+                    },
+                    new GapSummary
+                    {
+                        Icon = "📱",
+                        Requirement = "Device Encryption Status",
+                        RemediationAction = "Configure encryption policy in Intune",
+                        DeviceCount = 8,
+                        RemediationEffort = "Medium"
+                    }
+                },
+                Warnings = new List<string>
+                {
+                    "Demo data shown - connect to ConfigMgr and Graph API for real analysis"
+                }
+            };
+            
+            // Display the mock results
+            DisplayResults(_lastResult);
+            
+            // Update badge to show demo data
+            DataSourceBadge.Background = new SolidColorBrush(Color.FromRgb(255, 243, 224)); // Light orange
+            DataSourceText.Text = "📋 Demo Data";
+            DataSourceText.Foreground = new SolidColorBrush(Color.FromRgb(230, 81, 0)); // Dark orange
+            
+            Instance.Info("[SIMULATOR CARD] Mock data loaded successfully");
         }
 
         /// <summary>

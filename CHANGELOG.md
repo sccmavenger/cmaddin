@@ -12,6 +12,19 @@
 - 
 
 
+## [3.17.89] - 2026-02-01
+
+### Added
+- Mock data for Enrollment Readiness Analyzer - shows demo compliance analysis when not connected
+
+### Changed
+- Simplified hidden feature management: Moved ShowMigrationImpactCard and ShowSmartEnrollmentSection from TabVisibilityOptions to hardcoded `Visibility="Collapsed"` in XAML
+- All hidden sections now use consistent `Visibility="Collapsed"` pattern (removed command-line toggle complexity)
+
+### Fixed
+- 
+
+
 ## [3.17.88] - 2026-01-31
 
 ### Added
