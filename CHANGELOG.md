@@ -12,6 +12,28 @@
 - 
 
 
+## [3.17.93] - 2026-02-02
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- **Cloud Readiness Tab: "Not Registered to Autopilot" blocker now shows actual device names**
+  - **Root Cause**: Blocker was only calculating a count estimate but not populating `AffectedDeviceNames`
+  - **Fix**: Now properly cross-references ConfigMgr devices with Intune/Autopilot to identify exact devices not registered
+  - **How it works**: 
+    1. Gets Autopilot device serial numbers from Graph API
+    2. Gets Intune devices with their serial numbers
+    3. Matches Intune serials to Autopilot serials to identify registered devices
+    4. Compares ConfigMgr device names against the registered set
+    5. Returns the exact list of ConfigMgr devices NOT in Autopilot
+  - Clicking "5 devices affected" now shows actual device names (e.g., R25300212, R25300213) instead of sample data
+  - Files modified: `Services/CloudReadinessService.cs`
+
+
 ## [3.17.92] - 2026-02-02
 
 ### Added

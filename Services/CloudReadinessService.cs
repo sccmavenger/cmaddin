@@ -145,6 +145,10 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info("   Fetching Autopilot registered devices from Graph API...");
                 var autopilotDevices = await _graphService.GetAutopilotDeviceStatusAsync();
+                
+                // Get Intune devices to cross-reference serial numbers with Autopilot
+                Instance.Info("   Fetching Intune devices to identify Autopilot-registered devices by name...");
+                var intuneDevices = await _graphService.GetCachedManagedDevicesAsync();
 
                 var configMgrCount = configMgrDevices?.Count ?? 0;
                 var autopilotCount = autopilotDevices?.Count ?? 0;
@@ -152,6 +156,7 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info($"   📱 ConfigMgr Windows 10/11 devices: {configMgrCount}");
                 Instance.Info($"   🚀 Autopilot registered devices: {autopilotCount}");
                 Instance.Info($"   📊 OS detail records retrieved: {osDetails?.Count ?? 0}");
+                Instance.Info($"   💻 Intune managed devices: {intuneDevices?.Count ?? 0}");
                 
                 // TotalDevices = ConfigMgr devices (these are the ones we want to register)
                 signal.TotalDevices = configMgrCount;
@@ -164,25 +169,43 @@ namespace ZeroTrustMigrationAddin.Services
 
                 var blockers = new List<ReadinessBlocker>();
 
-                // Match ConfigMgr devices to Autopilot by serial number
-                // Devices already in Autopilot are "ready", devices not in Autopilot need registration
+                // Build a set of Autopilot serial numbers (case-insensitive)
                 var autopilotSerials = new HashSet<string>(
-                    autopilotDevices?.Select(a => a.SerialNumber?.ToUpperInvariant() ?? "").Where(s => !string.IsNullOrEmpty(s)) ?? new List<string>());
+                    autopilotDevices?.Select(a => a.SerialNumber?.ToUpperInvariant() ?? "").Where(s => !string.IsNullOrEmpty(s)) ?? new List<string>(),
+                    StringComparer.OrdinalIgnoreCase);
                 
                 Instance.Info($"   📋 Autopilot serial numbers found: {autopilotSerials.Count}");
                 
-                // Count devices already registered vs not registered
-                // Note: ConfigMgr doesn't always have serial numbers, so we estimate based on counts
-                var devicesNotRegistered = configMgrCount > autopilotCount ? configMgrCount - autopilotCount : 0;
-                var devicesRegistered = Math.Min(configMgrCount, autopilotCount);
+                // Find Intune devices whose serial numbers ARE in Autopilot (these are registered)
+                var intuneDevicesWithAutopilot = intuneDevices?
+                    .Where(d => !string.IsNullOrEmpty(d.SerialNumber) && autopilotSerials.Contains(d.SerialNumber.ToUpperInvariant()))
+                    .Select(d => d.DeviceName ?? "")
+                    .Where(n => !string.IsNullOrEmpty(n))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                
+                Instance.Info($"   ✅ Intune devices with Autopilot registration: {intuneDevicesWithAutopilot.Count}");
+                
+                // Find ConfigMgr devices NOT in the Autopilot-registered set
+                var safeConfigMgrDevices = configMgrDevices ?? new List<ConfigMgrDevice>();
+                var configMgrDevicesNotInAutopilot = safeConfigMgrDevices
+                    .Where(d => !string.IsNullOrEmpty(d.Name) && !intuneDevicesWithAutopilot.Contains(d.Name))
+                    .Select(d => d.Name)
+                    .ToList();
+                
+                var devicesNotRegistered = configMgrDevicesNotInAutopilot.Count;
+                var devicesRegistered = configMgrCount - devicesNotRegistered;
                 
                 Instance.Info("");
                 Instance.Info("   [CHECK 1/2] AUTOPILOT REGISTRATION STATUS");
-                Instance.Info($"      ✅ Already registered to Autopilot: ~{devicesRegistered} devices (estimated)");
-                Instance.Info($"      ⚠️ Not yet registered: ~{devicesNotRegistered} devices (estimated)");
+                Instance.Info($"      ✅ Already registered to Autopilot: {devicesRegistered} devices");
+                Instance.Info($"      ⚠️ Not yet registered: {devicesNotRegistered} devices");
                 
                 if (devicesNotRegistered > 0)
                 {
+                    // Log first few device names for debugging
+                    var sampleDevices = configMgrDevicesNotInAutopilot.Take(5).ToList();
+                    Instance.Info($"      📋 Sample unregistered devices: {string.Join(", ", sampleDevices)}");
+                    
                     blockers.Add(new ReadinessBlocker
                     {
                         Id = "not-autopilot-registered",
@@ -192,7 +215,8 @@ namespace ZeroTrustMigrationAddin.Services
                         PercentageAffected = SafeBlockerPercentage(devicesNotRegistered, signal.TotalDevices),
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Register devices to Autopilot via hardware hash upload or OEM registration",
-                        RemediationUrl = "https://learn.microsoft.com/mem/autopilot/add-devices"
+                        RemediationUrl = "https://learn.microsoft.com/mem/autopilot/add-devices",
+                        AffectedDeviceNames = configMgrDevicesNotInAutopilot!
                     });
                 }
 
@@ -200,9 +224,6 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info("");
                 Instance.Info("   [CHECK 2/2] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");
                 var osLookup = osDetails?.ToDictionary(o => o.ResourceId) ?? new Dictionary<int, OSDetails>();
-                
-                // BUG FIX: Ensure configMgrDevices is not null before using LINQ
-                var safeConfigMgrDevices = configMgrDevices ?? new List<ConfigMgrDevice>();
                 
                 var devicesWithNoOsData = safeConfigMgrDevices.Where(d => !osLookup.ContainsKey(d.ResourceId) || string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber)).ToList();
                 var devicesBelowMinBuild = safeConfigMgrDevices.Where(d => {

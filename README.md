@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.92** | February 2, 2026
+**Version 3.17.93** | February 2, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -130,6 +130,26 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.92 (February 2, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- **Cloud Readiness Tab: Sample device data showing instead of real devices** - Fixed blocker device list to show actual device data when authenticated
+  - **Root Cause**: `GetDevicesWithoutAutopilotAsync()` was filtering by empty `AzureADDeviceId` which is incorrect
+  - **Fix 1**: Updated `GetDevicesWithoutAutopilotAsync()` to properly compare Intune device serial numbers against Autopilot registrations
+  - **Fix 2**: Changed fallback logic to only show mock/demo data when user is NOT authenticated (truly disconnected)
+  - **Fix 3**: When authenticated but no devices found, shows informative message explaining data comes from aggregate counts
+  - **Fix 4**: Renamed mock device labels from "[Sample Device X]" to "[DEMO Device X]" to make demo mode obvious
+  - Files modified: `Views/CloudReadinessTab.xaml.cs`
+
+---
+
 ### Version 3.17.91 (February 2, 2026)
 
 ### Added
@@ -189,21 +209,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 -
-
----
-
-### Version 3.17.87 (January 30, 2026)
-
-### Changed
-- Removed unverified "Inventory" workload from co-management workload tracking
-- Co-management workload count reduced from 8 to 7 (only Microsoft-documented workloads)
-- Updated presentation brief and documentation to reflect 7 workloads
-
-### Technical
-- Removed `InventoryManagedByConfigMgr` from `DeviceWorkloadAuthority` model
-- Updated `TotalWorkloads` constant from 8 to 7
-- Removed Inventory column from workload device list dialog
-- Updated CSV export to exclude Inventory column
 
 ---
 
@@ -1322,5 +1327,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-02  
-**Version**: 3.17.92  
+**Version**: 3.17.93  
 **Maintainer:** Cloud Native Assessment Team
