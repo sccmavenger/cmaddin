@@ -16,9 +16,8 @@ namespace ZeroTrustMigrationAddin.ViewModels
 {
     public class DashboardViewModel : ViewModelBase
     {
-        private readonly TelemetryService _telemetryService;
+        private readonly MockDataService _mockDataService;
         private readonly GraphDataService _graphDataService;
-        private readonly ConfigMgrAdminService _configMgrService;
         private AIRecommendationService? _aiRecommendationService;
         private readonly WorkloadMomentumService _workloadMomentumService;
         private readonly ExecutiveSummaryService _executiveSummaryService;
@@ -88,11 +87,10 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private Visibility _showAIActionsTab = Visibility.Visible;
         private Visibility _showCloudReadinessTab = Visibility.Visible;
 
-        public DashboardViewModel(TelemetryService telemetryService, TabVisibilityOptions? tabVisibilityOptions = null)
+        public DashboardViewModel(MockDataService mockDataService, TabVisibilityOptions? tabVisibilityOptions = null)
         {
-            _telemetryService = telemetryService;
+            _mockDataService = mockDataService;
             _graphDataService = new GraphDataService();
-            _configMgrService = new ConfigMgrAdminService();
             
             // Apply tab visibility options from command-line arguments
             if (tabVisibilityOptions != null)
@@ -121,7 +119,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
             _workloadMomentumService = new WorkloadMomentumService(_graphDataService);
             _executiveSummaryService = new ExecutiveSummaryService(_graphDataService);
             _appMigrationService = new AppMigrationService(null, _graphDataService);
-            _deviceReadinessService = new DeviceReadinessService(_configMgrService, _graphDataService);
+            _deviceReadinessService = new DeviceReadinessService(_graphDataService.ConfigMgrService, _graphDataService);
             _useRealData = false; // Start with mock data
             _lastProgressDate = DateTime.Now.AddDays(-10); // Mock: 10 days since last progress
             
@@ -331,9 +329,10 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public GraphDataService GraphDataService => _graphDataService;
 
         /// <summary>
-        /// Exposes the ConfigMgrAdminService for ConfigMgr queries
+        /// Exposes the ConfigMgrAdminService for ConfigMgr queries.
+        /// Note: Use GraphDataService.ConfigMgrService for actual operations.
         /// </summary>
-        public ConfigMgrAdminService ConfigMgrAdminService => _configMgrService;
+        public ConfigMgrAdminService ConfigMgrAdminService => _graphDataService.ConfigMgrService;
 
         public MigrationStatus? MigrationStatus
         {
@@ -2186,7 +2185,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 Instance.Warning("Falling back to mock data for workloads");
                 
                 // Fall back to mock data for workloads
-                var workloads = await _telemetryService.GetWorkloadsAsync();
+                var workloads = await _mockDataService.GetWorkloadsAsync();
                 Workloads.Clear();
                 foreach (var workload in workloads)
                     Workloads.Add(workload);
@@ -2200,8 +2199,8 @@ namespace ZeroTrustMigrationAddin.ViewModels
             {
                 var enrollmentInsightTask = _graphDataService.GetEnrollmentAccelerationInsightAsync();
                 var alertsTask = _graphDataService.GetRealAlertsAsync();
-                var savingsInsightTask = _telemetryService.GetSavingsUnlockInsightAsync();
-                var engagementOptionsTask = _telemetryService.GetEngagementOptionsAsync();
+                var savingsInsightTask = _mockDataService.GetSavingsUnlockInsightAsync();
+                var engagementOptionsTask = _mockDataService.GetEngagementOptionsAsync();
 
                 await Task.WhenAll(enrollmentInsightTask, alertsTask, savingsInsightTask, engagementOptionsTask);
 
@@ -2230,9 +2229,9 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 Instance.Warning("Falling back to mock enrollment insights");
                 
                 // Fall back to mock data on error
-                var enrollmentInsightTask = _telemetryService.GetEnrollmentAccelerationInsightAsync();
-                var savingsInsightTask = _telemetryService.GetSavingsUnlockInsightAsync();
-                var engagementOptionsTask = _telemetryService.GetEngagementOptionsAsync();
+                var enrollmentInsightTask = _mockDataService.GetEnrollmentAccelerationInsightAsync();
+                var savingsInsightTask = _mockDataService.GetSavingsUnlockInsightAsync();
+                var engagementOptionsTask = _mockDataService.GetEngagementOptionsAsync();
 
                 await Task.WhenAll(enrollmentInsightTask, savingsInsightTask, engagementOptionsTask);
 
@@ -2270,17 +2269,17 @@ namespace ZeroTrustMigrationAddin.ViewModels
         {
             Instance.Info("=== Loading MOCK data (pre-authentication) ===");
             // Load all data in parallel
-            var migrationStatusTask = _telemetryService.GetMigrationStatusAsync();
-            var deviceEnrollmentTask = _telemetryService.GetDeviceEnrollmentAsync();
-            var workloadsTask = _telemetryService.GetWorkloadsAsync();
-            var complianceScoreTask = _telemetryService.GetComplianceScoreAsync();
-            var enrollmentInsightTask = _telemetryService.GetEnrollmentAccelerationInsightAsync();
-            var savingsInsightTask = _telemetryService.GetSavingsUnlockInsightAsync();
-            var alertsTask = _telemetryService.GetAlertsAsync();
-            var milestonesTask = _telemetryService.GetMilestonesAsync();
-            var progressTargetsTask = _telemetryService.GetProgressTargetsAsync();
-            var blockersTask = _telemetryService.GetBlockersAsync();
-            var engagementOptionsTask = _telemetryService.GetEngagementOptionsAsync();
+            var migrationStatusTask = _mockDataService.GetMigrationStatusAsync();
+            var deviceEnrollmentTask = _mockDataService.GetDeviceEnrollmentAsync();
+            var workloadsTask = _mockDataService.GetWorkloadsAsync();
+            var complianceScoreTask = _mockDataService.GetComplianceScoreAsync();
+            var enrollmentInsightTask = _mockDataService.GetEnrollmentAccelerationInsightAsync();
+            var savingsInsightTask = _mockDataService.GetSavingsUnlockInsightAsync();
+            var alertsTask = _mockDataService.GetAlertsAsync();
+            var milestonesTask = _mockDataService.GetMilestonesAsync();
+            var progressTargetsTask = _mockDataService.GetProgressTargetsAsync();
+            var blockersTask = _mockDataService.GetBlockersAsync();
+            var engagementOptionsTask = _mockDataService.GetEngagementOptionsAsync();
 
             await Task.WhenAll(
                 migrationStatusTask,
@@ -2445,7 +2444,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         private async Task RefreshDataAsync()
         {
-            await _telemetryService.RefreshDataAsync();
+            await _mockDataService.RefreshDataAsync();
             await LoadDataAsync();
         }
 
@@ -2957,7 +2956,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 if (!UseRealData)
                 {
                     Instance.Info("Loading mock enrollment insights (unauthenticated mode)...");
-                    EnrollmentInsight = await _telemetryService.GetMockEnrollmentInsightsAsync();
+                    EnrollmentInsight = await _mockDataService.GetMockEnrollmentInsightsAsync();
                     
                     if (EnrollmentInsight != null)
                     {

@@ -22,8 +22,8 @@ namespace ZeroTrustMigrationAddin.Views
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                 Title = $"Cloud Native Assessment v{version?.Major}.{version?.Minor}.{version?.Build}";
                 
-                var telemetryService = new TelemetryService();
-                var viewModel = new DashboardViewModel(telemetryService, tabVisibilityOptions);
+                var mockDataService = new MockDataService();
+                var viewModel = new DashboardViewModel(mockDataService, tabVisibilityOptions);
                 DataContext = viewModel;
                 
                 // Initialize Enrollment Analytics ViewModels with mock data
@@ -688,6 +688,31 @@ namespace ZeroTrustMigrationAddin.Views
             }
 
             return devices;
+        }
+
+        /// <summary>
+        /// Opens the Graph Authentication Settings window.
+        /// </summary>
+        private void OpenGraphAuthSettings_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var viewModel = DataContext as DashboardViewModel;
+                var graphService = viewModel?.GraphDataService;
+                
+                var settingsWindow = new GraphAuthSettingsWindow(graphService);
+                settingsWindow.Owner = this;
+                settingsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Failed to open Graph Auth Settings: {ex.Message}");
+                System.Windows.MessageBox.Show(
+                    $"Failed to open Graph Authentication Settings:\n\n{ex.Message}",
+                    "Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
         }
 
         /// <summary>

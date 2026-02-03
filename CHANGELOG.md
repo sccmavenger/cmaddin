@@ -12,6 +12,59 @@
 - 
 
 
+## [3.17.98] - 2026-02-03
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.17.97] - 2026-02-03
+
+### Added
+- **Custom App Registration Support** - Organizations can now use their own Azure AD app registration instead of Microsoft's public app
+  - New `🔐 Auth` button in toolbar opens Graph Authentication Settings
+  - Configure custom Client ID and Tenant ID
+  - Supports single-tenant and multi-tenant app registrations
+  - Environment variable overrides: `GRAPH_CLIENT_ID`, `GRAPH_TENANT_ID`
+- **Interactive Browser Authentication** - New default authentication method
+  - Opens default browser for sign-in (better for corporate proxies)
+  - Works with conditional access policies
+  - Device Code Flow remains available as fallback option
+- **Graph Auth Settings Window** - New settings UI for authentication configuration
+  - Select authentication method (Browser or Device Code)
+  - Enable/disable custom app registration
+  - View detected tenant information after connection
+  - Reset to defaults option
+- **Auto-detect Tenant** - Automatically detects and displays tenant information after successful authentication
+- **Improved Auth Error Messages** - Better diagnostics for authentication failures
+  - Network/firewall blocking detection
+  - MFA-related error guidance
+  - Invalid app registration detection
+  - Clear instructions for resolution
+
+### Changed
+- **Default Auth Method Changed to Interactive Browser** - Better compatibility with corporate environments
+- **Renamed TelemetryService to MockDataService** - Clearer naming indicating its purpose (demo data generation, not telemetry)
+- **Consolidated ConfigMgrAdminService instances** - Removed duplicate unused instance from DashboardViewModel
+
+### Fixed
+- **Removed dead code** - Unused `_configMgrService` field in DashboardViewModel that was never used
+- **Clarified service architecture** - All ConfigMgr operations now use single instance via `GraphDataService.ConfigMgrService`
+
+### Technical
+- New file: `Models/GraphAuthSettings.cs` - Settings model with Load/Save persistence
+- New file: `Views/GraphAuthSettingsWindow.xaml` - Authentication settings UI
+- Updated: `Services/GraphDataService.cs` - Refactored authentication with method selection
+- Renamed: `Services/TelemetryService.cs` → `Services/MockDataService.cs`
+- Updated: README.md with custom app registration documentation
+
+
 ## [3.17.96] - 2026-02-02
 
 ### Added
