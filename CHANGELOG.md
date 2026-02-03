@@ -12,6 +12,24 @@
 - 
 
 
+## [3.17.92] - 2026-02-02
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- **Cloud Readiness Tab: Sample device data showing instead of real devices** - Fixed blocker device list to show actual device data when authenticated
+  - **Root Cause**: `GetDevicesWithoutAutopilotAsync()` was filtering by empty `AzureADDeviceId` which is incorrect
+  - **Fix 1**: Updated `GetDevicesWithoutAutopilotAsync()` to properly compare Intune device serial numbers against Autopilot registrations
+  - **Fix 2**: Changed fallback logic to only show mock/demo data when user is NOT authenticated (truly disconnected)
+  - **Fix 3**: When authenticated but no devices found, shows informative message explaining data comes from aggregate counts
+  - **Fix 4**: Renamed mock device labels from "[Sample Device X]" to "[DEMO Device X]" to make demo mode obvious
+  - Files modified: `Views/CloudReadinessTab.xaml.cs`
+
+
 ## [3.17.91] - 2026-02-02
 
 ### Added
