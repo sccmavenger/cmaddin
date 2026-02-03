@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.95** | February 2, 2026
+**Version 3.17.96** | February 2, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -133,6 +133,24 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.95 (February 2, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- **Co-managed device count discrepancy fixed** - Co-managed count now cross-references Intune devices with ConfigMgr to show TRUE co-managed count
+  - Previously: App counted ALL Intune devices with ManagementAgent=ConfigurationManagerClientMdm (even if device was removed from ConfigMgr)
+  - Now: App verifies device exists in BOTH Intune AND ConfigMgr by name matching
+  - Detects and logs orphaned co-managed devices (in Intune but not ConfigMgr) with remediation guidance
+  - Fixes discrepancy where app showed more co-managed devices than ConfigMgr console
+
+---
+
 ### Version 3.17.94 (February 2, 2026)
 
 ### Added
@@ -198,27 +216,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 -
-
----
-
-### Version 3.17.90 (February 2, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
-- Comprehensive documentation audit - fixed multiple inaccuracies
-  - README.md: Fixed "5 tabs" to "3 tabs visible by default" (removed Executive tab references)
-  - README.md: Updated dashboard tab guide to reflect actual visible tabs (Overview, Enrollment, Cloud Readiness)
-  - Alpha-Tester-Guide.md: Fixed Test Case 11 - changed "Windows 11, etc." to "Autopilot, Cloud-Native, Autopatch"
-  - Alpha-Tester-Guide.md: Fixed Test Case 13 - replaced Migration Impact (hidden) with Workloads Tab test
-  - Alpha-Tester-Guide.md: Fixed Test Case 14 - added command-line switch requirement for Workloads tab
-  - Alpha-Tester-Guide.md: Updated Key Features table to reflect 3 visible signals, added hidden features note
-  - Alpha-Tester-Guide.md: Fixed Q7 FAQ - updated confidence score calculation to accurate 5-factor formula
-  - COMPREHENSIVE_TECHNICAL_DOCUMENT.md: Added visibility column to Core Capabilities Matrix
 
 ---
 
@@ -1337,5 +1334,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-02  
-**Version**: 3.17.95  
+**Version**: 3.17.96  
 **Maintainer:** Cloud Native Assessment Team
