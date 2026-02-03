@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.91** | February 2, 2026
+**Version 3.17.92** | February 2, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -129,6 +129,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.91 (February 2, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.90 (February 2, 2026)
 
 ### Added
@@ -190,14 +204,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Updated `TotalWorkloads` constant from 8 to 7
 - Removed Inventory column from workload device list dialog
 - Updated CSV export to exclude Inventory column
-
----
-
-### Version 3.17.86 (January 30, 2026)
-
-### Changed
-- Updated main header banner and window title bar to "Cloud Native Assessment"
-- Updated tagline to "Assess your readiness for cloud-native device management"
 
 ---
 
@@ -1316,5 +1322,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-02  
-**Version**: 3.17.91  
+**Version**: 3.17.92  
 **Maintainer:** Cloud Native Assessment Team

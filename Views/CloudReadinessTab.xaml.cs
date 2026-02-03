@@ -416,28 +416,16 @@ namespace ZeroTrustMigrationAddin.Views
                 }
 
                 List<ManagedDevice> devices;
+                bool isAuthenticated = _graphService != null && _graphService.IsAuthenticated;
 
                 // If blocker has specific affected device names, use those to filter
                 if (blocker.AffectedDeviceNames.Any())
                 {
                     Instance.Info($"[CLOUD READINESS TAB] Using {blocker.AffectedDeviceNames.Count} device names from blocker");
                     devices = await GetDevicesByNamesAsync(blocker.AffectedDeviceNames);
-                }
-                // Fall back to blocker-specific logic if authenticated
-                else if (_graphService != null && _graphService.IsAuthenticated)
-                {
-                    devices = await GetDevicesForBlockerAsync(blocker.Id);
-                }
-                else
-                {
-                    // Generate mock data for demonstration
-                    devices = GenerateMockDevicesForBlocker(blocker);
-                }
-
-                if (devices == null || devices.Count == 0)
-                {
-                    // If we have device names from the blocker, create placeholder devices to display
-                    if (blocker.AffectedDeviceNames.Any())
+                    
+                    // If Graph lookup failed but we have names, create placeholder devices
+                    if ((devices == null || devices.Count == 0) && blocker.AffectedDeviceNames.Any())
                     {
                         Instance.Info($"[CLOUD READINESS TAB] Creating placeholder devices from {blocker.AffectedDeviceNames.Count} device names");
                         devices = blocker.AffectedDeviceNames.Select(name => new ManagedDevice
@@ -447,13 +435,35 @@ namespace ZeroTrustMigrationAddin.Views
                             ManagementAgent = ManagementAgentType.ConfigurationManagerClient
                         }).ToList();
                     }
-                    else
+                }
+                // Fall back to blocker-specific logic if authenticated
+                else if (isAuthenticated)
+                {
+                    Instance.Info($"[CLOUD READINESS TAB] Fetching devices for blocker '{blocker.Id}' from live data...");
+                    devices = await GetDevicesForBlockerAsync(blocker.Id);
+                    Instance.Info($"[CLOUD READINESS TAB] Blocker query returned {devices?.Count ?? 0} devices");
+                    
+                    // If authenticated query returns empty, show informative message (NOT mock data)
+                    // This means no devices actually match the criteria
+                    if (devices == null || devices.Count == 0)
                     {
-                        // No device names available - generate mock devices for display
-                        // This can happen when device data comes from ConfigMgr counts without individual device info
-                        Instance.Info($"[CLOUD READINESS TAB] Generating mock devices for blocker: {blocker.Name} ({blocker.AffectedDeviceCount} devices)");
-                        devices = GenerateMockDevicesForBlocker(blocker);
+                        System.Windows.MessageBox.Show(
+                            $"No specific device information available for: {blocker.Name}\n\n" +
+                            $"The count of {blocker.AffectedDeviceCount} devices is based on aggregate data from ConfigMgr and Intune.\n\n" +
+                            "This can occur when:\n" +
+                            "• The affected devices are managed only by ConfigMgr (not enrolled in Intune)\n" +
+                            "• The data was calculated from counts rather than individual device records\n" +
+                            "• The device matching criteria couldn't be evaluated against Intune data",
+                            "Device Information",
+                            System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                        return;
                     }
+                }
+                else
+                {
+                    // Not authenticated - generate mock data for demonstration only
+                    Instance.Info($"[CLOUD READINESS TAB] Not authenticated - generating mock devices for demonstration");
+                    devices = GenerateMockDevicesForBlocker(blocker);
                 }
 
                 // Final check - if still no devices, show message
@@ -466,7 +476,7 @@ namespace ZeroTrustMigrationAddin.Views
 
                 // Show device list dialog
                 var deviceListViewModel = new DeviceListViewModel(
-                    $"{blocker.Name} ({blocker.AffectedDeviceCount} devices)",
+                    $"{blocker.Name} ({devices.Count} devices)",  // Use actual device count in title
                     devices);
                 var deviceListDialog = new DeviceListDialog
                 {
@@ -661,16 +671,44 @@ namespace ZeroTrustMigrationAddin.Views
         }
 
         /// <summary>
-        /// Gets devices not enrolled in Autopilot.
+        /// Gets Intune-managed devices whose serial number is NOT in the Autopilot registration list.
+        /// This identifies devices that are enrolled in Intune but not registered for Autopilot zero-touch deployment.
         /// </summary>
         private async Task<List<ManagedDevice>> GetDevicesWithoutAutopilotAsync()
         {
-            var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
-            // Devices without Autopilot registration typically have no WindowsAutopilotDeviceIdentities
-            // For now, return devices that are not MDM enrolled or have no Azure AD Device ID
-            return allDevices
-                .Where(d => string.IsNullOrEmpty(d.AzureADDeviceId))
-                .ToList();
+            try
+            {
+                // Get all Intune managed devices
+                var allDevices = await _graphService!.GetCachedManagedDevicesAsync();
+                
+                // Get Autopilot registered devices (these have hardware hashes uploaded)
+                var autopilotDevices = await _graphService.GetAutopilotDeviceStatusAsync();
+                
+                // Build a set of serial numbers that ARE registered in Autopilot (case-insensitive)
+                var autopilotSerials = new HashSet<string>(
+                    autopilotDevices
+                        .Where(a => !string.IsNullOrEmpty(a.SerialNumber))
+                        .Select(a => a.SerialNumber.ToUpperInvariant()),
+                    StringComparer.OrdinalIgnoreCase);
+                
+                Instance.Info($"[CLOUD READINESS TAB] Autopilot has {autopilotSerials.Count} registered serial numbers");
+                
+                // Find Intune devices whose serial number is NOT in Autopilot
+                // Only include devices that have a serial number (can't check those without)
+                var devicesNotInAutopilot = allDevices
+                    .Where(d => !string.IsNullOrEmpty(d.SerialNumber) && 
+                               !autopilotSerials.Contains(d.SerialNumber.ToUpperInvariant()))
+                    .ToList();
+                
+                Instance.Info($"[CLOUD READINESS TAB] Found {devicesNotInAutopilot.Count} Intune devices not registered in Autopilot");
+                
+                return devicesNotInAutopilot;
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CLOUD READINESS TAB] Error getting devices without Autopilot: {ex.Message}");
+                return new List<ManagedDevice>();
+            }
         }
 
         /// <summary>
@@ -809,25 +847,25 @@ namespace ZeroTrustMigrationAddin.Views
         }
 
         /// <summary>
-        /// Generate mock devices for demonstration when not connected or when device details unavailable.
-        /// Note: These are sample devices for UI demonstration - real device names are not available from ConfigMgr counts.
+        /// Generate mock devices for demonstration when NOT CONNECTED to Graph API.
+        /// These are SAMPLE devices for UI demonstration only - shown when user is not authenticated.
+        /// When authenticated, real device data should be used instead.
         /// </summary>
         private List<ManagedDevice> GenerateMockDevicesForBlocker(ReadinessBlocker blocker)
         {
-            var random = new Random();
             var devices = new List<ManagedDevice>();
             var count = Math.Min(blocker.AffectedDeviceCount, 25); // Cap at 25 for demo
 
-            Instance.Info($"[CLOUD READINESS TAB] Generating {count} sample devices for: {blocker.Name} (device names not available from source data)");
+            Instance.Warning($"[CLOUD READINESS TAB] ⚠️ MOCK DATA: Generating {count} sample devices for: {blocker.Name} (user not authenticated - showing demo data)");
 
             for (int i = 1; i <= count; i++)
             {
                 devices.Add(new ManagedDevice
                 {
-                    DeviceName = $"[Sample Device {i}]",
+                    DeviceName = $"[DEMO Device {i}]",
                     Id = Guid.NewGuid().ToString(),
-                    UserPrincipalName = "(not available)",
-                    OperatingSystem = "Windows (version unknown)",
+                    UserPrincipalName = "(demo mode - not connected)",
+                    OperatingSystem = "Windows (demo mode)",
                     OsVersion = "N/A",
                     ComplianceState = ComplianceState.Unknown,
                     ManagementAgent = blocker.Id.Contains("configmgr") 
