@@ -12,6 +12,38 @@
 - 
 
 
+## [3.17.91] - 2026-02-02
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.17.90] - 2026-02-02
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Comprehensive documentation audit - fixed multiple inaccuracies
+  - README.md: Fixed "5 tabs" to "3 tabs visible by default" (removed Executive tab references)
+  - README.md: Updated dashboard tab guide to reflect actual visible tabs (Overview, Enrollment, Cloud Readiness)
+  - Alpha-Tester-Guide.md: Fixed Test Case 11 - changed "Windows 11, etc." to "Autopilot, Cloud-Native, Autopatch"
+  - Alpha-Tester-Guide.md: Fixed Test Case 13 - replaced Migration Impact (hidden) with Workloads Tab test
+  - Alpha-Tester-Guide.md: Fixed Test Case 14 - added command-line switch requirement for Workloads tab
+  - Alpha-Tester-Guide.md: Updated Key Features table to reflect 3 visible signals, added hidden features note
+  - Alpha-Tester-Guide.md: Fixed Q7 FAQ - updated confidence score calculation to accurate 5-factor formula
+  - COMPREHENSIVE_TECHNICAL_DOCUMENT.md: Added visibility column to Core Capabilities Matrix
+
+
 ## [3.17.89] - 2026-02-01
 
 ### Added

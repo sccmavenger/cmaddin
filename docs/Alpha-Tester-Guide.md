@@ -1,10 +1,10 @@
-# Zero Trust Migration Journey Dashboard
+# Cloud Native Assessment
 ## Alpha Tester Guide
 
 ---
 
-**Version:** 3.17.6  
-**Date:** January 2026  
+**Version:** 3.17.89  
+**Date:** February 2026  
 **Document Type:** Alpha Testing Guide
 
 ---
@@ -57,7 +57,7 @@ By participating in this alpha testing program, you agree to the following:
 
 ### Overview
 
-The **Zero Trust Migration Journey Dashboard** is a WPF add-in for the Microsoft Configuration Manager (ConfigMgr/SCCM) console that helps IT administrators plan, track, and execute migrations to Microsoft Intune cloud-native management.
+The **Cloud Native Assessment** is a WPF add-in for the Microsoft Configuration Manager (ConfigMgr/SCCM) console that helps IT administrators plan, track, and execute migrations to Microsoft Intune cloud-native management.
 
 ### The Problem We're Solving
 
@@ -81,11 +81,12 @@ Many organizations are transitioning from on-premises Configuration Manager to c
 | Feature | Description |
 |---------|-------------|
 | **Dashboard Overview** | See ConfigMgr and Intune device counts, compliance rates, and enrollment trends |
-| **Enrollment Confidence Score** | AI-powered score showing likelihood of successful Intune enrollment |
-| **Cloud Readiness Signals** | Assess readiness for Autopilot, Windows 11, cloud-native management, and more |
+| **Enrollment Confidence Score** | Score (0-100) showing likelihood of successful Intune enrollment based on 5 weighted factors |
+| **Cloud Readiness Signals** | Assess readiness for Autopilot, Cloud-Native management, and Autopatch |
 | **Enrollment Readiness Analyzer** | Simulate compliance policies against unenrolled devices |
-| **Migration Impact Analysis** | Project benefits of completing your migration |
-| **Workload Transition Tracker** | Track which workloads have moved to Intune |
+| **Workload Transition Tracker** | Track which of the 7 co-management workloads have moved to Intune (hidden tab) |
+
+> **Note:** Some features like Migration Impact Analysis and additional Cloud Readiness signals are implemented but hidden in this release pending further refinement. See [INTERNAL_HIDDEN_FEATURES.md](INTERNAL_HIDDEN_FEATURES.md) for details.
 
 ---
 
@@ -204,8 +205,8 @@ Please complete **at least 10** of the following 20 test cases. Feel free to com
 |------|---------|
 | **Objective** | Verify Cloud Readiness assessment works |
 | **Prerequisites** | Connected to ConfigMgr |
-| **Steps** | 1. Navigate to Cloud Readiness Signals tab<br>2. Click Refresh to run assessment<br>3. Review each readiness signal (Autopilot, Windows 11, etc.)<br>4. Review blockers identified |
-| **Expected Result** | Readiness percentages display for each signal with blockers listed |
+| **Steps** | 1. Navigate to Cloud Readiness Signals tab<br>2. Click Refresh to run assessment<br>3. Review each readiness signal (Autopilot, Cloud-Native, Autopatch)<br>4. Review blockers identified |
+| **Expected Result** | Readiness percentages display for each of the 3 signals with blockers listed |
 | **Your Result** | ☐ Pass ☐ Fail ☐ Blocked |
 | **Notes** | |
 
@@ -219,22 +220,22 @@ Please complete **at least 10** of the following 20 test cases. Feel free to com
 | **Your Result** | ☐ Pass ☐ Fail ☐ Blocked |
 | **Notes** | |
 
-#### Test Case 13: Migration Impact Analysis
-| Item | Details |
-|------|---------|
-| **Objective** | Verify impact projection feature |
-| **Prerequisites** | Connected to data sources |
-| **Steps** | 1. Find and open Migration Impact Analysis<br>2. Review current vs. projected scores<br>3. Check category breakdowns |
-| **Expected Result** | Shows before/after comparison with improvement estimates |
-| **Your Result** | ☐ Pass ☐ Fail ☐ Blocked |
-| **Notes** | |
-
-#### Test Case 14: Workloads Tab
+#### Test Case 13: Workloads Tab (Hidden Feature)
 | Item | Details |
 |------|---------|
 | **Objective** | Verify workload tracking displays correctly |
-| **Prerequisites** | Connected to Intune |
-| **Steps** | 1. Navigate to Workloads tab<br>2. Review workload transition status<br>3. Verify status matches your environment |
+| **Prerequisites** | Launch app with `/showtabs:workloads` command-line switch, connected to Intune |
+| **Steps** | 1. Navigate to Workloads tab<br>2. Review workload transition status for 7 co-management workloads<br>3. Verify status matches your environment |
+| **Expected Result** | Workloads show current management state (ConfigMgr/Intune/Hybrid) |
+| **Your Result** | ☐ Pass ☐ Fail ☐ Blocked |
+| **Notes** | |
+
+#### Test Case 14: Workloads Tab (Hidden Tab - Requires Command-Line)
+| Item | Details |
+|------|---------|
+| **Objective** | Verify workload tracking displays correctly |
+| **Prerequisites** | Launch with `/showtabs:workloads`, connected to Intune |
+| **Steps** | 1. Navigate to Workloads tab<br>2. Review 7 co-management workload transition status<br>3. Verify status matches your environment |
 | **Expected Result** | Workloads show current management state (ConfigMgr/Intune/Hybrid) |
 | **Your Result** | ☐ Pass ☐ Fail ☐ Blocked |
 | **Notes** | |
@@ -393,13 +394,14 @@ Check the Diagnostics window for API call details and error messages.
 
 **Q7: What is the "Enrollment Confidence Score" and how is it calculated?**
 
-A: The Enrollment Confidence Score (0-100) predicts how likely your unenrolled ConfigMgr devices are to successfully enroll in Intune. It considers factors like:
-- Azure AD join status (Hybrid vs. AD-only)
-- Windows version compatibility
-- Hardware readiness (TPM, Secure Boot)
-- Existing compliance policy coverage
+A: The Enrollment Confidence Score (0-100) predicts how likely your migration will succeed based on 5 weighted factors:
+- **Velocity (30%)**: Current enrollment rate (devices/day)
+- **Success Rate (25%)**: First-attempt enrollment success percentage
+- **Complexity (20%)**: App count and blocking apps (lower complexity = higher score)
+- **Infrastructure (15%)**: CMG, Co-management, Autopilot readiness
+- **Conditional Access (10%)**: CA policy impact on enrollment
 
-A higher score means fewer barriers to enrollment.
+A higher score means your migration is on track. Scores below 50 indicate the migration is "Stalled" and needs attention.
 
 ---
 
