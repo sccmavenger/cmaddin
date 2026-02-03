@@ -1393,31 +1393,41 @@
                                 </Border>
                                 
                                 <ItemsControl ItemsSource="{Binding Blockers}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="2" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#FFF3F3" CornerRadius="4" Padding="12" Margin="0,0,0,10"
+                                            <Border Background="#FFF3F3" CornerRadius="4" Padding="10" Margin="0,0,8,8"
                                                     BorderBrush="{Binding Severity, Converter={StaticResource BlockerSeverityConverter}}"
                                                     BorderThickness="2">
                                                 <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
 
-                                                    <StackPanel Grid.Column="0">
-                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"/>
-                                                        <TextBlock Text="{Binding Description}" 
-                                                                   FontSize="12" Foreground="#666666" 
-                                                                   TextWrapping="Wrap" Margin="0,3,0,5"/>
-                                                        <TextBlock Text="{Binding AffectedDevices, StringFormat='Affected devices: {0}'}" 
-                                                                   FontSize="11" Foreground="#D13438" FontWeight="SemiBold"/>
-                                                    </StackPanel>
-
-                                                    <Button Grid.Column="1" Content="Fix"
-                                                            Command="{Binding DataContext.LearnMoreCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                            CommandParameter="{Binding RemediationUrl}"
-                                                            Style="{StaticResource ActionButton}"
-                                                            Background="#D13438"/>
+                                                    <TextBlock Grid.Row="0" Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Row="1" Text="{Binding Description}" 
+                                                               FontSize="11" Foreground="#666666" 
+                                                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                                               MaxHeight="40" Margin="0,3,0,5"/>
+                                                    <Grid Grid.Row="2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding AffectedDevices, StringFormat='🔴 {0} devices'}" 
+                                                                   FontSize="10" Foreground="#D13438" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                        <Button Grid.Column="1" Content="Fix"
+                                                                Command="{Binding DataContext.LearnMoreCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding RemediationUrl}"
+                                                                Style="{StaticResource ActionButton}"
+                                                                Background="#D13438" FontSize="10" Padding="8,3"/>
+                                                    </Grid>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -2598,77 +2608,68 @@
                                         </StackPanel>
                                     </Border>
                                     
-                                    <!-- Blockers List (Only shown when blockers exist) -->
+                                    <!-- Blockers List (Only shown when blockers exist) - Tile Layout -->
                                     <ItemsControl ItemsSource="{Binding Blockers}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="2" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Background="#FFF9F9" BorderBrush="#D13438" BorderThickness="2" 
-                                                        CornerRadius="6" Padding="15" Margin="0,0,0,12">
+                                                <Border Background="#FFF9F9" 
+                                                        BorderBrush="{Binding Severity, Converter={StaticResource BlockerSeverityConverter}}" 
+                                                        BorderThickness="2" 
+                                                        CornerRadius="6" Padding="12" Margin="0,0,10,10">
                                                     <Grid>
                                                         <Grid.RowDefinitions>
                                                             <RowDefinition Height="Auto"/>
-                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="*"/>
                                                             <RowDefinition Height="Auto"/>
                                                         </Grid.RowDefinitions>
 
                                                         <!-- Header with Severity Badge -->
-                                                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                                                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                                                            <Border Background="{Binding Severity, Converter={StaticResource BlockerSeverityConverter}}"
+                                                                    CornerRadius="3" Padding="6,2" Margin="0,0,8,0">
+                                                                <TextBlock Text="{Binding Severity}" 
+                                                                           FontSize="9" FontWeight="Bold" 
+                                                                           Foreground="White"/>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding Title}" 
+                                                                       FontWeight="Bold" FontSize="12"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       VerticalAlignment="Center"/>
+                                                        </StackPanel>
+
+                                                        <!-- Description -->
+                                                        <TextBlock Grid.Row="1" Text="{Binding Description}" 
+                                                                   FontSize="11" Foreground="#666666" 
+                                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                                                   MaxHeight="36" Margin="0,0,0,8"/>
+
+                                                        <!-- Impact + Fix Button Row -->
+                                                        <Grid Grid.Row="2">
                                                             <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="Auto"/>
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
                                                             </Grid.ColumnDefinitions>
 
-                                                            <Border Grid.Column="0" 
-                                                                    Background="{Binding Severity, Converter={StaticResource BlockerSeverityConverter}}"
-                                                                    CornerRadius="3" Padding="8,4" Margin="0,0,10,0">
-                                                                <TextBlock Text="{Binding Severity}" 
-                                                                           FontSize="10" FontWeight="Bold" 
-                                                                           Foreground="White"/>
-                                                            </Border>
+                                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                                <TextBlock FontSize="10" Foreground="#D13438" FontWeight="SemiBold">
+                                                                    <Run Text="🔴"/>
+                                                                    <Run Text="{Binding AffectedDevices, StringFormat='{}{0:N0}'}"/>
+                                                                    <Run Text=" devices"/>
+                                                                </TextBlock>
+                                                            </StackPanel>
 
-                                                            <TextBlock Grid.Column="1" Text="{Binding Title}" 
-                                                                       FontWeight="Bold" FontSize="14"
-                                                                       VerticalAlignment="Center"/>
-
-                                                            <Button Grid.Column="2" Content="📖 Fix Guide"
+                                                            <Button Grid.Column="1" Content="Fix"
                                                                     Command="{Binding DataContext.LearnMoreCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                     CommandParameter="{Binding RemediationUrl}"
                                                                     Style="{StaticResource ActionButton}"
                                                                     Background="#D13438" Foreground="White"
-                                                                    FontSize="11" Padding="10,5"/>
+                                                                    FontSize="10" Padding="10,4"/>
                                                         </Grid>
-
-                                                        <!-- Description -->
-                                                        <TextBlock Grid.Row="1" Text="{Binding Description}" 
-                                                                   FontSize="12" Foreground="#666666" 
-                                                                   TextWrapping="Wrap" Margin="0,0,0,10"/>
-
-                                                        <!-- Impact Summary -->
-                                                        <Border Grid.Row="2" Background="#FFF4F4" 
-                                                                CornerRadius="4" Padding="10">
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                </Grid.ColumnDefinitions>
-
-                                                                <TextBlock Grid.Column="0" FontSize="11" Foreground="#666" Margin="0,0,15,0">
-                                                                    <Run Text="🔴" FontSize="14"/>
-                                                                    <Run Text=" IMPACT:" FontWeight="Bold"/>
-                                                                </TextBlock>
-
-                                                                <TextBlock Grid.Column="1" FontSize="11" Foreground="#D13438" FontWeight="SemiBold">
-                                                                    <Run Text="{Binding AffectedDevices, StringFormat='{}{0:N0}'}"/>
-                                                                    <Run Text=" devices affected"/>
-                                                                </TextBlock>
-
-                                                                <TextBlock Grid.Column="2" FontSize="10" Foreground="#999">
-                                                                    <Run Text="Must resolve before enrollment"/>
-                                                                </TextBlock>
-                                                            </Grid>
-                                                        </Border>
                                                     </Grid>
                                                 </Border>
                                             </DataTemplate>

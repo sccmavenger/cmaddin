@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions for CloudJourneyAddin
+# GitHub Copilot Instructions for Cloud Native Assessment
 
 ## Project Overview
 This is a WPF add-in for Microsoft Configuration Manager (ConfigMgr/SCCM) that helps IT administrators plan and execute migrations to Microsoft Intune cloud-native management.

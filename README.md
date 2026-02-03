@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.89** | February 1, 2026
+**Version 3.17.91** | February 2, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -127,6 +127,43 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.90 (February 2, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Comprehensive documentation audit - fixed multiple inaccuracies
+  - README.md: Fixed "5 tabs" to "3 tabs visible by default" (removed Executive tab references)
+  - README.md: Updated dashboard tab guide to reflect actual visible tabs (Overview, Enrollment, Cloud Readiness)
+  - Alpha-Tester-Guide.md: Fixed Test Case 11 - changed "Windows 11, etc." to "Autopilot, Cloud-Native, Autopatch"
+  - Alpha-Tester-Guide.md: Fixed Test Case 13 - replaced Migration Impact (hidden) with Workloads Tab test
+  - Alpha-Tester-Guide.md: Fixed Test Case 14 - added command-line switch requirement for Workloads tab
+  - Alpha-Tester-Guide.md: Updated Key Features table to reflect 3 visible signals, added hidden features note
+  - Alpha-Tester-Guide.md: Fixed Q7 FAQ - updated confidence score calculation to accurate 5-factor formula
+  - COMPREHENSIVE_TECHNICAL_DOCUMENT.md: Added visibility column to Core Capabilities Matrix
+
+---
+
+### Version 3.17.89 (February 1, 2026)
+
+### Added
+- Mock data for Enrollment Readiness Analyzer - shows demo compliance analysis when not connected
+
+### Changed
+- Simplified hidden feature management: Moved ShowMigrationImpactCard and ShowSmartEnrollmentSection from TabVisibilityOptions to hardcoded `Visibility="Collapsed"` in XAML
+- All hidden sections now use consistent `Visibility="Collapsed"` pattern (removed command-line toggle complexity)
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.88 (January 31, 2026)
 
 ### Added
@@ -164,31 +201,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ---
 
-### Version 3.17.85 (January 30, 2026)
-
-### Changed
-- **Tool Renamed to "Cloud Native Assessment"** per Rob's feedback
-  - Window title: "Cloud Native Assessment"
-  - ConfigMgr Console menu: "Cloud Native Assessment"
-  - All documentation, scripts, and installers updated
-  - Replaced all legacy "Zero Trust Migration Journey" branding (~56 references)
-  - Replaced all "Cloud Native Readiness Tool" branding
-
----
-
-### Version 3.17.84 (January 30, 2026)
-
-### Added
-- New `scripts/` folder with helper scripts for testers
-- `Reset-AutoUpdate.ps1` - Clears cached manifests and temp files when auto-update fails
-- `Get-Diagnostics.ps1` - Shows version info, log locations, and recent activity
-- **Stale/Orphaned Device Detection** - Identifies devices in Intune that don't exist in ConfigMgr
-  - Logs device name, last Intune sync date, days since sync
-  - Provides recommendation to remove from Intune or re-enroll ConfigMgr client
-  - Addresses tester feedback about confusing ConfigMgr vs Co-managed count mismatch
-
----
-
 > 📋 **[View Complete Changelog](#-changelog-highlights)** for all version history
 
 
@@ -204,7 +216,7 @@ The Cloud Native Assessment is your intelligent command center for migrating fro
 - **Complete Visibility** - See total eligible devices, not just enrolled ones
 - **AI-Powered Recommendations** that prevent stalls and accelerate progress (requires Azure OpenAI GPT-4)
 - **Autonomous Enrollment Agent** - AI plans and executes device enrollments with human oversight
-- **5 Specialized Tabs** - Overview, Enrollment, Workloads, Applications, Executive
+- **3 Tabs by Default** - Overview, Enrollment, Cloud Readiness (additional tabs available via command-line)
 - **Actionable Guidance** with buttons to take immediate action
 - **Visual Trends** showing velocity and momentum
 - **Real-Time Monitoring** of enrollment progress and agent execution
@@ -281,9 +293,10 @@ The Cloud Native Assessment is your intelligent command center for migrating fro
 - Green checkmarks at the top = everything's working
 
 **Step 5: Look Around**
-- Click through the 5 tabs at the top (Overview, Enrollment, Workloads, Applications, Executive)
+- Click through the 3 tabs at the top (Overview, Enrollment, Cloud Readiness)
 - Get familiar with where things are
 - Don't worry - you can't break anything by clicking around
+- Additional tabs (Workloads, Applications, AI Actions) can be enabled via command-line switches
 
 ### What If Something Doesn't Work?
 
@@ -562,9 +575,9 @@ The dashboard works fully without Azure OpenAI:
 
 ---
 
-## � How to Use the Dashboard
+## 🎯 How to Use the Dashboard
 
-### The Dashboard Has 5 Tabs - Here's What Each One Does
+### Default Tabs (Visible)
 
 #### 📊 Tab 1: Overview
 **See your overall migration progress**
@@ -583,42 +596,45 @@ What you'll find here:
 
 What you'll find here:
 - **Progress ring** - Visual showing how many devices are enrolled
-- **Enrollment timeline** - Current phase of your enrollment journey
+- **Enrollment Confidence Score** - 0-100 score based on 5 weighted factors
 - **Device readiness** - Which devices are ready to enroll right now
 - **AI recommendations** - Smart suggestions to speed things up (optional)
 
 **What to do:** Use the Autonomous Agent to automatically enroll ready devices, or manually select batches to enroll.
 
-#### 🔄 Tab 3: Workloads
-**Migrate management responsibilities to Intune**
+#### ☁️ Tab 3: Cloud Readiness
+**Assess readiness for cloud-native management**
 
 What you'll find here:
+- **3 Readiness Signals** - Autopilot, Cloud-Native, Autopatch
+- **Blocker identification** - What's preventing devices from being cloud-ready
+- **Recommendations** - Steps to improve readiness percentages
+
+**What to do:** Review blockers and implement recommendations to increase your readiness scores.
+
+### Hidden Tabs (Require Command-Line)
+
+The following tabs are available but hidden by default. Enable with `/showtabs:` command-line switch.
+
+#### 🔄 Workloads Tab (`/showtabs:workloads`)
+**Migrate management responsibilities to Intune**
+
 - **7 workload areas** - Compliance, Configuration, Updates, Protection, etc.
 - **Status for each** - Which ones are done, in progress, or not started
 - **Velocity tracking** - How fast you're making progress
 
-**What to do:** Work through each workload one at a time. Click "Start" for guidance on how to migrate that workload.
-
-#### 📦 Tab 4: Applications
+#### 📦 Applications Tab (`/showtabs:apps`)
 **Plan your app migration**
 
-What you'll find here:
 - **App inventory** - All your ConfigMgr applications
 - **Complexity scores** - Which apps are easy vs hard to migrate
 - **Migration recommendations** - Best way to move each app to Intune
 
-**What to do:** Start with low-complexity apps (easiest wins), then tackle harder ones.
+#### 🤖 AI Actions Tab (`/showtabs:ai`)
+**AI-powered recommendations and actions**
 
-#### 📊 Tab 5: Executive
-**High-level metrics for leadership**
-
-What you'll find here:
-- **Overall completion %** - How far along you are
-- **Enrollment progress** - Devices migrated over time
-- **Workload status** - Which management workloads are complete
-- **Milestones** - Major achievements you've completed
-
-**What to do:** Use this for status reports to management. Shows the big picture.
+- Requires Azure OpenAI GPT-4 configuration
+- Smart suggestions based on your environment
 
 ---
 
@@ -726,10 +742,10 @@ Alerts show different colors based on urgency:
 
 ### Task 3: Check if You're On Track
 
-1. Go to **Executive tab**
-2. Look at **Overall Migration Status**
+1. Go to **Overview tab**
+2. Look at **Migration Health** score
 3. See your completion % and projected finish date
-4. If you're behind schedule, go back to Overview tab and check alerts for guidance
+4. If you're behind schedule, check alerts for guidance
 
 ### Task 4: Handle an Alert
 
@@ -759,8 +775,8 @@ Alerts show different colors based on urgency:
 **Day 1:** Connect to Graph and ConfigMgr, let data load, just look around  
 **Day 2:** Check Overview tab daily - get familiar with your numbers  
 **Day 3:** Try the Autonomous Agent with 10 test devices  
-**Day 4:** Migrate your first workload (Compliance Policies - easiest one)  
-**Day 5:** Show the Executive tab to your manager
+**Day 4:** Review Cloud Readiness tab - understand your blockers  
+**Day 5:** Share Overview metrics with your manager
 
 ### Speed Up Your Migration
 
@@ -798,7 +814,7 @@ A: After you connect to Graph and ConfigMgr, all data is real from YOUR environm
 A: The tool automatically falls back to Graph API only. You'll see devices already enrolled in Intune, but won't see the complete count of devices still on ConfigMgr. Still useful, just less complete.
 
 **Q: How often should I check this?**  
-A: Daily for Overview tab (5 minutes). Weekly for Workloads and Executive tabs (15 minutes). Apps tab as needed when planning migrations.
+A: Daily for Overview tab (5 minutes). Weekly for Cloud Readiness tab (15 minutes). Workloads and Apps tabs (if enabled) as needed when planning migrations.
 
 **Q: Can I break something by clicking buttons?**  
 A: Buttons either open documentation (safe), show information (safe), export lists (safe), or let you approve agent plans (requires your approval first). No "delete all devices" buttons here.
@@ -1002,7 +1018,7 @@ The application follows Model-View-ViewModel pattern:
 
 **Views** - WPF XAML UI
 - `DashboardWindow.xaml` - Main dashboard with TabControl
-- 5 focused tabs: Overview, Enrollment, Workloads, Applications, Executive
+- 3 default tabs (Overview, Enrollment, Cloud Readiness) + 4 hidden tabs
 
 **ViewModels** - Business logic
 - `DashboardViewModel.cs` - Main dashboard logic and commands
@@ -1041,7 +1057,7 @@ ZeroTrustMigrationAddin/
 │   ├── ViewModelBase.cs            # Base with INotifyPropertyChanged
 │   └── DashboardViewModel.cs       # Main dashboard logic
 ├── Views/
-│   ├── DashboardWindow.xaml        # Main UI with 5 tabs
+│   ├── DashboardWindow.xaml        # Main UI with 7 tabs (3 visible by default)
 │   └── DashboardWindow.xaml.cs     # Code-behind
 ├── Converters/
 │   ├── ValueConverters.cs          # Data binding converters
@@ -1299,6 +1315,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-01  
-**Version**: 3.17.89  
+**Last Updated**: 2026-02-02  
+**Version**: 3.17.91  
 **Maintainer:** Cloud Native Assessment Team
