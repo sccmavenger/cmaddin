@@ -1,0 +1,219 @@
+<Window x:Class="ZeroTrustMigrationAddin.Views.GraphAuthSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Microsoft Graph Authentication Settings" 
+        Height="550" Width="600"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5"
+        FontFamily="Segoe UI Emoji, Segoe UI, Arial">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="⚙️ Microsoft Graph Authentication" 
+                       FontSize="24" FontWeight="Bold" 
+                       Foreground="#0078D4"/>
+            <TextBlock Text="Configure how Cloud Native Assessment connects to Microsoft Graph (Intune)" 
+                       FontSize="14" Foreground="#666"
+                       TextWrapping="Wrap"
+                       Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Settings Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                
+                <!-- Authentication Method -->
+                <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Authentication Method" 
+                                   FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        
+                        <RadioButton x:Name="BrowserAuthRadio" 
+                                     Content="Interactive Browser (Recommended)" 
+                                     FontSize="13"
+                                     IsChecked="True"
+                                     GroupName="AuthMethod"
+                                     Margin="0,5,0,0"/>
+                        <TextBlock Text="Opens your default browser for sign-in. Works best with corporate proxies and conditional access." 
+                                   FontSize="11" Foreground="#666" Margin="22,2,0,10" TextWrapping="Wrap"/>
+                        
+                        <RadioButton x:Name="DeviceCodeRadio" 
+                                     Content="Device Code Flow" 
+                                     FontSize="13"
+                                     GroupName="AuthMethod"
+                                     Margin="0,5,0,0"/>
+                        <TextBlock Text="Enter a code at microsoft.com/devicelogin. Use if browser auth doesn't work." 
+                                   FontSize="11" Foreground="#666" Margin="22,2,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Custom App Registration -->
+                <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+                    <StackPanel>
+                        <CheckBox x:Name="UseCustomAppCheckBox" 
+                                  Content="Use custom app registration" 
+                                  FontSize="14" FontWeight="SemiBold"
+                                  Checked="UseCustomAppCheckBox_Changed"
+                                  Unchecked="UseCustomAppCheckBox_Changed"/>
+                        <TextBlock Text="Enable this if your organization requires a custom Azure AD app registration instead of the default Microsoft Graph Command Line Tools app." 
+                                   FontSize="11" Foreground="#666" Margin="22,5,0,15" TextWrapping="Wrap"/>
+
+                        <!-- Custom App Fields -->
+                        <StackPanel x:Name="CustomAppPanel" Visibility="Collapsed" Margin="0,10,0,0">
+                            
+                            <TextBlock Text="Application (Client) ID *" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBox x:Name="ClientIdTextBox"
+                                     FontSize="12"
+                                     Padding="8"
+                                     Height="32"
+                                     Margin="0,0,0,5"/>
+                            <TextBlock Text="From Azure Portal → App Registrations → Your App → Application (client) ID" 
+                                       FontSize="10" Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
+
+                            <TextBlock Text="Tenant ID (optional)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBox x:Name="TenantIdTextBox"
+                                     FontSize="12"
+                                     Padding="8"
+                                     Height="32"
+                                     Margin="0,0,0,5"/>
+                            <TextBlock Text="Leave blank to auto-detect from your login. Specify only for single-tenant apps." 
+                                       FontSize="10" Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
+                            
+                            <!-- Required Permissions Info -->
+                            <Border Background="#E3F2FD" CornerRadius="4" Padding="10" Margin="0,5,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="📋 Required API Permissions (Delegated)" 
+                                               FontSize="12" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                    <TextBlock FontSize="11" Foreground="#333" TextWrapping="Wrap">
+                                        <Run Text="• DeviceManagementManagedDevices.Read.All"/>
+                                        <LineBreak/>
+                                        <Run Text="• DeviceManagementConfiguration.Read.All"/>
+                                        <LineBreak/>
+                                        <Run Text="• DeviceManagementApps.Read.All"/>
+                                        <LineBreak/>
+                                        <Run Text="• DeviceManagementServiceConfig.Read.All"/>
+                                        <LineBreak/>
+                                        <Run Text="• Directory.Read.All"/>
+                                        <LineBreak/>
+                                        <Run Text="• Group.Read.All"/>
+                                        <LineBreak/>
+                                        <Run Text="• Organization.Read.All"/>
+                                        <LineBreak/>
+                                        <Run Text="• User.Read"/>
+                                    </TextBlock>
+                                    <TextBlock Text="Redirect URI: http://localhost" 
+                                               FontSize="11" FontWeight="SemiBold" Foreground="#0078D4" Margin="0,10,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Current Connection Status -->
+                <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Connection Status" 
+                                   FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Text="Detected Tenant:" FontSize="12" Foreground="#666" Grid.Row="0" Grid.Column="0" Margin="0,0,10,5"/>
+                            <TextBlock x:Name="TenantNameText" Text="Not connected" FontSize="12" Grid.Row="0" Grid.Column="1" Margin="0,0,0,5"/>
+                            
+                            <TextBlock Text="Current Method:" FontSize="12" Foreground="#666" Grid.Row="1" Grid.Column="0" Margin="0,0,10,0"/>
+                            <TextBlock x:Name="CurrentMethodText" Text="Interactive Browser" FontSize="12" Grid.Row="1" Grid.Column="1"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Environment Variables Note -->
+                <Border Background="#FFF3CD" CornerRadius="4" Padding="10" Margin="0,0,0,15">
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#856404">
+                        <Run Text="💡 Tip: You can also set GRAPH_CLIENT_ID and GRAPH_TENANT_ID environment variables to override these settings."/>
+                    </TextBlock>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button x:Name="ResetButton"
+                    Content="Reset to Defaults"
+                    Click="ResetButton_Click"
+                    FontSize="12"
+                    Padding="15,8"
+                    Background="#6C757D"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Margin="0,0,10,0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            
+            <Button x:Name="CancelButton"
+                    Content="Cancel"
+                    Click="CancelButton_Click"
+                    FontSize="12"
+                    Padding="15,8"
+                    Background="#E0E0E0"
+                    Foreground="#333"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Margin="0,0,10,0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Button x:Name="SaveButton"
+                    Content="💾 Save Settings"
+                    Click="SaveButton_Click"
+                    FontSize="12"
+                    Padding="15,8"
+                    Background="#0078D4"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

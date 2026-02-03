@@ -13,6 +13,7 @@ namespace ZeroTrustMigrationAddin.Services
     {
         private GraphServiceClient? _graphClient;
         private readonly ConfigMgrAdminService _configMgrService;
+        private GraphAuthSettings _authSettings;
         private readonly string[] _scopes = new[] { 
             // Core Device Management (Required)
             "DeviceManagementManagedDevices.Read.All",      // Read Intune devices, compliance state
@@ -37,74 +38,49 @@ namespace ZeroTrustMigrationAddin.Services
         public GraphDataService()
         {
             _configMgrService = new ConfigMgrAdminService();
+            _authSettings = GraphAuthSettings.Load();
         }
 
         public ConfigMgrAdminService ConfigMgrService => _configMgrService;
+        
+        /// <summary>
+        /// Gets the current authentication settings.
+        /// </summary>
+        public GraphAuthSettings AuthSettings => _authSettings;
+        
+        /// <summary>
+        /// Reloads auth settings from disk (call after settings are changed).
+        /// </summary>
+        public void ReloadAuthSettings()
+        {
+            _authSettings = GraphAuthSettings.Load();
+        }
 
         public async Task<bool> AuthenticateAsync()
         {
             try
             {
-                // Use device code flow for interactive authentication
-                var options = new DeviceCodeCredentialOptions
+                Instance.Info($"=== MICROSOFT GRAPH AUTHENTICATION ===");
+                Instance.Info($"Auth Method: {_authSettings.AuthMethod}");
+                Instance.Info($"Client ID: {_authSettings.EffectiveClientId}");
+                Instance.Info($"Tenant ID: {_authSettings.EffectiveTenantId}");
+                Instance.Info($"Using Custom App: {_authSettings.UseCustomApp}");
+                
+                // Create credential based on selected auth method
+                Azure.Core.TokenCredential credential;
+                
+                if (_authSettings.AuthMethod == GraphAuthMethod.InteractiveBrowser)
                 {
-                    ClientId = "14d82eec-204b-4c2f-b7e8-296a70dab67e", // Microsoft Graph Command Line Tools
-                    TenantId = "organizations",
-                    DeviceCodeCallback = (code, cancellation) =>
-                    {
-                        // Auto-open browser to the verification URL
-                        try
-                        {
-                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                            {
-                                FileName = code.VerificationUri.ToString(),
-                                UseShellExecute = true
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Failed to open browser: {ex.Message}");
-                        }
-
-                        // Copy code to clipboard - must run on STA thread
-                        bool clipboardSuccess = false;
-                        var thread = new System.Threading.Thread(() =>
-                        {
-                            try
-                            {
-                                System.Windows.Clipboard.SetText(code.UserCode);
-                                clipboardSuccess = true;
-                            }
-                            catch (Exception ex)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"Failed to copy to clipboard: {ex.Message}");
-                            }
-                        });
-                        thread.SetApartmentState(System.Threading.ApartmentState.STA);
-                        thread.Start();
-                        thread.Join();
-
-                        // Show message with code
-                        var clipboardMsg = clipboardSuccess ? 
-                            $"✓ Code copied to clipboard: {code.UserCode}\n" :
-                            $"Code: {code.UserCode} (manual copy)\n";
-                        
-                        System.Windows.MessageBox.Show(
-                            $"✓ Browser opened to: {code.VerificationUri}\n" +
-                            clipboardMsg +
-                            $"\nPlease paste the code in the browser to complete sign-in.\n\n" +
-                            $"This window can be closed after authentication.",
-                            "Sign in to Microsoft Graph",
-                            System.Windows.MessageBoxButton.OK,
-                            System.Windows.MessageBoxImage.Information);
-                        return Task.CompletedTask;
-                    }
-                };
-
-                var credential = new DeviceCodeCredential(options);
+                    credential = CreateInteractiveBrowserCredential();
+                }
+                else
+                {
+                    credential = CreateDeviceCodeCredential();
+                }
+                
                 _graphClient = new GraphServiceClient(credential, _scopes);
 
-                // Test the connection and log tenant information
+                // Test the connection and get tenant information
                 var me = await _graphClient.Me.GetAsync();
                 
                 if (me != null)
@@ -115,25 +91,11 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.Info($"   Mail: {me.Mail ?? "(none)"}");
                     Instance.Info($"   Job Title: {me.JobTitle ?? "(none)"}");
                     
-                    // Get tenant/organization information
-                    try
-                    {
-                        var org = await _graphClient.Organization.GetAsync();
-                        if (org?.Value != null && org.Value.Count > 0)
-                        {
-                            var tenantInfo = org.Value[0];
-                            Instance.Info($"   Tenant ID: {tenantInfo.Id}");
-                            Instance.Info($"   Tenant Name: {tenantInfo.DisplayName}");
-                            Instance.Info($"   Tenant Domain: {string.Join(", ", tenantInfo.VerifiedDomains?.Where(d => d.IsDefault == true).Select(d => d.Name) ?? new[] { "Unknown" })}");
-                        }
-                    }
-                    catch (Exception orgEx)
-                    {
-                        Instance.Warning($"Could not retrieve tenant info: {orgEx.Message}");
-                    }
+                    // Get and store tenant/organization information
+                    await UpdateTenantInfoAsync();
                     
                     Instance.Info($"   Scopes Requested: {string.Join(", ", _scopes)}");
-                    Instance.Info($"   Client ID: 14d82eec-204b-4c2f-b7e8-296a70dab67e (Microsoft Graph Command Line Tools)");
+                    Instance.Info($"   Client ID: {_authSettings.EffectiveClientId}");
                     Instance.Info("===========================================");
                 }
                 
@@ -141,68 +103,233 @@ namespace ZeroTrustMigrationAddin.Services
             }
             catch (Azure.Identity.AuthenticationFailedException authEx)
             {
-                System.Windows.MessageBox.Show(
-                    $"Authentication failed: {authEx.Message}\n\n" +
-                    "Please ensure you are signing in with an account that has administrator privileges.",
-                    "Authentication Error",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Error);
+                HandleAuthenticationError(authEx);
                 return false;
             }
             catch (Microsoft.Graph.Models.ODataErrors.ODataError odataEx) when (odataEx.Error?.Code == "Authorization_RequestDenied")
             {
-                // Permission error - user doesn't have required Intune permissions
-                System.Windows.MessageBox.Show(
-                    "❌ PERMISSION ERROR\n\n" +
-                    "Your account does not have the required Intune permissions to access device data.\n\n" +
-                    "REQUIRED PERMISSIONS:\n" +
-                    "  • Intune Administrator (recommended)\n" +
-                    "  • Global Reader (read-only access)\n" +
-                    "  • Global Administrator (full access)\n\n" +
-                    "REQUIRED API PERMISSIONS:\n" +
-                    "  • DeviceManagementManagedDevices.Read.All\n" +
-                    "  • DeviceManagementConfiguration.Read.All\n" +
-                    "  • DeviceManagementApps.Read.All\n" +
-                    "  • Directory.Read.All\n\n" +
-                    "SOLUTION:\n" +
-                    "Ask your Global Administrator to assign you the 'Intune Administrator' role in Entra ID (Azure AD).\n\n" +
-                    "See README.md for detailed troubleshooting steps.",
-                    "Missing Intune Permissions",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Warning);
+                HandlePermissionError(odataEx.Message);
                 return false;
             }
             catch (Exception ex)
             {
-                // Check if message contains permission-related keywords
-                if (ex.Message.Contains("DeviceManagementManagedDevices") || 
-                    ex.Message.Contains("Authorization_RequestDenied") ||
-                    ex.Message.Contains("Insufficient privileges"))
-                {
-                    System.Windows.MessageBox.Show(
-                        "❌ PERMISSION ERROR\n\n" +
-                        "Your account does not have the required Intune permissions to access device data.\n\n" +
-                        "REQUIRED ROLE:\n" +
-                        "  • Intune Administrator (recommended)\n" +
-                        "  • Global Reader (read-only)\n" +
-                        "  • Global Administrator (full access)\n\n" +
-                        "SOLUTION:\n" +
-                        "Ask your Global Administrator to assign you the appropriate role in Entra ID.\n\n" +
-                        $"Technical Details:\n{ex.Message}",
-                        "Missing Intune Permissions",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Warning);
-                }
-                else
-                {
-                    System.Windows.MessageBox.Show(
-                        $"Authentication failed: {ex.Message}\n\n" +
-                        "If this is a permission error, ensure your account has the Intune Administrator role.",
-                        "Authentication Error",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Error);
-                }
+                HandleGeneralAuthError(ex);
                 return false;
+            }
+        }
+        
+        /// <summary>
+        /// Creates an InteractiveBrowserCredential for browser-based authentication.
+        /// This is the recommended method for corporate environments.
+        /// </summary>
+        private InteractiveBrowserCredential CreateInteractiveBrowserCredential()
+        {
+            Instance.Info("Using Interactive Browser authentication (recommended)");
+            
+            var options = new InteractiveBrowserCredentialOptions
+            {
+                ClientId = _authSettings.EffectiveClientId,
+                TenantId = _authSettings.EffectiveTenantId,
+                RedirectUri = new Uri("http://localhost"),
+                LoginHint = null, // Let user choose account
+            };
+            
+            return new InteractiveBrowserCredential(options);
+        }
+        
+        /// <summary>
+        /// Creates a DeviceCodeCredential for device code flow authentication.
+        /// Fallback for environments where browser auth doesn't work.
+        /// </summary>
+        private DeviceCodeCredential CreateDeviceCodeCredential()
+        {
+            Instance.Info("Using Device Code authentication (fallback)");
+            
+            var options = new DeviceCodeCredentialOptions
+            {
+                ClientId = _authSettings.EffectiveClientId,
+                TenantId = _authSettings.EffectiveTenantId,
+                DeviceCodeCallback = (code, cancellation) =>
+                {
+                    // Auto-open browser to the verification URL
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = code.VerificationUri.ToString(),
+                            UseShellExecute = true
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Instance.Warning($"Failed to open browser: {ex.Message}");
+                    }
+
+                    // Copy code to clipboard - must run on STA thread
+                    bool clipboardSuccess = false;
+                    var thread = new System.Threading.Thread(() =>
+                    {
+                        try
+                        {
+                            System.Windows.Clipboard.SetText(code.UserCode);
+                            clipboardSuccess = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Instance.Warning($"Failed to copy to clipboard: {ex.Message}");
+                        }
+                    });
+                    thread.SetApartmentState(System.Threading.ApartmentState.STA);
+                    thread.Start();
+                    thread.Join();
+
+                    // Show message with code
+                    var clipboardMsg = clipboardSuccess ? 
+                        $"✓ Code copied to clipboard: {code.UserCode}\n" :
+                        $"Code: {code.UserCode} (manual copy)\n";
+                    
+                    System.Windows.MessageBox.Show(
+                        $"✓ Browser opened to: {code.VerificationUri}\n" +
+                        clipboardMsg +
+                        $"\nPlease paste the code in the browser to complete sign-in.\n\n" +
+                        $"This window can be closed after authentication.",
+                        "Sign in to Microsoft Graph",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                    return Task.CompletedTask;
+                }
+            };
+            
+            return new DeviceCodeCredential(options);
+        }
+        
+        /// <summary>
+        /// Updates stored tenant information after successful authentication.
+        /// </summary>
+        private async Task UpdateTenantInfoAsync()
+        {
+            try
+            {
+                var org = await _graphClient!.Organization.GetAsync();
+                if (org?.Value != null && org.Value.Count > 0)
+                {
+                    var tenantInfo = org.Value[0];
+                    var defaultDomain = tenantInfo.VerifiedDomains?
+                        .Where(d => d.IsDefault == true)
+                        .Select(d => d.Name)
+                        .FirstOrDefault() ?? tenantInfo.DisplayName;
+                    
+                    Instance.Info($"   Tenant ID: {tenantInfo.Id}");
+                    Instance.Info($"   Tenant Name: {tenantInfo.DisplayName}");
+                    Instance.Info($"   Tenant Domain: {defaultDomain}");
+                    
+                    // Store detected tenant info
+                    _authSettings.UpdateDetectedTenant(tenantInfo.Id, tenantInfo.DisplayName ?? defaultDomain);
+                }
+            }
+            catch (Exception orgEx)
+            {
+                Instance.Warning($"Could not retrieve tenant info: {orgEx.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Handles authentication failures with user-friendly messages.
+        /// </summary>
+        private void HandleAuthenticationError(Azure.Identity.AuthenticationFailedException authEx)
+        {
+            Instance.Error($"Authentication failed: {authEx.Message}");
+            
+            string suggestion = "";
+            if (authEx.Message.Contains("AADSTS50076") || authEx.Message.Contains("MFA"))
+            {
+                suggestion = "\n\nThis may be due to Multi-Factor Authentication requirements. " +
+                    "Try using Interactive Browser authentication in Graph Settings.";
+            }
+            else if (authEx.Message.Contains("AADSTS700016"))
+            {
+                suggestion = "\n\nThe application is not found in your tenant. " +
+                    "If using a custom app registration, verify the Client ID is correct.";
+            }
+            else if (authEx.Message.Contains("socket") || authEx.Message.Contains("network"))
+            {
+                suggestion = "\n\nNetwork connection failed. Check that:\n" +
+                    "• You have internet connectivity\n" +
+                    "• login.microsoftonline.com is not blocked\n" +
+                    "• Your proxy settings are configured correctly";
+            }
+            
+            System.Windows.MessageBox.Show(
+                $"Authentication failed: {authEx.Message}{suggestion}\n\n" +
+                "You can change authentication settings via the ⚙️ button in the toolbar.",
+                "Authentication Error",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
+        
+        /// <summary>
+        /// Handles permission-related errors.
+        /// </summary>
+        private void HandlePermissionError(string message)
+        {
+            Instance.Error($"Permission denied: {message}");
+            
+            System.Windows.MessageBox.Show(
+                "❌ PERMISSION ERROR\n\n" +
+                "Your account does not have the required Intune permissions to access device data.\n\n" +
+                "REQUIRED PERMISSIONS:\n" +
+                "  • Intune Administrator (recommended)\n" +
+                "  • Global Reader (read-only access)\n" +
+                "  • Global Administrator (full access)\n\n" +
+                "REQUIRED API PERMISSIONS:\n" +
+                "  • DeviceManagementManagedDevices.Read.All\n" +
+                "  • DeviceManagementConfiguration.Read.All\n" +
+                "  • DeviceManagementApps.Read.All\n" +
+                "  • Directory.Read.All\n\n" +
+                "SOLUTION:\n" +
+                "Ask your Global Administrator to assign you the 'Intune Administrator' role in Entra ID (Azure AD).\n\n" +
+                "See README.md for detailed troubleshooting steps.",
+                "Missing Intune Permissions",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+        }
+        
+        /// <summary>
+        /// Handles general authentication errors.
+        /// </summary>
+        private void HandleGeneralAuthError(Exception ex)
+        {
+            Instance.Error($"Authentication error: {ex.Message}");
+            
+            // Check if message contains permission-related keywords
+            if (ex.Message.Contains("DeviceManagementManagedDevices") || 
+                ex.Message.Contains("Authorization_RequestDenied") ||
+                ex.Message.Contains("Insufficient privileges"))
+            {
+                HandlePermissionError(ex.Message);
+            }
+            else
+            {
+                string networkHint = "";
+                if (ex.Message.Contains("socket") || 
+                    ex.Message.Contains("forbidden") || 
+                    ex.Message.Contains("network") ||
+                    ex.InnerException?.Message?.Contains("socket") == true)
+                {
+                    networkHint = "\n\n⚠️ NETWORK ISSUE DETECTED\n" +
+                        "Your firewall or proxy may be blocking:\n" +
+                        "  • login.microsoftonline.com (authentication)\n" +
+                        "  • graph.microsoft.com (data access)\n\n" +
+                        "Contact your network administrator to allow these endpoints.";
+                }
+                
+                System.Windows.MessageBox.Show(
+                    $"Authentication failed: {ex.Message}{networkHint}\n\n" +
+                    "If this is a permission error, ensure your account has the Intune Administrator role.\n\n" +
+                    "You can change authentication method via the ⚙️ button in the toolbar.",
+                    "Authentication Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
             }
         }
 

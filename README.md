@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.96** | February 2, 2026
+**Version 3.17.98** | February 3, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -134,6 +134,63 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.97 (February 3, 2026)
+
+### Added
+- **Custom App Registration Support** - Organizations can now use their own Azure AD app registration instead of Microsoft's public app
+  - New `🔐 Auth` button in toolbar opens Graph Authentication Settings
+  - Configure custom Client ID and Tenant ID
+  - Supports single-tenant and multi-tenant app registrations
+  - Environment variable overrides: `GRAPH_CLIENT_ID`, `GRAPH_TENANT_ID`
+- **Interactive Browser Authentication** - New default authentication method
+  - Opens default browser for sign-in (better for corporate proxies)
+  - Works with conditional access policies
+  - Device Code Flow remains available as fallback option
+- **Graph Auth Settings Window** - New settings UI for authentication configuration
+  - Select authentication method (Browser or Device Code)
+  - Enable/disable custom app registration
+  - View detected tenant information after connection
+  - Reset to defaults option
+- **Auto-detect Tenant** - Automatically detects and displays tenant information after successful authentication
+- **Improved Auth Error Messages** - Better diagnostics for authentication failures
+  - Network/firewall blocking detection
+  - MFA-related error guidance
+  - Invalid app registration detection
+  - Clear instructions for resolution
+
+### Changed
+- **Default Auth Method Changed to Interactive Browser** - Better compatibility with corporate environments
+- **Renamed TelemetryService to MockDataService** - Clearer naming indicating its purpose (demo data generation, not telemetry)
+- **Consolidated ConfigMgrAdminService instances** - Removed duplicate unused instance from DashboardViewModel
+
+### Fixed
+- **Removed dead code** - Unused `_configMgrService` field in DashboardViewModel that was never used
+- **Clarified service architecture** - All ConfigMgr operations now use single instance via `GraphDataService.ConfigMgrService`
+
+### Technical
+- New file: `Models/GraphAuthSettings.cs` - Settings model with Load/Save persistence
+- New file: `Views/GraphAuthSettingsWindow.xaml` - Authentication settings UI
+- Updated: `Services/GraphDataService.cs` - Refactored authentication with method selection
+- Renamed: `Services/TelemetryService.cs` → `Services/MockDataService.cs`
+- Updated: README.md with custom app registration documentation
+
+---
+
+### Version 3.17.96 (February 2, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.95 (February 2, 2026)
 
 ### Added
@@ -184,38 +241,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
     5. Returns the exact list of ConfigMgr devices NOT in Autopilot
   - Clicking "5 devices affected" now shows actual device names (e.g., R25300212, R25300213) instead of sample data
   - Files modified: `Services/CloudReadinessService.cs`
-
----
-
-### Version 3.17.92 (February 2, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
-- **Cloud Readiness Tab: Sample device data showing instead of real devices** - Fixed blocker device list to show actual device data when authenticated
-  - **Root Cause**: `GetDevicesWithoutAutopilotAsync()` was filtering by empty `AzureADDeviceId` which is incorrect
-  - **Fix 1**: Updated `GetDevicesWithoutAutopilotAsync()` to properly compare Intune device serial numbers against Autopilot registrations
-  - **Fix 2**: Changed fallback logic to only show mock/demo data when user is NOT authenticated (truly disconnected)
-  - **Fix 3**: When authenticated but no devices found, shows informative message explaining data comes from aggregate counts
-  - **Fix 4**: Renamed mock device labels from "[Sample Device X]" to "[DEMO Device X]" to make demo mode obvious
-  - Files modified: `Views/CloudReadinessTab.xaml.cs`
-
----
-
-### Version 3.17.91 (February 2, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
 
 ---
 
@@ -943,7 +968,78 @@ The uninstaller removes:
 
 ---
 
-## 🛠️ Troubleshooting
+## � Custom App Registration
+
+By default, Cloud Native Assessment uses Microsoft's public "Microsoft Graph Command Line Tools" app (`14d82eec-204b-4c2f-b7e8-296a70dab67e`). If your organization requires a custom app registration, follow these steps:
+
+### When to Use Custom App Registration
+
+- Your security team won't approve Microsoft's public app
+- You need to restrict access to a specific tenant
+- Corporate policy requires custom app registrations
+- You're blocked by conditional access policies
+
+### Step 1: Create App Registration in Azure Portal
+
+1. Go to [Azure Portal](https://portal.azure.com) → **Entra ID** → **App registrations**
+2. Click **New registration**
+3. Name: `Cloud Native Assessment` (or your preferred name)
+4. Supported account types: **Single tenant** (recommended) or **Multitenant**
+5. Redirect URI:
+   - Platform: **Public client/native (mobile & desktop)**
+   - URI: `http://localhost`
+6. Click **Register**
+
+### Step 2: Configure API Permissions
+
+Go to **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions**
+
+Add these permissions:
+
+| Permission | Purpose |
+|------------|---------|
+| `DeviceManagementManagedDevices.Read.All` | Read Intune devices and compliance |
+| `DeviceManagementConfiguration.Read.All` | Read compliance policies, device configs |
+| `DeviceManagementApps.Read.All` | Read mobile apps, MAM policies |
+| `DeviceManagementServiceConfig.Read.All` | Read Autopilot, enrollment config |
+| `Directory.Read.All` | Read Azure AD devices |
+| `Group.Read.All` | Resolve group names in assignments |
+| `Organization.Read.All` | Read tenant info |
+| `User.Read` | Sign in and read user profile |
+
+After adding, click **Grant admin consent for [Your Tenant]**.
+
+### Step 3: Configure Cloud Native Assessment
+
+1. Click the **🔐 Auth** button in the toolbar
+2. Check **Use custom app registration**
+3. Enter your **Application (Client) ID** (from Azure Portal)
+4. Optionally enter **Tenant ID** (leave blank for auto-detect)
+5. Click **Save Settings**
+
+### Alternative: Environment Variables
+
+You can also set environment variables to override the default app:
+
+```powershell
+$env:GRAPH_CLIENT_ID = "your-client-id-guid"
+$env:GRAPH_TENANT_ID = "your-tenant-id-or-domain"
+```
+
+### Authentication Methods
+
+Cloud Native Assessment supports two authentication methods:
+
+| Method | Description | When to Use |
+|--------|-------------|-------------|
+| **Interactive Browser** (Default) | Opens default browser for sign-in | Corporate environments with proxies, conditional access |
+| **Device Code Flow** | Enter code at microsoft.com/devicelogin | When browser auth doesn't work, headless scenarios |
+
+Change the method via the **🔐 Auth** button in the toolbar.
+
+---
+
+## �🛠️ Troubleshooting
 
 ### Common Issues
 
@@ -1043,7 +1139,7 @@ The application follows Model-View-ViewModel pattern:
 - Data binding and property change notifications
 
 **Services** - Data retrieval and integration
-- `TelemetryService.cs` - Main data service
+- `MockDataService.cs` - Demo/mock data for unauthenticated mode
 - `AzureOpenAIService.cs` - GPT-4 integration
 - `EnrollmentMomentumService.cs` - Velocity analysis
 - `AutonomousEnrollmentService.cs` - Agent orchestration
@@ -1066,7 +1162,7 @@ ZeroTrustMigrationAddin/
 │   ├── EnrollmentGoals.cs          # Agent goal configuration
 │   └── EnrollmentProgress.cs       # Agent progress tracking
 ├── Services/
-│   ├── TelemetryService.cs         # Main data service
+│   ├── MockDataService.cs          # Demo/mock data for unauthenticated mode
 │   ├── AzureOpenAIService.cs       # GPT-4 integration
 │   ├── EnrollmentMomentumService.cs # Velocity analysis
 │   ├── AutonomousEnrollmentService.cs # Agent orchestration
@@ -1333,6 +1429,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-02  
-**Version**: 3.17.96  
+**Last Updated**: 2026-02-03  
+**Version**: 3.17.98  
 **Maintainer:** Cloud Native Assessment Team

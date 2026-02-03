@@ -6,7 +6,11 @@ using ZeroTrustMigrationAddin.Models;
 
 namespace ZeroTrustMigrationAddin.Services
 {
-    public class TelemetryService
+    /// <summary>
+    /// Provides mock/demo data for the dashboard when not connected to live data sources.
+    /// Used to demonstrate UI capabilities before authentication.
+    /// </summary>
+    public class MockDataService
     {
         private readonly Random _random = new Random();
 
