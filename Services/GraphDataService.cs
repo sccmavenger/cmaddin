@@ -786,7 +786,64 @@ namespace ZeroTrustMigrationAddin.Services
                     d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm
                 ).ToList();
                 
-                coManagedCount = coManagedIntuneDevices.Count;
+                int intuneReportedCoManagedCount = coManagedIntuneDevices.Count;
+                
+                // CRITICAL FIX: Cross-reference with ConfigMgr to get TRUE co-managed count
+                // A device is truly co-managed only if it exists in BOTH Intune AND ConfigMgr
+                if (configMgrDevices != null && configMgrDevices.Any())
+                {
+                    var configMgrDeviceNames = new HashSet<string>(
+                        configMgrDevices
+                            .Where(d => !string.IsNullOrEmpty(d.Name))
+                            .Select(d => d.Name.ToLowerInvariant()),
+                        StringComparer.OrdinalIgnoreCase);
+                    
+                    // True co-managed = Intune says co-managed AND device exists in ConfigMgr
+                    var trulyCoManagedDevices = coManagedIntuneDevices
+                        .Where(d => !string.IsNullOrEmpty(d.DeviceName) && 
+                                   configMgrDeviceNames.Contains(d.DeviceName.ToLowerInvariant()))
+                        .ToList();
+                    
+                    coManagedCount = trulyCoManagedDevices.Count;
+                    
+                    // Detect orphaned/stale devices (in Intune as co-managed but NOT in ConfigMgr)
+                    var orphanedCoManagedDevices = coManagedIntuneDevices
+                        .Where(d => !string.IsNullOrEmpty(d.DeviceName) && 
+                                   !configMgrDeviceNames.Contains(d.DeviceName.ToLowerInvariant()))
+                        .ToList();
+                    
+                    if (orphanedCoManagedDevices.Any())
+                    {
+                        Instance.Warning($"");
+                        Instance.Warning($"   ╔══════════════════════════════════════════════════════════════════════════════╗");
+                        Instance.Warning($"   ║ ⚠️ ORPHANED CO-MANAGED DEVICES DETECTED: {orphanedCoManagedDevices.Count} device(s)                        ║");
+                        Instance.Warning($"   ╠══════════════════════════════════════════════════════════════════════════════╣");
+                        Instance.Warning($"   ║ Intune reports {intuneReportedCoManagedCount} co-managed, but only {coManagedCount} exist in ConfigMgr            ║");
+                        Instance.Warning($"   ╚══════════════════════════════════════════════════════════════════════════════╝");
+                        
+                        foreach (var device in orphanedCoManagedDevices)
+                        {
+                            var lastSync = device.LastSyncDateTime?.DateTime;
+                            var daysSinceSync = lastSync.HasValue ? (int)(DateTime.UtcNow - lastSync.Value).TotalDays : -1;
+                            Instance.Warning($"      • {device.DeviceName}");
+                            Instance.Warning($"        Status: In Intune as co-managed, NOT found in ConfigMgr");
+                            Instance.Warning($"        Last Intune Sync: {(lastSync.HasValue ? $"{lastSync:yyyy-MM-dd} ({daysSinceSync} days ago)" : "Unknown")}");
+                            Instance.Warning($"        Action: Remove from Intune or re-install ConfigMgr client");
+                        }
+                        Instance.Warning($"");
+                    }
+                    
+                    Instance.Info($"   📊 Co-management reconciliation:");
+                    Instance.Info($"      Intune reports co-managed: {intuneReportedCoManagedCount}");
+                    Instance.Info($"      Actually in ConfigMgr: {coManagedCount}");
+                    Instance.Info($"      Orphaned (Intune only): {orphanedCoManagedDevices.Count}");
+                }
+                else
+                {
+                    // No ConfigMgr data - use Intune's count (best effort)
+                    coManagedCount = intuneReportedCoManagedCount;
+                    Instance.Warning($"   ⚠️ No ConfigMgr data available - using Intune-reported count: {coManagedCount}");
+                }
                 
                 Instance.Info($"   Management Agent Breakdown:");
                 var mgmtAgentGroups = allIntuneDevices
@@ -878,52 +935,7 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.Info($"✅ Using ConfigMgr as source (co-management scenario): {totalDevices} total devices");
                     Instance.Info($"   ConfigMgr devices: {configMgrCount}, Co-managed (cloud progress): {cloudManagedCount}, ConfigMgr-only: {configMgrOnlyCount}");
                     
-                    // STALE/ORPHANED DEVICE DETECTION
-                    // Identify devices that exist in Intune as co-managed but NOT in ConfigMgr
-                    if (coManagedCount > configMgrCount && configMgrDevices != null)
-                    {
-                        var configMgrDeviceNames = new HashSet<string>(
-                            configMgrDevices
-                                .Where(d => !string.IsNullOrEmpty(d.Name))
-                                .Select(d => d.Name.ToLowerInvariant()),
-                            StringComparer.OrdinalIgnoreCase);
-                        
-                        var orphanedIntuneDevices = coManagedIntuneDevices
-                            .Where(d => !string.IsNullOrEmpty(d.DeviceName) && 
-                                       !configMgrDeviceNames.Contains(d.DeviceName.ToLowerInvariant()))
-                            .ToList();
-                        
-                        int orphanCount = orphanedIntuneDevices.Count;
-                        
-                        Instance.Warning($"");
-                        Instance.Warning($"   ╔══════════════════════════════════════════════════════════════════════════════╗");
-                        Instance.Warning($"   ║ ⚠️ STALE/ORPHANED DEVICES DETECTED: {orphanCount} device(s)                              ║");
-                        Instance.Warning($"   ╠══════════════════════════════════════════════════════════════════════════════╣");
-                        Instance.Warning($"   ║ Intune reports {coManagedCount} co-managed but ConfigMgr only has {configMgrCount} devices         ║");
-                        Instance.Warning($"   ╚══════════════════════════════════════════════════════════════════════════════╝");
-                        
-                        foreach (var device in orphanedIntuneDevices)
-                        {
-                            var lastSync = device.LastSyncDateTime?.DateTime;
-                            var daysSinceSync = lastSync.HasValue ? (int)(DateTime.UtcNow - lastSync.Value).TotalDays : -1;
-                            var syncInfo = daysSinceSync >= 0 
-                                ? $"{lastSync:yyyy-MM-dd} ({daysSinceSync} days ago)" 
-                                : "Unknown";
-                            
-                            Instance.Warning($"      • {device.DeviceName}");
-                            Instance.Warning($"        Reason: Exists in Intune as co-managed but NOT found in ConfigMgr");
-                            Instance.Warning($"        Last Intune Sync: {syncInfo}");
-                            Instance.Warning($"        Recommendation: Remove from Intune or re-enroll ConfigMgr client");
-                            Instance.Warning($"");
-                        }
-                        
-                        if (orphanCount == 0 && coManagedCount > configMgrCount)
-                        {
-                            // Device names match but counts differ - could be case sensitivity or timing
-                            Instance.Warning($"      Note: All device names matched, but count mismatch persists.");
-                            Instance.Warning($"      This may be due to case-sensitivity or data refresh timing.");
-                        }
-                    }
+                    // Note: Orphaned device detection is now done earlier in STEP 2.5 during co-management reconciliation
                     System.Diagnostics.Debug.WriteLine($"✅ Using ConfigMgr as source: {totalDevices} total, {cloudManagedCount} co-managed, {configMgrOnlyCount} not yet co-managed");
                 }
                 else

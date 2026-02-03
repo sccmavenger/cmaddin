@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.94** | February 2, 2026
+**Version 3.17.95** | February 2, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -132,6 +132,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.94 (February 2, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.93 (February 2, 2026)
 
 ### Added
@@ -205,20 +219,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Alpha-Tester-Guide.md: Updated Key Features table to reflect 3 visible signals, added hidden features note
   - Alpha-Tester-Guide.md: Fixed Q7 FAQ - updated confidence score calculation to accurate 5-factor formula
   - COMPREHENSIVE_TECHNICAL_DOCUMENT.md: Added visibility column to Core Capabilities Matrix
-
----
-
-### Version 3.17.89 (February 1, 2026)
-
-### Added
-- Mock data for Enrollment Readiness Analyzer - shows demo compliance analysis when not connected
-
-### Changed
-- Simplified hidden feature management: Moved ShowMigrationImpactCard and ShowSmartEnrollmentSection from TabVisibilityOptions to hardcoded `Visibility="Collapsed"` in XAML
-- All hidden sections now use consistent `Visibility="Collapsed"` pattern (removed command-line toggle complexity)
-
-### Fixed
--
 
 ---
 
@@ -1337,5 +1337,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-02  
-**Version**: 3.17.94  
+**Version**: 3.17.95  
 **Maintainer:** Cloud Native Assessment Team
