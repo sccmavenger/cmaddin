@@ -309,57 +309,69 @@
                                Foreground="#D13438" Margin="0,0,0,15"/>
                     
                     <ItemsControl x:Name="TopBlockersItemsControl">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="2" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource BlockerItem}">
+                                <Border Background="#FFF5F5" BorderBrush="#FFCCCC" BorderThickness="1" 
+                                        CornerRadius="6" Padding="12" Margin="0,0,10,10">
                                     <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         
-                                        <TextBlock Grid.Column="0" Grid.RowSpan="2" Text="{Binding SeverityIcon}" 
-                                                   FontSize="24" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                                        <!-- Header row with icon, name, and count -->
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <TextBlock Grid.Column="0" Text="{Binding SeverityIcon}" 
+                                                       FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" 
+                                                       Foreground="#333333" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            
+                                            <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                                                <TextBlock FontSize="16" FontWeight="Bold" Foreground="#D13438" 
+                                                           HorizontalAlignment="Right"
+                                                           Cursor="Hand"
+                                                           Tag="{Binding}"
+                                                           MouseLeftButtonDown="BlockerDeviceCount_Click"
+                                                           ToolTip="Click to view affected devices">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="TextDecorations" Value="Underline"/>
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                    <Run Text="{Binding AffectedDeviceCount, Mode=OneWay}"/>
+                                                </TextBlock>
+                                                <TextBlock Text="devices" FontSize="10" Foreground="#888888" 
+                                                           HorizontalAlignment="Right"/>
+                                            </StackPanel>
+                                        </Grid>
                                         
-                                        <StackPanel Grid.Column="1" Grid.Row="0">
-                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" 
-                                                       Foreground="#333333"/>
-                                            <TextBlock Text="{Binding Description}" FontSize="12" 
-                                                       Foreground="#666666" TextWrapping="Wrap" Margin="0,3,0,0"/>
-                                        </StackPanel>
+                                        <!-- Description -->
+                                        <TextBlock Grid.Row="1" Text="{Binding Description}" FontSize="11" 
+                                                   Foreground="#666666" TextWrapping="Wrap" Margin="0,6,0,0"
+                                                   MaxHeight="36" TextTrimming="CharacterEllipsis"/>
                                         
-                                        <StackPanel Grid.Column="2" Grid.Row="0" HorizontalAlignment="Right">
-                                            <TextBlock FontSize="20" FontWeight="Bold" Foreground="#D13438" 
-                                                       HorizontalAlignment="Right"
-                                                       Cursor="Hand"
-                                                       Tag="{Binding}"
-                                                       MouseLeftButtonDown="BlockerDeviceCount_Click"
-                                                       ToolTip="Click to view affected devices">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="TextDecorations" Value="Underline"/>
-                                                            </Trigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                                <Run Text="{Binding AffectedDeviceCount, Mode=OneWay}"/>
-                                            </TextBlock>
-                                            <TextBlock Text="devices affected" FontSize="11" Foreground="#888888" 
-                                                       HorizontalAlignment="Right"/>
-                                        </StackPanel>
-                                        
-                                        <StackPanel Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="1" 
-                                                    Orientation="Horizontal" Margin="0,10,0,0">
-                                            <TextBlock Text="💡 " FontSize="12"/>
-                                            <TextBlock Text="{Binding RemediationAction}" FontSize="12" 
-                                                       Foreground="#0078D4"/>
+                                        <!-- Remediation -->
+                                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+                                            <TextBlock Text="💡 " FontSize="10"/>
+                                            <TextBlock Text="{Binding RemediationAction}" FontSize="10" 
+                                                       Foreground="#0078D4" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>

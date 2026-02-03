@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.93** | February 2, 2026
+**Version 3.17.94** | February 2, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -131,6 +131,30 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.93 (February 2, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- **Cloud Readiness Tab: "Not Registered to Autopilot" blocker now shows actual device names**
+  - **Root Cause**: Blocker was only calculating a count estimate but not populating `AffectedDeviceNames`
+  - **Fix**: Now properly cross-references ConfigMgr devices with Intune/Autopilot to identify exact devices not registered
+  - **How it works**: 
+    1. Gets Autopilot device serial numbers from Graph API
+    2. Gets Intune devices with their serial numbers
+    3. Matches Intune serials to Autopilot serials to identify registered devices
+    4. Compares ConfigMgr device names against the registered set
+    5. Returns the exact list of ConfigMgr devices NOT in Autopilot
+  - Clicking "5 devices affected" now shows actual device names (e.g., R25300212, R25300213) instead of sample data
+  - Files modified: `Services/CloudReadinessService.cs`
+
+---
+
 ### Version 3.17.92 (February 2, 2026)
 
 ### Added
@@ -192,20 +216,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Changed
 - Simplified hidden feature management: Moved ShowMigrationImpactCard and ShowSmartEnrollmentSection from TabVisibilityOptions to hardcoded `Visibility="Collapsed"` in XAML
 - All hidden sections now use consistent `Visibility="Collapsed"` pattern (removed command-line toggle complexity)
-
-### Fixed
--
-
----
-
-### Version 3.17.88 (January 31, 2026)
-
-### Added
-- 
-
-### Changed
-- Hidden Smart Enrollment Management section (needs refinement before broader release)
-- Can be re-enabled via `/showtabs:smartenrollment` command-line argument
 
 ### Fixed
 -
@@ -1327,5 +1337,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-02  
-**Version**: 3.17.93  
+**Version**: 3.17.94  
 **Maintainer:** Cloud Native Assessment Team
