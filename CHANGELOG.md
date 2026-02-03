@@ -12,6 +12,22 @@
 - 
 
 
+## [3.17.95] - 2026-02-02
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- **Co-managed device count discrepancy fixed** - Co-managed count now cross-references Intune devices with ConfigMgr to show TRUE co-managed count
+  - Previously: App counted ALL Intune devices with ManagementAgent=ConfigurationManagerClientMdm (even if device was removed from ConfigMgr)
+  - Now: App verifies device exists in BOTH Intune AND ConfigMgr by name matching
+  - Detects and logs orphaned co-managed devices (in Intune but not ConfigMgr) with remediation guidance
+  - Fixes discrepancy where app showed more co-managed devices than ConfigMgr console
+
+
 ## [3.17.94] - 2026-02-02
 
 ### Added
