@@ -143,6 +143,28 @@ namespace ZeroTrustMigrationAddin.Views
                     },
                     new CloudReadinessSignal
                     {
+                        Id = "application-readiness",
+                        Name = "Application Readiness",
+                        Description = "Applications ready for Intune deployment",
+                        Icon = "📦",
+                        TotalDevices = 234, // Represents app count
+                        ReadyDevices = 156, // Easy + Moderate apps
+                        RelatedWorkload = "Application Management",
+                        LearnMoreUrl = "https://learn.microsoft.com/mem/intune/apps/apps-add",
+                        TopBlockers = new List<ReadinessBlocker>
+                        {
+                            new ReadinessBlocker { Id = "app-v-apps", Name = "App-V Packages", AffectedDeviceCount = 23, Severity = BlockerSeverity.High },
+                            new ReadinessBlocker { Id = "script-installers", Name = "Script-Based Installers", AffectedDeviceCount = 45, Severity = BlockerSeverity.Medium }
+                        },
+                        Recommendations = new List<string>
+                        {
+                            "156 apps have clear migration paths - start with MSI apps using Win32 Content Prep Tool",
+                            "23 App-V packages need repackaging to MSIX or Win32",
+                            "Check Enterprise App Catalog for common apps before packaging"
+                        }
+                    },
+                    new CloudReadinessSignal
+                    {
                         Id = "autopatch",
                         Name = "Autopatch Readiness",
                         Description = "Ready for Windows Autopatch automated updates",

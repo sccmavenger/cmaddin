@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.99** | February 3, 2026
+**Version 3.17.101** | February 4, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -137,6 +137,67 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.100 (February 4, 2026)
+
+### Added
+- **Application Readiness Assessment** - New Cloud Readiness signal that analyzes ConfigMgr applications for Intune migration complexity
+  - Queries `SMS_DeploymentType` to analyze installer technologies (MSI, Script, App-V, MSIX)
+  - Categorizes apps by migration complexity:
+    - ✅ **Easy**: MSIX, Store apps - Use Enterprise App Catalog or Microsoft Store
+    - 🔵 **Moderate**: MSI - Package as Win32 app using Content Prep Tool
+    - 🟡 **Needs Review**: Script-based - Review installer logic before migration
+    - 🔴 **Complex**: App-V - Requires repackaging to MSIX or Win32
+  - Shows readiness percentage based on apps with clear migration paths (Easy + Moderate)
+  - Includes blockers for App-V packages and script-based installers
+  - Provides migration guidance links to Microsoft Learn documentation
+  - **Future enhancement planned**: "Easy button" to add apps from Enterprise App Catalog
+
+### Changed
+- **Hidden Autopatch Readiness tile** from Cloud Readiness tab - Autopatch requires Intune enrollment first, better suited for AI Recommendations feature
+
+### Technical
+- New file: `Models/ApplicationReadinessModels.cs` - Models for AppMigrationAssessment, MigrationComplexity enum, ConfigMgrDeploymentType
+- `Services/ConfigMgrAdminService.cs` - Added `GetDeploymentTypesAsync()` method with REST and WMI support
+- `Services/CloudReadinessService.cs` - Added `GetApplicationReadinessSignalAsync()` and `GenerateApplicationReadinessRecommendations()`
+- `Views/CloudReadinessTab.xaml.cs` - Added mock data for Application Readiness signal
+
+---
+
+### Version 3.17.99 (February 3, 2026)
+
+### Added
+- **Entra App Registration Script** - New PowerShell script `scripts/New-CloudNativeAssessmentApp.ps1` to create custom app registrations
+  - Creates app named "Cloud Native Assessment" by default (customizable via `-AppName`)
+  - Configures all 8 required Graph API delegated permissions
+  - Sets up "Mobile and desktop applications" platform with `http://localhost` redirect
+  - Optional `-GrantAdminConsent` flag for admin consent (requires Global Admin)
+  - Outputs Client ID and Tenant ID ready for use in Cloud Native Assessment
+
+### Changed
+- **Auth Settings UI** - Added clear guidance for redirect URI configuration (per Martin's feedback)
+  - New warning box: "⚠️ Redirect URI Configuration"
+  - Emphasizes selecting "Mobile and desktop applications" (NOT "Web")
+  - Shows redirect URI: `http://localhost`
+- **README Custom App Instructions** - Split into separate steps with clearer guidance
+  - New "Step 1b: Configure Redirect URI" section
+  - Warning callout about correct platform type
+
+### Fixed
+- **Cloud Readiness blocker drill-down now shows real OS info from ConfigMgr**
+  - Previously: "Windows (version unknown - device not in Intune)"
+  - Now: Shows actual OS from ConfigMgr (e.g., "Microsoft Windows NT Workstation 10.0")
+  - Applies to all 6 blockers: Not Registered to Autopilot, Unsupported OS, Missing TPM 2.0, Windows Home Edition, Co-managed Workloads, WU Workload on ConfigMgr
+
+### Technical
+- `Models/CloudReadinessModels.cs` - Changed `AffectedDeviceNames` from `List<string>` to computed property, added `AffectedDevices` as `List<ConfigMgrDevice>`
+- `Services/CloudReadinessService.cs` - Updated 6 blocker assignments to pass full ConfigMgrDevice objects; added lookup dictionaries for workload-based blockers
+- `Views/CloudReadinessTab.xaml.cs` - Updated popup logic to use ConfigMgr device objects with real OS info
+- `Views/GraphAuthSettingsWindow.xaml` - Added redirect URI warning box
+- New file: `scripts/New-CloudNativeAssessmentApp.ps1` - Entra app registration automation
+
+---
+
 ### Version 3.17.98 (February 3, 2026)
 
 ### Added
@@ -193,36 +254,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ---
 
 ### Version 3.17.96 (February 2, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
-
----
-
-### Version 3.17.95 (February 2, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
-- **Co-managed device count discrepancy fixed** - Co-managed count now cross-references Intune devices with ConfigMgr to show TRUE co-managed count
-  - Previously: App counted ALL Intune devices with ManagementAgent=ConfigurationManagerClientMdm (even if device was removed from ConfigMgr)
-  - Now: App verifies device exists in BOTH Intune AND ConfigMgr by name matching
-  - Detects and logs orphaned co-managed devices (in Intune but not ConfigMgr) with remediation guidance
-  - Fixes discrepancy where app showed more co-managed devices than ConfigMgr console
-
----
-
-### Version 3.17.94 (February 2, 2026)
 
 ### Added
 - 
@@ -1432,6 +1463,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-03  
-**Version**: 3.17.99  
+**Last Updated**: 2026-02-04  
+**Version**: 3.17.101  
 **Maintainer:** Cloud Native Assessment Team
