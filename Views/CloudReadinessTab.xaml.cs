@@ -162,22 +162,6 @@ namespace ZeroTrustMigrationAddin.Views
                             "23 App-V packages need repackaging to MSIX or Win32",
                             "Check Enterprise App Catalog for common apps before packaging"
                         }
-                    },
-                    new CloudReadinessSignal
-                    {
-                        Id = "autopatch",
-                        Name = "Autopatch Readiness",
-                        Description = "Ready for Windows Autopatch automated updates",
-                        Icon = "🔄",
-                        TotalDevices = 1250,
-                        ReadyDevices = 875,
-                        RelatedWorkload = "Update Management",
-                        LearnMoreUrl = "https://learn.microsoft.com/windows/deployment/windows-autopatch/overview/windows-autopatch-overview",
-                        TopBlockers = new List<ReadinessBlocker>
-                        {
-                            new ReadinessBlocker { Name = "Not Enrolled in Intune", AffectedDeviceCount = 250, Severity = BlockerSeverity.High },
-                            new ReadinessBlocker { Name = "Windows Update Workload on ConfigMgr", AffectedDeviceCount = 125, Severity = BlockerSeverity.High }
-                        }
                     }
                 }
             };

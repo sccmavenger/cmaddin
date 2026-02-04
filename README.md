@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.104** | February 4, 2026
+**Version 3.17.105** | February 4, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -141,6 +141,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.104 (February 4, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.103 (February 4, 2026)
 
 ### Added
@@ -230,19 +244,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - `Views/CloudReadinessTab.xaml.cs` - Updated popup logic to use ConfigMgr device objects with real OS info
 - `Views/GraphAuthSettingsWindow.xaml` - Added redirect URI warning box
 - New file: `scripts/New-CloudNativeAssessmentApp.ps1` - Entra app registration automation
-
----
-
-### Version 3.17.98 (February 3, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
 
 ---
 
@@ -1463,5 +1464,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-04  
-**Version**: 3.17.104  
+**Version**: 3.17.105  
 **Maintainer:** Cloud Native Assessment Team

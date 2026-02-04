@@ -110,6 +110,19 @@ namespace ZeroTrustMigrationAddin
                 }
                 */
 
+                // Check if EULA has been accepted
+                if (!EulaAcceptance.Load().IsAccepted)
+                {
+                    Services.FileLogger.Instance.Info("[EULA] EULA not yet accepted, showing EULA dialog");
+                    var eulaWindow = new EulaWindow();
+                    if (eulaWindow.ShowDialog() != true)
+                    {
+                        Services.FileLogger.Instance.Info("[EULA] User declined EULA, shutting down");
+                        Shutdown();
+                        return;
+                    }
+                }
+
                 // Parse command-line arguments for tab visibility
                 var tabVisibilityOptions = TabVisibilityOptions.ParseArguments(e.Args);
 
