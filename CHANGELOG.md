@@ -1,5 +1,59 @@
 # Cloud Native Assessment - Change Log
 
+## [Unreleased]
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.17.104] - 2026-02-04
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.17.103] - 2026-02-04
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.17.102] - 2026-02-04
+
+### Added
+- **Application Readiness Telemetry** - Track app migration complexity across customer environments
+  - Sends anonymous metrics: app counts by technology (MSI, Script, App-V, MSIX)
+  - Tracks readiness percentage distribution
+  - No PII: Only aggregate counts and technology breakdown
+
+### Changed
+- **README Network Requirements** - Added firewall allow list for enterprise environments
+  - Documented all required URLs (Graph API, GitHub, Application Insights)
+  - Added instructions for manual updates when auto-update is blocked
+
+### Technical
+- `Services/AzureTelemetryService.cs` - Added `TrackApplicationReadinessAssessed()` method
+- `Services/CloudReadinessService.cs` - Added telemetry call in `GetApplicationReadinessSignalAsync()`
+
+
 ## [3.17.100] - 2026-02-04
 
 ### Added
