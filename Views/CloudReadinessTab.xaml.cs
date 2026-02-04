@@ -418,23 +418,23 @@ namespace ZeroTrustMigrationAddin.Views
                 List<ManagedDevice> devices;
                 bool isAuthenticated = _graphService != null && _graphService.IsAuthenticated;
 
-                // If blocker has specific affected device names, use those to filter
-                if (blocker.AffectedDeviceNames.Any())
+                // If blocker has specific affected devices (full ConfigMgr device objects), use those
+                if (blocker.AffectedDevices.Any())
                 {
-                    Instance.Info($"[CLOUD READINESS TAB] Using {blocker.AffectedDeviceNames.Count} device names from blocker");
-                    devices = await GetDevicesByNamesAsync(blocker.AffectedDeviceNames);
+                    Instance.Info($"[CLOUD READINESS TAB] Using {blocker.AffectedDevices.Count} ConfigMgr devices from blocker");
                     
-                    // If Graph lookup failed but we have names, create placeholder devices
-                    if ((devices == null || devices.Count == 0) && blocker.AffectedDeviceNames.Any())
+                    // Convert ConfigMgrDevice to ManagedDevice for display
+                    devices = blocker.AffectedDevices.Select(d => new ManagedDevice
                     {
-                        Instance.Info($"[CLOUD READINESS TAB] Creating placeholder devices from {blocker.AffectedDeviceNames.Count} device names");
-                        devices = blocker.AffectedDeviceNames.Select(name => new ManagedDevice
-                        {
-                            DeviceName = name,
-                            OperatingSystem = "Windows (version unknown - device not in Intune)",
-                            ManagementAgent = ManagementAgentType.ConfigurationManagerClient
-                        }).ToList();
-                    }
+                        DeviceName = d.Name,
+                        OperatingSystem = !string.IsNullOrEmpty(d.OperatingSystem) 
+                            ? d.OperatingSystem 
+                            : "Windows",
+                        LastSyncDateTime = d.LastActiveTime,
+                        ManagementAgent = d.IsCoManaged 
+                            ? ManagementAgentType.ConfigurationManagerClientMdm 
+                            : ManagementAgentType.ConfigurationManagerClient
+                    }).ToList();
                 }
                 // Fall back to blocker-specific logic if authenticated
                 else if (isAuthenticated)

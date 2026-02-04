@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.98** | February 3, 2026
+**Version 3.17.99** | February 3, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -136,6 +136,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.98 (February 3, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.97 (February 3, 2026)
 
 ### Added
@@ -218,29 +232,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 -
-
----
-
-### Version 3.17.93 (February 2, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
-- **Cloud Readiness Tab: "Not Registered to Autopilot" blocker now shows actual device names**
-  - **Root Cause**: Blocker was only calculating a count estimate but not populating `AffectedDeviceNames`
-  - **Fix**: Now properly cross-references ConfigMgr devices with Intune/Autopilot to identify exact devices not registered
-  - **How it works**: 
-    1. Gets Autopilot device serial numbers from Graph API
-    2. Gets Intune devices with their serial numbers
-    3. Matches Intune serials to Autopilot serials to identify registered devices
-    4. Compares ConfigMgr device names against the registered set
-    5. Returns the exact list of ConfigMgr devices NOT in Autopilot
-  - Clicking "5 devices affected" now shows actual device names (e.g., R25300212, R25300213) instead of sample data
-  - Files modified: `Services/CloudReadinessService.cs`
 
 ---
 
@@ -985,10 +976,22 @@ By default, Cloud Native Assessment uses Microsoft's public "Microsoft Graph Com
 2. Click **New registration**
 3. Name: `Cloud Native Assessment` (or your preferred name)
 4. Supported account types: **Single tenant** (recommended) or **Multitenant**
-5. Redirect URI:
-   - Platform: **Public client/native (mobile & desktop)**
-   - URI: `http://localhost`
-6. Click **Register**
+5. Click **Register** (skip Redirect URI for now)
+
+### Step 1b: Configure Redirect URI (Important!)
+
+> ⚠️ **This step is critical** - selecting the wrong platform type will cause authentication to fail.
+
+1. In your new app, go to **Authentication**
+2. Click **Add a platform**
+3. **Select "Mobile and desktop applications"** (NOT "Web")
+4. Check the box for `http://localhost`
+5. Click **Configure**
+
+![Platform Selection](docs/images/entra-platform-selection.png)
+
+> ✅ **Correct**: Mobile and desktop applications  
+> ❌ **Wrong**: Web applications
 
 ### Step 2: Configure API Permissions
 
@@ -1430,5 +1433,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-03  
-**Version**: 3.17.98  
+**Version**: 3.17.99  
 **Maintainer:** Cloud Native Assessment Team

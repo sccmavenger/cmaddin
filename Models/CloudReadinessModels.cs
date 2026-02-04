@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Media;
+using ZeroTrustMigrationAddin.Services;
 
 namespace ZeroTrustMigrationAddin.Models
 {
@@ -84,10 +85,15 @@ namespace ZeroTrustMigrationAddin.Models
         public string RemediationUrl { get; set; } = string.Empty;
         
         /// <summary>
-        /// List of device names affected by this blocker.
-        /// Used for drill-down display when user clicks blocker count.
+        /// Full ConfigMgr device objects affected by this blocker.
+        /// Contains OS info, last active time, etc. for rich display in drill-down.
         /// </summary>
-        public List<string> AffectedDeviceNames { get; set; } = new();
+        public List<ConfigMgrDevice> AffectedDevices { get; set; } = new();
+        
+        /// <summary>
+        /// Device names affected by this blocker (computed from AffectedDevices for backward compatibility).
+        /// </summary>
+        public List<string> AffectedDeviceNames => AffectedDevices.Select(d => d.Name).Where(n => !string.IsNullOrEmpty(n)).ToList();
         
         public string SeverityIcon => Severity switch
         {

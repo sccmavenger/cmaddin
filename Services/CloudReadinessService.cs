@@ -189,7 +189,6 @@ namespace ZeroTrustMigrationAddin.Services
                 var safeConfigMgrDevices = configMgrDevices ?? new List<ConfigMgrDevice>();
                 var configMgrDevicesNotInAutopilot = safeConfigMgrDevices
                     .Where(d => !string.IsNullOrEmpty(d.Name) && !intuneDevicesWithAutopilot.Contains(d.Name))
-                    .Select(d => d.Name)
                     .ToList();
                 
                 var devicesNotRegistered = configMgrDevicesNotInAutopilot.Count;
@@ -203,7 +202,7 @@ namespace ZeroTrustMigrationAddin.Services
                 if (devicesNotRegistered > 0)
                 {
                     // Log first few device names for debugging
-                    var sampleDevices = configMgrDevicesNotInAutopilot.Take(5).ToList();
+                    var sampleDevices = configMgrDevicesNotInAutopilot.Take(5).Select(d => d.Name).ToList();
                     Instance.Info($"      📋 Sample unregistered devices: {string.Join(", ", sampleDevices)}");
                     
                     blockers.Add(new ReadinessBlocker
@@ -216,13 +215,13 @@ namespace ZeroTrustMigrationAddin.Services
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Register devices to Autopilot via hardware hash upload or OEM registration",
                         RemediationUrl = "https://learn.microsoft.com/mem/autopilot/add-devices",
-                        AffectedDeviceNames = configMgrDevicesNotInAutopilot!
+                        AffectedDevices = configMgrDevicesNotInAutopilot
                     });
                 }
 
                 // Check OS version requirement (Windows 10 1809+ or Windows 11)
                 Instance.Info("");
-                Instance.Info("   [CHECK 2/2] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");
+                Instance.Info("   [CHECK 2/2] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");;
                 var osLookup = osDetails?.ToDictionary(o => o.ResourceId) ?? new Dictionary<int, OSDetails>();
                 
                 var devicesWithNoOsData = safeConfigMgrDevices.Where(d => !osLookup.ContainsKey(d.ResourceId) || string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber)).ToList();
@@ -272,7 +271,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Severity = BlockerSeverity.High,
                         RemediationAction = "Upgrade to Windows 10 1809+ or Windows 11",
                         RemediationUrl = "https://learn.microsoft.com/windows/release-health/",
-                        AffectedDeviceNames = unsupportedOsDevices.Select(d => d.Name).Where(n => !string.IsNullOrEmpty(n)).ToList()!
+                        AffectedDevices = unsupportedOsDevices
                     });
                 }
 
@@ -399,7 +398,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Severity = BlockerSeverity.Critical,
                         RemediationAction = "Enable TPM 2.0 in BIOS or plan hardware refresh",
                         RemediationUrl = "https://support.microsoft.com/windows/enable-tpm-2-0-on-your-pc",
-                        AffectedDeviceNames = devicesWithoutTpm20.Select(d => d.Name).Where(n => !string.IsNullOrEmpty(n)).ToList()!
+                        AffectedDevices = devicesWithoutTpm20
                     });
                     
                     foreach (var d in devicesWithoutTpm20)
@@ -507,6 +506,12 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 var blockers = new List<ReadinessBlocker>();
+                
+                // Create lookup dictionary for ConfigMgr devices by name (for workload blockers)
+                var configMgrDeviceLookup = (configMgrDevices ?? new List<ConfigMgrDevice>())
+                    .Where(d => !string.IsNullOrEmpty(d.Name))
+                    .GroupBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
                 // Cloud-Native Ready = ConfigMgr devices that are co-managed with ALL workloads on Intune
                 // These devices can have the ConfigMgr client removed and become fully cloud native
@@ -537,12 +542,18 @@ namespace ZeroTrustMigrationAddin.Services
                         }
                     }
                     
-                    // Get device names that still have workloads on ConfigMgr
-                    var devicesWithWorkloadsOnConfigMgr = workloadAuthority.Devices
+                    // Get ConfigMgr device objects for devices that still have workloads on ConfigMgr
+                    var deviceNamesWithWorkloadsOnConfigMgr = workloadAuthority.Devices
                         .Where(d => !d.AllWorkloadsManagedByIntune)
                         .Select(d => d.DeviceName)
                         .Where(n => !string.IsNullOrEmpty(n))
                         .ToList();
+                    
+                    // Lookup full ConfigMgr device objects by name
+                    var devicesWithWorkloadsOnConfigMgr = deviceNamesWithWorkloadsOnConfigMgr
+                        .Select(name => configMgrDeviceLookup.GetValueOrDefault(name))
+                        .Where(d => d != null)
+                        .ToList()!;
                     
                     blockers.Add(new ReadinessBlocker
                     {
@@ -554,7 +565,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Severity = BlockerSeverity.Medium,
                         RemediationAction = "Move remaining co-management workload sliders to Intune",
                         RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-switch-workloads",
-                        AffectedDeviceNames = devicesWithWorkloadsOnConfigMgr!
+                        AffectedDevices = devicesWithWorkloadsOnConfigMgr!
                     });
                 }
                 
@@ -692,6 +703,12 @@ namespace ZeroTrustMigrationAddin.Services
                 var blockers = new List<ReadinessBlocker>();
                 var osLookup = osDetails?.ToDictionary(o => o.ResourceId) ?? new Dictionary<int, OSDetails>();
                 var safeConfigMgrDevices = configMgrDevices ?? new List<ConfigMgrDevice>();
+                
+                // Create lookup dictionary for ConfigMgr devices by name (for workload blockers)
+                var configMgrDeviceLookup = safeConfigMgrDevices
+                    .Where(d => !string.IsNullOrEmpty(d.Name))
+                    .GroupBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
                 // CHECK 1: OS Edition - Autopatch requires Enterprise, Education, or Pro for Workstations
                 Instance.Info("");
@@ -732,7 +749,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Severity = BlockerSeverity.Critical,
                         RemediationAction = "Upgrade to Windows 10/11 Pro, Enterprise, or Education",
                         RemediationUrl = "https://learn.microsoft.com/windows/deployment/windows-autopatch/prepare/windows-autopatch-prerequisites",
-                        AffectedDeviceNames = homeDevices.Select(d => d.Name).Where(n => !string.IsNullOrEmpty(n)).ToList()!
+                        AffectedDevices = homeDevices
                     });
                 }
 
@@ -776,11 +793,18 @@ namespace ZeroTrustMigrationAddin.Services
 
                 if (wuWorkloadOnConfigMgr > 0)
                 {
-                    var devicesWithWuOnConfigMgr = workloadAuthority.Devices
+                    // Get device names from Graph workload authority data
+                    var deviceNamesWithWuOnConfigMgr = workloadAuthority.Devices
                         .Where(d => d.WindowsUpdateManagedByConfigMgr)
                         .Select(d => d.DeviceName)
                         .Where(n => !string.IsNullOrEmpty(n))
                         .ToList();
+                    
+                    // Lookup full ConfigMgr device objects by name
+                    var devicesWithWuOnConfigMgr = deviceNamesWithWuOnConfigMgr
+                        .Select(name => configMgrDeviceLookup.GetValueOrDefault(name))
+                        .Where(d => d != null)
+                        .ToList()!;
 
                     blockers.Add(new ReadinessBlocker
                     {
@@ -792,7 +816,7 @@ namespace ZeroTrustMigrationAddin.Services
                         Severity = BlockerSeverity.High,
                         RemediationAction = "Move Windows Update workload slider to Intune in co-management settings",
                         RemediationUrl = "https://learn.microsoft.com/mem/configmgr/comanage/how-to-switch-workloads",
-                        AffectedDeviceNames = devicesWithWuOnConfigMgr!
+                        AffectedDevices = devicesWithWuOnConfigMgr!
                     });
                 }
 
