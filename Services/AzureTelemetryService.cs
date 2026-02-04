@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Management;
 using System.Security.Cryptography;
 using System.Text;
@@ -405,6 +406,88 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 FileLogger.Instance.Warning($"[TELEMETRY] Failed to track workload transition: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Track Application Readiness assessment results.
+        /// Provides insight into ConfigMgr app portfolio migration complexity.
+        /// v3.17.101 - Application Readiness telemetry
+        /// </summary>
+        public void TrackApplicationReadinessAssessed(
+            int totalApps, 
+            int deployedApps,
+            int easyApps, 
+            int moderateApps, 
+            int needsReviewApps, 
+            int complexApps,
+            int unknownApps,
+            double readinessPercentage,
+            Dictionary<string, int>? technologyBreakdown = null)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["TotalAppsBand"] = GetAppCountBand(totalApps),
+                    ["DeployedAppsBand"] = GetAppCountBand(deployedApps),
+                    ["ReadinessBand"] = GetPercentageBand(readinessPercentage),
+                    ["HasAppV"] = (complexApps > 0).ToString(),
+                    ["HasScriptInstallers"] = (needsReviewApps > 0).ToString(),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                // Add technology breakdown if provided
+                if (technologyBreakdown != null)
+                {
+                    var topTechnologies = technologyBreakdown
+                        .OrderByDescending(kv => kv.Value)
+                        .Take(5)
+                        .Select(kv => $"{kv.Key}:{kv.Value}")
+                        .ToList();
+                    properties["TopTechnologies"] = string.Join(",", topTechnologies);
+                }
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["TotalApps"] = totalApps,
+                    ["DeployedApps"] = deployedApps,
+                    ["EasyApps"] = easyApps,
+                    ["ModerateApps"] = moderateApps,
+                    ["NeedsReviewApps"] = needsReviewApps,
+                    ["ComplexApps"] = complexApps,
+                    ["UnknownApps"] = unknownApps,
+                    ["ReadinessPercentage"] = readinessPercentage,
+                    ["ReadyApps"] = easyApps + moderateApps,
+                    ["BlockedApps"] = needsReviewApps + complexApps + unknownApps
+                };
+
+                _telemetryClient.TrackEvent("ApplicationReadinessAssessed", properties, metrics);
+                
+                FileLogger.Instance.Info($"[TELEMETRY] ApplicationReadinessAssessed: {deployedApps} deployed apps, {readinessPercentage:F1}% ready (Easy:{easyApps}, Moderate:{moderateApps}, Review:{needsReviewApps}, Complex:{complexApps})");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track application readiness: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Convert app count to band for privacy (e.g., "1-25", "26-50").
+        /// </summary>
+        private string GetAppCountBand(int appCount)
+        {
+            return appCount switch
+            {
+                < 25 => "1-24",
+                < 50 => "25-49",
+                < 100 => "50-99",
+                < 250 => "100-249",
+                < 500 => "250-499",
+                < 1000 => "500-999",
+                _ => "1000+"
+            };
         }
 
         /// <summary>

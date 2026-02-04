@@ -1501,6 +1501,24 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info($"      Ready apps: {signal.ReadyDevices} / {signal.TotalDevices}");
                 Instance.Info($"      Blockers found: {blockers.Count}");
                 Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+
+                // Track telemetry for Application Readiness
+                var technologyBreakdown = deploymentTypes?
+                    .Where(dt => dt.IsEnabled)
+                    .GroupBy(dt => dt.Technology ?? "Unknown")
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                AzureTelemetryService.Instance.TrackApplicationReadinessAssessed(
+                    totalApps: totalApps,
+                    deployedApps: deployedApps.Count,
+                    easyApps: easyCount,
+                    moderateApps: moderateCount,
+                    needsReviewApps: needsReviewCount,
+                    complexApps: complexCount,
+                    unknownApps: unknownCount,
+                    readinessPercentage: signal.ReadinessPercentage,
+                    technologyBreakdown: technologyBreakdown
+                );
             }
             catch (Exception ex)
             {

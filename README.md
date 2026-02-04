@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.101** | February 4, 2026
+**Version 3.17.104** | February 4, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -138,6 +138,41 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+### Version 3.17.103 (February 4, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
+### Version 3.17.102 (February 4, 2026)
+
+### Added
+- **Application Readiness Telemetry** - Track app migration complexity across customer environments
+  - Sends anonymous metrics: app counts by technology (MSI, Script, App-V, MSIX)
+  - Tracks readiness percentage distribution
+  - No PII: Only aggregate counts and technology breakdown
+
+### Changed
+- **README Network Requirements** - Added firewall allow list for enterprise environments
+  - Documented all required URLs (Graph API, GitHub, Application Insights)
+  - Added instructions for manual updates when auto-update is blocked
+
+### Technical
+- `Services/AzureTelemetryService.cs` - Added `TrackApplicationReadinessAssessed()` method
+- `Services/CloudReadinessService.cs` - Added telemetry call in `GetApplicationReadinessSignalAsync()`
+
+---
+
 ### Version 3.17.100 (February 4, 2026)
 
 ### Added
@@ -211,61 +246,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ---
 
-### Version 3.17.97 (February 3, 2026)
-
-### Added
-- **Custom App Registration Support** - Organizations can now use their own Azure AD app registration instead of Microsoft's public app
-  - New `🔐 Auth` button in toolbar opens Graph Authentication Settings
-  - Configure custom Client ID and Tenant ID
-  - Supports single-tenant and multi-tenant app registrations
-  - Environment variable overrides: `GRAPH_CLIENT_ID`, `GRAPH_TENANT_ID`
-- **Interactive Browser Authentication** - New default authentication method
-  - Opens default browser for sign-in (better for corporate proxies)
-  - Works with conditional access policies
-  - Device Code Flow remains available as fallback option
-- **Graph Auth Settings Window** - New settings UI for authentication configuration
-  - Select authentication method (Browser or Device Code)
-  - Enable/disable custom app registration
-  - View detected tenant information after connection
-  - Reset to defaults option
-- **Auto-detect Tenant** - Automatically detects and displays tenant information after successful authentication
-- **Improved Auth Error Messages** - Better diagnostics for authentication failures
-  - Network/firewall blocking detection
-  - MFA-related error guidance
-  - Invalid app registration detection
-  - Clear instructions for resolution
-
-### Changed
-- **Default Auth Method Changed to Interactive Browser** - Better compatibility with corporate environments
-- **Renamed TelemetryService to MockDataService** - Clearer naming indicating its purpose (demo data generation, not telemetry)
-- **Consolidated ConfigMgrAdminService instances** - Removed duplicate unused instance from DashboardViewModel
-
-### Fixed
-- **Removed dead code** - Unused `_configMgrService` field in DashboardViewModel that was never used
-- **Clarified service architecture** - All ConfigMgr operations now use single instance via `GraphDataService.ConfigMgrService`
-
-### Technical
-- New file: `Models/GraphAuthSettings.cs` - Settings model with Load/Save persistence
-- New file: `Views/GraphAuthSettingsWindow.xaml` - Authentication settings UI
-- Updated: `Services/GraphDataService.cs` - Refactored authentication with method selection
-- Renamed: `Services/TelemetryService.cs` → `Services/MockDataService.cs`
-- Updated: README.md with custom app registration documentation
-
----
-
-### Version 3.17.96 (February 2, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
-
----
-
 > 📋 **[View Complete Changelog](#-changelog-highlights)** for all version history
 
 
@@ -311,6 +291,25 @@ The Cloud Native Assessment is your intelligent command center for migrating fro
 - Application: 233MB
 - .NET Runtime: 55MB (if not already installed)
 - **Total:** ~300MB
+
+### Network Requirements / Firewall Allow List
+
+Cloud Native Assessment requires outbound HTTPS (port 443) access to the following URLs:
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **Microsoft Graph API** | `https://graph.microsoft.com` | Intune device/app data, Autopilot, compliance |
+| **Entra ID Authentication** | `https://login.microsoftonline.com` | OAuth authentication for Graph API |
+| **Device Code Flow** | `https://microsoft.com/devicelogin` | Interactive authentication fallback |
+| **GitHub Releases** | `https://api.github.com` | Auto-update version check |
+| **GitHub Assets** | `https://github.com/sccmavenger/cmaddin/releases/*` | Download update packages |
+| **Application Insights** | `https://eastus-8.in.applicationinsights.azure.com` | Anonymous usage telemetry (optional) |
+| **ConfigMgr Admin Service** | `https://<your-site-server>/AdminService/*` | ConfigMgr data (internal network) |
+
+**If auto-updates are blocked by firewall:**
+1. Download the latest release manually from: https://github.com/sccmavenger/cmaddin/releases/latest
+2. Extract and run `Install-ZeroTrustMigrationAddin.ps1` or the MSI installer
+3. The app will continue to function normally without auto-update
 
 ### No Pre-Installation Required
 - ❌ No need to install .NET manually
@@ -1464,5 +1463,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-04  
-**Version**: 3.17.101  
+**Version**: 3.17.104  
 **Maintainer:** Cloud Native Assessment Team
