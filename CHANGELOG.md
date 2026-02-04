@@ -1,15 +1,28 @@
 # Cloud Native Assessment - Change Log
 
-## [Unreleased]
+## [3.17.100] - 2026-02-04
 
 ### Added
-- 
+- **Application Readiness Assessment** - New Cloud Readiness signal that analyzes ConfigMgr applications for Intune migration complexity
+  - Queries `SMS_DeploymentType` to analyze installer technologies (MSI, Script, App-V, MSIX)
+  - Categorizes apps by migration complexity:
+    - ✅ **Easy**: MSIX, Store apps - Use Enterprise App Catalog or Microsoft Store
+    - 🔵 **Moderate**: MSI - Package as Win32 app using Content Prep Tool
+    - 🟡 **Needs Review**: Script-based - Review installer logic before migration
+    - 🔴 **Complex**: App-V - Requires repackaging to MSIX or Win32
+  - Shows readiness percentage based on apps with clear migration paths (Easy + Moderate)
+  - Includes blockers for App-V packages and script-based installers
+  - Provides migration guidance links to Microsoft Learn documentation
+  - **Future enhancement planned**: "Easy button" to add apps from Enterprise App Catalog
 
 ### Changed
-- 
+- **Hidden Autopatch Readiness tile** from Cloud Readiness tab - Autopatch requires Intune enrollment first, better suited for AI Recommendations feature
 
-### Fixed
-- 
+### Technical
+- New file: `Models/ApplicationReadinessModels.cs` - Models for AppMigrationAssessment, MigrationComplexity enum, ConfigMgrDeploymentType
+- `Services/ConfigMgrAdminService.cs` - Added `GetDeploymentTypesAsync()` method with REST and WMI support
+- `Services/CloudReadinessService.cs` - Added `GetApplicationReadinessSignalAsync()` and `GenerateApplicationReadinessRecommendations()`
+- `Views/CloudReadinessTab.xaml.cs` - Added mock data for Application Readiness signal 
 
 
 ## [3.17.99] - 2026-02-03

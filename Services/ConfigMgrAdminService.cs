@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Management;
 using Azure.Identity;
 using Azure.Core;
+using ZeroTrustMigrationAddin.Models;
 using static ZeroTrustMigrationAddin.Services.FileLogger;
 
 namespace ZeroTrustMigrationAddin.Services
@@ -984,6 +985,130 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     Instance.Error($"[CONFIGMGR] GetApplications via WMI FAILED: {ex.Message}");
                     throw new Exception($"Failed to get applications via WMI: {ex.Message}", ex);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get deployment types for all applications to analyze migration complexity.
+        /// The Technology property indicates installer type (MSI, Script, App-V, MSIX, etc.)
+        /// v3.17.100 - Application Readiness feature
+        /// </summary>
+        public async Task<List<ConfigMgrDeploymentType>> GetDeploymentTypesAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
+            }
+
+            if (_useWmiFallback)
+            {
+                return await GetDeploymentTypesViaWmiAsync();
+            }
+            else
+            {
+                return await GetDeploymentTypesViaRestApiAsync();
+            }
+        }
+
+        private async Task<List<ConfigMgrDeploymentType>> GetDeploymentTypesViaRestApiAsync()
+        {
+            try
+            {
+                var query = $"{_adminServiceUrl}/wmi/SMS_DeploymentType?$select=LocalizedDisplayName,Technology,AppModelName,CI_UniqueID,Priority,IsEnabled";
+
+                Instance.Info("[CONFIGMGR] GetDeploymentTypes via REST - querying ConfigMgr Admin Service");
+                Instance.Info($"[CONFIGMGR] Query: {query}");
+
+                var response = await _httpClient.GetAsync(query);
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<ConfigMgrDeploymentTypeResponse>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                var deploymentTypes = new List<ConfigMgrDeploymentType>();
+                if (result?.Value != null)
+                {
+                    foreach (var dt in result.Value)
+                    {
+                        deploymentTypes.Add(new ConfigMgrDeploymentType
+                        {
+                            LocalizedDisplayName = dt.LocalizedDisplayName ?? "Unknown",
+                            Technology = dt.Technology ?? "Unknown",
+                            AppModelName = dt.AppModelName ?? "",
+                            CI_UniqueID = dt.CI_UniqueID,
+                            Priority = dt.Priority,
+                            IsEnabled = dt.IsEnabled
+                        });
+                    }
+                }
+
+                // Log technology breakdown
+                var techGroups = deploymentTypes.GroupBy(d => d.Technology).OrderByDescending(g => g.Count());
+                Instance.Info($"[CONFIGMGR] GetDeploymentTypes via REST - returned {deploymentTypes.Count} deployment types");
+                Instance.Info($"[CONFIGMGR] Technology breakdown:");
+                foreach (var group in techGroups)
+                {
+                    Instance.Info($"   {group.Key}: {group.Count()}");
+                }
+                
+                return deploymentTypes;
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CONFIGMGR] GetDeploymentTypes via REST FAILED: {ex.Message}");
+                throw new Exception($"Failed to get deployment types via REST: {ex.Message}", ex);
+            }
+        }
+
+        private async Task<List<ConfigMgrDeploymentType>> GetDeploymentTypesViaWmiAsync()
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    Instance.Info("[CONFIGMGR] GetDeploymentTypes via WMI - connecting to WMI namespace");
+                    var wmiNamespace = $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery(wmiNamespace, "SELECT LocalizedDisplayName, Technology, AppModelName, CI_UniqueID, Priority, IsEnabled FROM SMS_DeploymentType");
+
+                    var deploymentTypes = new List<ConfigMgrDeploymentType>();
+                    var scope = new ManagementScope(wmiNamespace);
+                    scope.Connect();
+
+                    var query = new SelectQuery("SMS_DeploymentType", null, new[] { "LocalizedDisplayName", "Technology", "AppModelName", "CI_UniqueID", "Priority", "IsEnabled" });
+                    var searcher = new ManagementObjectSearcher(scope, query);
+
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        deploymentTypes.Add(new ConfigMgrDeploymentType
+                        {
+                            LocalizedDisplayName = obj["LocalizedDisplayName"]?.ToString() ?? "Unknown",
+                            Technology = obj["Technology"]?.ToString() ?? "Unknown",
+                            AppModelName = obj["AppModelName"]?.ToString() ?? "",
+                            CI_UniqueID = obj["CI_UniqueID"]?.ToString(),
+                            Priority = obj["Priority"] != null ? Convert.ToInt32(obj["Priority"]) : 0,
+                            IsEnabled = obj["IsEnabled"] != null && Convert.ToBoolean(obj["IsEnabled"])
+                        });
+                    }
+
+                    // Log technology breakdown
+                    var techGroups = deploymentTypes.GroupBy(d => d.Technology).OrderByDescending(g => g.Count());
+                    Instance.Info($"[CONFIGMGR] GetDeploymentTypes via WMI - returned {deploymentTypes.Count} deployment types");
+                    Instance.Info($"[CONFIGMGR] Technology breakdown:");
+                    foreach (var group in techGroups)
+                    {
+                        Instance.Info($"   {group.Key}: {group.Count()}");
+                    }
+                    
+                    return deploymentTypes;
+                }
+                catch (Exception ex)
+                {
+                    Instance.Error($"[CONFIGMGR] GetDeploymentTypes via WMI FAILED: {ex.Message}");
+                    throw new Exception($"Failed to get deployment types via WMI: {ex.Message}", ex);
                 }
             });
         }
@@ -2180,6 +2305,21 @@ namespace ZeroTrustMigrationAddin.Services
     public class ConfigMgrApplicationResponse
     {
         public List<ConfigMgrApplicationResource> Value { get; set; } = new List<ConfigMgrApplicationResource>();
+    }
+
+    public class ConfigMgrDeploymentTypeResponse
+    {
+        public List<ConfigMgrDeploymentTypeResource> Value { get; set; } = new List<ConfigMgrDeploymentTypeResource>();
+    }
+
+    public class ConfigMgrDeploymentTypeResource
+    {
+        public string? LocalizedDisplayName { get; set; }
+        public string? Technology { get; set; }
+        public string? AppModelName { get; set; }
+        public string? CI_UniqueID { get; set; }
+        public int Priority { get; set; }
+        public bool IsEnabled { get; set; }
     }
 
     public class ConfigMgrHardwareResponse

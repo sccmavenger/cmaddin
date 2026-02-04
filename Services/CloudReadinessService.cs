@@ -65,20 +65,23 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 // Run all assessments in parallel for better performance
                 // NOTE: Windows 11, Identity, WUfB, Endpoint Security hidden per Rob's feedback (2026-01-29)
+                // NOTE: Autopatch hidden (2026-02-03) - better suited for AI Recommendations
                 var autopilotTask = GetAutopilotReadinessSignalAsync();
                 // var windows11Task = GetWindows11ReadinessSignalAsync(); // Hidden - not part of cloud-native readiness
                 var cloudNativeTask = GetCloudNativeReadinessSignalAsync();
-                var autopatchTask = GetAutopatchReadinessSignalAsync();
+                var applicationTask = GetApplicationReadinessSignalAsync(); // v3.17.100 - Application Readiness
+                // var autopatchTask = GetAutopatchReadinessSignalAsync(); // Hidden - requires Intune enrollment first, better for AI Recommendations
                 // var identityTask = GetIdentityReadinessSignalAsync(); // Hidden per Rob's feedback
                 // var wufbTask = GetWufbReadinessSignalAsync(); // Hidden per Rob's feedback
                 // var endpointSecurityTask = GetEndpointSecurityReadinessSignalAsync(); // Hidden per Rob's feedback
 
-                await Task.WhenAll(autopilotTask, cloudNativeTask, autopatchTask);
+                await Task.WhenAll(autopilotTask, cloudNativeTask, applicationTask);
 
                 dashboard.Signals.Add(await autopilotTask);
                 // dashboard.Signals.Add(await windows11Task); // Hidden per Rob's feedback
                 dashboard.Signals.Add(await cloudNativeTask);
-                dashboard.Signals.Add(await autopatchTask);
+                dashboard.Signals.Add(await applicationTask); // v3.17.100 - Application Readiness
+                // dashboard.Signals.Add(await autopatchTask); // Hidden - requires Intune enrollment first, better for AI Recommendations
                 // dashboard.Signals.Add(await identityTask); // Hidden per Rob's feedback
                 // dashboard.Signals.Add(await wufbTask); // Hidden per Rob's feedback
                 // dashboard.Signals.Add(await endpointSecurityTask); // Hidden per Rob's feedback
@@ -1279,7 +1282,277 @@ namespace ZeroTrustMigrationAddin.Services
             return signal;
         }
 
+        /// <summary>
+        /// Assesses Application Readiness for migration to Intune/cloud-native management.
+        /// Analyzes ConfigMgr application deployment types to determine migration complexity.
+        /// v3.17.100 - Application Readiness feature
+        /// 
+        /// Complexity Categories:
+        /// - Easy: MSI, MSIX - Use Enterprise App Catalog or Microsoft Store
+        /// - Moderate: MSI (custom/LOB) - Package as Win32 app using Content Prep Tool
+        /// - Needs Review: Script-based - Review installer logic before migration
+        /// - Complex: App-V - Requires repackaging to Win32 or MSIX
+        /// </summary>
+        public async Task<CloudReadinessSignal> GetApplicationReadinessSignalAsync()
+        {
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 📦 APPLICATION READINESS ASSESSMENT                                                     │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+            
+            var signal = new CloudReadinessSignal
+            {
+                Id = "application-readiness",
+                Name = "Application Readiness",
+                Description = "Applications ready for Intune deployment",
+                Icon = "📦",
+                RelatedWorkload = "Application Management",
+                LearnMoreUrl = "https://learn.microsoft.com/mem/intune/apps/apps-add"
+            };
+
+            try
+            {
+                // Get applications and deployment types from ConfigMgr
+                Instance.Info("   Fetching applications from ConfigMgr...");
+                var applications = await _configMgrService.GetApplicationsAsync();
+                
+                Instance.Info("   Fetching deployment types to analyze installer technologies...");
+                var deploymentTypes = await _configMgrService.GetDeploymentTypesAsync();
+
+                var totalApps = applications?.Count ?? 0;
+                var deployedApps = applications?.Where(a => a.IsDeployed).ToList() ?? new List<ConfigMgrApplication>();
+                
+                Instance.Info($"   📱 Total applications in ConfigMgr: {totalApps}");
+                Instance.Info($"   🚀 Deployed applications (active): {deployedApps.Count}");
+                Instance.Info($"   📋 Total deployment types: {deploymentTypes?.Count ?? 0}");
+
+                // Use deployed apps as the total for readiness calculation
+                signal.TotalDevices = deployedApps.Count; // Reusing TotalDevices for app count in signal model
+                
+                if (signal.TotalDevices == 0)
+                {
+                    Instance.Warning("   ⚠️ No deployed applications found for assessment");
+                    return signal;
+                }
+
+                // Group deployment types by technology
+                var dtByTechnology = deploymentTypes?
+                    .Where(dt => dt.IsEnabled)
+                    .GroupBy(dt => dt.Technology ?? "Unknown")
+                    .ToDictionary(g => g.Key, g => g.ToList()) ?? new Dictionary<string, List<ConfigMgrDeploymentType>>();
+
+                // Count apps by technology category (based on their deployment types)
+                var dtByApp = deploymentTypes?
+                    .Where(dt => dt.IsEnabled)
+                    .GroupBy(dt => dt.AppModelName)
+                    .ToDictionary(g => g.Key, g => g.ToList()) ?? new Dictionary<string, List<ConfigMgrDeploymentType>>();
+
+                int easyCount = 0;      // MSI, MSIX, Windows8AppInstaller, DeepLink
+                int moderateCount = 0;  // MSI (will count separately as "LOB MSI")
+                int needsReviewCount = 0; // Script
+                int complexCount = 0;   // App-V
+                int unknownCount = 0;   // Unknown or no deployment types
+
+                var assessments = new List<AppMigrationAssessment>();
+
+                foreach (var app in deployedApps)
+                {
+                    // Find deployment types for this application
+                    // Try matching by app name (ConfigMgr uses LocalizedDisplayName for AppModelName correlation)
+                    var appDTs = dtByApp.GetValueOrDefault(app.Name) ?? new List<ConfigMgrDeploymentType>();
+                    
+                    // Get the primary technology (lowest priority = primary)
+                    var primaryDT = appDTs.OrderBy(dt => dt.Priority).FirstOrDefault();
+                    var primaryTech = primaryDT?.Technology ?? "Unknown";
+
+                    var assessment = new AppMigrationAssessment
+                    {
+                        Name = app.Name,
+                        Version = app.Version,
+                        Technology = primaryTech,
+                        DeploymentTypes = appDTs,
+                        DeploymentTypeCount = app.DeploymentTypeCount,
+                        IsDeployed = app.IsDeployed
+                    };
+
+                    // Determine complexity based on technology
+                    switch (primaryTech.ToUpperInvariant())
+                    {
+                        case "MSIX":
+                        case "WINDOWS8APPINSTALLER":
+                        case "DEEPLINK":
+                            assessment.Complexity = MigrationComplexity.Easy;
+                            assessment.RecommendedPath = "Deploy via Microsoft Store or Enterprise App Catalog";
+                            assessment.MigrationGuideUrl = "https://learn.microsoft.com/mem/intune/apps/store-apps-microsoft";
+                            easyCount++;
+                            break;
+                            
+                        case "MSI":
+                            // MSI is straightforward - use Win32 app model
+                            assessment.Complexity = MigrationComplexity.Moderate;
+                            assessment.RecommendedPath = "Package as Win32 app using Microsoft Win32 Content Prep Tool";
+                            assessment.MigrationGuideUrl = "https://learn.microsoft.com/mem/intune/apps/apps-win32-app-management";
+                            moderateCount++;
+                            break;
+                            
+                        case "SCRIPT":
+                            assessment.Complexity = MigrationComplexity.NeedsReview;
+                            assessment.RecommendedPath = "Review installer logic, consider repackaging as Win32 app";
+                            assessment.MigrationGuideUrl = "https://learn.microsoft.com/mem/intune/apps/apps-win32-prepare";
+                            needsReviewCount++;
+                            break;
+                            
+                        case "APPV5X":
+                        case "APPV":
+                            assessment.Complexity = MigrationComplexity.Complex;
+                            assessment.RecommendedPath = "Requires repackaging - convert to MSIX or Win32";
+                            assessment.MigrationGuideUrl = "https://learn.microsoft.com/windows/application-management/app-v/appv-for-windows";
+                            complexCount++;
+                            break;
+                            
+                        default:
+                            // No deployment type info or unknown technology
+                            if (appDTs.Count == 0)
+                            {
+                                assessment.Complexity = MigrationComplexity.NeedsReview;
+                                assessment.RecommendedPath = "Deployment type information unavailable - manual review required";
+                            }
+                            else
+                            {
+                                assessment.Complexity = MigrationComplexity.NeedsReview;
+                                assessment.RecommendedPath = $"Unknown technology '{primaryTech}' - manual review required";
+                            }
+                            assessment.MigrationGuideUrl = "https://learn.microsoft.com/mem/intune/apps/apps-add";
+                            unknownCount++;
+                            break;
+                    }
+
+                    assessments.Add(assessment);
+                }
+
+                // Ready apps = Easy + Moderate (have clear migration paths)
+                var readyCount = easyCount + moderateCount;
+                signal.ReadyDevices = SafeReadyDevices(readyCount, signal.TotalDevices, "Application Readiness");
+
+                Instance.Info("");
+                Instance.Info("   APPLICATION READINESS BREAKDOWN:");
+                Instance.Info($"      ✅ Easy (Store/MSIX): {easyCount} apps");
+                Instance.Info($"      🔵 Moderate (Win32/MSI): {moderateCount} apps");
+                Instance.Info($"      🟡 Needs Review (Script): {needsReviewCount} apps");
+                Instance.Info($"      🔴 Complex (App-V): {complexCount} apps");
+                if (unknownCount > 0)
+                {
+                    Instance.Info($"      ❓ Unknown: {unknownCount} apps");
+                }
+
+                // Create blockers for apps needing attention
+                var blockers = new List<ReadinessBlocker>();
+
+                if (complexCount > 0)
+                {
+                    blockers.Add(new ReadinessBlocker
+                    {
+                        Id = "app-v-apps",
+                        Name = "App-V Packages",
+                        Description = "App-V virtualized applications require repackaging to MSIX or Win32 format for Intune deployment.",
+                        AffectedDeviceCount = complexCount,
+                        PercentageAffected = SafeBlockerPercentage(complexCount, signal.TotalDevices),
+                        Severity = BlockerSeverity.High,
+                        RemediationAction = "Convert App-V packages to MSIX using MSIX Packaging Tool or repackage as Win32",
+                        RemediationUrl = "https://learn.microsoft.com/windows/application-management/msix-app-packaging-tool"
+                    });
+                }
+
+                if (needsReviewCount > 0)
+                {
+                    blockers.Add(new ReadinessBlocker
+                    {
+                        Id = "script-installers",
+                        Name = "Script-Based Installers",
+                        Description = "Applications using custom scripts need review to ensure compatibility with Intune Win32 app deployment.",
+                        AffectedDeviceCount = needsReviewCount,
+                        PercentageAffected = SafeBlockerPercentage(needsReviewCount, signal.TotalDevices),
+                        Severity = BlockerSeverity.Medium,
+                        RemediationAction = "Review installer scripts and package as Win32 app with appropriate detection rules",
+                        RemediationUrl = "https://learn.microsoft.com/mem/intune/apps/apps-win32-prepare"
+                    });
+                }
+
+                if (unknownCount > 0)
+                {
+                    blockers.Add(new ReadinessBlocker
+                    {
+                        Id = "unknown-technology",
+                        Name = "Unknown Deployment Technology",
+                        Description = "Applications with unrecognized or missing deployment type information require manual assessment.",
+                        AffectedDeviceCount = unknownCount,
+                        PercentageAffected = SafeBlockerPercentage(unknownCount, signal.TotalDevices),
+                        Severity = BlockerSeverity.Low,
+                        RemediationAction = "Review application deployment types in ConfigMgr and determine migration path",
+                        RemediationUrl = "https://learn.microsoft.com/mem/intune/apps/apps-add"
+                    });
+                }
+
+                signal.TopBlockers = blockers.OrderByDescending(b => b.Severity).ThenByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
+                signal.Recommendations = GenerateApplicationReadinessRecommendations(signal, easyCount, moderateCount, needsReviewCount, complexCount);
+
+                Instance.Info("");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+                Instance.Info($"   📦 APPLICATION READINESS RESULT: {signal.ReadinessPercentage}%");
+                Instance.Info($"      Ready apps: {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      Blockers found: {blockers.Count}");
+                Instance.Info($"   ═══════════════════════════════════════════════════════════════");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Application readiness assessment failed: {ex.Message}");
+                Instance.Error($"Stack trace: {ex.StackTrace}");
+            }
+
+            return signal;
+        }
+
         #region Helper Methods
+
+        private List<string> GenerateApplicationReadinessRecommendations(CloudReadinessSignal signal, int easyCount, int moderateCount, int needsReviewCount, int complexCount)
+        {
+            var recommendations = new List<string>();
+
+            if (signal.ReadinessPercentage >= 80)
+            {
+                recommendations.Add("Excellent! Most applications have clear migration paths to Intune.");
+                recommendations.Add("Start migrating Easy and Moderate apps while planning for complex ones.");
+            }
+            else if (signal.ReadinessPercentage >= 60)
+            {
+                recommendations.Add("Good progress! Focus on packaging MSI apps as Win32 for Intune.");
+            }
+            else
+            {
+                recommendations.Add("Many applications need attention before Intune migration.");
+            }
+
+            if (moderateCount > 0)
+            {
+                recommendations.Add($"{moderateCount} MSI apps can use the Win32 app model - use Microsoft Win32 Content Prep Tool to package.");
+            }
+
+            if (easyCount > 0)
+            {
+                recommendations.Add($"{easyCount} apps may be available in Enterprise App Catalog or Microsoft Store - check before packaging.");
+            }
+
+            if (complexCount > 0)
+            {
+                recommendations.Add($"Plan App-V migration strategy: {complexCount} apps need repackaging to MSIX or Win32.");
+            }
+
+            if (needsReviewCount > 0)
+            {
+                recommendations.Add($"Review {needsReviewCount} script-based apps for Win32 compatibility.");
+            }
+
+            return recommendations;
+        }
 
         private List<string> GenerateAutopilotRecommendations(CloudReadinessSignal signal, List<ReadinessBlocker> blockers)
         {
