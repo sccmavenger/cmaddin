@@ -15,13 +15,34 @@
 ## [3.17.99] - 2026-02-03
 
 ### Added
-- 
+- **Entra App Registration Script** - New PowerShell script `scripts/New-CloudNativeAssessmentApp.ps1` to create custom app registrations
+  - Creates app named "Cloud Native Assessment" by default (customizable via `-AppName`)
+  - Configures all 8 required Graph API delegated permissions
+  - Sets up "Mobile and desktop applications" platform with `http://localhost` redirect
+  - Optional `-GrantAdminConsent` flag for admin consent (requires Global Admin)
+  - Outputs Client ID and Tenant ID ready for use in Cloud Native Assessment
 
 ### Changed
-- 
+- **Auth Settings UI** - Added clear guidance for redirect URI configuration (per Martin's feedback)
+  - New warning box: "⚠️ Redirect URI Configuration"
+  - Emphasizes selecting "Mobile and desktop applications" (NOT "Web")
+  - Shows redirect URI: `http://localhost`
+- **README Custom App Instructions** - Split into separate steps with clearer guidance
+  - New "Step 1b: Configure Redirect URI" section
+  - Warning callout about correct platform type
 
 ### Fixed
-- 
+- **Cloud Readiness blocker drill-down now shows real OS info from ConfigMgr**
+  - Previously: "Windows (version unknown - device not in Intune)"
+  - Now: Shows actual OS from ConfigMgr (e.g., "Microsoft Windows NT Workstation 10.0")
+  - Applies to all 6 blockers: Not Registered to Autopilot, Unsupported OS, Missing TPM 2.0, Windows Home Edition, Co-managed Workloads, WU Workload on ConfigMgr
+
+### Technical
+- `Models/CloudReadinessModels.cs` - Changed `AffectedDeviceNames` from `List<string>` to computed property, added `AffectedDevices` as `List<ConfigMgrDevice>`
+- `Services/CloudReadinessService.cs` - Updated 6 blocker assignments to pass full ConfigMgrDevice objects; added lookup dictionaries for workload-based blockers
+- `Views/CloudReadinessTab.xaml.cs` - Updated popup logic to use ConfigMgr device objects with real OS info
+- `Views/GraphAuthSettingsWindow.xaml` - Added redirect URI warning box
+- New file: `scripts/New-CloudNativeAssessmentApp.ps1` - Entra app registration automation
 
 
 ## [3.17.98] - 2026-02-03
