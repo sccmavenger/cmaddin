@@ -12,6 +12,18 @@
 - 
 
 
+## [3.17.108] - 2026-02-04
+
+### Added
+- 
+
+### Changed
+- Removed OS Currency comparison panel from Cloud Readiness Tab (not useful for demonstrating cloud value)
+
+### Fixed
+- 
+
+
 ## [3.17.107] - 2026-02-04
 
 ### Added
