@@ -1671,5 +1671,266 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         #endregion
+
+        #region Comparison Methods
+
+        /// <summary>
+        /// Gets Update Management Comparison data between cloud-native (Intune) and ConfigMgr-managed devices.
+        /// Compares overall compliance state and sync/scan frequency.
+        /// </summary>
+        public async Task<UpdateManagementComparison> GetUpdateManagementComparisonAsync()
+        {
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 📊 UPDATE MANAGEMENT COMPARISON (Intune vs ConfigMgr)                                   │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+
+            var comparison = new UpdateManagementComparison();
+
+            try
+            {
+                // Get Intune managed devices with compliance state
+                Instance.Info("   Fetching Intune device compliance data...");
+                var intuneDevices = await _graphService.GetCachedManagedDevicesAsync();
+                
+                // Filter to Windows devices only
+                var intuneWindowsDevices = intuneDevices
+                    .Where(d => d.OperatingSystem?.Contains("Windows", StringComparison.OrdinalIgnoreCase) == true)
+                    .ToList();
+
+                comparison.IntuneDeviceCount = intuneWindowsDevices.Count;
+
+                if (intuneWindowsDevices.Count > 0)
+                {
+                    // Calculate compliance percentage (Compliant vs all states)
+                    var compliantCount = intuneWindowsDevices.Count(d => 
+                        d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Compliant);
+                    comparison.IntuneCompliancePercentage = Math.Round((double)compliantCount / intuneWindowsDevices.Count * 100, 1);
+
+                    // Calculate average days since last sync
+                    var devicesWithSync = intuneWindowsDevices.Where(d => d.LastSyncDateTime != null).ToList();
+                    if (devicesWithSync.Any())
+                    {
+                        var totalDays = devicesWithSync.Sum(d => 
+                            (DateTime.UtcNow - d.LastSyncDateTime.Value.UtcDateTime).TotalDays);
+                        comparison.IntuneAvgDaysSinceSync = Math.Round(totalDays / devicesWithSync.Count, 1);
+                    }
+                    
+                    Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} devices, {comparison.IntuneCompliancePercentage}% compliant, avg {comparison.IntuneAvgDaysSinceSync} days since sync");
+                }
+                else
+                {
+                    Instance.Info("   ⚠️ No Intune Windows devices found");
+                }
+
+                // Get ConfigMgr update compliance
+                Instance.Info("   Fetching ConfigMgr update compliance data...");
+                var configMgrCompliance = await _configMgrService.GetSoftwareUpdateComplianceAsync();
+                
+                comparison.ConfigMgrDeviceCount = configMgrCompliance.Count;
+
+                if (configMgrCompliance.Count > 0)
+                {
+                    // Status 1 = Compliant in SMS_UpdateComplianceStatus
+                    var compliantCount = configMgrCompliance.Count(c => c.ComplianceStatus == 1);
+                    comparison.ConfigMgrCompliancePercentage = Math.Round((double)compliantCount / configMgrCompliance.Count * 100, 1);
+
+                    // Calculate average days since last compliance check
+                    var devicesWithCheck = configMgrCompliance.Where(c => c.LastCheckTime != null).ToList();
+                    if (devicesWithCheck.Any())
+                    {
+                        var totalDays = devicesWithCheck.Sum(c => 
+                            (DateTime.UtcNow - c.LastCheckTime.Value).TotalDays);
+                        comparison.ConfigMgrAvgDaysSinceScan = Math.Round(totalDays / devicesWithCheck.Count, 1);
+                    }
+                    
+                    Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices, {comparison.ConfigMgrCompliancePercentage}% compliant, avg {comparison.ConfigMgrAvgDaysSinceScan} days since scan");
+                }
+                else
+                {
+                    Instance.Info("   ⚠️ No ConfigMgr update compliance data found");
+                }
+
+                Instance.Info($"   📈 COMPARISON RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Update Management Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets OS Currency Comparison data showing Windows 11 adoption rates between
+        /// cloud-native (Intune) and ConfigMgr-managed devices.
+        /// </summary>
+        public async Task<OSCurrencyComparison> GetOSCurrencyComparisonAsync()
+        {
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 💻 OS CURRENCY COMPARISON (Intune vs ConfigMgr)                                          │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+
+            var comparison = new OSCurrencyComparison();
+
+            try
+            {
+                // Get Intune devices with OS version
+                Instance.Info("   Fetching Intune device OS version data...");
+                var intuneDevices = await _graphService.GetCachedManagedDevicesAsync();
+                
+                // Filter to Windows devices with OS version info
+                var intuneWindowsDevices = intuneDevices
+                    .Where(d => d.OperatingSystem?.Contains("Windows", StringComparison.OrdinalIgnoreCase) == true 
+                                && !string.IsNullOrEmpty(d.OsVersion))
+                    .ToList();
+
+                comparison.IntuneDeviceCount = intuneWindowsDevices.Count;
+
+                if (intuneWindowsDevices.Count > 0)
+                {
+                    // Group by OS version and create distribution
+                    var intuneGroups = intuneWindowsDevices
+                        .GroupBy(d => GetWindowsVersionGroup(d.OsVersion ?? ""))
+                        .Select(g => new OSVersionGroup
+                        {
+                            OSVersion = g.Key.version,
+                            FriendlyName = g.Key.friendlyName,
+                            DeviceCount = g.Count(),
+                            Percentage = Math.Round((double)g.Count() / intuneWindowsDevices.Count * 100, 1)
+                        })
+                        .OrderByDescending(g => g.FriendlyName)
+                        .ToList();
+
+                    comparison.IntuneDistribution = intuneGroups;
+                    comparison.IntuneWindows11Percentage = intuneGroups
+                        .Where(g => g.FriendlyName.Contains("11"))
+                        .Sum(g => g.Percentage);
+                    comparison.IntuneLatestBuildPercentage = intuneGroups
+                        .FirstOrDefault(g => g.FriendlyName.Contains("24H2"))?.Percentage ?? 0;
+
+                    Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} devices, {comparison.IntuneWindows11Percentage}% on Windows 11");
+                }
+                else
+                {
+                    Instance.Info("   ⚠️ No Intune Windows devices with OS version found");
+                }
+
+                // Get ConfigMgr OS details
+                Instance.Info("   Fetching ConfigMgr device OS version data...");
+                var configMgrOSDetails = await _configMgrService.GetOSDetailsAsync();
+
+                // Filter to Windows 10/11 devices
+                var configMgrWindowsDevices = configMgrOSDetails
+                    .Where(os => os.Caption?.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) == true
+                                || os.Caption?.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) == true)
+                    .ToList();
+
+                comparison.ConfigMgrDeviceCount = configMgrWindowsDevices.Count;
+
+                if (configMgrWindowsDevices.Count > 0)
+                {
+                    // Group by OS version using build number
+                    var configMgrGroups = configMgrWindowsDevices
+                        .GroupBy(os => GetWindowsVersionGroupFromBuild(os.BuildNumber ?? "", os.Caption ?? ""))
+                        .Select(g => new OSVersionGroup
+                        {
+                            OSVersion = g.Key.version,
+                            FriendlyName = g.Key.friendlyName,
+                            DeviceCount = g.Count(),
+                            Percentage = Math.Round((double)g.Count() / configMgrWindowsDevices.Count * 100, 1)
+                        })
+                        .OrderByDescending(g => g.FriendlyName)
+                        .ToList();
+
+                    comparison.ConfigMgrDistribution = configMgrGroups;
+                    comparison.ConfigMgrWindows11Percentage = configMgrGroups
+                        .Where(g => g.FriendlyName.Contains("11"))
+                        .Sum(g => g.Percentage);
+                    comparison.ConfigMgrLatestBuildPercentage = configMgrGroups
+                        .FirstOrDefault(g => g.FriendlyName.Contains("24H2"))?.Percentage ?? 0;
+
+                    Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices, {comparison.ConfigMgrWindows11Percentage}% on Windows 11");
+                }
+                else
+                {
+                    Instance.Info("   ⚠️ No ConfigMgr Windows 10/11 devices found");
+                }
+
+                Instance.Info($"   🚀 COMPARISON RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"OS Currency Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Parse Intune OsVersion string (like "10.0.19045.4780") to Windows version group.
+        /// </summary>
+        private (string version, string friendlyName) GetWindowsVersionGroup(string osVersion)
+        {
+            if (string.IsNullOrEmpty(osVersion)) return ("Unknown", "Unknown");
+
+            // Parse build number from version string (e.g., "10.0.19045.4780" -> 19045)
+            var parts = osVersion.Split('.');
+            if (parts.Length >= 3 && int.TryParse(parts[2], out var buildNumber))
+            {
+                return GetFriendlyNameFromBuild(buildNumber);
+            }
+
+            return (osVersion, $"Unknown ({osVersion})");
+        }
+
+        /// <summary>
+        /// Parse ConfigMgr build number to Windows version group.
+        /// </summary>
+        private (string version, string friendlyName) GetWindowsVersionGroupFromBuild(string buildNumber, string caption)
+        {
+            if (int.TryParse(buildNumber, out var build))
+            {
+                return GetFriendlyNameFromBuild(build);
+            }
+
+            // Fallback to caption
+            if (caption.Contains("11"))
+                return ("11", "Windows 11");
+            if (caption.Contains("10"))
+                return ("10", "Windows 10");
+
+            return ("Unknown", caption);
+        }
+
+        /// <summary>
+        /// Map Windows build number to friendly version name.
+        /// Source: https://learn.microsoft.com/windows/release-health/
+        /// </summary>
+        private (string version, string friendlyName) GetFriendlyNameFromBuild(int buildNumber)
+        {
+            return buildNumber switch
+            {
+                // Windows 11 builds
+                >= 26100 => ("11.24H2", "Windows 11 24H2"),
+                >= 22631 => ("11.23H2", "Windows 11 23H2"),
+                >= 22621 => ("11.22H2", "Windows 11 22H2"),
+                >= 22000 => ("11.21H2", "Windows 11 21H2"),
+                
+                // Windows 10 builds
+                >= 19045 => ("10.22H2", "Windows 10 22H2"),
+                >= 19044 => ("10.21H2", "Windows 10 21H2"),
+                >= 19043 => ("10.21H1", "Windows 10 21H1"),
+                >= 19042 => ("10.20H2", "Windows 10 20H2"),
+                >= 19041 => ("10.2004", "Windows 10 2004"),
+                >= 18363 => ("10.1909", "Windows 10 1909"),
+                >= 18362 => ("10.1903", "Windows 10 1903"),
+                >= 17763 => ("10.1809", "Windows 10 1809"),
+                >= 17134 => ("10.1803", "Windows 10 1803"),
+                
+                _ => ("10.Older", "Windows 10 (Older)")
+            };
+        }
+
+        #endregion
     }
 }

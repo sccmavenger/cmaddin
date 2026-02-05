@@ -78,6 +78,9 @@ namespace ZeroTrustMigrationAddin.Views
                 _currentDashboard = await _readinessService.GetCloudReadinessDashboardAsync();
                 UpdateUI(_currentDashboard);
                 
+                // Load comparison data (runs in parallel after main dashboard)
+                await LoadComparisonDataAsync();
+                
                 // Track CloudReadinessViewed telemetry
                 AzureTelemetryService.Instance.TrackEvent("CloudReadinessViewed", new Dictionary<string, string>
                 {
@@ -97,6 +100,94 @@ namespace ZeroTrustMigrationAddin.Views
             finally
             {
                 LoadingOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>
+        /// Loads and displays the cloud-native vs ConfigMgr comparison data.
+        /// </summary>
+        private async Task LoadComparisonDataAsync()
+        {
+            if (_readinessService == null)
+            {
+                Instance.Info("[CLOUD READINESS TAB] Comparison data skipped - service not initialized");
+                return;
+            }
+
+            try
+            {
+                Instance.Info("[CLOUD READINESS TAB] Loading cloud vs on-prem comparison data...");
+                
+                // Fetch both comparison datasets in parallel
+                var complianceTask = _readinessService.GetUpdateManagementComparisonAsync();
+                var osTask = _readinessService.GetOSCurrencyComparisonAsync();
+                
+                await Task.WhenAll(complianceTask, osTask);
+                
+                var compliance = await complianceTask;
+                var osCurrency = await osTask;
+                
+                // Only show comparison if we have data from both sources
+                bool hasComplianceData = compliance.IntuneDeviceCount > 0 || compliance.ConfigMgrDeviceCount > 0;
+                bool hasOSData = osCurrency.IntuneDeviceCount > 0 || osCurrency.ConfigMgrDeviceCount > 0;
+                
+                if (hasComplianceData || hasOSData)
+                {
+                    // Show the comparison section
+                    ComparisonSectionHeader.Visibility = Visibility.Visible;
+                    ComparisonSection.Visibility = Visibility.Visible;
+                    
+                    // Update Compliance Comparison UI
+                    if (hasComplianceData)
+                    {
+                        IntuneCompliancePercent.Text = $"{compliance.IntuneCompliancePercentage:F0}%";
+                        IntuneComplianceDevices.Text = $"{compliance.IntuneDeviceCount:N0} devices";
+                        IntuneSyncDays.Text = $"Avg {compliance.IntuneAvgDaysSinceSync:F1} days since sync";
+                        
+                        ConfigMgrCompliancePercent.Text = $"{compliance.ConfigMgrCompliancePercentage:F0}%";
+                        ConfigMgrComplianceDevices.Text = $"{compliance.ConfigMgrDeviceCount:N0} devices";
+                        ConfigMgrScanDays.Text = $"Avg {compliance.ConfigMgrAvgDaysSinceScan:F1} days since scan";
+                        
+                        ComplianceComparisonIcon.Text = compliance.ComparisonIcon;
+                        ComplianceSummaryText.Text = compliance.ComparisonSummary;
+                    }
+                    else
+                    {
+                        ComplianceSummaryText.Text = "No compliance data available";
+                    }
+                    
+                    // Update OS Currency Comparison UI
+                    if (hasOSData)
+                    {
+                        IntuneWindows11Percent.Text = $"{osCurrency.IntuneWindows11Percentage:F0}%";
+                        IntuneOSDevices.Text = $"{osCurrency.IntuneDeviceCount:N0} devices";
+                        
+                        ConfigMgrWindows11Percent.Text = $"{osCurrency.ConfigMgrWindows11Percentage:F0}%";
+                        ConfigMgrOSDevices.Text = $"{osCurrency.ConfigMgrDeviceCount:N0} devices";
+                        
+                        OSComparisonIcon.Text = osCurrency.ComparisonIcon;
+                        OSSummaryText.Text = osCurrency.ComparisonSummary;
+                    }
+                    else
+                    {
+                        OSSummaryText.Text = "No OS version data available";
+                    }
+                    
+                    Instance.Info($"[CLOUD READINESS TAB] Comparison data loaded - Compliance: {compliance.ComparisonSummary}, OS: {osCurrency.ComparisonSummary}");
+                }
+                else
+                {
+                    // Hide comparison section if no data
+                    ComparisonSectionHeader.Visibility = Visibility.Collapsed;
+                    ComparisonSection.Visibility = Visibility.Collapsed;
+                    Instance.Info("[CLOUD READINESS TAB] No comparison data available - hiding section");
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[CLOUD READINESS TAB] Failed to load comparison data: {ex.Message}");
+                ComparisonSectionHeader.Visibility = Visibility.Collapsed;
+                ComparisonSection.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -168,6 +259,44 @@ namespace ZeroTrustMigrationAddin.Views
 
             _currentDashboard = mockDashboard;
             UpdateUI(mockDashboard);
+            
+            // Also show mock comparison data
+            LoadMockComparisonData();
+        }
+
+        /// <summary>
+        /// Loads mock comparison data for demonstration when services are not connected.
+        /// This mock data disappears when authenticated to Graph and ConfigMgr.
+        /// </summary>
+        private void LoadMockComparisonData()
+        {
+            Instance.Info("[CLOUD READINESS TAB] Loading mock comparison data for demonstration");
+            
+            // Show the comparison section with mock data
+            ComparisonSectionHeader.Visibility = Visibility.Visible;
+            ComparisonSection.Visibility = Visibility.Visible;
+            
+            // Mock Compliance Comparison - Cloud-native devices typically have better compliance
+            IntuneCompliancePercent.Text = "94%";
+            IntuneComplianceDevices.Text = "847 devices";
+            IntuneSyncDays.Text = "Avg 0.3 days since sync";
+            
+            ConfigMgrCompliancePercent.Text = "78%";
+            ConfigMgrComplianceDevices.Text = "1,250 devices";
+            ConfigMgrScanDays.Text = "Avg 2.1 days since scan";
+            
+            ComplianceComparisonIcon.Text = "📈";
+            ComplianceSummaryText.Text = "Cloud-native devices are 16% more compliant! (Demo Data)";
+            
+            // Mock OS Currency Comparison - Cloud-native devices tend to be more current
+            IntuneWindows11Percent.Text = "72%";
+            IntuneOSDevices.Text = "847 devices";
+            
+            ConfigMgrWindows11Percent.Text = "45%";
+            ConfigMgrOSDevices.Text = "1,250 devices";
+            
+            OSComparisonIcon.Text = "🚀";
+            OSSummaryText.Text = "Cloud-native devices have 27% higher Windows 11 adoption! (Demo Data)";
         }
 
         private void UpdateUI(CloudReadinessDashboard dashboard)
