@@ -1688,14 +1688,9 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
-                // Get Intune managed devices with compliance state
-                Instance.Info("   Fetching Intune device compliance data...");
-                var intuneDevices = await _graphService.GetCachedManagedDevicesAsync();
-                
-                // Filter to Windows devices only
-                var intuneWindowsDevices = intuneDevices
-                    .Where(d => d.OperatingSystem?.Contains("Windows", StringComparison.OrdinalIgnoreCase) == true)
-                    .ToList();
+                // Get Intune managed Windows workstations (excludes servers and MDE-only devices)
+                Instance.Info("   Fetching Intune device compliance data (workstations only, excluding servers)...");
+                var intuneWindowsDevices = await _graphService.GetWindowsWorkstationsAsync();
 
                 comparison.IntuneDeviceCount = intuneWindowsDevices.Count;
 

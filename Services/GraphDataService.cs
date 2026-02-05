@@ -393,6 +393,32 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
+        /// Checks if a device is a Windows 10/11 workstation (not a server, not MDE-only).
+        /// Use this as the single source of truth for filtering workstations.
+        /// </summary>
+        public static bool IsWindowsWorkstation(Microsoft.Graph.Models.ManagedDevice d)
+        {
+            return d.OperatingSystem != null &&
+                   d.OperatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) &&
+                   !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase) &&
+                   d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense;
+        }
+
+        /// <summary>
+        /// Get Windows 10/11 workstations only (excludes servers and MDE-only devices).
+        /// This is the preferred method for device counts and enrollment calculations.
+        /// </summary>
+        public async Task<List<Microsoft.Graph.Models.ManagedDevice>> GetWindowsWorkstationsAsync()
+        {
+            var allDevices = await GetCachedManagedDevicesAsync();
+            var workstations = allDevices.Where(IsWindowsWorkstation).ToList();
+            
+            Instance.Info($"[GRAPH] GetWindowsWorkstationsAsync: {workstations.Count} workstations from {allDevices.Count} total devices (excluded {allDevices.Count - workstations.Count} servers/MDE-only)");
+            
+            return workstations;
+        }
+
+        /// <summary>
         /// Get workload authority for all co-managed devices.
         /// Uses Graph API managedDevice.configurationManagerClientEnabledFeatures property.
         /// Source: https://learn.microsoft.com/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures
@@ -706,11 +732,10 @@ namespace ZeroTrustMigrationAddin.Services
                 }
                 else
                 {
-                    // Intune-only scenario: Filter Windows devices (no domain info available)
+                    // Intune-only scenario: Filter Windows workstations (excludes servers and MDE-only)
                     Instance.Info("No ConfigMgr connected - using Intune devices only");
                     
-                    var intuneWindowsDevices = allIntuneDevices.Where(d =>
-                        d.OperatingSystem?.IndexOf("Windows", StringComparison.OrdinalIgnoreCase) >= 0);
+                    var intuneWindowsDevices = allIntuneDevices.Where(IsWindowsWorkstation);
                     
                     foreach (var device in intuneWindowsDevices)
                     {

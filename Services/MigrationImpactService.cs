@@ -94,11 +94,11 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     Instance.Debug("[MIGRATION IMPACT] Graph service available - fetching device data");
                     
-                    // Get device counts using the correct method name
-                    var devices = await _graphService.GetCachedManagedDevicesAsync();
+                    // Get Windows workstations only (excludes servers and MDE-only devices)
+                    var devices = await _graphService.GetWindowsWorkstationsAsync();
                     inputs.TotalDevices = devices?.Count ?? 0;
                     inputs.EnrolledDevices = devices?.Count(d => !string.IsNullOrEmpty(d.Id)) ?? 0;
-                    Instance.Debug($"[MIGRATION IMPACT] Devices from Graph: Total={inputs.TotalDevices}, Enrolled={inputs.EnrolledDevices}");
+                    Instance.Debug($"[MIGRATION IMPACT] Windows workstations from Graph: Total={inputs.TotalDevices}, Enrolled={inputs.EnrolledDevices} (servers excluded)");
 
                     // Get compliance data
                     var complianceData = await _graphService.GetComplianceDashboardAsync();
@@ -122,11 +122,12 @@ namespace ZeroTrustMigrationAddin.Services
                         Instance.Debug($"[MIGRATION IMPACT] Workloads: CoMgmt={inputs.HasCoManagement}, Compliance={inputs.ComplianceWorkloadInCloud}, EP={inputs.EndpointProtectionWorkloadInCloud}, WU={inputs.WindowsUpdateWorkloadInCloud}");
                     }
 
-                    // Estimate other metrics from device data
+                    // Estimate other metrics from device data (devices already filtered to workstations only)
                     if (devices != null)
                     {
-                        inputs.Windows11Devices = devices.Count(d => d.OperatingSystem?.Contains("11") == true);
-                        inputs.Windows10Devices = devices.Count(d => d.OperatingSystem?.Contains("10") == true && d.OperatingSystem?.Contains("11") != true);
+                        // Note: devices is already filtered to Windows workstations, so these counts are accurate
+                        inputs.Windows11Devices = devices.Count(d => d.OperatingSystem?.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) == true);
+                        inputs.Windows10Devices = devices.Count(d => d.OperatingSystem?.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) == true);
                         inputs.StaleDevices = devices.Count(d => d.LastSyncDateTime < DateTime.UtcNow.AddDays(-7));
                         inputs.ActiveDevices = inputs.TotalDevices - inputs.StaleDevices;
                         

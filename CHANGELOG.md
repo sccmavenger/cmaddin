@@ -12,6 +12,25 @@
 - 
 
 
+## [3.17.109] - 2026-02-05
+
+### Added
+- **Server Exclusion Helper** - New `GetWindowsWorkstationsAsync()` method and `IsWindowsWorkstation()` helper
+  - Single source of truth for filtering Windows 10/11 workstations
+  - Excludes Windows Server operating systems
+  - Excludes MDE-only devices (not fully Intune-managed)
+
+### Changed
+- 
+
+### Fixed
+- **Server devices excluded from all counts** - Fixed 4 locations that were incorrectly including Windows Server devices
+  - Device Compliance Comparison now excludes servers
+  - Migration Impact calculations now exclude servers
+  - Intune-only device join type detection now excludes servers
+  - Windows 10/11 breakdown counts now use proper OS string matching
+
+
 ## [3.17.108] - 2026-02-04
 
 ### Added
