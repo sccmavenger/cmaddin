@@ -430,5 +430,80 @@ namespace ZeroTrustMigrationAddin.Models
         /// </summary>
         public Dictionary<string, int> WorkloadIntuneAdoptionCounts { get; set; } = new();
     }
+
+    /// <summary>
+    /// Comparison data for Update Management between Intune WUfB and ConfigMgr WSUS.
+    /// Used to demonstrate cloud-native value proposition.
+    /// </summary>
+    public class UpdateManagementComparison
+    {
+        // Intune (Cloud Native) metrics
+        public int IntuneDeviceCount { get; set; }
+        public double IntuneCompliancePercentage { get; set; }
+        public double IntuneAvgDaysSinceSync { get; set; }
+        
+        // ConfigMgr metrics
+        public int ConfigMgrDeviceCount { get; set; }
+        public double ConfigMgrCompliancePercentage { get; set; }
+        public double ConfigMgrAvgDaysSinceScan { get; set; }
+        
+        // Calculated comparison
+        public double ComplianceDifference => IntuneCompliancePercentage - ConfigMgrCompliancePercentage;
+        public bool CloudNativeIsBetter => ComplianceDifference > 0;
+        
+        public string ComparisonSummary => CloudNativeIsBetter 
+            ? $"Cloud-native devices are {Math.Abs(ComplianceDifference):F0}% more compliant!"
+            : ComplianceDifference < 0 
+                ? $"ConfigMgr devices are {Math.Abs(ComplianceDifference):F0}% more compliant"
+                : "Compliance rates are equal";
+        
+        public string ComparisonIcon => CloudNativeIsBetter ? "📈" : ComplianceDifference < 0 ? "📉" : "➡️";
+    }
+
+    /// <summary>
+    /// OS Version distribution for currency comparison between cloud-native and ConfigMgr devices.
+    /// </summary>
+    public class OSCurrencyComparison
+    {
+        public List<OSVersionGroup> IntuneDistribution { get; set; } = new();
+        public List<OSVersionGroup> ConfigMgrDistribution { get; set; } = new();
+        
+        // Summary metrics
+        public int IntuneDeviceCount { get; set; }
+        public int ConfigMgrDeviceCount { get; set; }
+        
+        public double IntuneWindows11Percentage { get; set; }
+        public double ConfigMgrWindows11Percentage { get; set; }
+        
+        public double IntuneLatestBuildPercentage { get; set; }
+        public double ConfigMgrLatestBuildPercentage { get; set; }
+        
+        public double Windows11Difference => IntuneWindows11Percentage - ConfigMgrWindows11Percentage;
+        public bool CloudNativeMoreCurrent => Windows11Difference > 0;
+        
+        public string ComparisonSummary => CloudNativeMoreCurrent 
+            ? $"Cloud-native devices have {Math.Abs(Windows11Difference):F0}% higher Windows 11 adoption!"
+            : Windows11Difference < 0 
+                ? $"ConfigMgr devices have {Math.Abs(Windows11Difference):F0}% higher Windows 11 adoption"
+                : "Windows 11 adoption is equal";
+        
+        public string ComparisonIcon => CloudNativeMoreCurrent ? "🚀" : Windows11Difference < 0 ? "📉" : "➡️";
+    }
+
+    /// <summary>
+    /// Represents a group of devices by OS version.
+    /// </summary>
+    public class OSVersionGroup
+    {
+        public string OSVersion { get; set; } = string.Empty;
+        public string FriendlyName { get; set; } = string.Empty; // e.g., "Windows 11 24H2"
+        public int DeviceCount { get; set; }
+        public double Percentage { get; set; }
+        
+        public string DisplayColor => FriendlyName.Contains("11 24H2") ? "#107C10" : 
+                                       FriendlyName.Contains("11 23H2") ? "#0078D4" :
+                                       FriendlyName.Contains("11") ? "#00BCF2" :
+                                       FriendlyName.Contains("10") ? "#FFB900" : "#888888";
+    }
 }
 

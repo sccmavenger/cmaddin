@@ -12,6 +12,38 @@
 - 
 
 
+## [3.17.107] - 2026-02-04
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.17.106] - 2026-02-04
+
+### Added
+- **Cloud-Native Value Comparison** - New comparison panels on Cloud Readiness Tab showing benefits of cloud-native management
+  - **Device Compliance Comparison**: Side-by-side view of Intune vs ConfigMgr device compliance rates
+    - Shows compliance percentage, device counts, and average sync/scan frequency
+    - Auto-calculates which management style has better compliance
+  - **OS Currency Comparison**: Side-by-side view of Windows 11 adoption rates
+    - Shows Windows 11 percentage for Intune-managed vs ConfigMgr-only devices
+    - Helps demonstrate cloud-native devices tend to be more current
+  - Uses real data from Graph API (managedDevices) and ConfigMgr (SMS_UpdateComplianceStatus, SMS_G_System_OPERATING_SYSTEM)
+  - Mock data shown when disconnected - disappears when authenticated to Graph and ConfigMgr
+
+### Technical
+- `Models/CloudReadinessModels.cs` - Added UpdateManagementComparison, OSCurrencyComparison, OSVersionGroup classes
+- `Services/CloudReadinessService.cs` - Added GetUpdateManagementComparisonAsync(), GetOSCurrencyComparisonAsync() methods
+- `Views/CloudReadinessTab.xaml` - Added comparison panels UI with side-by-side layout
+- `Views/CloudReadinessTab.xaml.cs` - Added LoadComparisonDataAsync(), LoadMockComparisonData() methods
+
+
 ## [3.17.105] - 2026-02-04
 
 ### Added
