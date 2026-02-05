@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.108** | February 4, 2026
+**Version 3.17.109** | February 5, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -144,6 +144,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.108 (February 4, 2026)
+
+### Added
+- 
+
+### Changed
+- Removed OS Currency comparison panel from Cloud Readiness Tab (not useful for demonstrating cloud value)
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.107 (February 4, 2026)
 
 ### Added
@@ -192,19 +206,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ---
 
 ### Version 3.17.104 (February 4, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
-
----
-
-### Version 3.17.103 (February 4, 2026)
 
 ### Added
 - 
@@ -1433,6 +1434,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-04  
-**Version**: 3.17.108  
+**Last Updated**: 2026-02-05  
+**Version**: 3.17.109  
 **Maintainer:** Cloud Native Assessment Team
