@@ -118,20 +118,13 @@ namespace ZeroTrustMigrationAddin.Views
             {
                 Instance.Info("[CLOUD READINESS TAB] Loading cloud vs on-prem comparison data...");
                 
-                // Fetch both comparison datasets in parallel
-                var complianceTask = _readinessService.GetUpdateManagementComparisonAsync();
-                var osTask = _readinessService.GetOSCurrencyComparisonAsync();
+                // Fetch compliance comparison data
+                var compliance = await _readinessService.GetUpdateManagementComparisonAsync();
                 
-                await Task.WhenAll(complianceTask, osTask);
-                
-                var compliance = await complianceTask;
-                var osCurrency = await osTask;
-                
-                // Only show comparison if we have data from both sources
+                // Only show comparison if we have data from either source
                 bool hasComplianceData = compliance.IntuneDeviceCount > 0 || compliance.ConfigMgrDeviceCount > 0;
-                bool hasOSData = osCurrency.IntuneDeviceCount > 0 || osCurrency.ConfigMgrDeviceCount > 0;
                 
-                if (hasComplianceData || hasOSData)
+                if (hasComplianceData)
                 {
                     // Show the comparison section
                     ComparisonSectionHeader.Visibility = Visibility.Visible;
@@ -156,24 +149,7 @@ namespace ZeroTrustMigrationAddin.Views
                         ComplianceSummaryText.Text = "No compliance data available";
                     }
                     
-                    // Update OS Currency Comparison UI
-                    if (hasOSData)
-                    {
-                        IntuneWindows11Percent.Text = $"{osCurrency.IntuneWindows11Percentage:F0}%";
-                        IntuneOSDevices.Text = $"{osCurrency.IntuneDeviceCount:N0} devices";
-                        
-                        ConfigMgrWindows11Percent.Text = $"{osCurrency.ConfigMgrWindows11Percentage:F0}%";
-                        ConfigMgrOSDevices.Text = $"{osCurrency.ConfigMgrDeviceCount:N0} devices";
-                        
-                        OSComparisonIcon.Text = osCurrency.ComparisonIcon;
-                        OSSummaryText.Text = osCurrency.ComparisonSummary;
-                    }
-                    else
-                    {
-                        OSSummaryText.Text = "No OS version data available";
-                    }
-                    
-                    Instance.Info($"[CLOUD READINESS TAB] Comparison data loaded - Compliance: {compliance.ComparisonSummary}, OS: {osCurrency.ComparisonSummary}");
+                    Instance.Info($"[CLOUD READINESS TAB] Comparison data loaded - Compliance: {compliance.ComparisonSummary}");
                 }
                 else
                 {
@@ -287,16 +263,6 @@ namespace ZeroTrustMigrationAddin.Views
             
             ComplianceComparisonIcon.Text = "📈";
             ComplianceSummaryText.Text = "Cloud-native devices are 16% more compliant! (Demo Data)";
-            
-            // Mock OS Currency Comparison - Cloud-native devices tend to be more current
-            IntuneWindows11Percent.Text = "72%";
-            IntuneOSDevices.Text = "847 devices";
-            
-            ConfigMgrWindows11Percent.Text = "45%";
-            ConfigMgrOSDevices.Text = "1,250 devices";
-            
-            OSComparisonIcon.Text = "🚀";
-            OSSummaryText.Text = "Cloud-native devices have 27% higher Windows 11 adoption! (Demo Data)";
         }
 
         private void UpdateUI(CloudReadinessDashboard dashboard)
