@@ -237,6 +237,7 @@
                 <li><a href="#device-readiness">Device Readiness</a></li>
                 <li><a href="#cloud-readiness">Cloud Readiness Signals</a></li>
                 <li><a href="#enrollment-agent">Enrollment Agent</a></li>
+                <li><a href="#comparison-methodology">Comparison Methodology</a></li>
                 <li><a href="#troubleshooting">Troubleshooting</a></li>
                 <li><a href="#faq">FAQ</a></li>
             </ul>
@@ -247,7 +248,7 @@
             <h2><span class="emoji">🎯</span> Overview</h2>
             
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.116 - February 5, 2026</strong>
+                <strong>🎉 Version 3.17.117 - February 6, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -799,7 +800,7 @@
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.116 - February 5, 2026</strong>
+                <strong>🎉 Version 3.17.117 - February 6, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -1228,6 +1229,111 @@
             </div>
         </section>
 
+        <!-- Cloud Value Comparison Methodology Section -->
+        <section id="comparison-methodology">
+            <h2><span class="emoji">📊</span> Cloud Value Comparison Methodology</h2>
+
+            <div class="alert alert-info">
+                <strong>📌 Hidden Feature:</strong> The Cloud Value Comparison tab is hidden by default. Enable it with: <code>ZeroTrustMigrationAddin.exe /showtabs:comparison</code>
+            </div>
+
+            <h3>Overview</h3>
+            <p>The Cloud Value Comparison tab shows side-by-side comparisons of <strong>Intune (cloud-native)</strong> vs <strong>ConfigMgr (on-premises)</strong> capabilities using <strong>real data from your environment</strong>. No simulated or estimated values are used - all metrics are calculated from actual device telemetry.</p>
+
+            <h3>Sync Freshness (Response Time)</h3>
+            <p><strong>Purpose:</strong> Measures how quickly devices receive policy changes and respond to threats.</p>
+            <table>
+                <thead><tr><th>Platform</th><th>Data Source</th><th>Calculation</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Intune</strong></td><td>Graph API: <code>managedDevice.LastSyncDateTime</code></td><td>Average days since last sync across all Windows workstations</td></tr>
+                    <tr><td><strong>ConfigMgr</strong></td><td>WMI: <code>SMS_R_System.LastActiveTime</code></td><td>Average days since last client activity</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Why it matters:</strong> Cloud-native devices sync continuously via push notifications. ConfigMgr relies on polling intervals (default: 60 minutes for policy, 7 days for hardware inventory).</p>
+
+            <h3>Stale Device Rate (Security Blind Spots)</h3>
+            <p><strong>Purpose:</strong> Identifies devices that haven't checked in recently - potential security blind spots.</p>
+            <table>
+                <thead><tr><th>Platform</th><th>Data Source</th><th>Threshold</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Intune</strong></td><td>Graph API: <code>managedDevice.LastSyncDateTime</code></td><td>&gt; 14 days = stale</td></tr>
+                    <tr><td><strong>ConfigMgr</strong></td><td>WMI: <code>SMS_R_System.LastActiveTime</code></td><td>&gt; 14 days = stale</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Why 14 days?</strong> Industry standard threshold. Microsoft uses 14 days for identifying "inactive" devices in Intune.</p>
+
+            <h3>Conditional Access Readiness (Zero Trust)</h3>
+            <p><strong>Purpose:</strong> Shows which devices can participate in Azure AD Conditional Access policies.</p>
+            <table>
+                <thead><tr><th>Platform</th><th>Data Source</th><th>Calculation</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Intune</strong></td><td>Graph API: <code>managedDevice.ComplianceState</code></td><td>Count where <code>ComplianceState == Compliant</code></td></tr>
+                    <tr><td><strong>ConfigMgr-only</strong></td><td>N/A</td><td>Always 0% (architectural limitation)</td></tr>
+                </tbody>
+            </table>
+            <div class="alert alert-warning">
+                <strong>Why ConfigMgr-only = 0%?</strong> This is an <strong>architectural fact</strong>, not an estimate. Conditional Access requires: 1) Device registered in Azure AD, 2) Evaluated by Intune compliance policies. ConfigMgr-only devices cannot participate in CA regardless of their actual security posture.
+            </div>
+
+            <h3>Device Compliance</h3>
+            <p><strong>Purpose:</strong> Compares compliance policy evaluation across platforms.</p>
+            <table>
+                <thead><tr><th>Platform</th><th>Data Source</th><th>What it measures</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Intune</strong></td><td>Graph API: <code>managedDevice.ComplianceState</code></td><td>Actual compliance policy evaluation</td></tr>
+                    <tr><td><strong>ConfigMgr</strong></td><td>WMI: <code>SMS_R_System.LastActiveTime</code></td><td>Active in last 30 days (proxy for "managed")</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Threat Detection &amp; Active Malware</h3>
+            <p><strong>Purpose:</strong> Compares visibility into device security threats.</p>
+            <table>
+                <thead><tr><th>Platform</th><th>Active Malware Visibility</th><th>Capability</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Intune</strong></td><td>Graph API: <code>windowsActiveMalwareCount</code></td><td>Real-time count of active threats</td></tr>
+                    <tr><td><strong>ConfigMgr</strong></td><td>None</td><td>Only knows if AV is enabled, not threat state</td></tr>
+                </tbody>
+            </table>
+
+            <h3>BitLocker Encryption</h3>
+            <p><strong>Purpose:</strong> Compares encryption coverage and management capabilities.</p>
+            <table>
+                <thead><tr><th>Platform</th><th>Data Source</th><th>Calculation</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Intune</strong></td><td>Graph API: <code>managedDevice.IsEncrypted</code></td><td>Count where <code>IsEncrypted == true</code></td></tr>
+                    <tr><td><strong>ConfigMgr</strong></td><td>WMI: <code>SMS_G_System_ENCRYPTABLE_VOLUME.ProtectionStatus</code></td><td>Count where <code>ProtectionStatus >= 1</code></td></tr>
+                </tbody>
+            </table>
+            <p><strong>Cloud advantage:</strong> Intune provides automatic BitLocker key escrow to Azure AD.</p>
+
+            <h3>Device Health Attestation</h3>
+            <p><strong>Purpose:</strong> Shows which devices can cryptographically prove their security state to Azure AD.</p>
+            <table>
+                <thead><tr><th>Platform</th><th>Attestation Capability</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Intune</strong></td><td>Can attest hardware health to Azure AD</td></tr>
+                    <tr><td><strong>ConfigMgr</strong></td><td>Has TPM data, but <strong>cannot</strong> attest to cloud (always 0)</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Key Architectural Facts</h3>
+            <ol>
+                <li><strong>ConfigMgr-only devices CANNOT participate in Conditional Access</strong> - requires Intune enrollment</li>
+                <li><strong>ConfigMgr cannot attest device health to Azure AD</strong> - requires cloud registration</li>
+                <li><strong>ConfigMgr has no real-time malware visibility</strong> - only knows if AV is enabled</li>
+                <li><strong>14-day stale threshold</strong> - Microsoft's standard for "inactive" devices</li>
+            </ol>
+
+            <h3>API Permissions Required</h3>
+            <table>
+                <thead><tr><th>Data</th><th>Required Permission</th></tr></thead>
+                <tbody>
+                    <tr><td>Intune devices</td><td><code>DeviceManagementManagedDevices.Read.All</code></td></tr>
+                    <tr><td>ConfigMgr data</td><td>Admin Service access or WMI (SMS Provider)</td></tr>
+                </tbody>
+            </table>
+        </section>
+
         <!-- FAQ Section -->
         <section id="faq">
             <h2><span class="emoji">❓</span> Frequently Asked Questions</h2>
@@ -1276,7 +1382,7 @@
         </section>
 
         <footer>
-            <p>Cloud Native Assessment v3.17.116 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Cloud Native Assessment v3.17.117 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>
