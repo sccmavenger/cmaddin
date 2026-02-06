@@ -42,6 +42,11 @@ namespace ZeroTrustMigrationAddin.Models
         public Visibility ShowCloudReadinessTab { get; set; } = Visibility.Visible;
 
         /// <summary>
+        /// Shows or hides the Cloud Value Comparison tab (hidden by default - internal feature)
+        /// </summary>
+        public Visibility ShowCloudValueComparisonTab { get; set; } = Visibility.Collapsed;
+
+        /// <summary>
         /// Parse command-line arguments to determine tab visibility.
         /// 
         /// Usage examples:
@@ -87,6 +92,10 @@ namespace ZeroTrustMigrationAddin.Models
                             case "readiness":
                                 options.ShowCloudReadinessTab = Visibility.Collapsed;
                                 break;
+                            case "cloudvaluecomparison":
+                            case "comparison":
+                                options.ShowCloudValueComparisonTab = Visibility.Collapsed;
+                                break;
                         }
                     }
                 }
@@ -101,6 +110,7 @@ namespace ZeroTrustMigrationAddin.Models
                     options.ShowApplicationsTab = Visibility.Collapsed;
                     options.ShowAIActionsTab = Visibility.Collapsed;
                     options.ShowCloudReadinessTab = Visibility.Collapsed;
+                    options.ShowCloudValueComparisonTab = Visibility.Collapsed;
 
                     // Then show only specified tabs
                     var tabsToShow = lowerArg.Substring(lowerArg.IndexOf(':') + 1).Split(',');
@@ -129,6 +139,10 @@ namespace ZeroTrustMigrationAddin.Models
                             case "cloudreadiness":
                             case "readiness":
                                 options.ShowCloudReadinessTab = Visibility.Visible;
+                                break;
+                            case "cloudvaluecomparison":
+                            case "comparison":
+                                options.ShowCloudValueComparisonTab = Visibility.Visible;
                                 break;
                         }
                     }

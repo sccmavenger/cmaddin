@@ -107,4 +107,106 @@ _logger.LogWmiQuery("namespace", "WQL query");
 ## Testing
 - Always test with mock/disconnected data first
 - Test auto-update by checking manifest.json accessibility
-- Run `Test-AutoUpdate.ps1` to verify update system
+- Run `scripts/Test-AutoUpdate.ps1` to verify update system
+
+---
+
+## File Organization Rules
+
+### Directory Structure
+```
+root/
+├── .github/           # GitHub config and copilot-instructions.md
+├── builds/            # Build outputs (ZIP, MSI, logs, manifests)
+├── Constants/         # Static constants
+├── Converters/        # WPF converters
+├── docs/              # ALL documentation markdown files
+├── installer/         # WiX installer files
+├── Models/            # Data models and DTOs
+├── publish/           # Published output
+├── research/          # Research notes (temporary)
+├── scripts/           # ALL PowerShell scripts except Build-And-Distribute.ps1
+├── Services/          # Business logic and API integrations
+├── telemetry/         # Telemetry queries and config
+├── ViewModels/        # MVVM view models
+├── Views/             # XAML UI components
+└── Build-And-Distribute.ps1  # ONLY build script (kept at root for convenience)
+```
+
+### Rules
+1. **ONE build script**: `Build-And-Distribute.ps1` at root. Use `-PublishToGitHub` flag for releases.
+2. **Docs go in `docs/`**: All markdown except README.md, CHANGELOG.md, CONTEXT.md
+3. **Scripts go in `scripts/`**: All PowerShell except Build-And-Distribute.ps1
+4. **No ZIP files in root**: Build outputs go in `builds/`
+5. **Research is temporary**: `research/` contents can be deleted after features ship
+
+---
+
+## Command Shortcuts
+
+When the user says these commands, respond with the corresponding action:
+
+### `@build` - Build and Publish
+```powershell
+.\Build-And-Distribute.ps1 -PublishToGitHub -Force
+```
+- Increments version, builds ZIP, uploads to GitHub Releases
+- Updates manifest.json and CHANGELOG.md
+
+### `@handoff` - Session Handoff
+Append to `docs/SESSION_LOG.md`:
+```markdown
+## [DATE] Session Summary
+### Completed
+- [List of completed work]
+
+### Pending
+- [List of incomplete work]
+
+### Key Decisions
+- [Any architectural decisions made]
+
+### Next Steps
+- [What the next session should do]
+```
+
+Update `CONTEXT.md` with current state.
+
+### `@status` - Project Status
+Read and display:
+1. Current version from `ZeroTrustMigrationAddin.csproj`
+2. Last 3 entries from CHANGELOG.md
+3. Active work from CONTEXT.md
+4. Any compilation errors
+
+### `@cleanup` - Directory Cleanup
+Move files to proper locations:
+- Markdown files (except README, CHANGELOG, CONTEXT) → `docs/`
+- PowerShell scripts (except Build-And-Distribute.ps1) → `scripts/`
+- Delete any stray build artifacts from root
+
+### `@whatsnew` - Recent Changes
+Show CHANGELOG.md entries since last major version.
+
+---
+
+## Context Preservation
+
+### CONTEXT.md (Living State Document)
+Updated at END of each session with:
+- Current version
+- Features in development
+- Known issues / blockers
+- Immediate next steps
+
+### docs/SESSION_LOG.md (Append-Only History)
+Appended with `@handoff` command:
+- Date and summary of work done
+- Decisions made and why
+- What was left incomplete
+
+### Reading Context at Session Start
+New sessions should:
+1. Read CONTEXT.md for current state
+2. Check docs/SESSION_LOG.md for recent history
+3. Check get_errors() for compilation issues

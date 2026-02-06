@@ -505,5 +505,323 @@ namespace ZeroTrustMigrationAddin.Models
                                        FriendlyName.Contains("11") ? "#00BCF2" :
                                        FriendlyName.Contains("10") ? "#FFB900" : "#888888";
     }
+
+    /// <summary>
+    /// Device Sync Freshness comparison - how quickly can devices receive policy updates?
+    /// Shows cloud-native responsiveness advantage.
+    /// </summary>
+    public class SyncFreshnessComparison
+    {
+        // Intune metrics
+        public int IntuneDeviceCount { get; set; }
+        public double IntuneAvgDaysSinceSync { get; set; }
+        public int IntuneSyncedToday { get; set; }
+        public double IntuneSyncedTodayPercentage { get; set; }
+        
+        // ConfigMgr metrics
+        public int ConfigMgrDeviceCount { get; set; }
+        public double ConfigMgrAvgDaysSinceScan { get; set; }
+        public int ConfigMgrScannedToday { get; set; }
+        public double ConfigMgrScannedTodayPercentage { get; set; }
+        
+        // Comparison
+        public double SpeedMultiplier => ConfigMgrAvgDaysSinceScan > 0 && IntuneAvgDaysSinceSync > 0 
+            ? Math.Round(ConfigMgrAvgDaysSinceScan / IntuneAvgDaysSinceSync, 1) 
+            : 0;
+        
+        public bool CloudNativeIsFaster => IntuneAvgDaysSinceSync < ConfigMgrAvgDaysSinceScan;
+        
+        public string ComparisonSummary => CloudNativeIsFaster && SpeedMultiplier > 1
+            ? $"Cloud-native devices respond {SpeedMultiplier:F0}x faster to policy changes"
+            : "Response times are comparable";
+        
+        public string ComparisonIcon => CloudNativeIsFaster ? "⚡" : "➡️";
+    }
+
+    /// <summary>
+    /// Stale Device Rate comparison - security blind spots from unmanaged devices.
+    /// Stale = no check-in for 14+ days.
+    /// </summary>
+    public class StaleDeviceComparison
+    {
+        public const int StaleThresholdDays = 14;
+        
+        // Intune metrics
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneStaleCount { get; set; }
+        public double IntuneStalePercentage { get; set; }
+        
+        // ConfigMgr metrics
+        public int ConfigMgrDeviceCount { get; set; }
+        public int ConfigMgrStaleCount { get; set; }
+        public double ConfigMgrStalePercentage { get; set; }
+        
+        // Comparison
+        public double StaleRatioMultiplier => IntuneStalePercentage > 0 
+            ? Math.Round(ConfigMgrStalePercentage / IntuneStalePercentage, 1) 
+            : 0;
+        
+        public bool CloudNativeHasFewerStale => IntuneStalePercentage < ConfigMgrStalePercentage;
+        
+        public string ComparisonSummary => CloudNativeHasFewerStale && StaleRatioMultiplier > 1
+            ? $"Cloud-native has {StaleRatioMultiplier:F0}x fewer security blind spots"
+            : IntuneStalePercentage == ConfigMgrStalePercentage 
+                ? "Stale device rates are equal"
+                : $"ConfigMgr has {Math.Round(IntuneStalePercentage / ConfigMgrStalePercentage, 1):F0}x fewer stale devices";
+        
+        public string ComparisonIcon => CloudNativeHasFewerStale ? "🔍" : "➡️";
+    }
+
+    /// <summary>
+    /// Conditional Access Readiness comparison - Zero Trust foundation.
+    /// ConfigMgr-only devices CANNOT participate in CA (architectural fact).
+    /// </summary>
+    public class ConditionalAccessComparison
+    {
+        // Intune metrics
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneCAReadyCount { get; set; } // Compliant devices
+        public double IntuneCAReadyPercentage { get; set; }
+        
+        // ConfigMgr-only metrics (these are always 0 - CA requires Intune enrollment)
+        public int ConfigMgrOnlyDeviceCount { get; set; }
+        public int ConfigMgrOnlyCAReadyCount => 0; // Always 0 - architectural fact
+        public double ConfigMgrOnlyCAReadyPercentage => 0; // Always 0%
+        
+        // Comparison
+        public bool HasCAGap => ConfigMgrOnlyDeviceCount > 0;
+        
+        public string ComparisonSummary => HasCAGap
+            ? $"{ConfigMgrOnlyDeviceCount:N0} devices cannot participate in Zero Trust policies"
+            : "All devices can participate in Conditional Access";
+        
+        public string DetailMessage => HasCAGap
+            ? "ConfigMgr-only devices are not enrolled in Intune and cannot be evaluated by Conditional Access policies. Co-management with the compliance workload moved to Intune is the bridge."
+            : "";
+        
+        public string ComparisonIcon => HasCAGap ? "🛡️" : "✅";
+    }
+
+    /// <summary>
+    /// Threat Detection comparison - shows partner reported threat state vs basic AV status.
+    /// Cloud-native devices report actionable threat status, not just "enabled".
+    /// </summary>
+    public class ThreatDetectionComparison
+    {
+        // Intune metrics (from partnerReportedThreatState)
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneSecuredCount { get; set; }
+        public int IntuneMisconfiguredCount { get; set; }
+        public int IntuneCompromisedCount { get; set; }
+        public int IntuneUnknownCount { get; set; }
+        
+        // ConfigMgr metrics (from SMS_G_System_AntimalwareHealthStatus)
+        public int ConfigMgrDeviceCount { get; set; }
+        public int ConfigMgrProtectionEnabledCount { get; set; }
+        public int ConfigMgrProtectionDisabledCount { get; set; }
+        
+        // Comparison
+        public bool CloudHasActionableData => IntuneCompromisedCount > 0 || IntuneMisconfiguredCount > 0;
+        
+        public string ComparisonSummary => CloudHasActionableData
+            ? $"Intune detected {IntuneCompromisedCount} compromised, {IntuneMisconfiguredCount} misconfigured devices"
+            : IntuneSecuredCount > 0 
+                ? $"{IntuneSecuredCount:N0} devices confirmed secured by Defender" 
+                : "Connect to Graph to see threat detection status";
+        
+        public string ConfigMgrSummary => ConfigMgrProtectionEnabledCount > 0
+            ? $"Protection enabled on {ConfigMgrProtectionEnabledCount:N0} devices"
+            : "No visibility into threat status";
+        
+        public string ComparisonIcon => CloudHasActionableData ? "🚨" : "🛡️";
+    }
+
+    /// <summary>
+    /// Active Malware comparison - only cloud-native can show real-time malware counts.
+    /// </summary>
+    public class ActiveMalwareComparison
+    {
+        // Intune metrics (from windowsActiveMalwareCount)
+        public int IntuneDeviceCount { get; set; }
+        public int TotalActiveMalwareCount { get; set; }
+        public int DevicesWithMalwareCount { get; set; }
+        public List<string> DevicesWithMalware { get; set; } = new();
+        
+        // ConfigMgr - no real-time visibility
+        public int ConfigMgrDeviceCount { get; set; }
+        // ConfigMgr cannot report this - always unknown
+        
+        public bool HasActiveMalware => TotalActiveMalwareCount > 0;
+        
+        public string ComparisonSummary => HasActiveMalware
+            ? $"⚠️ {DevicesWithMalwareCount} devices have {TotalActiveMalwareCount} active threats"
+            : IntuneDeviceCount > 0 
+                ? "✓ No active malware detected"
+                : "Connect to Graph for malware visibility";
+        
+        public string ConfigMgrSummary => "No real-time malware visibility";
+        
+        public string ComparisonIcon => HasActiveMalware ? "🦠" : "✅";
+    }
+
+    /// <summary>
+    /// BitLocker encryption comparison - both platforms can report this, but cloud has key escrow advantage.
+    /// </summary>
+    public class BitLockerComparison
+    {
+        // Intune metrics (from isEncrypted)
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneEncryptedCount { get; set; }
+        public double IntuneEncryptedPercentage => IntuneDeviceCount > 0 
+            ? Math.Round((double)IntuneEncryptedCount / IntuneDeviceCount * 100, 1) : 0;
+        
+        // ConfigMgr metrics (from SMS_G_System_ENCRYPTABLE_VOLUME)
+        public int ConfigMgrDeviceCount { get; set; }
+        public int ConfigMgrEncryptedCount { get; set; }
+        public double ConfigMgrEncryptedPercentage => ConfigMgrDeviceCount > 0 
+            ? Math.Round((double)ConfigMgrEncryptedCount / ConfigMgrDeviceCount * 100, 1) : 0;
+        
+        // Cloud advantage
+        public string CloudBenefit => "Recovery keys in Azure AD - accessible from any browser";
+        public string OnPremNote => "Recovery keys in MBAM - requires VPN + console";
+        
+        public bool CloudHasHigherEncryption => IntuneEncryptedPercentage > ConfigMgrEncryptedPercentage;
+        
+        public string ComparisonSummary => CloudHasHigherEncryption
+            ? $"Cloud-native {IntuneEncryptedPercentage - ConfigMgrEncryptedPercentage:F0}% more encrypted"
+            : Math.Abs(IntuneEncryptedPercentage - ConfigMgrEncryptedPercentage) < 5
+                ? "Encryption rates comparable - cloud recovery keys accessible anywhere"
+                : $"Similar encryption - cloud advantage is key recovery accessibility";
+        
+        public string ComparisonIcon => "🔑";
+    }
+
+    /// <summary>
+    /// TPM Health comparison - both can query TPM, but only cloud can attest to Azure AD.
+    /// </summary>
+    public class TpmHealthComparison
+    {
+        // Intune metrics
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneTpmReadyCount { get; set; } // TPM 2.0 enabled and attested
+        public double IntuneTpmReadyPercentage => IntuneDeviceCount > 0 
+            ? Math.Round((double)IntuneTpmReadyCount / IntuneDeviceCount * 100, 1) : 0;
+        
+        // ConfigMgr metrics (from SMS_G_System_TPM)
+        public int ConfigMgrDeviceCount { get; set; }
+        public int ConfigMgrTpmEnabledCount { get; set; }
+        public int ConfigMgrTpm20Count { get; set; }
+        public double ConfigMgrTpmEnabledPercentage => ConfigMgrDeviceCount > 0 
+            ? Math.Round((double)ConfigMgrTpmEnabledCount / ConfigMgrDeviceCount * 100, 1) : 0;
+        
+        // Cloud advantage
+        public string CloudBenefit => "TPM attested to Azure AD for Conditional Access";
+        public string OnPremNote => "TPM data local only - cannot prove health remotely";
+        
+        public string ComparisonSummary => IntuneTpmReadyCount > 0
+            ? $"{IntuneTpmReadyCount:N0} devices can attest TPM health to Azure AD"
+            : "Connect to Graph for TPM attestation data";
+        
+        public string ComparisonIcon => "🔐";
+    }
+
+    /// <summary>
+    /// Device Health Attestation comparison - Zero Trust foundation.
+    /// Only cloud-managed devices can prove hardware health to Azure AD.
+    /// </summary>
+    public class DeviceHealthAttestationComparison
+    {
+        // Intune metrics (from deviceHealthAttestationState)
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneSecureBootEnabled { get; set; }
+        public int IntuneBitLockerEnabled { get; set; }
+        public int IntuneCodeIntegrityEnabled { get; set; }
+        public int IntuneFullyAttestedCount { get; set; } // All 4 criteria met
+        
+        // ConfigMgr cannot attest to Azure AD
+        public int ConfigMgrDeviceCount { get; set; }
+        // These are always 0 for remote attestation
+        public int ConfigMgrAttestedCount => 0;
+        
+        public string CloudBenefit => "Hardware-verified trust for Zero Trust policies";
+        public string OnPremNote => "Local data only - cannot prove health to cloud";
+        
+        public bool HasAttestationData => IntuneFullyAttestedCount > 0;
+        
+        public string ComparisonSummary => HasAttestationData
+            ? $"{IntuneFullyAttestedCount:N0} devices passed hardware attestation"
+            : IntuneDeviceCount > 0 
+                ? "Query deviceHealthAttestationState for attestation data"
+                : "Connect to Graph for health attestation";
+        
+        public string ComparisonIcon => "🔒";
+    }
+
+    /// <summary>
+    /// Remote Actions comparison - what you can do right now from each platform.
+    /// </summary>
+    public class RemoteActionsComparison
+    {
+        // Intune remote actions (static list - always available)
+        public List<string> IntuneActions { get; set; } = new()
+        {
+            "Wipe Device", "Retire Device", "Remote Lock", "Restart Device", 
+            "Fresh Start", "Locate Device", "Sync Device", "Rotate BitLocker Key",
+            "Defender Full Scan", "Defender Quick Scan", "Collect Diagnostics",
+            "Rename Device", "Autopilot Reset", "Clear Activation Lock", "Send Notification"
+        };
+        
+        // ConfigMgr remote actions (limited without client connection)
+        public List<string> ConfigMgrActions { get; set; } = new()
+        {
+            "Sync Policy", "Run Script", "Client Notification"
+        };
+        
+        public int IntuneActionCount => IntuneActions.Count;
+        public int ConfigMgrActionCount => ConfigMgrActions.Count;
+        
+        // These are the actions only Intune can do
+        public List<string> CloudUniqueActions => IntuneActions
+            .Except(new[] { "Sync Policy" })
+            .ToList();
+        
+        public string ComparisonSummary => 
+            $"Cloud-native: {IntuneActionCount} actions available anywhere, anytime";
+        
+        public string OnPremNote => 
+            $"On-prem: {ConfigMgrActionCount} actions (requires client check-in)";
+        
+        public string ComparisonIcon => "🎮";
+    }
+
+    /// <summary>
+    /// Device Compliance comparison for the value comparison tab.
+    /// </summary>
+    public class DeviceComplianceComparison
+    {
+        // Intune metrics
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneCompliantCount { get; set; }
+        public double IntuneCompliancePercentage => IntuneDeviceCount > 0 
+            ? Math.Round((double)IntuneCompliantCount / IntuneDeviceCount * 100, 1) : 0;
+        
+        // ConfigMgr metrics
+        public int ConfigMgrDeviceCount { get; set; }
+        public int ConfigMgrCompliantCount { get; set; }
+        public double ConfigMgrCompliancePercentage => ConfigMgrDeviceCount > 0 
+            ? Math.Round((double)ConfigMgrCompliantCount / ConfigMgrDeviceCount * 100, 1) : 0;
+        
+        // Comparison
+        public double ComplianceDifference => IntuneCompliancePercentage - ConfigMgrCompliancePercentage;
+        public bool CloudHasBetterCompliance => IntuneCompliancePercentage > ConfigMgrCompliancePercentage;
+        
+        public string ComparisonSummary => CloudHasBetterCompliance && ComplianceDifference > 0
+            ? $"Cloud-native {ComplianceDifference:F0}% more compliant"
+            : Math.Abs(ComplianceDifference) < 5 
+                ? "Compliance rates comparable"
+                : $"Compliance rates within {Math.Abs(ComplianceDifference):F0}%";
+        
+        public string ComparisonIcon => CloudHasBetterCompliance ? "📈" : "📊";
+    }
 }
 

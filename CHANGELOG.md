@@ -12,6 +12,88 @@
 - 
 
 
+## [3.17.115] - 2026-02-05
+
+### Added
+- **Alternate Credentials for ConfigMgr** - Connect to Admin Service using different credentials than current Windows login
+  - New checkbox in ConfigMgr connection dialog: "Use alternate account"
+  - Supports `DOMAIN\username` and `user@domain.com` (UPN) formats
+  - Passwords encrypted with Windows DPAPI (decryptable only by same user on same machine)
+  - "Test Connection" button to validate credentials before connecting
+  - Works with both Admin Service (REST API) and WMI fallback
+- `CredentialManager` helper class for DPAPI encryption/decryption
+- `docs/SESSION_LOG.md` - Append-only session history for context preservation across chat sessions
+
+### Changed
+- Updated `ConfigMgrSettings` model with `UseAlternateCredentials`, `AlternateUsername`, `EncryptedPassword` properties
+- `ConfigMgrAdminService` now uses `NetworkCredential` when alternate credentials are configured
+- WMI connections now support alternate credentials via `ConnectionOptions.Username/Password`
+- **Project Organization Cleanup** - Consolidated file structure per new organization rules
+  - Moved 22 markdown files from root to `docs/`
+  - Moved 8 PowerShell scripts from root to `scripts/`
+  - Deleted redundant `Publish-ToGitHub.ps1` (use `Build-And-Distribute.ps1 -PublishToGitHub` instead)
+  - Deleted `Build-And-Distribute-v1-backup.ps1` (use git history)
+- Updated `.github/copilot-instructions.md` with command system (`@build`, `@handoff`, `@status`, `@cleanup`, `@whatsnew`)
+- Rewrote `CONTEXT.md` as living state document (vs historical log)
+
+### Fixed
+- 
+
+
+## [3.17.113] - 2026-02-05
+
+### Added
+- **New Cloud Value Comparison Tab** - Dedicated hidden tab showing 10 comparison cards
+  - Security: Threat Detection, Active Malware, BitLocker Encryption, Device Health Attestation
+  - Visibility: Device Compliance, Response Time (Sync Freshness), Security Blind Spots (Stale Devices), Zero Trust Ready (CA)
+  - Operations: Remote Actions comparison (15 Intune vs 3 ConfigMgr actions)
+- New comparison model classes: `ThreatDetectionComparison`, `ActiveMalwareComparison`, `BitLockerComparison`, `TpmHealthComparison`, `DeviceHealthAttestationComparison`, `RemoteActionsComparison`, `DeviceComplianceComparison`
+- New service methods in CloudReadinessService for all comparison data
+- Tab hidden by default, enable with `/showtabs:comparison` command-line argument
+
+### Changed
+- Consistent visual design across all comparison cards (☁️ Intune green vs 🏢 ConfigMgr orange)
+- Moved comparison cards from Cloud Readiness tab to dedicated Cloud Value Comparison tab
+- Cloud Readiness tab now focuses only on readiness signals and blockers
+
+### Fixed
+- 
+
+
+## [3.17.111] - 2026-02-05
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+
+## [3.17.110] - 2026-02-05
+
+### Added
+- **3 New Cloud-Native Value Comparison Cards** - Expanded comparison section on Cloud Readiness tab
+  - **Sync Freshness** - Shows avg days since last sync (Intune ~0.3 vs ConfigMgr ~2.8 days)
+  - **Stale Device Rate** - Security blind spots (>14 days inactive) comparison
+  - **Conditional Access Readiness** - Zero Trust foundation (0% for ConfigMgr-only devices)
+- New service methods in CloudReadinessService:
+  - `GetSyncFreshnessComparisonAsync()` - Calculates average sync times and percent synced today
+  - `GetStaleDeviceComparisonAsync()` - Identifies devices inactive >14 days
+  - `GetConditionalAccessComparisonAsync()` - Shows CA-ready vs not eligible counts
+- New model classes: `SyncFreshnessComparison`, `StaleDeviceComparison`, `ConditionalAccessComparison`
+
+### Changed
+- Cloud Readiness comparison section now uses 2x2 grid layout for 4 cards
+- All comparison data uses real device timestamps (no estimated values)
+- Mock data now demonstrates all 4 cards when disconnected
+
+### Fixed
+- 
+
+
 ## [3.17.109] - 2026-02-05
 
 ### Added
