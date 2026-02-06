@@ -137,7 +137,7 @@
                             </Border>
                         </Grid>
                         <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="ThreatSummaryText" Text="Intune shows threat STATUS, ConfigMgr shows AV is ON" FontSize="10" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock x:Name="ThreatSummaryText" Text="Intune shows threat STATUS, ConfigMgr shows AV is ON" FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -177,7 +177,7 @@
                             </Border>
                         </Grid>
                         <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="MalwareSummaryText" Text="How many on-prem devices have malware right now? You don't know." FontSize="10" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock x:Name="MalwareSummaryText" Text="How many on-prem devices have malware right now? You don't know." FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -226,7 +226,7 @@
                             </Border>
                         </Grid>
                         <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="BitLockerSummaryText" Text="Lost laptop? Cloud admin recovers from phone. On-prem needs VPN + MBAM console." FontSize="10" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock x:Name="BitLockerSummaryText" Text="Lost laptop? Cloud admin recovers from phone. On-prem needs VPN + MBAM console." FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -266,7 +266,7 @@
                             </Border>
                         </Grid>
                         <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="AttestationSummaryText" Text="Zero Trust asks 'is the device healthy?' Only cloud devices can prove it." FontSize="10" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock x:Name="AttestationSummaryText" Text="Zero Trust asks 'is the device healthy?' Only cloud devices can prove it." FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -316,7 +316,7 @@
                             </Border>
                         </Grid>
                         <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="ComplianceSummaryText" Text="Loading compliance data..." FontSize="10" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock x:Name="ComplianceSummaryText" Text="Loading compliance data..." FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -360,7 +360,7 @@
                             </Border>
                         </Grid>
                         <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="SyncSummaryText" Text="Cloud-native devices respond faster to security updates" FontSize="10" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock x:Name="SyncSummaryText" Text="Cloud-native devices respond faster to security updates" FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -407,7 +407,7 @@
                             </Border>
                         </Grid>
                         <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="StaleSummaryText" Text="Fewer stale devices = fewer security blind spots" FontSize="10" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock x:Name="StaleSummaryText" Text="Fewer stale devices = fewer security blind spots" FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -445,7 +445,7 @@
                             </Border>
                         </Grid>
                         <Border Background="#FFF3E0" CornerRadius="4" Padding="8" Margin="0,10,0,0">
-                            <TextBlock x:Name="CASummaryText" Text="ConfigMgr-only devices cannot participate in Zero Trust" FontSize="10" Foreground="#E65100" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock x:Name="CASummaryText" Text="ConfigMgr-only devices cannot participate in Zero Trust" FontSize="12" Foreground="#E65100" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -539,7 +539,7 @@
                         </Border>
                     </Grid>
                     <Border Style="{StaticResource SummaryFooter}">
-                        <TextBlock Text="Lost laptop on hotel WiFi? Cloud admin wipes in 30 seconds. On-prem admin waits for VPN." FontSize="10" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                        <TextBlock Text="Lost laptop on hotel WiFi? Cloud admin wipes in 30 seconds. On-prem admin waits for VPN." FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
                     </Border>
                 </StackPanel>
             </Border>

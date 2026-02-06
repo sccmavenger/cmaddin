@@ -3,13 +3,10 @@
 ## [Unreleased]
 
 ### Added
-- 
 
 ### Changed
-- 
 
 ### Fixed
-- 
 
 
 ## [3.17.117] - 2026-02-06
@@ -24,19 +21,15 @@
 - AdminUserGuide.html navigation updated with Comparison Methodology link
 
 ### Fixed
-- 
 
 
 ## [3.17.116] - 2026-02-05
 
 ### Added
-- 
 
 ### Changed
-- 
 
 ### Fixed
-- 
 
 
 ## [3.17.115] - 2026-02-05
@@ -64,7 +57,6 @@
 - Rewrote `CONTEXT.md` as living state document (vs historical log)
 
 ### Fixed
-- 
 
 
 ## [3.17.113] - 2026-02-05
@@ -84,19 +76,15 @@
 - Cloud Readiness tab now focuses only on readiness signals and blockers
 
 ### Fixed
-- 
 
 
 ## [3.17.111] - 2026-02-05
 
 ### Added
-- 
 
 ### Changed
-- 
 
 ### Fixed
-- 
 
 
 ## [3.17.110] - 2026-02-05

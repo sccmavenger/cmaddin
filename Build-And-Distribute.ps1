@@ -285,9 +285,21 @@ function ConvertTo-ReadmeWhatsNew {
             $friendlyDate = $v.Date
         }
         
+        # Filter out empty bullet points from body (lines that are just "- " with nothing after)
+        $cleanBody = ($v.Body -split "`n" | Where-Object { 
+            $_.Trim() -ne '-' -and 
+            $_.Trim() -ne '- ' -and 
+            $_ -notmatch '^\s*-\s*$' 
+        }) -join "`n"
+        
+        # Skip versions with no real content after filtering
+        if (-not ($cleanBody -match '###\s+(Added|Changed|Fixed)\s*\n+-\s+\S')) {
+            continue
+        }
+        
         $output += "### Version $($v.Version) ($friendlyDate)"
         $output += ""
-        $output += $v.Body
+        $output += $cleanBody
         $output += ""
         $output += "---"
         $output += ""
@@ -316,16 +328,14 @@ function ConvertTo-VersionedChangelog {
     # Replace [Unreleased] with [Version] - Date
     $content = $content -replace '##\s+\[Unreleased\]', "## [$Version] - $Date"
     
-    # Add new [Unreleased] template at the top
+    # Add new [Unreleased] template at the top (no empty bullets)
     $unreleasedTemplate = @"
 
 ## [Unreleased]
 
 ### Added
-- 
 
 ### Changed
-- 
 
 ### Fixed
 - 

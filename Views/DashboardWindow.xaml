@@ -445,20 +445,8 @@
                                             <TextBlock Text="Comanaged" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Border>
-                                    <!-- Cloud Native Toggle -->
-                                    <Border CornerRadius="3" Padding="8,3" Margin="0,0,10,0" Cursor="Hand"
-                                            Background="{Binding IsCloudNativeSeriesVisible, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#0078D4}"
-                                            Opacity="{Binding IsCloudNativeSeriesVisible, Converter={StaticResource BoolToOpacityConverter}}">
-                                        <Border.InputBindings>
-                                            <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleCloudNativeSeriesCommand}"/>
-                                        </Border.InputBindings>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Polygon Points="4,0 8,8 0,8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Cloud Native" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                    </Border>
                                     <!-- ConfigMgr Only Toggle -->
-                                    <Border CornerRadius="3" Padding="8,3" Cursor="Hand"
+                                    <Border CornerRadius="3" Padding="8,3" Margin="0,0,10,0" Cursor="Hand"
                                             Background="{Binding IsConfigMgrOnlySeriesVisible, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#D13438}"
                                             Opacity="{Binding IsConfigMgrOnlySeriesVisible, Converter={StaticResource BoolToOpacityConverter}}">
                                         <Border.InputBindings>
@@ -467,6 +455,18 @@
                                         <StackPanel Orientation="Horizontal">
                                             <Rectangle Width="8" Height="8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                             <TextBlock Text="ConfigMgr Only" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <!-- Cloud Native Toggle -->
+                                    <Border CornerRadius="3" Padding="8,3" Cursor="Hand"
+                                            Background="{Binding IsCloudNativeSeriesVisible, Converter={StaticResource BoolToColorConverter}, ConverterParameter=#0078D4}"
+                                            Opacity="{Binding IsCloudNativeSeriesVisible, Converter={StaticResource BoolToOpacityConverter}}">
+                                        <Border.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleCloudNativeSeriesCommand}"/>
+                                        </Border.InputBindings>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Polygon Points="4,0 8,8 0,8" Fill="White" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Cloud Native" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
@@ -5017,6 +5017,115 @@
                 <TabItem Header="📦 Applications" Visibility="{Binding ShowApplicationsTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel>
+                            <!-- Application Readiness Section (Moved from Cloud Readiness) -->
+                            <Border Style="{StaticResource SectionCard}" Margin="0,0,0,15">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,15">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <StackPanel Grid.Column="0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="📦" FontSize="24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                                <StackPanel>
+                                                    <TextBlock Text="Application Readiness" Style="{StaticResource SectionTitle}" Margin="0"/>
+                                                    <TextBlock Text="ConfigMgr applications ready for Intune deployment" 
+                                                               FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <Border Grid.Column="1" Background="#E8F5E9" CornerRadius="8" Padding="15,10" VerticalAlignment="Center">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding AppReadinessPercentage, StringFormat={}{0:F0}%}" 
+                                                           FontSize="28" FontWeight="Bold" Foreground="#107C10" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Ready" FontSize="11" Foreground="#666" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                    
+                                    <!-- Readiness Summary Cards -->
+                                    <Grid Margin="0,0,0,15">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <Border Grid.Column="0" Background="#E8F5E9" CornerRadius="6" Padding="12" Margin="0,0,5,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="Easy Migration" FontSize="11" Foreground="#2E7D32" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding AppReadinessEasyCount}" FontSize="24" FontWeight="Bold" 
+                                                           Foreground="#107C10" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="MSI / Store apps" FontSize="9" Foreground="#666" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        
+                                        <Border Grid.Column="1" Background="#FFF8E1" CornerRadius="6" Padding="12" Margin="5,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="Moderate Effort" FontSize="11" Foreground="#F57C00" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding AppReadinessModerateCount}" FontSize="24" FontWeight="Bold" 
+                                                           Foreground="#FF8C00" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Win32 packaging" FontSize="9" Foreground="#666" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        
+                                        <Border Grid.Column="2" Background="#FFEBEE" CornerRadius="6" Padding="12" Margin="5,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="Complex" FontSize="11" Foreground="#C62828" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding AppReadinessComplexCount}" FontSize="24" FontWeight="Bold" 
+                                                           Foreground="#D32F2F" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="App-V / Scripts" FontSize="9" Foreground="#666" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                    
+                                    <!-- Top Blockers -->
+                                    <Border Background="#FFF5F5" CornerRadius="6" Padding="12" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock Text="⚠️ Top Migration Blockers" FontSize="12" FontWeight="SemiBold" 
+                                                       Foreground="#C62828" Margin="0,0,0,8"/>
+                                            <StackPanel>
+                                                <Grid Margin="0,0,0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="App-V Packages" FontSize="11" Foreground="#333"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding AppBlockerAppVCount, StringFormat={}{0} apps}" 
+                                                               FontSize="11" Foreground="#D32F2F" FontWeight="SemiBold"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="Script-Based Installers" FontSize="11" Foreground="#333"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding AppBlockerScriptCount, StringFormat={}{0} apps}" 
+                                                               FontSize="11" Foreground="#F57C00" FontWeight="SemiBold"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <!-- Recommendations -->
+                                    <Border Background="#E3F2FD" CornerRadius="6" Padding="12">
+                                        <StackPanel>
+                                            <TextBlock Text="💡 Recommendations" FontSize="12" FontWeight="SemiBold" 
+                                                       Foreground="#0078D4" Margin="0,0,0,8"/>
+                                            <TextBlock Text="• Start with MSI apps using Win32 Content Prep Tool" 
+                                                       FontSize="11" Foreground="#333" Margin="0,0,0,4"/>
+                                            <TextBlock Text="• App-V packages need repackaging to MSIX or Win32" 
+                                                       FontSize="11" Foreground="#333" Margin="0,0,0,4"/>
+                                            <TextBlock Text="• Check Enterprise App Catalog for common apps before packaging" 
+                                                       FontSize="11" Foreground="#333"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                            
                             <!-- Application Migration Analysis (Moved from Overview) -->
                             <Border Style="{StaticResource SectionCard}">
                                 <StackPanel>
