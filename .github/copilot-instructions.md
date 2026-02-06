@@ -188,6 +188,24 @@ Move files to proper locations:
 ### `@whatsnew` - Recent Changes
 Show CHANGELOG.md entries since last major version.
 
+### `@cleanreleases` - Clean Old GitHub Releases
+```powershell
+# Preview what would be deleted (dry run)
+.\scripts\Clean-OldGitHubReleases.ps1 -WhatIf
+
+# Actually delete (default: keep 3 most recent)
+.\scripts\Clean-OldGitHubReleases.ps1
+
+# Keep more releases if needed
+.\scripts\Clean-OldGitHubReleases.ps1 -KeepCount 5
+
+# Delete releases but keep git tags
+.\scripts\Clean-OldGitHubReleases.ps1 -KeepTags
+```
+- Deletes releases AND their git tags by default
+- Requires typing "DELETE" to confirm
+- Uses GitHub CLI (gh) - must be authenticated
+
 ---
 
 ## Context Preservation

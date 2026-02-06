@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.117** | February 6, 2026
+**Version 3.17.118** | February 6, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -149,16 +149,19 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
-### Version 3.17.116 (February 5, 2026)
+
+### Version 3.17.117 (February 6, 2026)
 
 ### Added
-- 
+- **Comparison Methodology Documentation** - Explains data sources, calculations, and logic for each Cloud Value Comparison card
+  - `docs/COMPARISON_METHODOLOGY.md` - Detailed markdown for developers
+  - New "Comparison Methodology" section in AdminUserGuide.html for admins
+  - Documents all 10 comparison cards with data sources, formulas, and architectural facts
 
 ### Changed
-- 
+- AdminUserGuide.html navigation updated with Comparison Methodology link
 
 ### Fixed
--
 
 ---
 
@@ -187,7 +190,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Rewrote `CONTEXT.md` as living state document (vs historical log)
 
 ### Fixed
--
 
 ---
 
@@ -208,20 +210,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Cloud Readiness tab now focuses only on readiness signals and blockers
 
 ### Fixed
--
-
----
-
-### Version 3.17.111 (February 5, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
 
 ---
 
@@ -244,7 +232,25 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Mock data now demonstrates all 4 cards when disconnected
 
 ### Fixed
--
+
+---
+
+### Version 3.17.109 (February 5, 2026)
+
+### Added
+- **Server Exclusion Helper** - New `GetWindowsWorkstationsAsync()` method and `IsWindowsWorkstation()` helper
+  - Single source of truth for filtering Windows 10/11 workstations
+  - Excludes Windows Server operating systems
+  - Excludes MDE-only devices (not fully Intune-managed)
+
+### Changed
+
+### Fixed
+- **Server devices excluded from all counts** - Fixed 4 locations that were incorrectly including Windows Server devices
+  - Device Compliance Comparison now excludes servers
+  - Migration Impact calculations now exclude servers
+  - Intune-only device join type detection now excludes servers
+  - Windows 10/11 breakdown counts now use proper OS string matching
 
 ---
 
@@ -1465,5 +1471,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-06  
-**Version**: 3.17.117  
+**Version**: 3.17.118  
 **Maintainer:** Cloud Native Assessment Team

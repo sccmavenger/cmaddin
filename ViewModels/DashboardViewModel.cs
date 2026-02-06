@@ -51,6 +51,15 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private int _mediumComplexityCount;
         private int _highComplexityCount;
         private int _totalApplicationCount;
+        
+        // v3.17.118 - Application Readiness (moved from Cloud Readiness tab)
+        private double _appReadinessPercentage = 67.0;
+        private int _appReadinessEasyCount = 156;
+        private int _appReadinessModerateCount = 55;
+        private int _appReadinessComplexCount = 23;
+        private int _appBlockerAppVCount = 23;
+        private int _appBlockerScriptCount = 45;
+        
         private string _openAIEndpoint = string.Empty;
         private string _openAIDeploymentName = string.Empty;
         private string _openAIApiKey = string.Empty;
@@ -539,6 +548,43 @@ namespace ZeroTrustMigrationAddin.ViewModels
         {
             get => _totalApplicationCount;
             set => SetProperty(ref _totalApplicationCount, value);
+        }
+
+        // v3.17.118 - Application Readiness Properties (moved from Cloud Readiness tab)
+        public double AppReadinessPercentage
+        {
+            get => _appReadinessPercentage;
+            set => SetProperty(ref _appReadinessPercentage, value);
+        }
+
+        public int AppReadinessEasyCount
+        {
+            get => _appReadinessEasyCount;
+            set => SetProperty(ref _appReadinessEasyCount, value);
+        }
+
+        public int AppReadinessModerateCount
+        {
+            get => _appReadinessModerateCount;
+            set => SetProperty(ref _appReadinessModerateCount, value);
+        }
+
+        public int AppReadinessComplexCount
+        {
+            get => _appReadinessComplexCount;
+            set => SetProperty(ref _appReadinessComplexCount, value);
+        }
+
+        public int AppBlockerAppVCount
+        {
+            get => _appBlockerAppVCount;
+            set => SetProperty(ref _appBlockerAppVCount, value);
+        }
+
+        public int AppBlockerScriptCount
+        {
+            get => _appBlockerScriptCount;
+            set => SetProperty(ref _appBlockerScriptCount, value);
         }
 
         // Azure OpenAI Configuration Properties
