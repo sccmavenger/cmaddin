@@ -97,8 +97,7 @@ namespace ZeroTrustMigrationAddin.Views
             CredentialsPanel.Visibility = isChecked ? Visibility.Visible : Visibility.Collapsed;
             TestConnectionButton.Visibility = isChecked ? Visibility.Visible : Visibility.Collapsed;
             
-            // Adjust window height based on credential fields visibility
-            Height = isChecked ? 560 : 430;
+            // Window will auto-size due to SizeToContent="Height"
         }
         
         /// <summary>
