@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.115** | February 5, 2026
+**Version 3.17.116** | February 5, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -147,6 +147,36 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.115 (February 5, 2026)
+
+### Added
+- **Alternate Credentials for ConfigMgr** - Connect to Admin Service using different credentials than current Windows login
+  - New checkbox in ConfigMgr connection dialog: "Use alternate account"
+  - Supports `DOMAIN\username` and `user@domain.com` (UPN) formats
+  - Passwords encrypted with Windows DPAPI (decryptable only by same user on same machine)
+  - "Test Connection" button to validate credentials before connecting
+  - Works with both Admin Service (REST API) and WMI fallback
+- `CredentialManager` helper class for DPAPI encryption/decryption
+- `docs/SESSION_LOG.md` - Append-only session history for context preservation across chat sessions
+
+### Changed
+- Updated `ConfigMgrSettings` model with `UseAlternateCredentials`, `AlternateUsername`, `EncryptedPassword` properties
+- `ConfigMgrAdminService` now uses `NetworkCredential` when alternate credentials are configured
+- WMI connections now support alternate credentials via `ConnectionOptions.Username/Password`
+- **Project Organization Cleanup** - Consolidated file structure per new organization rules
+  - Moved 22 markdown files from root to `docs/`
+  - Moved 8 PowerShell scripts from root to `scripts/`
+  - Deleted redundant `Publish-ToGitHub.ps1` (use `Build-And-Distribute.ps1 -PublishToGitHub` instead)
+  - Deleted `Build-And-Distribute-v1-backup.ps1` (use git history)
+- Updated `.github/copilot-instructions.md` with command system (`@build`, `@handoff`, `@status`, `@cleanup`, `@whatsnew`)
+- Rewrote `CONTEXT.md` as living state document (vs historical log)
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.113 (February 5, 2026)
 
 ### Added
@@ -221,19 +251,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Migration Impact calculations now exclude servers
   - Intune-only device join type detection now excludes servers
   - Windows 10/11 breakdown counts now use proper OS string matching
-
----
-
-### Version 3.17.108 (February 4, 2026)
-
-### Added
-- 
-
-### Changed
-- Removed OS Currency comparison panel from Cloud Readiness Tab (not useful for demonstrating cloud value)
-
-### Fixed
--
 
 ---
 
@@ -1454,5 +1471,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-05  
-**Version**: 3.17.115  
+**Version**: 3.17.116  
 **Maintainer:** Cloud Native Assessment Team
