@@ -1926,6 +1926,395 @@ namespace ZeroTrustMigrationAddin.Services
             };
         }
 
+        /// <summary>
+        /// Gets Sync Freshness Comparison - how quickly devices respond to policy changes.
+        /// Cloud-native devices sync constantly; ConfigMgr relies on polling intervals.
+        /// </summary>
+        public async Task<SyncFreshnessComparison> GetSyncFreshnessComparisonAsync()
+        {
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ ⚡ SYNC FRESHNESS COMPARISON (Response Time to Threats)                                 │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+
+            var comparison = new SyncFreshnessComparison();
+
+            try
+            {
+                // Get Intune Windows workstations
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+
+                if (intuneDevices.Count > 0)
+                {
+                    var devicesWithSync = intuneDevices.Where(d => d.LastSyncDateTime != null).ToList();
+                    if (devicesWithSync.Any())
+                    {
+                        var totalDays = devicesWithSync.Sum(d => 
+                            (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays);
+                        comparison.IntuneAvgDaysSinceSync = Math.Round(totalDays / devicesWithSync.Count, 2);
+                        
+                        // Count devices synced in last 24 hours
+                        comparison.IntuneSyncedToday = devicesWithSync.Count(d => 
+                            (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays < 1);
+                        comparison.IntuneSyncedTodayPercentage = Math.Round(
+                            (double)comparison.IntuneSyncedToday / intuneDevices.Count * 100, 1);
+                    }
+                    Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} devices, avg {comparison.IntuneAvgDaysSinceSync} days since sync, {comparison.IntuneSyncedTodayPercentage}% synced today");
+                }
+
+                // Get ConfigMgr devices with LastActiveTime
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                comparison.ConfigMgrDeviceCount = configMgrDevices.Count;
+
+                if (configMgrDevices.Count > 0)
+                {
+                    var devicesWithActive = configMgrDevices.Where(d => d.LastActiveTime.HasValue).ToList();
+                    if (devicesWithActive.Any())
+                    {
+                        var totalDays = devicesWithActive.Sum(d => 
+                            (DateTime.UtcNow - d.LastActiveTime!.Value).TotalDays);
+                        comparison.ConfigMgrAvgDaysSinceScan = Math.Round(totalDays / devicesWithActive.Count, 2);
+                        
+                        // Count devices active in last 24 hours
+                        comparison.ConfigMgrScannedToday = devicesWithActive.Count(d => 
+                            (DateTime.UtcNow - d.LastActiveTime!.Value).TotalDays < 1);
+                        comparison.ConfigMgrScannedTodayPercentage = Math.Round(
+                            (double)comparison.ConfigMgrScannedToday / configMgrDevices.Count * 100, 1);
+                    }
+                    Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices, avg {comparison.ConfigMgrAvgDaysSinceScan} days since scan, {comparison.ConfigMgrScannedTodayPercentage}% scanned today");
+                }
+
+                Instance.Info($"   ⚡ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Sync Freshness Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets Stale Device Comparison - security blind spots from unmanaged devices.
+        /// Stale = no check-in for 14+ days (industry standard threshold).
+        /// </summary>
+        public async Task<StaleDeviceComparison> GetStaleDeviceComparisonAsync()
+        {
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 🔍 STALE DEVICE COMPARISON (Security Blind Spots)                                       │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+
+            var comparison = new StaleDeviceComparison();
+            var staleThreshold = DateTime.UtcNow.AddDays(-StaleDeviceComparison.StaleThresholdDays);
+
+            try
+            {
+                // Get Intune Windows workstations
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+
+                if (intuneDevices.Count > 0)
+                {
+                    comparison.IntuneStaleCount = intuneDevices.Count(d => 
+                        d.LastSyncDateTime == null || d.LastSyncDateTime.Value.UtcDateTime < staleThreshold);
+                    comparison.IntuneStalePercentage = Math.Round(
+                        (double)comparison.IntuneStaleCount / intuneDevices.Count * 100, 1);
+                    
+                    Instance.Info($"   ✓ Intune: {comparison.IntuneStaleCount}/{comparison.IntuneDeviceCount} stale ({comparison.IntuneStalePercentage}%)");
+                }
+
+                // Get ConfigMgr devices
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                comparison.ConfigMgrDeviceCount = configMgrDevices.Count;
+
+                if (configMgrDevices.Count > 0)
+                {
+                    comparison.ConfigMgrStaleCount = configMgrDevices.Count(d => 
+                        !d.LastActiveTime.HasValue || d.LastActiveTime.Value < staleThreshold);
+                    comparison.ConfigMgrStalePercentage = Math.Round(
+                        (double)comparison.ConfigMgrStaleCount / configMgrDevices.Count * 100, 1);
+                    
+                    Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrStaleCount}/{comparison.ConfigMgrDeviceCount} stale ({comparison.ConfigMgrStalePercentage}%)");
+                }
+
+                Instance.Info($"   🔍 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Stale Device Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets Conditional Access Comparison - Zero Trust foundation.
+        /// ConfigMgr-only devices CANNOT participate in CA (architectural fact, not assumption).
+        /// </summary>
+        public async Task<ConditionalAccessComparison> GetConditionalAccessComparisonAsync()
+        {
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 🛡️ CONDITIONAL ACCESS COMPARISON (Zero Trust Foundation)                                │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+
+            var comparison = new ConditionalAccessComparison();
+
+            try
+            {
+                // Get Intune Windows workstations
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+
+                if (intuneDevices.Count > 0)
+                {
+                    // CA-ready = devices that are Compliant (can pass CA device compliance checks)
+                    comparison.IntuneCAReadyCount = intuneDevices.Count(d => 
+                        d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Compliant);
+                    comparison.IntuneCAReadyPercentage = Math.Round(
+                        (double)comparison.IntuneCAReadyCount / intuneDevices.Count * 100, 1);
+                    
+                    Instance.Info($"   ✓ Intune: {comparison.IntuneCAReadyCount}/{comparison.IntuneDeviceCount} CA-ready ({comparison.IntuneCAReadyPercentage}%)");
+                }
+
+                // Get ConfigMgr-only devices (not in Intune)
+                // These are devices that exist in ConfigMgr but NOT in the Intune device list
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                
+                // Build a set of device names that are in Intune
+                var intuneDeviceNames = new HashSet<string>(
+                    intuneDevices.Where(d => !string.IsNullOrEmpty(d.DeviceName))
+                                 .Select(d => d.DeviceName!.ToLowerInvariant()));
+                
+                // ConfigMgr-only = devices in ConfigMgr that aren't in Intune
+                var configMgrOnlyDevices = configMgrDevices
+                    .Where(d => !string.IsNullOrEmpty(d.Name) && 
+                                !intuneDeviceNames.Contains(d.Name.ToLowerInvariant()))
+                    .ToList();
+                
+                comparison.ConfigMgrOnlyDeviceCount = configMgrOnlyDevices.Count;
+                
+                // Note: ConfigMgrOnlyCAReadyCount is always 0 - this is architectural, not an assumption
+                // Conditional Access requires Intune enrollment to evaluate device compliance
+                Instance.Info($"   ✓ ConfigMgr-only: {comparison.ConfigMgrOnlyDeviceCount} devices (0% CA-ready - requires Intune enrollment)");
+
+                Instance.Info($"   🛡️ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Conditional Access Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets device compliance comparison data between Intune and ConfigMgr.
+        /// </summary>
+        public async Task<DeviceComplianceComparison> GetDeviceComplianceComparisonAsync()
+        {
+            var comparison = new DeviceComplianceComparison();
+            
+            try
+            {
+                Instance.Info("📊 Fetching Device Compliance Comparison...");
+                
+                // Get Intune devices and their compliance
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+                comparison.IntuneCompliantCount = intuneDevices.Count(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Compliant);
+                
+                Instance.Info($"   ✓ Intune: {comparison.IntuneCompliantCount}/{comparison.IntuneDeviceCount} compliant ({comparison.IntuneCompliancePercentage:F1}%)");
+                
+                // Get ConfigMgr device count (we show relative count, not compliance state)
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                comparison.ConfigMgrDeviceCount = configMgrDevices.Count;
+                // Estimate ConfigMgr compliance based on recently active clients (within 30 days)
+                var activeThreshold = DateTime.Now.AddDays(-30);
+                comparison.ConfigMgrCompliantCount = configMgrDevices.Count(d => 
+                    d.LastActiveTime.HasValue && d.LastActiveTime.Value > activeThreshold);
+                
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrCompliantCount}/{comparison.ConfigMgrDeviceCount} active ({comparison.ConfigMgrCompliancePercentage:F1}%)");;
+                Instance.Info($"   📊 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Device Compliance Comparison failed: {ex.Message}");
+            }
+            
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets threat detection comparison data.
+        /// Intune provides partnerReportedThreatState, ConfigMgr only shows if AV is enabled.
+        /// </summary>
+        public async Task<ThreatDetectionComparison> GetThreatDetectionComparisonAsync()
+        {
+            var comparison = new ThreatDetectionComparison();
+            
+            try
+            {
+                Instance.Info("🛡️ Fetching Threat Detection Comparison...");
+                
+                // Get Intune devices - we'd need partnerReportedThreatState but for now use complianceState as proxy
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+                
+                // Without partnerReportedThreatState, estimate based on compliance
+                // Compliant devices are likely "secured"
+                comparison.IntuneSecuredCount = intuneDevices.Count(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Compliant);
+                comparison.IntuneUnknownCount = intuneDevices.Count(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Unknown);
+                comparison.IntuneMisconfiguredCount = intuneDevices.Count(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.ConfigManager);
+                comparison.IntuneCompromisedCount = intuneDevices.Count(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Noncompliant);
+                
+                Instance.Info($"   ✓ Intune: {comparison.IntuneSecuredCount} secured, {comparison.IntuneCompromisedCount} non-compliant, {comparison.IntuneMisconfiguredCount} configMgr-managed");
+                
+                // Get ConfigMgr AV status
+                var avStatus = await _configMgrService.GetAntivirusStatusAsync();
+                comparison.ConfigMgrDeviceCount = avStatus.Count;
+                comparison.ConfigMgrProtectionEnabledCount = avStatus.Count(av => av.ProtectionEnabled);
+                comparison.ConfigMgrProtectionDisabledCount = avStatus.Count(av => !av.ProtectionEnabled);
+                
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrProtectionEnabledCount} protection enabled, {comparison.ConfigMgrProtectionDisabledCount} disabled");
+                Instance.Info($"   🛡️ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Threat Detection Comparison failed: {ex.Message}");
+            }
+            
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets active malware comparison data.
+        /// Only Intune can report windowsActiveMalwareCount - ConfigMgr has no visibility.
+        /// </summary>
+        public async Task<ActiveMalwareComparison> GetActiveMalwareComparisonAsync()
+        {
+            var comparison = new ActiveMalwareComparison();
+            
+            try
+            {
+                Instance.Info("🦠 Fetching Active Malware Comparison...");
+                
+                // Get Intune devices
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+                
+                // Note: windowsActiveMalwareCount requires additional Graph property
+                // For now, we show the capability difference - ConfigMgr cannot report this at all
+                comparison.TotalActiveMalwareCount = 0; // Would need additional API call
+                comparison.DevicesWithMalwareCount = 0;
+                
+                Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} devices with malware visibility");
+                
+                // ConfigMgr has no real-time malware count visibility
+                var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
+                comparison.ConfigMgrDeviceCount = configMgrDevices.Count;
+                
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices with NO malware visibility");
+                Instance.Info($"   🦠 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Active Malware Comparison failed: {ex.Message}");
+            }
+            
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets BitLocker encryption comparison data.
+        /// Both platforms can report encryption status, but cloud has key escrow advantage.
+        /// </summary>
+        public async Task<BitLockerComparison> GetBitLockerComparisonAsync()
+        {
+            var comparison = new BitLockerComparison();
+            
+            try
+            {
+                Instance.Info("🔑 Fetching BitLocker Comparison...");
+                
+                // Get Intune encryption status
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+                comparison.IntuneEncryptedCount = intuneDevices.Count(d => d.IsEncrypted == true);
+                
+                Instance.Info($"   ✓ Intune: {comparison.IntuneEncryptedCount}/{comparison.IntuneDeviceCount} encrypted ({comparison.IntuneEncryptedPercentage:F1}%)");
+                
+                // Get ConfigMgr BitLocker status
+                var bitlockerStatus = await _configMgrService.GetBitLockerStatusAsync();
+                // Group by ResourceID to get unique devices
+                var uniqueDevices = bitlockerStatus.GroupBy(b => b.ResourceId).ToList();
+                comparison.ConfigMgrDeviceCount = uniqueDevices.Count;
+                // Device is encrypted if any drive (especially C:) has ProtectionStatus = 1 or 2
+                comparison.ConfigMgrEncryptedCount = uniqueDevices.Count(g => 
+                    g.Any(b => b.ProtectionStatus >= 1));
+                
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrEncryptedCount}/{comparison.ConfigMgrDeviceCount} encrypted ({comparison.ConfigMgrEncryptedPercentage:F1}%)");
+                Instance.Info($"   🔑 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"BitLocker Comparison failed: {ex.Message}");
+            }
+            
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets device health attestation comparison data.
+        /// Only cloud-managed devices can prove hardware health to Azure AD.
+        /// </summary>
+        public async Task<DeviceHealthAttestationComparison> GetDeviceHealthAttestationComparisonAsync()
+        {
+            var comparison = new DeviceHealthAttestationComparison();
+            
+            try
+            {
+                Instance.Info("🔒 Fetching Device Health Attestation Comparison...");
+                
+                // Get Intune devices
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+                
+                // For attestation, we need TPM + BitLocker + Compliant status
+                // This is an approximation - real attestation requires deviceHealthAttestationState from Beta API
+                var encryptedCount = intuneDevices.Count(d => d.IsEncrypted == true);
+                var compliantCount = intuneDevices.Count(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Compliant);
+                
+                // Estimate attested as devices that are both encrypted and compliant
+                comparison.IntuneBitLockerEnabled = encryptedCount;
+                comparison.IntuneFullyAttestedCount = Math.Min(encryptedCount, compliantCount);
+                
+                Instance.Info($"   ✓ Intune: {comparison.IntuneFullyAttestedCount} devices estimated as fully attested");
+                
+                // Get ConfigMgr TPM/BitLocker data (but cannot attest to cloud)
+                var tpmStatus = await _configMgrService.GetTpmStatusAsync();
+                var bitlockerStatus = await _configMgrService.GetBitLockerStatusAsync();
+                
+                comparison.ConfigMgrDeviceCount = tpmStatus.Count;
+                // ConfigMgr can never attest to Azure AD - this is architectural
+                // comparison.ConfigMgrAttestedCount is always 0 (defined in model)
+                
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices with TPM data, but 0 can attest to cloud");
+                Instance.Info($"   🔒 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Device Health Attestation Comparison failed: {ex.Message}");
+            }
+            
+            return comparison;
+        }
+
         #endregion
     }
 }

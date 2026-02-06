@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Management;
@@ -15,6 +18,59 @@ using static ZeroTrustMigrationAddin.Services.FileLogger;
 namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
+    /// Helper class for encrypting/decrypting credentials using Windows DPAPI.
+    /// Credentials can only be decrypted by the same Windows user on the same machine.
+    /// </summary>
+    public static class CredentialManager
+    {
+        /// <summary>
+        /// Encrypts a string using Windows DPAPI (Data Protection API).
+        /// </summary>
+        /// <param name="plainText">The text to encrypt.</param>
+        /// <returns>Base64-encoded encrypted string.</returns>
+        public static string Encrypt(string plainText)
+        {
+            if (string.IsNullOrEmpty(plainText))
+                return string.Empty;
+
+            try
+            {
+                var data = Encoding.UTF8.GetBytes(plainText);
+                var encrypted = ProtectedData.Protect(data, null, DataProtectionScope.CurrentUser);
+                return Convert.ToBase64String(encrypted);
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"[CREDENTIAL] Failed to encrypt: {ex.Message}");
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Decrypts a DPAPI-encrypted string.
+        /// </summary>
+        /// <param name="encryptedText">Base64-encoded encrypted string.</param>
+        /// <returns>Decrypted plain text, or empty string if decryption fails.</returns>
+        public static string Decrypt(string encryptedText)
+        {
+            if (string.IsNullOrEmpty(encryptedText))
+                return string.Empty;
+
+            try
+            {
+                var encrypted = Convert.FromBase64String(encryptedText);
+                var decrypted = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
+                return Encoding.UTF8.GetString(decrypted);
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[CREDENTIAL] Failed to decrypt: {ex.Message}");
+                return string.Empty;
+            }
+        }
+    }
+
+    /// <summary>
     /// Configuration model for ConfigMgr connection settings.
     /// Stored in %LOCALAPPDATA%\ZeroTrustMigrationAddin\configmgr-settings.json
     /// </summary>
@@ -24,6 +80,64 @@ namespace ZeroTrustMigrationAddin.Services
         public string? AdminServiceUrl { get; set; }
         public DateTime? LastConnected { get; set; }
         public bool AutoConnect { get; set; } = true;
+        
+        // Alternate credentials support
+        public bool UseAlternateCredentials { get; set; } = false;
+        public string? AlternateUsername { get; set; }
+        public string? EncryptedPassword { get; set; }
+        
+        /// <summary>
+        /// Gets a value indicating whether alternate credentials are fully configured.
+        /// </summary>
+        public bool HasAlternateCredentials =>
+            UseAlternateCredentials &&
+            !string.IsNullOrEmpty(AlternateUsername) &&
+            !string.IsNullOrEmpty(EncryptedPassword);
+        
+        /// <summary>
+        /// Sets and encrypts the password using DPAPI.
+        /// </summary>
+        /// <param name="password">Plain text password to encrypt and store.</param>
+        public void SetPassword(string password)
+        {
+            EncryptedPassword = CredentialManager.Encrypt(password);
+        }
+        
+        /// <summary>
+        /// Gets the decrypted password.
+        /// </summary>
+        /// <returns>Decrypted password, or empty string if not set or decryption fails.</returns>
+        public string GetPassword()
+        {
+            return CredentialManager.Decrypt(EncryptedPassword ?? string.Empty);
+        }
+        
+        /// <summary>
+        /// Parses the username into domain and username components.
+        /// Supports DOMAIN\user and user@domain.com formats.
+        /// </summary>
+        /// <returns>Tuple of (domain, username), or (null, username) if no domain specified.</returns>
+        public (string? domain, string username) ParseCredentials()
+        {
+            if (string.IsNullOrEmpty(AlternateUsername))
+                return (null, string.Empty);
+            
+            // Handle DOMAIN\user format
+            if (AlternateUsername.Contains('\\'))
+            {
+                var parts = AlternateUsername.Split('\\', 2);
+                return (parts[0], parts[1]);
+            }
+            
+            // Handle user@domain.com (UPN) format - pass as-is, domain is embedded
+            if (AlternateUsername.Contains('@'))
+            {
+                return (null, AlternateUsername);
+            }
+            
+            // No domain specified
+            return (null, AlternateUsername);
+        }
 
         private static string ConfigPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -79,8 +193,21 @@ namespace ZeroTrustMigrationAddin.Services
             SiteServer = null;
             AdminServiceUrl = null;
             LastConnected = null;
+            UseAlternateCredentials = false;
+            AlternateUsername = null;
+            EncryptedPassword = null;
             Save();
-            Instance.Info("[CONFIGMGR] Settings cleared");
+            Instance.Info("[CONFIGMGR] Settings cleared (including credentials)");
+        }
+        
+        /// <summary>
+        /// Clears only the saved password (useful when password is incorrect).
+        /// </summary>
+        public void ClearPassword()
+        {
+            EncryptedPassword = null;
+            Save();
+            Instance.Info("[CONFIGMGR] Saved password cleared");
         }
     }
 
@@ -91,7 +218,7 @@ namespace ZeroTrustMigrationAddin.Services
     /// </summary>
     public class ConfigMgrAdminService
     {
-        private readonly HttpClient _httpClient;
+        private HttpClient _httpClient;
         private string? _adminServiceUrl;
         private string? _siteServer;
         private string? _siteCode;
@@ -126,17 +253,107 @@ namespace ZeroTrustMigrationAddin.Services
 
         public ConfigMgrAdminService()
         {
-            // Use HttpClientHandler with Windows authentication for Admin Service
-            var handler = new HttpClientHandler
+            _httpClient = CreateHttpClient();
+        }
+        
+        /// <summary>
+        /// Creates an HttpClient configured for Admin Service authentication.
+        /// Uses alternate credentials if configured, otherwise uses Windows integrated auth.
+        /// </summary>
+        private static HttpClient CreateHttpClient()
+        {
+            var settings = SavedSettings;
+            HttpClientHandler handler;
+            
+            if (settings.HasAlternateCredentials)
             {
-                UseDefaultCredentials = true, // Use current Windows credentials
-                PreAuthenticate = true,
-                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true // Accept self-signed certs
+                // Use alternate credentials
+                var (domain, username) = settings.ParseCredentials();
+                var password = settings.GetPassword();
+                
+                handler = new HttpClientHandler
+                {
+                    PreAuthenticate = true,
+                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true,
+                    Credentials = new NetworkCredential(username, password, domain ?? string.Empty)
+                };
+                
+                Instance.Info($"[CONFIGMGR] Using alternate credentials: {settings.AlternateUsername}");
+            }
+            else
+            {
+                // Use current Windows credentials (default behavior)
+                handler = new HttpClientHandler
+                {
+                    UseDefaultCredentials = true,
+                    PreAuthenticate = true,
+                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+                };
+                
+                Instance.Info("[CONFIGMGR] Using Windows integrated authentication");
+            }
+            
+            var client = new HttpClient(handler);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.Timeout = TimeSpan.FromSeconds(30);
+            
+            return client;
+        }
+        
+        /// <summary>
+        /// Reinitializes the HttpClient with current credential settings.
+        /// Call this after changing alternate credential settings.
+        /// </summary>
+        public void RefreshCredentials()
+        {
+            _httpClient?.Dispose();
+            _httpClient = CreateHttpClient();
+            _isAuthenticated = false; // Force re-authentication
+            Instance.Info("[CONFIGMGR] HttpClient refreshed with updated credentials");
+        }
+        
+        /// <summary>
+        /// Creates WMI connection options with appropriate credentials.
+        /// Uses alternate credentials if configured, otherwise uses impersonation.
+        /// </summary>
+        private static ConnectionOptions CreateWmiConnectionOptions()
+        {
+            var settings = SavedSettings;
+            var options = new ConnectionOptions
+            {
+                Authentication = AuthenticationLevel.PacketPrivacy,
+                EnablePrivileges = true,
+                Timeout = TimeSpan.FromSeconds(30)
             };
             
-            _httpClient = new HttpClient(handler);
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.Timeout = TimeSpan.FromSeconds(30); // Longer timeout for network calls
+            if (settings.HasAlternateCredentials)
+            {
+                // Use alternate credentials for WMI
+                options.Username = settings.AlternateUsername;
+                options.Password = settings.GetPassword();
+                options.Impersonation = ImpersonationLevel.Impersonate;
+                
+                Instance.Info($"[CONFIGMGR] WMI using alternate credentials: {settings.AlternateUsername}");
+            }
+            else
+            {
+                // Use current Windows credentials via impersonation
+                options.Impersonation = ImpersonationLevel.Impersonate;
+            }
+            
+            return options;
+        }
+        
+        /// <summary>
+        /// Creates a ManagementScope with appropriate credentials configured.
+        /// </summary>
+        /// <param name="wmiNamespace">The WMI namespace path.</param>
+        /// <returns>A configured ManagementScope.</returns>
+        private ManagementScope CreateWmiScope(string wmiNamespace)
+        {
+            var scope = CreateWmiScope(wmiNamespace);
+            scope.Options = CreateWmiConnectionOptions();
+            return scope;
         }
 
         /// <summary>
@@ -490,13 +707,7 @@ namespace ZeroTrustMigrationAddin.Services
                     
                     // Test WMI connection by getting site code
                     var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms");
-                    var options = new ConnectionOptions
-                    {
-                        Impersonation = ImpersonationLevel.Impersonate,
-                        Authentication = AuthenticationLevel.PacketPrivacy,
-                        EnablePrivileges = true,
-                        Timeout = TimeSpan.FromSeconds(30)
-                    };
+                    var options = CreateWmiConnectionOptions();
                     scope.Options = options;
                     
                     try
@@ -795,7 +1006,7 @@ namespace ZeroTrustMigrationAddin.Services
                 try
                 {
                     var devices = new List<ConfigMgrDevice>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = CreateWmiScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
                     scope.Connect();
 
                     // Query for Windows 10/11 workstations
@@ -958,7 +1169,7 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_Application");
 
                     var apps = new List<ConfigMgrApplication>();
-                    var scope = new ManagementScope(wmiNamespace);
+                    var scope = CreateWmiScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_Application");
@@ -1075,7 +1286,7 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.LogWmiQuery(wmiNamespace, "SELECT LocalizedDisplayName, Technology, AppModelName, CI_UniqueID, Priority, IsEnabled FROM SMS_DeploymentType");
 
                     var deploymentTypes = new List<ConfigMgrDeploymentType>();
-                    var scope = new ManagementScope(wmiNamespace);
+                    var scope = CreateWmiScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_DeploymentType", null, new[] { "LocalizedDisplayName", "Technology", "AppModelName", "CI_UniqueID", "Priority", "IsEnabled" });
@@ -1192,7 +1403,7 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_G_System_COMPUTER_SYSTEM");
 
                     var hardware = new List<ConfigMgrHardwareInfo>();
-                    var scope = new ManagementScope(wmiNamespace);
+                    var scope = CreateWmiScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_G_System_COMPUTER_SYSTEM");
@@ -1300,7 +1511,7 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_UpdateComplianceStatus");
 
                     var compliance = new List<ConfigMgrUpdateCompliance>();
-                    var scope = new ManagementScope(wmiNamespace);
+                    var scope = CreateWmiScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_UpdateComplianceStatus");
@@ -1401,7 +1612,7 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.LogWmiQuery(wmiNamespace, $"SELECT * FROM SMS_FullCollectionMembership WHERE ResourceID = {resourceId}");
 
                     var memberships = new List<ConfigMgrCollectionMembership>();
-                    var scope = new ManagementScope(wmiNamespace);
+                    var scope = CreateWmiScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_FullCollectionMembership", $"ResourceID = {resourceId}");
@@ -1506,7 +1717,7 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_CH_Summary");
 
                     var healthMetrics = new List<ConfigMgrClientHealth>();
-                    var scope = new ManagementScope(wmiNamespace);
+                    var scope = CreateWmiScope(wmiNamespace);
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_CH_Summary");
@@ -1656,7 +1867,7 @@ namespace ZeroTrustMigrationAddin.Services
                 try
                 {
                     var statuses = new List<BitLockerStatus>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = CreateWmiScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_G_System_ENCRYPTABLE_VOLUME", "", 
@@ -1774,7 +1985,7 @@ namespace ZeroTrustMigrationAddin.Services
                 try
                 {
                     var statuses = new List<FirewallStatus>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = CreateWmiScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_G_System_FIREWALL_PRODUCT", "", new[] { "ResourceID", "ProductState" });
@@ -1884,7 +2095,7 @@ namespace ZeroTrustMigrationAddin.Services
                 try
                 {
                     var statuses = new List<AntivirusStatus>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = CreateWmiScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_G_System_AntimalwareHealthStatus");
@@ -1993,7 +2204,7 @@ namespace ZeroTrustMigrationAddin.Services
                 try
                 {
                     var statuses = new List<TpmStatus>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = CreateWmiScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_G_System_TPM");
@@ -2098,7 +2309,7 @@ namespace ZeroTrustMigrationAddin.Services
                 try
                 {
                     var statuses = new List<OSDetails>();
-                    var scope = new ManagementScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
+                    var scope = CreateWmiScope($"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}");
                     scope.Connect();
 
                     var query = new SelectQuery("SMS_G_System_OPERATING_SYSTEM");
@@ -2604,3 +2815,4 @@ namespace ZeroTrustMigrationAddin.Services
 
     #endregion
 }
+

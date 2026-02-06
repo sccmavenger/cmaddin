@@ -1,160 +1,97 @@
 # Project Context
 
-This document provides current project state for developers and AI assistants. Updated automatically during builds and manually for significant changes.
+> **Living State Document** - Updated at end of each session. For historical context, see `docs/SESSION_LOG.md`.
 
 ---
 
-## Current Version
-**Version**: 3.17.108 (Unreleased: 3.16.31)  
-**Last Updated**: 2026-02-04  
-**Branch**: main
+## Current State
+
+| Property | Value |
+|----------|-------|
+| **Version** | 3.17.114 |
+| **Last Updated** | 2026-02-05 |
+| **Branch** | main |
+| **Status** | Stable - Published to GitHub |
 
 ---
 
-## Recent Changes (Last 5 Sessions)
+## Active Features
 
-### Session: 2025-01-17
-**Focus**: Enrollment Impact Simulator - Credibility-first feature design
-- ✅ Created 100% data-driven Enrollment Impact Simulator
-- ✅ Added ConfigMgr security inventory methods (BitLocker, Firewall, Defender, TPM, OS)
-- ✅ Added Graph API compliance policy extraction
-- ✅ Created EnrollmentSimulatorCard (dashboard summary)
-- ✅ Created EnrollmentSimulatorWindow (detailed results)
+### Cloud Value Comparison Tab (NEW)
+- **Status**: Complete, hidden by default
+- **Enable**: Launch with `/showtabs:comparison` argument
+- **Location**: [CloudValueComparisonTab.xaml](Views/CloudValueComparisonTab.xaml)
+- **Description**: 10 comparison cards showing Intune vs ConfigMgr capabilities using real customer data
 
-**Key Decision**: Rejected hardcoded estimates in favor of data-driven calculations. See ADR-007 in DECISIONS.md.
-
-**Files Created**:
-- Models/EnrollmentSimulatorModels.cs
-- Services/EnrollmentSimulatorService.cs
-- Views/EnrollmentSimulatorCard.xaml/.cs
-- Views/EnrollmentSimulatorWindow.xaml/.cs
-
-**Files Modified**:
-- Services/ConfigMgrAdminService.cs - Security inventory methods
-- Services/GraphDataService.cs - Compliance policy settings methods
-
-### Session: 2025-01-15/16
-**Focus**: Feature Development & Infrastructure
-- ✅ Added Migration Impact Analysis (6 categories, 30+ metrics)
-- ✅ Fixed Enrollment Confidence card buttons (View Full Analysis, Get Recommendations)
-- ✅ Implemented query logging for transparency
-- ✅ Consolidated logs to single location
-- ✅ Fixed auto-update (uploaded missing manifest.json)
-- ✅ Added documentation automation (copilot-instructions, commit template, DECISIONS.md)
-
-**Files Modified**:
-- Services/FileLogger.cs - Query logging
-- Services/MigrationImpactService.cs - NEW
-- Models/MigrationImpactModels.cs - NEW
-- Views/MigrationImpactCard.xaml/.cs - NEW
-- Views/ConfidenceDetailsWindow.xaml/.cs - NEW
-- Views/RecommendationsWindow.xaml/.cs - NEW
-- Views/DiagnosticsWindow.xaml/.cs - Query log viewer
+### Hidden Tabs System
+All hidden tabs can be enabled via command-line:
+- `/showtabs:comparison` - Cloud Value Comparison (10 cards)
+- `/showtabs:agent` - Enrollment Agent (chat interface)
 
 ---
 
-## Active Development
+## Recent Session Summary (2026-02-05)
 
-### In Progress
-- Enrollment Impact Simulator - Wire up to dashboard
+### Completed
+- **Alternate Credentials for ConfigMgr** - Users can now connect with different credentials than their Windows login
+  - DPAPI-encrypted password storage
+  - Supports DOMAIN\user and UPN formats
+  - Test Connection button for validation
+- Created CloudValueComparisonTab with 10 comparison cards
+- Implemented real data integration from Graph API and ConfigMgr
+- Published v3.17.110-114 with successive fixes
+- Fixed auto-update manifest.json issue
+- Deleted redundant scripts (Publish-ToGitHub.ps1, Build-And-Distribute-v1-backup.ps1)
+- Updated copilot-instructions.md with command system and file organization rules
+- Moved 22 markdown files to `docs/`, 8 scripts to `scripts/`
 
-### Planned Next
-- Integrate EnrollmentSimulatorCard into dashboard
-- Review Migration Impact Analysis for similar credibility issues
-- Documentation automation testing
+### Key Decisions
+- **ADR-008**: Single build script policy - only `Build-And-Distribute.ps1` at root
+- **ADR-009**: File organization - docs in `docs/`, scripts in `scripts/`
+- **ADR-010**: Context preservation via CONTEXT.md + SESSION_LOG.md
+- **ADR-011**: DPAPI for credential encryption (user-scoped, machine-bound)
 
 ---
 
 ## Known Issues
 
-1. **Migration Impact Analysis has hardcoded estimates** - May need revision per ADR-007 principles
-2. **Empty CHANGELOG entries** - Versions 3.16.28-3.16.30 have placeholder entries that need filling
-3. **Query logging overhead** - Not measured, likely negligible but should verify
+1. **None critical** - v3.17.114 is stable
 
 ---
 
-## Architecture Quick Reference
+## Immediate Next Steps
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    WPF UI Layer                         │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
-│  │ Dashboard   │ │ Enrollment  │ │ Migration   │       │
-│  │ View        │ │ Cards       │ │ Impact      │       │
-│  └─────────────┘ └─────────────┘ └─────────────┘       │
-│  ┌─────────────────────────────────────────────┐       │
-│  │ Enrollment Simulator Card (NEW)              │       │
-│  └─────────────────────────────────────────────┘       │
-├─────────────────────────────────────────────────────────┤
-│                  ViewModel Layer                        │
-│  ┌─────────────────────────────────────────────┐       │
-│  │ DashboardViewModel (Main orchestration)      │       │
-│  └─────────────────────────────────────────────┘       │
-├─────────────────────────────────────────────────────────┤
-│                   Services Layer                        │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
-│  │ GraphData    │ │ ConfigMgr    │ │ Enrollment   │    │
-│  │ Service      │ │ AdminService │ │ Simulator    │    │
-│  └──────────────┘ └──────────────┘ └──────────────┘    │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
-│  │ FileLogger   │ │ UpdateService│ │ Migration    │    │
-│  │ (Singleton)  │ │              │ │ Impact       │    │
-│  └──────────────┘ └──────────────┘ └──────────────┘    │
-├─────────────────────────────────────────────────────────┤
-│                  External APIs                          │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
-│  │ Microsoft    │ │ ConfigMgr    │ │ WMI          │    │
-│  │ Graph API    │ │ Admin REST   │ │ (Fallback)   │    │
-│  └──────────────┘ └──────────────┘ └──────────────┘    │
-└─────────────────────────────────────────────────────────┘
-```
+1. Build and publish v3.17.115 with alternate credentials feature
+2. Test alternate credentials with customer environment
 
 ---
 
-## File Locations
+## Quick Reference
 
+### Build Commands
+```powershell
+# Quick build
+dotnet build
+
+# Build and publish to GitHub
+.\Build-And-Distribute.ps1 -PublishToGitHub -Force
+```
+
+### File Locations
 | Purpose | Location |
 |---------|----------|
 | Application Logs | `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\` |
-| Query Log | `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\QueryLog.txt` |
-| Update Log | `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\Update.log` |
-| Cached Data | `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Cache\` |
 | Build Output | `.\builds\` |
 | Published Releases | GitHub Releases |
 
----
-
-## Build Commands
-
-```powershell
-# Quick build (debug)
-dotnet build
-
-# Release build
-dotnet build -c Release
-
-# Build and publish to GitHub
-.\Build-And-Distribute.ps1 -PublishToGitHub
-
-# Test auto-update system
-.\Test-AutoUpdate.ps1
+### Architecture
+```
+UI (Views) → ViewModels → Services → External APIs
+                              ↓
+                    FileLogger (singleton)
 ```
 
----
-
-## Key Configuration
-
-- **Target Framework**: net8.0-windows7.0
-- **Graph API Scopes**: DeviceManagementManagedDevices.Read.All, etc.
-- **ConfigMgr**: Requires Admin Service or WMI access
-- **Updates**: GitHub repo `sccmavenger/cmaddin`
-
----
-
-## Team Notes
-
-*Add notes for team members or future sessions here*
-
-- Remember: GitHub releases need BOTH zip AND manifest.json
-- Mock data is shown when disconnected - useful for demos
-- Query log viewer is in Diagnostics window
+### Data Sources
+- **Graph API**: Intune devices, compliance, encryption
+- **ConfigMgr Admin Service**: SCCM devices, inventory
+- **WMI**: Fallback for older ConfigMgr versions

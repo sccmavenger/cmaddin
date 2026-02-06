@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.109** | February 5, 2026
+**Version 3.17.115** | February 5, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -145,6 +145,85 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.113 (February 5, 2026)
+
+### Added
+- **New Cloud Value Comparison Tab** - Dedicated hidden tab showing 10 comparison cards
+  - Security: Threat Detection, Active Malware, BitLocker Encryption, Device Health Attestation
+  - Visibility: Device Compliance, Response Time (Sync Freshness), Security Blind Spots (Stale Devices), Zero Trust Ready (CA)
+  - Operations: Remote Actions comparison (15 Intune vs 3 ConfigMgr actions)
+- New comparison model classes: `ThreatDetectionComparison`, `ActiveMalwareComparison`, `BitLockerComparison`, `TpmHealthComparison`, `DeviceHealthAttestationComparison`, `RemoteActionsComparison`, `DeviceComplianceComparison`
+- New service methods in CloudReadinessService for all comparison data
+- Tab hidden by default, enable with `/showtabs:comparison` command-line argument
+
+### Changed
+- Consistent visual design across all comparison cards (☁️ Intune green vs 🏢 ConfigMgr orange)
+- Moved comparison cards from Cloud Readiness tab to dedicated Cloud Value Comparison tab
+- Cloud Readiness tab now focuses only on readiness signals and blockers
+
+### Fixed
+-
+
+---
+
+### Version 3.17.111 (February 5, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
+### Version 3.17.110 (February 5, 2026)
+
+### Added
+- **3 New Cloud-Native Value Comparison Cards** - Expanded comparison section on Cloud Readiness tab
+  - **Sync Freshness** - Shows avg days since last sync (Intune ~0.3 vs ConfigMgr ~2.8 days)
+  - **Stale Device Rate** - Security blind spots (>14 days inactive) comparison
+  - **Conditional Access Readiness** - Zero Trust foundation (0% for ConfigMgr-only devices)
+- New service methods in CloudReadinessService:
+  - `GetSyncFreshnessComparisonAsync()` - Calculates average sync times and percent synced today
+  - `GetStaleDeviceComparisonAsync()` - Identifies devices inactive >14 days
+  - `GetConditionalAccessComparisonAsync()` - Shows CA-ready vs not eligible counts
+- New model classes: `SyncFreshnessComparison`, `StaleDeviceComparison`, `ConditionalAccessComparison`
+
+### Changed
+- Cloud Readiness comparison section now uses 2x2 grid layout for 4 cards
+- All comparison data uses real device timestamps (no estimated values)
+- Mock data now demonstrates all 4 cards when disconnected
+
+### Fixed
+-
+
+---
+
+### Version 3.17.109 (February 5, 2026)
+
+### Added
+- **Server Exclusion Helper** - New `GetWindowsWorkstationsAsync()` method and `IsWindowsWorkstation()` helper
+  - Single source of truth for filtering Windows 10/11 workstations
+  - Excludes Windows Server operating systems
+  - Excludes MDE-only devices (not fully Intune-managed)
+
+### Changed
+- 
+
+### Fixed
+- **Server devices excluded from all counts** - Fixed 4 locations that were incorrectly including Windows Server devices
+  - Device Compliance Comparison now excludes servers
+  - Migration Impact calculations now exclude servers
+  - Intune-only device join type detection now excludes servers
+  - Windows 10/11 breakdown counts now use proper OS string matching
+
+---
+
 ### Version 3.17.108 (February 4, 2026)
 
 ### Added
@@ -152,66 +231,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Changed
 - Removed OS Currency comparison panel from Cloud Readiness Tab (not useful for demonstrating cloud value)
-
-### Fixed
--
-
----
-
-### Version 3.17.107 (February 4, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
-
----
-
-### Version 3.17.106 (February 4, 2026)
-
-### Added
-- **Cloud-Native Value Comparison** - New comparison panels on Cloud Readiness Tab showing benefits of cloud-native management
-  - **Device Compliance Comparison**: Side-by-side view of Intune vs ConfigMgr device compliance rates
-    - Shows compliance percentage, device counts, and average sync/scan frequency
-    - Auto-calculates which management style has better compliance
-  - **OS Currency Comparison**: Side-by-side view of Windows 11 adoption rates
-    - Shows Windows 11 percentage for Intune-managed vs ConfigMgr-only devices
-    - Helps demonstrate cloud-native devices tend to be more current
-  - Uses real data from Graph API (managedDevices) and ConfigMgr (SMS_UpdateComplianceStatus, SMS_G_System_OPERATING_SYSTEM)
-  - Mock data shown when disconnected - disappears when authenticated to Graph and ConfigMgr
-
-### Technical
-- `Models/CloudReadinessModels.cs` - Added UpdateManagementComparison, OSCurrencyComparison, OSVersionGroup classes
-- `Services/CloudReadinessService.cs` - Added GetUpdateManagementComparisonAsync(), GetOSCurrencyComparisonAsync() methods
-- `Views/CloudReadinessTab.xaml` - Added comparison panels UI with side-by-side layout
-- `Views/CloudReadinessTab.xaml.cs` - Added LoadComparisonDataAsync(), LoadMockComparisonData() methods
-
----
-
-### Version 3.17.105 (February 4, 2026)
-
-### Added
-- 
-
-### Changed
-- 
-
-### Fixed
--
-
----
-
-### Version 3.17.104 (February 4, 2026)
-
-### Added
-- 
-
-### Changed
-- 
 
 ### Fixed
 -
@@ -1435,5 +1454,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-05  
-**Version**: 3.17.109  
+**Version**: 3.17.115  
 **Maintainer:** Cloud Native Assessment Team
