@@ -879,10 +879,11 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 // Try query with $select first (preferred - less data transfer)
                 // Include CreationDate to track when device was first discovered in ConfigMgr
+                // Include AADDeviceID for reliable cross-referencing with Intune
                 query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')" +
-                    "&$select=ResourceId,Name,OperatingSystemNameandVersion,LastActiveTime,ClientVersion,ResourceDomainORWorkgroup,CreationDate";
+                    "&$select=ResourceId,Name,OperatingSystemNameandVersion,LastActiveTime,ClientVersion,ResourceDomainORWorkgroup,CreationDate,AADDeviceID";
 
                 Instance.LogAdminServiceQuery("GetWindows1011Devices", query);
                 Instance.Info("=== ConfigMgr Admin Service REST API Query ===");
@@ -959,8 +960,17 @@ namespace ZeroTrustMigrationAddin.Services
                             IsCoManaged = false, // Will be set by cross-referencing with Intune
                             CoManagementFlags = 0, // Will be populated from SMS_Client if needed
                             DomainOrWorkgroup = device.ResourceDomainORWorkgroup,
-                            CreationDate = device.CreationDate // When device was first discovered in ConfigMgr
+                            CreationDate = device.CreationDate, // When device was first discovered in ConfigMgr
+                            AADDeviceID = device.AADDeviceID // Azure AD Device ID for reliable cross-referencing
                         });
+                    }
+                    
+                    // Log AADDeviceID info for debugging
+                    var devicesWithAADID = devices.Count(d => !string.IsNullOrEmpty(d.AADDeviceID));
+                    FileLogger.Instance.Info($"   🔗 Devices with AADDeviceID: {devicesWithAADID}/{devices.Count} ({(devices.Count > 0 ? devicesWithAADID * 100 / devices.Count : 0)}%)");
+                    if (devicesWithAADID < devices.Count)
+                    {
+                        FileLogger.Instance.Info($"      Note: Devices without AADDeviceID are likely on-prem AD joined only (not Hybrid AAD)");
                     }
                     
                     // Log CreationDate info for debugging
@@ -1025,7 +1035,8 @@ namespace ZeroTrustMigrationAddin.Services
                             OperatingSystem = obj["OperatingSystemNameandVersion"]?.ToString() ?? "Unknown",
                             ClientVersion = obj["ClientVersion"]?.ToString(),
                             IsCoManaged = false, // Will check separately
-                            CoManagementFlags = 0
+                            CoManagementFlags = 0,
+                            AADDeviceID = obj["AADDeviceID"]?.ToString() // Azure AD Device ID for hybrid joined devices
                         };
 
                         // Check co-management status
@@ -2565,6 +2576,10 @@ namespace ZeroTrustMigrationAddin.Services
         /// When the device was first discovered/added to ConfigMgr
         /// </summary>
         public DateTime? CreationDate { get; set; }
+        /// <summary>
+        /// Azure AD Device ID for Hybrid Azure AD Joined devices
+        /// </summary>
+        public string? AADDeviceID { get; set; }
         // Note: SMS_R_System doesn't have CoManagementFlags
         // Use SMS_Client for co-management details
     }
@@ -2625,6 +2640,11 @@ namespace ZeroTrustMigrationAddin.Services
         /// When the device was first discovered/added to ConfigMgr (from SMS_R_System.CreationDate)
         /// </summary>
         public DateTime? CreationDate { get; set; }
+        /// <summary>
+        /// Azure AD Device ID for Hybrid Azure AD Joined devices (from SMS_R_System.AADDeviceID)
+        /// Used for reliable cross-referencing with Intune devices
+        /// </summary>
+        public string? AADDeviceID { get; set; }
     }
 
     public class ConfigMgrApplication

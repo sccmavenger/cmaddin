@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.119** | February 6, 2026
+**Version 3.17.121** | February 6, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -151,6 +151,29 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.120 (February 6, 2026)
+
+### Changed
+- **MAJOR: Device matching now uses Azure AD Device ID** - More reliable cross-referencing between Intune and ConfigMgr
+  - Primary match: Azure AD Device ID (GUID) - works for Hybrid Azure AD Joined devices
+  - Fallback match: Device name (for on-prem AD only devices without AAD ID)
+  - Fixes false "orphaned co-managed" detection caused by device name mismatches
+  - Cloud Native count now accurately excludes devices matched by either ID or name
+  - New logging shows match statistics: "Matched by AADDeviceID: X%, Matched by Name: Y%"
+
+### Added
+- `AADDeviceID` property added to ConfigMgr device queries (SMS_R_System.AADDeviceID)
+- `AADDeviceID` property added to `ConfigMgrDevice` and `ConfigMgrSystemResource` models
+- Logging shows count of ConfigMgr devices with AADDeviceID for transparency
+
+### Fixed
+- Cloud Native device count was incorrectly high due to name-only matching missing some devices
+- Orphaned co-managed device detection was flagging devices that actually existed in ConfigMgr
+
+---
+
 ### Version 3.17.117 (February 6, 2026)
 
 ### Added
@@ -233,25 +256,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Mock data now demonstrates all 4 cards when disconnected
 
 ### Fixed
-
----
-
-### Version 3.17.109 (February 5, 2026)
-
-### Added
-- **Server Exclusion Helper** - New `GetWindowsWorkstationsAsync()` method and `IsWindowsWorkstation()` helper
-  - Single source of truth for filtering Windows 10/11 workstations
-  - Excludes Windows Server operating systems
-  - Excludes MDE-only devices (not fully Intune-managed)
-
-### Changed
-
-### Fixed
-- **Server devices excluded from all counts** - Fixed 4 locations that were incorrectly including Windows Server devices
-  - Device Compliance Comparison now excludes servers
-  - Migration Impact calculations now exclude servers
-  - Intune-only device join type detection now excludes servers
-  - Windows 10/11 breakdown counts now use proper OS string matching
 
 ---
 
@@ -1472,5 +1476,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-06  
-**Version**: 3.17.119  
+**Version**: 3.17.121  
 **Maintainer:** Cloud Native Assessment Team

@@ -7,6 +7,39 @@
 ### Changed
 
 ### Fixed
+- 
+
+
+## [3.17.121] - 2026-02-06
+
+### Added
+
+### Changed
+- **Removed Application Readiness from Cloud Readiness tab** - Signal moved to Applications tab only
+  - Cloud Readiness now shows only Autopilot Readiness and Cloud-Native Readiness signals
+  - Application Readiness remains available on the Applications tab
+
+### Fixed
+
+
+## [3.17.120] - 2026-02-06
+
+### Changed
+- **MAJOR: Device matching now uses Azure AD Device ID** - More reliable cross-referencing between Intune and ConfigMgr
+  - Primary match: Azure AD Device ID (GUID) - works for Hybrid Azure AD Joined devices
+  - Fallback match: Device name (for on-prem AD only devices without AAD ID)
+  - Fixes false "orphaned co-managed" detection caused by device name mismatches
+  - Cloud Native count now accurately excludes devices matched by either ID or name
+  - New logging shows match statistics: "Matched by AADDeviceID: X%, Matched by Name: Y%"
+
+### Added
+- `AADDeviceID` property added to ConfigMgr device queries (SMS_R_System.AADDeviceID)
+- `AADDeviceID` property added to `ConfigMgrDevice` and `ConfigMgrSystemResource` models
+- Logging shows count of ConfigMgr devices with AADDeviceID for transparency
+
+### Fixed
+- Cloud Native device count was incorrectly high due to name-only matching missing some devices
+- Orphaned co-managed device detection was flagging devices that actually existed in ConfigMgr
 
 
 ## [3.17.117] - 2026-02-06

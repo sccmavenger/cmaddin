@@ -942,27 +942,75 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 // CRITICAL FIX: Cross-reference with ConfigMgr to get TRUE co-managed count
                 // A device is truly co-managed only if it exists in BOTH Intune AND ConfigMgr
+                // IMPROVED: Use AADDeviceID for primary matching (more reliable than device name)
                 if (configMgrDevices != null && configMgrDevices.Any())
                 {
-                    var configMgrDeviceNames = new HashSet<string>(
-                        configMgrDevices
-                            .Where(d => !string.IsNullOrEmpty(d.Name))
-                            .Select(d => d.Name.ToLowerInvariant()),
-                        StringComparer.OrdinalIgnoreCase);
+                    // Build lookup maps for ConfigMgr devices
+                    // Primary: AADDeviceID (for Hybrid AAD Joined devices)
+                    var configMgrByAADDeviceID = new Dictionary<string, ConfigMgrDevice>(StringComparer.OrdinalIgnoreCase);
+                    // Fallback: Device name (for on-prem AD only devices)
+                    var configMgrByName = new Dictionary<string, ConfigMgrDevice>(StringComparer.OrdinalIgnoreCase);
                     
-                    // True co-managed = Intune says co-managed AND device exists in ConfigMgr
-                    var trulyCoManagedDevices = coManagedIntuneDevices
-                        .Where(d => !string.IsNullOrEmpty(d.DeviceName) && 
-                                   configMgrDeviceNames.Contains(d.DeviceName.ToLowerInvariant()))
-                        .ToList();
+                    foreach (var cmDevice in configMgrDevices)
+                    {
+                        // Add to AADDeviceID lookup if available
+                        if (!string.IsNullOrEmpty(cmDevice.AADDeviceID))
+                        {
+                            configMgrByAADDeviceID.TryAdd(cmDevice.AADDeviceID, cmDevice);
+                        }
+                        // Add to name lookup
+                        if (!string.IsNullOrEmpty(cmDevice.Name))
+                        {
+                            configMgrByName.TryAdd(cmDevice.Name.ToLowerInvariant(), cmDevice);
+                        }
+                    }
+                    
+                    Instance.Info($"   🔗 Device matching lookups built:");
+                    Instance.Info($"      ConfigMgr devices with AADDeviceID: {configMgrByAADDeviceID.Count}/{configMgrDevices.Count}");
+                    Instance.Info($"      ConfigMgr devices by name (fallback): {configMgrByName.Count}");
+                    
+                    // Match Intune devices to ConfigMgr using AADDeviceID first, then name as fallback
+                    int matchedByAADID = 0;
+                    int matchedByName = 0;
+                    var trulyCoManagedDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                    var orphanedCoManagedDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                    
+                    foreach (var intuneDevice in coManagedIntuneDevices)
+                    {
+                        bool matched = false;
+                        
+                        // Try AADDeviceID match first (most reliable)
+                        if (!string.IsNullOrEmpty(intuneDevice.AzureADDeviceId) &&
+                            configMgrByAADDeviceID.ContainsKey(intuneDevice.AzureADDeviceId))
+                        {
+                            matched = true;
+                            matchedByAADID++;
+                        }
+                        // Fallback to name match
+                        else if (!string.IsNullOrEmpty(intuneDevice.DeviceName) &&
+                                 configMgrByName.ContainsKey(intuneDevice.DeviceName.ToLowerInvariant()))
+                        {
+                            matched = true;
+                            matchedByName++;
+                        }
+                        
+                        if (matched)
+                        {
+                            trulyCoManagedDevices.Add(intuneDevice);
+                        }
+                        else
+                        {
+                            orphanedCoManagedDevices.Add(intuneDevice);
+                        }
+                    }
                     
                     coManagedCount = trulyCoManagedDevices.Count;
                     
-                    // Detect orphaned/stale devices (in Intune as co-managed but NOT in ConfigMgr)
-                    var orphanedCoManagedDevices = coManagedIntuneDevices
-                        .Where(d => !string.IsNullOrEmpty(d.DeviceName) && 
-                                   !configMgrDeviceNames.Contains(d.DeviceName.ToLowerInvariant()))
-                        .ToList();
+                    Instance.Info($"   📊 Device matching results:");
+                    Instance.Info($"      Matched by AADDeviceID: {matchedByAADID} ({(coManagedCount > 0 ? matchedByAADID * 100 / coManagedCount : 0)}%)");
+                    Instance.Info($"      Matched by Name (fallback): {matchedByName} ({(coManagedCount > 0 ? matchedByName * 100 / coManagedCount : 0)}%)");
+                    Instance.Info($"      Total matched: {coManagedCount}");
+                    Instance.Info($"      Unmatched (orphaned): {orphanedCoManagedDevices.Count}");
                     
                     if (orphanedCoManagedDevices.Any())
                     {
@@ -978,7 +1026,8 @@ namespace ZeroTrustMigrationAddin.Services
                             var lastSync = device.LastSyncDateTime?.DateTime;
                             var daysSinceSync = lastSync.HasValue ? (int)(DateTime.UtcNow - lastSync.Value).TotalDays : -1;
                             Instance.Warning($"      • {device.DeviceName}");
-                            Instance.Warning($"        Status: In Intune as co-managed, NOT found in ConfigMgr");
+                            Instance.Warning($"        AADDeviceID: {device.AzureADDeviceId ?? "(none)"}");
+                            Instance.Warning($"        Status: In Intune as co-managed, NOT found in ConfigMgr (by ID or name)");
                             Instance.Warning($"        Last Intune Sync: {(lastSync.HasValue ? $"{lastSync:yyyy-MM-dd} ({daysSinceSync} days ago)" : "Unknown")}");
                             Instance.Warning($"        Action: Remove from Intune or re-install ConfigMgr client");
                         }
@@ -1022,10 +1071,17 @@ namespace ZeroTrustMigrationAddin.Services
                         Instance.Info($"      ... and {coManagedIntuneDevices.Count - 5} more");
                     }
                     
-                    // Mark ConfigMgr devices as co-managed if we can match by name
+                    // Mark ConfigMgr devices as co-managed using AADDeviceID (primary) or name (fallback)
                     if (configMgrDevices != null && configMgrDevices.Any())
                     {
-                        var coManagedNames = new HashSet<string>(
+                        // Build lookup of co-managed Intune devices by AADDeviceID and name
+                        var coManagedByAADID = new HashSet<string>(
+                            coManagedIntuneDevices
+                                .Where(d => !string.IsNullOrEmpty(d.AzureADDeviceId))
+                                .Select(d => d.AzureADDeviceId!),
+                            StringComparer.OrdinalIgnoreCase);
+                        
+                        var coManagedByName = new HashSet<string>(
                             coManagedIntuneDevices
                                 .Where(d => !string.IsNullOrEmpty(d.DeviceName))
                                 .Select(d => d.DeviceName!.ToLowerInvariant()),
@@ -1033,7 +1089,12 @@ namespace ZeroTrustMigrationAddin.Services
                         
                         foreach (var cmDevice in configMgrDevices)
                         {
-                            if (coManagedNames.Contains(cmDevice.Name.ToLowerInvariant()))
+                            // Try AADDeviceID match first, then name fallback
+                            if (!string.IsNullOrEmpty(cmDevice.AADDeviceID) && coManagedByAADID.Contains(cmDevice.AADDeviceID))
+                            {
+                                cmDevice.IsCoManaged = true;
+                            }
+                            else if (!string.IsNullOrEmpty(cmDevice.Name) && coManagedByName.Contains(cmDevice.Name.ToLowerInvariant()))
                             {
                                 cmDevice.IsCoManaged = true;
                             }
@@ -1226,23 +1287,46 @@ namespace ZeroTrustMigrationAddin.Services
                 }
                 
                 // Calculate Cloud Native devices: Entra/AAD joined + Intune managed + NO ConfigMgr record
+                // IMPROVED: Use AADDeviceID for primary matching (more reliable than device name)
                 int cloudNativeCount = 0;
                 int configMgrCount2 = configMgrDevices != null ? configMgrDevices.Count : 0;
                 if (configMgrCount2 > 0)
                 {
-                    // In co-management: Cloud native = Intune devices NOT in ConfigMgr (excluding MDE devices)
-                    var configMgrNames = new HashSet<string>(
+                    // Build lookup sets for ConfigMgr devices
+                    var configMgrByAADDeviceID = new HashSet<string>(
+                        configMgrDevices?.Where(d => !string.IsNullOrEmpty(d.AADDeviceID))
+                            .Select(d => d.AADDeviceID!) ?? Enumerable.Empty<string>(),
+                        StringComparer.OrdinalIgnoreCase);
+                    
+                    var configMgrByName = new HashSet<string>(
                         configMgrDevices?.Where(d => !string.IsNullOrEmpty(d.Name))
                             .Select(d => d.Name.ToLowerInvariant()) ?? Enumerable.Empty<string>(),
                         StringComparer.OrdinalIgnoreCase);
                     
+                    // Cloud native = Intune device NOT in ConfigMgr (by AADDeviceID OR name)
+                    Func<Microsoft.Graph.Models.ManagedDevice, bool> isInConfigMgr = d =>
+                    {
+                        // Check AADDeviceID first (most reliable)
+                        if (!string.IsNullOrEmpty(d.AzureADDeviceId) && 
+                            configMgrByAADDeviceID.Contains(d.AzureADDeviceId))
+                        {
+                            return true;
+                        }
+                        // Fallback to name
+                        if (!string.IsNullOrEmpty(d.DeviceName) && 
+                            configMgrByName.Contains(d.DeviceName.ToLowerInvariant()))
+                        {
+                            return true;
+                        }
+                        return false;
+                    };
+                    
                     cloudNativeCount = intuneEligibleDevices.Count(d => 
-                        !string.IsNullOrEmpty(d.DeviceName) &&
-                        !configMgrNames.Contains(d.DeviceName.ToLowerInvariant()) &&
+                        !isInConfigMgr(d) && // NOT in ConfigMgr (by ID or name)
                         !string.IsNullOrEmpty(d.AzureADDeviceId) && // Has AAD identity
                         d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense); // Exclude MDE
                         
-                    Instance.Info($"☁️ Cloud Native (Intune-only, no ConfigMgr, no MDE): {cloudNativeCount}");
+                    Instance.Info($"☁️ Cloud Native (Intune-only, no ConfigMgr match by ID or name, no MDE): {cloudNativeCount}");
                 }
                 else
                 {
