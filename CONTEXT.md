@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.114 |
+| **Version** | 3.17.117 |
 | **Last Updated** | 2026-02-05 |
 | **Branch** | main |
 | **Status** | Stable - Published to GitHub |
@@ -17,11 +17,18 @@
 
 ## Active Features
 
-### Cloud Value Comparison Tab (NEW)
+### Alternate Credentials for ConfigMgr (v3.17.115)
+- **Status**: Complete, production-ready
+- **Description**: Connect to ConfigMgr Admin Service with different credentials than Windows login
+- **Security**: Passwords encrypted with Windows DPAPI (user-scoped, machine-bound)
+- **Formats**: Supports `DOMAIN\username` and `user@domain.com` (UPN)
+
+### Cloud Value Comparison Tab
 - **Status**: Complete, hidden by default
 - **Enable**: Launch with `/showtabs:comparison` argument
 - **Location**: [CloudValueComparisonTab.xaml](Views/CloudValueComparisonTab.xaml)
 - **Description**: 10 comparison cards showing Intune vs ConfigMgr capabilities using real customer data
+- **Documentation**: [docs/COMPARISON_METHODOLOGY.md](docs/COMPARISON_METHODOLOGY.md)
 
 ### Hidden Tabs System
 All hidden tabs can be enabled via command-line:
@@ -37,32 +44,38 @@ All hidden tabs can be enabled via command-line:
   - DPAPI-encrypted password storage
   - Supports DOMAIN\user and UPN formats
   - Test Connection button for validation
+- **Comparison Methodology Documentation** - Complete documentation for admins explaining the math/logic behind each comparison card
+  - Created `docs/COMPARISON_METHODOLOGY.md` for developers
+  - Added "Comparison Methodology" section to `AdminUserGuide.html` for admins
 - Created CloudValueComparisonTab with 10 comparison cards
 - Implemented real data integration from Graph API and ConfigMgr
-- Published v3.17.110-114 with successive fixes
+- Published v3.17.110-116 with successive fixes
 - Fixed auto-update manifest.json issue
+- Fixed ConfigMgrServerDialog not resizing when credentials panel expanded
 - Deleted redundant scripts (Publish-ToGitHub.ps1, Build-And-Distribute-v1-backup.ps1)
 - Updated copilot-instructions.md with command system and file organization rules
 - Moved 22 markdown files to `docs/`, 8 scripts to `scripts/`
+- Updated INTERNAL_HIDDEN_FEATURES.md with comparison tab info
 
 ### Key Decisions
 - **ADR-008**: Single build script policy - only `Build-And-Distribute.ps1` at root
 - **ADR-009**: File organization - docs in `docs/`, scripts in `scripts/`
 - **ADR-010**: Context preservation via CONTEXT.md + SESSION_LOG.md
 - **ADR-011**: DPAPI for credential encryption (user-scoped, machine-bound)
+- **ADR-012**: Comparison methodology documented in both markdown and HTML for different audiences
 
 ---
 
 ## Known Issues
 
-1. **None critical** - v3.17.114 is stable
+1. **None critical** - v3.17.116 is stable
 
 ---
 
 ## Immediate Next Steps
 
-1. Build and publish v3.17.115 with alternate credentials feature
-2. Test alternate credentials with customer environment
+1. Test alternate credentials feature with customer environment
+2. Consider adding Build-And-Distribute.ps1 validation for documentation files
 
 ---
 

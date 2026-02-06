@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.116** | February 5, 2026
+**Version 3.17.117** | February 6, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -148,6 +148,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.116 (February 5, 2026)
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+-
+
+---
+
 ### Version 3.17.115 (February 5, 2026)
 
 ### Added
@@ -231,26 +245,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 -
-
----
-
-### Version 3.17.109 (February 5, 2026)
-
-### Added
-- **Server Exclusion Helper** - New `GetWindowsWorkstationsAsync()` method and `IsWindowsWorkstation()` helper
-  - Single source of truth for filtering Windows 10/11 workstations
-  - Excludes Windows Server operating systems
-  - Excludes MDE-only devices (not fully Intune-managed)
-
-### Changed
-- 
-
-### Fixed
-- **Server devices excluded from all counts** - Fixed 4 locations that were incorrectly including Windows Server devices
-  - Device Compliance Comparison now excludes servers
-  - Migration Impact calculations now exclude servers
-  - Intune-only device join type detection now excludes servers
-  - Windows 10/11 breakdown counts now use proper OS string matching
 
 ---
 
@@ -1470,6 +1464,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-05  
-**Version**: 3.17.116  
+**Last Updated**: 2026-02-06  
+**Version**: 3.17.117  
 **Maintainer:** Cloud Native Assessment Team

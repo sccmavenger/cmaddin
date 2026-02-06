@@ -12,6 +12,21 @@
 - 
 
 
+## [3.17.117] - 2026-02-06
+
+### Added
+- **Comparison Methodology Documentation** - Explains data sources, calculations, and logic for each Cloud Value Comparison card
+  - `docs/COMPARISON_METHODOLOGY.md` - Detailed markdown for developers
+  - New "Comparison Methodology" section in AdminUserGuide.html for admins
+  - Documents all 10 comparison cards with data sources, formulas, and architectural facts
+
+### Changed
+- AdminUserGuide.html navigation updated with Comparison Methodology link
+
+### Fixed
+- 
+
+
 ## [3.17.116] - 2026-02-05
 
 ### Added

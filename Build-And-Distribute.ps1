@@ -418,7 +418,7 @@ Write-Host "══════════════════════�
 Write-Host ""
 
 # Check 1: Required tools
-Write-Host "[CHECK 1/5] Required Tools" -ForegroundColor Yellow
+Write-Host "[CHECK 1/6] Required Tools" -ForegroundColor Yellow
 $requiredTools = @{
     'dotnet' = 'NET 8.0 SDK'
     'git' = 'Git version control'
@@ -458,7 +458,7 @@ if (!$toolsValid) {
 Write-Host ""
 
 # Check 2: Git repository status
-Write-Host "[CHECK 2/5] Git Repository Status" -ForegroundColor Yellow
+Write-Host "[CHECK 2/6] Git Repository Status" -ForegroundColor Yellow
 $gitStatus = git status --porcelain 2>$null
 
 if ($gitStatus -and !$Force -and !$DryRun) {
@@ -477,7 +477,7 @@ if ($gitStatus -and !$Force -and !$DryRun) {
 Write-Host ""
 
 # Check 3: Project file exists
-Write-Host "[CHECK 3/5] Project Configuration" -ForegroundColor Yellow
+Write-Host "[CHECK 3/6] Project Configuration" -ForegroundColor Yellow
 $csprojPath = Join-Path $scriptDir "ZeroTrustMigrationAddin.csproj"
 
 if (!(Test-Path $csprojPath)) {
@@ -500,7 +500,7 @@ Write-Host "   📦 Current version: $currentVersion" -ForegroundColor Cyan
 Write-Host ""
 
 # Check 4: Disk space
-Write-Host "[CHECK 4/5] Disk Space" -ForegroundColor Yellow
+Write-Host "[CHECK 4/6] Disk Space" -ForegroundColor Yellow
 $drive = (Get-Item $scriptDir).PSDrive.Name
 $driveInfo = Get-PSDrive $drive
 $freeSpaceGB = [math]::Round($driveInfo.Free / 1GB, 2)
@@ -514,11 +514,33 @@ if ($freeSpaceGB -lt 1) {
 Write-Host ""
 
 # Check 5: Distribution path
-Write-Host "[CHECK 5/5] Distribution Path" -ForegroundColor Yellow
+Write-Host "[CHECK 5/6] Distribution Path" -ForegroundColor Yellow
 if (Test-Path $DistributionPath) {
     Write-Host "   ✅ Distribution folder exists: $DistributionPath" -ForegroundColor Green
 } else {
     Write-Host "   ⚠️ Distribution folder will be created: $DistributionPath" -ForegroundColor Yellow
+}
+
+Write-Host ""
+
+# Check 6: Key documentation files
+Write-Host "[CHECK 6/6] Documentation Files" -ForegroundColor Yellow
+$docsValid = $true
+$requiredDocs = @{
+    'docs\COMPARISON_METHODOLOGY.md' = 'Comparison methodology for admins'
+    'docs\INTERNAL_HIDDEN_FEATURES.md' = 'Hidden features reference'
+    'AdminUserGuide.html' = 'Admin user guide'
+    'CONTEXT.md' = 'Project context state'
+    'CHANGELOG.md' = 'Change log'
+}
+
+foreach ($doc in $requiredDocs.Keys) {
+    $docPath = Join-Path $scriptDir $doc
+    if (Test-Path $docPath) {
+        Write-Host "   ✅ $doc" -ForegroundColor Green
+    } else {
+        Write-Host "   ⚠️ $doc not found ($($requiredDocs[$doc]))" -ForegroundColor Yellow
+    }
 }
 
 Write-Host ""
@@ -580,7 +602,7 @@ Write-Host ""
 
 try {
     # 1. ZeroTrustMigrationAddin.csproj
-    Write-Host "   [1/7] ZeroTrustMigrationAddin.csproj" -ForegroundColor White
+    Write-Host "   [1/9] ZeroTrustMigrationAddin.csproj" -ForegroundColor White
     $csproj.Project.PropertyGroup.Version = $newVersion
     $csproj.Project.PropertyGroup.AssemblyVersion = "$newVersion.0"
     $csproj.Project.PropertyGroup.FileVersion = "$newVersion.0"
@@ -596,7 +618,7 @@ try {
     Write-Host "      ✅ Updated to v$newVersion" -ForegroundColor Green
     
     # 2. README.md
-    Write-Host "   [2/7] README.md" -ForegroundColor White
+    Write-Host "   [2/9] README.md" -ForegroundColor White
     $readmePath = Join-Path $scriptDir "README.md"
     $changelogPathForReadme = Join-Path $scriptDir "CHANGELOG.md"
     if (Test-Path $readmePath) {
@@ -643,7 +665,7 @@ try {
     }
     
     # 3. AdminUserGuide.html - Generate from CHANGELOG.md
-    Write-Host "   [3/7] AdminUserGuide.html" -ForegroundColor White
+    Write-Host "   [3/9] AdminUserGuide.html" -ForegroundColor White
     $adminGuidePath = Join-Path $scriptDir "AdminUserGuide.html"
     $changelogPath = Join-Path $scriptDir "CHANGELOG.md"
     
@@ -691,7 +713,7 @@ try {
     }
     
     # 4. USER_GUIDE.md (if exists)
-    Write-Host "   [4/7] USER_GUIDE.md" -ForegroundColor White
+    Write-Host "   [4/9] USER_GUIDE.md" -ForegroundColor White
     $userGuidePath = Join-Path $scriptDir "USER_GUIDE.md"
     if (Test-Path $userGuidePath) {
         $content = Get-Content $userGuidePath -Raw
@@ -704,7 +726,7 @@ try {
     }
     
     # 5. DashboardWindow.xaml
-    Write-Host "   [5/7] Views/DashboardWindow.xaml" -ForegroundColor White
+    Write-Host "   [5/9] Views/DashboardWindow.xaml" -ForegroundColor White
     $xamlPath = Join-Path $scriptDir "Views\DashboardWindow.xaml"
     if (Test-Path $xamlPath) {
         $content = Get-Content $xamlPath -Raw
@@ -716,7 +738,7 @@ try {
     }
     
     # 6. DashboardViewModel.cs
-    Write-Host "   [6/7] ViewModels/DashboardViewModel.cs" -ForegroundColor White
+    Write-Host "   [6/9] ViewModels/DashboardViewModel.cs" -ForegroundColor White
     $viewModelPath = Join-Path $scriptDir "ViewModels\DashboardViewModel.cs"
     if (Test-Path $viewModelPath) {
         $content = Get-Content $viewModelPath -Raw
@@ -728,7 +750,7 @@ try {
     }
     
     # 7. CHANGELOG.md - Convert [Unreleased] to versioned entry
-    Write-Host "   [7/7] CHANGELOG.md" -ForegroundColor White
+    Write-Host "   [7/9] CHANGELOG.md" -ForegroundColor White
     $changelogPath = Join-Path $scriptDir "CHANGELOG.md"
     if (Test-Path $changelogPath) {
         $changelog = Get-UnreleasedChangelog -ChangelogPath $changelogPath
@@ -754,6 +776,31 @@ try {
             $updatedChangelog = $changelogContent -replace "(## \[Unreleased\].*?)(?=## \[\d+\.\d+\.\d+\]|$)", "`$1$newEntry"
             [System.IO.File]::WriteAllText($changelogPath, $updatedChangelog)
         }
+    } else {
+        Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
+    }
+    
+    # 8. CONTEXT.md - Update version in state table
+    Write-Host "   [8/9] CONTEXT.md" -ForegroundColor White
+    $contextPath = Join-Path $scriptDir "CONTEXT.md"
+    if (Test-Path $contextPath) {
+        $content = Get-Content $contextPath -Raw
+        $content = $content -replace "\|\s*\*\*Version\*\*\s*\|\s*[\d.]+\s*\|", "| **Version** | $newVersion |"
+        [System.IO.File]::WriteAllText($contextPath, $content)
+        Write-Host "      ✅ Updated version in state table" -ForegroundColor Green
+    } else {
+        Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
+    }
+    
+    # 9. INTERNAL_HIDDEN_FEATURES.md - Update version header
+    Write-Host "   [9/9] docs/INTERNAL_HIDDEN_FEATURES.md" -ForegroundColor White
+    $hiddenFeaturesPath = Join-Path $scriptDir "docs\INTERNAL_HIDDEN_FEATURES.md"
+    if (Test-Path $hiddenFeaturesPath) {
+        $content = Get-Content $hiddenFeaturesPath -Raw
+        $content = $content -replace "\*\*Version:\*\*\s*[\d.]+", "**Version:** $newVersion"
+        $content = $content -replace "\*\*Last Updated:\*\*\s*\w+ \d+, \d+", "**Last Updated:** $(Get-Date -Format 'MMMM d, yyyy')"
+        [System.IO.File]::WriteAllText($hiddenFeaturesPath, $content)
+        Write-Host "      ✅ Updated version and date" -ForegroundColor Green
     } else {
         Write-Host "      ⚠️ Not found" -ForegroundColor Yellow
     }
