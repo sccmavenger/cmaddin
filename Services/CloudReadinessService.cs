@@ -66,21 +66,22 @@ namespace ZeroTrustMigrationAddin.Services
                 // Run all assessments in parallel for better performance
                 // NOTE: Windows 11, Identity, WUfB, Endpoint Security hidden per Rob's feedback (2026-01-29)
                 // NOTE: Autopatch hidden (2026-02-03) - better suited for AI Recommendations
+                // NOTE: Application Readiness moved to Applications tab (2026-02-06)
                 var autopilotTask = GetAutopilotReadinessSignalAsync();
                 // var windows11Task = GetWindows11ReadinessSignalAsync(); // Hidden - not part of cloud-native readiness
                 var cloudNativeTask = GetCloudNativeReadinessSignalAsync();
-                var applicationTask = GetApplicationReadinessSignalAsync(); // v3.17.100 - Application Readiness
+                // var applicationTask = GetApplicationReadinessSignalAsync(); // Moved to Applications tab (2026-02-06)
                 // var autopatchTask = GetAutopatchReadinessSignalAsync(); // Hidden - requires Intune enrollment first, better for AI Recommendations
                 // var identityTask = GetIdentityReadinessSignalAsync(); // Hidden per Rob's feedback
                 // var wufbTask = GetWufbReadinessSignalAsync(); // Hidden per Rob's feedback
                 // var endpointSecurityTask = GetEndpointSecurityReadinessSignalAsync(); // Hidden per Rob's feedback
 
-                await Task.WhenAll(autopilotTask, cloudNativeTask, applicationTask);
+                await Task.WhenAll(autopilotTask, cloudNativeTask);
 
                 dashboard.Signals.Add(await autopilotTask);
                 // dashboard.Signals.Add(await windows11Task); // Hidden per Rob's feedback
                 dashboard.Signals.Add(await cloudNativeTask);
-                dashboard.Signals.Add(await applicationTask); // v3.17.100 - Application Readiness
+                // dashboard.Signals.Add(await applicationTask); // Moved to Applications tab (2026-02-06)
                 // dashboard.Signals.Add(await autopatchTask); // Hidden - requires Intune enrollment first, better for AI Recommendations
                 // dashboard.Signals.Add(await identityTask); // Hidden per Rob's feedback
                 // dashboard.Signals.Add(await wufbTask); // Hidden per Rob's feedback
