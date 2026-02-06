@@ -3115,6 +3115,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         /// <summary>
         /// Loads application migration data for Applications tab (Phase 2)
+        /// Also updates Application Readiness metrics for the Applications tab
         /// </summary>
         private async Task LoadApplicationMigrationDataAsync()
         {
@@ -3136,10 +3137,43 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 OnPropertyChanged(nameof(LowComplexityCount));
                 OnPropertyChanged(nameof(MediumComplexityCount));
                 OnPropertyChanged(nameof(HighComplexityCount));
+                
+                // Update Application Readiness metrics
+                // Easy = Low complexity (MSI, MSIX, Store apps)
+                // Moderate = Medium complexity (Win32 packaging needed)
+                // Complex = High complexity (App-V, scripts requiring re-engineering)
+                AppReadinessEasyCount = LowComplexityCount;
+                AppReadinessModerateCount = MediumComplexityCount;
+                AppReadinessComplexCount = HighComplexityCount;
+                
+                // Calculate percentage ready (easy apps / total)
+                if (TotalApplicationCount > 0)
+                {
+                    AppReadinessPercentage = Math.Round((double)AppReadinessEasyCount / TotalApplicationCount * 100, 0);
+                }
+                else
+                {
+                    AppReadinessPercentage = 0;
+                }
+                
+                // Count specific blockers
+                AppBlockerAppVCount = apps.Count(a => 
+                    a.DeploymentType?.Contains("App-V", StringComparison.OrdinalIgnoreCase) == true ||
+                    a.ApplicationName?.Contains("App-V", StringComparison.OrdinalIgnoreCase) == true);
+                AppBlockerScriptCount = apps.Count(a => 
+                    a.DeploymentType?.Contains("Script", StringComparison.OrdinalIgnoreCase) == true ||
+                    a.MigrationPath == MigrationPath.RequiresReengineering);
+                
+                OnPropertyChanged(nameof(AppReadinessPercentage));
+                OnPropertyChanged(nameof(AppReadinessEasyCount));
+                OnPropertyChanged(nameof(AppReadinessModerateCount));
+                OnPropertyChanged(nameof(AppReadinessComplexCount));
+                OnPropertyChanged(nameof(AppBlockerAppVCount));
+                OnPropertyChanged(nameof(AppBlockerScriptCount));
 
                 if (UseRealData && _graphDataService.IsAuthenticated)
                 {
-                    Instance.Info($"✅ Loaded {apps.Count} applications from ConfigMgr");
+                    Instance.Info($"✅ Loaded {apps.Count} applications from ConfigMgr (Easy: {AppReadinessEasyCount}, Moderate: {AppReadinessModerateCount}, Complex: {AppReadinessComplexCount})");
                 }
                 else
                 {
