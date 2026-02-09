@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.122** | February 9, 2026
+**Version 3.17.123** | February 9, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -154,6 +154,22 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.123 (February 9, 2026)
+
+### Fixed
+- **Extended Graph API pagination to 5 more methods** - Complete coverage for large environments
+  - `GetCoManagedWorkloadAuthorityAsync` - Workload authority metrics now accurate for all devices
+  - `GetAlertsAsync` - Now uses cached devices (already paginated) for alert generation
+  - `GetAutopilotDeviceStatusAsync` - Autopilot device list now fully paginated
+  - `GetDeviceCertificatesAsync` - Certificate queries now use paginated cache
+  - `GetDeviceNetworkInfoAsync` - Network info queries now fully paginated
+
+### Changed
+- Reduced redundant API calls by reusing paginated cache in GetAlertsAsync and GetDeviceCertificatesAsync
+
+---
+
 ### Version 3.17.122 (February 9, 2026)
 
 ### Fixed
@@ -217,34 +233,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Changed
 - AdminUserGuide.html navigation updated with Comparison Methodology link
-
-### Fixed
-
----
-
-### Version 3.17.115 (February 5, 2026)
-
-### Added
-- **Alternate Credentials for ConfigMgr** - Connect to Admin Service using different credentials than current Windows login
-  - New checkbox in ConfigMgr connection dialog: "Use alternate account"
-  - Supports `DOMAIN\username` and `user@domain.com` (UPN) formats
-  - Passwords encrypted with Windows DPAPI (decryptable only by same user on same machine)
-  - "Test Connection" button to validate credentials before connecting
-  - Works with both Admin Service (REST API) and WMI fallback
-- `CredentialManager` helper class for DPAPI encryption/decryption
-- `docs/SESSION_LOG.md` - Append-only session history for context preservation across chat sessions
-
-### Changed
-- Updated `ConfigMgrSettings` model with `UseAlternateCredentials`, `AlternateUsername`, `EncryptedPassword` properties
-- `ConfigMgrAdminService` now uses `NetworkCredential` when alternate credentials are configured
-- WMI connections now support alternate credentials via `ConnectionOptions.Username/Password`
-- **Project Organization Cleanup** - Consolidated file structure per new organization rules
-  - Moved 22 markdown files from root to `docs/`
-  - Moved 8 PowerShell scripts from root to `scripts/`
-  - Deleted redundant `Publish-ToGitHub.ps1` (use `Build-And-Distribute.ps1 -PublishToGitHub` instead)
-  - Deleted `Build-And-Distribute-v1-backup.ps1` (use git history)
-- Updated `.github/copilot-instructions.md` with command system (`@build`, `@handoff`, `@status`, `@cleanup`, `@whatsnew`)
-- Rewrote `CONTEXT.md` as living state document (vs historical log)
 
 ### Fixed
 
@@ -1467,5 +1455,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-09  
-**Version**: 3.17.122  
+**Version**: 3.17.123  
 **Maintainer:** Cloud Native Assessment Team

@@ -472,22 +472,39 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.LogGraphQuery("GetCoManagedWorkloadAuthority", "/deviceManagement/managedDevices", selectFields);
                 
-                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                // Use pagination to get ALL devices
+                var allDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                var devicesResponse = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
                     config => config.QueryParameters.Select = selectFields
                 );
 
-                if (devices?.Value == null || !devices.Value.Any())
+                if (devicesResponse != null)
+                {
+                    int pageCount = 0;
+                    var pageIterator = PageIterator<Microsoft.Graph.Models.ManagedDevice, Microsoft.Graph.Models.ManagedDeviceCollectionResponse>
+                        .CreatePageIterator(
+                            _graphClient,
+                            devicesResponse,
+                            device => { allDevices.Add(device); return true; },
+                            request => { pageCount++; return request; }
+                        );
+
+                    await pageIterator.IterateAsync();
+                    Instance.Info($"[GRAPH] GetCoManagedWorkloadAuthority: Retrieved {allDevices.Count} devices across {pageCount + 1} page(s)");
+                }
+
+                if (allDevices.Count == 0)
                 {
                     Instance.Warning("   ⚠️ No managed devices returned from Graph API");
                     return summary;
                 }
 
                 // Filter to co-managed devices only (ManagementAgent = ConfigurationManagerClientMdm)
-                var coManagedDevices = devices.Value
+                var coManagedDevices = allDevices
                     .Where(d => d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm)
                     .ToList();
 
-                Instance.Info($"   📱 Total Intune devices: {devices.Value.Count}");
+                Instance.Info($"   📱 Total Intune devices: {allDevices.Count}");
                 Instance.Info($"   🔄 Co-managed devices: {coManagedDevices.Count}");
 
                 if (!coManagedDevices.Any())
@@ -2158,49 +2175,45 @@ namespace ZeroTrustMigrationAddin.Services
 
             try
             {
-                // Get non-compliant devices as alerts
-                var devicesResponse = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
-                    config => config.QueryParameters.Select = new[] { "deviceName", "complianceState", "lastSyncDateTime", "operatingSystem", "enrolledDateTime" }
-                );
+                // Use cached devices (already paginated) for alert generation
+                var allDevices = await GetCachedManagedDevicesAsync();
 
-                if (devicesResponse?.Value != null)
+                // ⚠️ CRITICAL: Filter to ONLY Windows 10/11 workstations (Intune-eligible devices)
+                var devices = allDevices.Where(d => 
+                    d.OperatingSystem != null && 
+                    (
+                        d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
+                        d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
+                    ) &&
+                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+
+                // Critical: Devices not synced in 7+ days
+                var staleDevices = devices.Where(d => 
+                    d.LastSyncDateTime.HasValue && 
+                    (DateTime.Now - d.LastSyncDateTime.Value).TotalDays > 7).ToList();
+                
+                if (staleDevices.Any())
                 {
-                    // ⚠️ CRITICAL: Filter to ONLY Windows 10/11 workstations (Intune-eligible devices)
-                    var devices = devicesResponse.Value.Where(d => 
-                        d.OperatingSystem != null && 
-                        (
-                            d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
-                            d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
-                        ) &&
-                        !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
-                    ).ToList();
-
-                    // Critical: Devices not synced in 7+ days
-                    var staleDevices = devices.Where(d => 
-                        d.LastSyncDateTime.HasValue && 
-                        (DateTime.Now - d.LastSyncDateTime.Value).TotalDays > 7).ToList();
-                    
-                    if (staleDevices.Any())
+                    alerts.Add(new Alert
                     {
-                        alerts.Add(new Alert
-                        {
-                            Severity = AlertSeverity.Critical,
-                            Title = $"{staleDevices.Count} workstations haven't synced in 7+ days",
-                            Description = "These devices may be offline or experiencing connectivity issues. Check device health.",
-                            ActionText = "View Devices",
-                            DetectedDate = DateTime.Now
-                        });
-                    }
+                        Severity = AlertSeverity.Critical,
+                        Title = $"{staleDevices.Count} workstations haven't synced in 7+ days",
+                        Description = "These devices may be offline or experiencing connectivity issues. Check device health.",
+                        ActionText = "View Devices",
+                        DetectedDate = DateTime.Now
+                    });
+                }
 
-                    // Warning: Non-compliant devices
-                    var nonCompliant = devices.Where(d => 
-                        d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Noncompliant).ToList();
-                    
-                    if (nonCompliant.Any())
+                // Warning: Non-compliant devices
+                var nonCompliant = devices.Where(d => 
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Noncompliant).ToList();
+                
+                if (nonCompliant.Any())
+                {
+                    alerts.Add(new Alert
                     {
-                        alerts.Add(new Alert
-                        {
-                            Severity = AlertSeverity.Warning,
+                        Severity = AlertSeverity.Warning,
                             Title = $"{nonCompliant.Count} workstations are non-compliant",
                             Description = "Review compliance policies and remediate non-compliant devices to improve security posture.",
                             ActionText = "View Non-Compliant",
@@ -2224,7 +2237,6 @@ namespace ZeroTrustMigrationAddin.Services
                             DetectedDate = DateTime.Now
                         });
                     }
-                }
             }
             catch (Exception ex)
             {
@@ -2757,12 +2769,25 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var autopilotDevices = new List<AutopilotDeviceStatus>();
 
-                // Get all Windows Autopilot device identities
-                var devices = await _graphClient.DeviceManagement.WindowsAutopilotDeviceIdentities.GetAsync();
+                // Get all Windows Autopilot device identities with pagination
+                var allAutopilotDevices = new List<Microsoft.Graph.Models.WindowsAutopilotDeviceIdentity>();
+                var devicesResponse = await _graphClient.DeviceManagement.WindowsAutopilotDeviceIdentities.GetAsync();
 
-                if (devices?.Value != null)
+                if (devicesResponse != null)
                 {
-                    foreach (var device in devices.Value)
+                    int pageCount = 0;
+                    var pageIterator = PageIterator<Microsoft.Graph.Models.WindowsAutopilotDeviceIdentity, Microsoft.Graph.Models.WindowsAutopilotDeviceIdentityCollectionResponse>
+                        .CreatePageIterator(
+                            _graphClient,
+                            devicesResponse,
+                            device => { allAutopilotDevices.Add(device); return true; },
+                            request => { pageCount++; return request; }
+                        );
+
+                    await pageIterator.IterateAsync();
+                    Instance.Info($"[GRAPH] GetAutopilotDeviceStatusAsync: Retrieved {allAutopilotDevices.Count} Autopilot devices across {pageCount + 1} page(s)");
+                
+                    foreach (var device in allAutopilotDevices)
                     {
                         autopilotDevices.Add(new AutopilotDeviceStatus
                         {
@@ -2800,47 +2825,45 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var certificates = new List<DeviceCertificate>();
 
-                // Get all managed devices
-                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync();
+                // Use cached devices (already paginated)
+                var allDevices = await GetCachedManagedDevicesAsync();
+                Instance.Info($"[GRAPH] GetDeviceCertificatesAsync: Processing {allDevices.Count} devices for certificate info");
 
-                if (devices?.Value != null)
+                foreach (var device in allDevices)
                 {
-                    foreach (var device in devices.Value)
+                    try
                     {
-                        try
-                        {
-                            // Get device configuration states which includes certificate info
-                            var configStates = await _graphClient.DeviceManagement
-                                .ManagedDevices[device.Id]
-                                .DeviceConfigurationStates
-                                .GetAsync();
+                        // Get device configuration states which includes certificate info
+                        var configStates = await _graphClient.DeviceManagement
+                            .ManagedDevices[device.Id]
+                            .DeviceConfigurationStates
+                            .GetAsync();
 
-                            if (configStates?.Value != null)
+                        if (configStates?.Value != null)
+                        {
+                            foreach (var state in configStates.Value)
                             {
-                                foreach (var state in configStates.Value)
+                                // Check if this is a certificate profile
+                                if (state.DisplayName != null && 
+                                    (state.DisplayName.Contains("Certificate", StringComparison.OrdinalIgnoreCase) ||
+                                     state.DisplayName.Contains("SCEP", StringComparison.OrdinalIgnoreCase) ||
+                                     state.DisplayName.Contains("PKCS", StringComparison.OrdinalIgnoreCase)))
                                 {
-                                    // Check if this is a certificate profile
-                                    if (state.DisplayName != null && 
-                                        (state.DisplayName.Contains("Certificate", StringComparison.OrdinalIgnoreCase) ||
-                                         state.DisplayName.Contains("SCEP", StringComparison.OrdinalIgnoreCase) ||
-                                         state.DisplayName.Contains("PKCS", StringComparison.OrdinalIgnoreCase)))
+                                    certificates.Add(new DeviceCertificate
                                     {
-                                        certificates.Add(new DeviceCertificate
-                                        {
-                                            DeviceName = device.DeviceName ?? "Unknown",
-                                            DeviceId = device.Id ?? "",
-                                            CertificateProfileName = state.DisplayName,
-                                            Status = state.State?.ToString() ?? "Unknown",
-                                            LastReportedDateTime = state.SettingCount > 0 ? DateTime.Now : DateTime.MinValue
-                                        });
-                                    }
+                                        DeviceName = device.DeviceName ?? "Unknown",
+                                        DeviceId = device.Id ?? "",
+                                        CertificateProfileName = state.DisplayName,
+                                        Status = state.State?.ToString() ?? "Unknown",
+                                        LastReportedDateTime = state.SettingCount > 0 ? DateTime.Now : DateTime.MinValue
+                                    });
                                 }
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Instance.LogException(ex, $"GetDeviceCertificates for device {device.DeviceName}");
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Instance.LogException(ex, $"GetDeviceCertificates for device {device.DeviceName}");
                     }
                 }
 
@@ -2867,18 +2890,33 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 var networkInfo = new List<DeviceNetworkInfo>();
 
-                // Get all managed devices with network information
-                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
+                // Get all managed devices with network information (with pagination)
+                var selectFields = new[] { 
+                    "id", "deviceName", "wiFiMacAddress", "ethernetMacAddress", 
+                    "ipAddressV4", "subnetAddress", "isEncrypted", "isSupervised" 
+                };
+                
+                var allDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                var devicesResponse = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
                 {
-                    config.QueryParameters.Select = new[] { 
-                        "id", "deviceName", "wiFiMacAddress", "ethernetMacAddress", 
-                        "ipAddressV4", "subnetAddress", "isEncrypted", "isSupervised" 
-                    };
+                    config.QueryParameters.Select = selectFields;
                 });
 
-                if (devices?.Value != null)
+                if (devicesResponse != null)
                 {
-                    foreach (var device in devices.Value)
+                    int pageCount = 0;
+                    var pageIterator = PageIterator<Microsoft.Graph.Models.ManagedDevice, Microsoft.Graph.Models.ManagedDeviceCollectionResponse>
+                        .CreatePageIterator(
+                            _graphClient,
+                            devicesResponse,
+                            device => { allDevices.Add(device); return true; },
+                            request => { pageCount++; return request; }
+                        );
+
+                    await pageIterator.IterateAsync();
+                    Instance.Info($"[GRAPH] GetDeviceNetworkInfoAsync: Retrieved {allDevices.Count} devices across {pageCount + 1} page(s)");
+                    
+                    foreach (var device in allDevices)
                     {
                         networkInfo.Add(new DeviceNetworkInfo
                         {

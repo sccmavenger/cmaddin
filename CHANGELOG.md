@@ -10,7 +10,7 @@
 - 
 
 
-## [3.17.122] - 2026-02-09
+## [3.17.123] - 2026-02-09
 
 ### Added
 
@@ -18,6 +18,20 @@
 
 ### Fixed
 - 
+
+
+## [3.17.123] - 2026-02-09
+
+### Fixed
+- **Extended Graph API pagination to 5 more methods** - Complete coverage for large environments
+  - `GetCoManagedWorkloadAuthorityAsync` - Workload authority metrics now accurate for all devices
+  - `GetAlertsAsync` - Now uses cached devices (already paginated) for alert generation
+  - `GetAutopilotDeviceStatusAsync` - Autopilot device list now fully paginated
+  - `GetDeviceCertificatesAsync` - Certificate queries now use paginated cache
+  - `GetDeviceNetworkInfoAsync` - Network info queries now fully paginated
+
+### Changed
+- Reduced redundant API calls by reusing paginated cache in GetAlertsAsync and GetDeviceCertificatesAsync
 
 
 ## [3.17.122] - 2026-02-09
