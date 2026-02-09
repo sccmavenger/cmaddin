@@ -352,7 +352,7 @@ namespace ZeroTrustMigrationAddin.Services
                 return _cachedManagedDevices;
             }
 
-            // Refresh cache
+            // Refresh cache with FULL PAGINATION
             try
             {
                 var selectFields = new[] { 
@@ -368,15 +368,29 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.LogGraphQuery("GetCachedManagedDevices", "/deviceManagement/managedDevices", selectFields);
                 
-                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                var allDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                var devicesResponse = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
                     config => config.QueryParameters.Select = selectFields
                 );
 
-                if (devices?.Value != null)
+                // Use PageIterator to get ALL pages of results (Graph API returns ~1000 per page)
+                if (devicesResponse != null)
                 {
-                    _cachedManagedDevices = devices.Value.ToList();
+                    int pageCount = 0;
+                    var pageIterator = PageIterator<Microsoft.Graph.Models.ManagedDevice, Microsoft.Graph.Models.ManagedDeviceCollectionResponse>
+                        .CreatePageIterator(
+                            _graphClient,
+                            devicesResponse,
+                            device => { allDevices.Add(device); return true; },
+                            request => { pageCount++; Instance.Info($"[GRAPH] Fetching page {pageCount + 1} of managed devices..."); return request; }
+                        );
+
+                    await pageIterator.IterateAsync();
+                    
+                    _cachedManagedDevices = allDevices;
                     _cacheExpiration = DateTime.Now.Add(_cacheLifetime);
                     
+                    Instance.Info($"[GRAPH] Pagination complete: Retrieved {allDevices.Count} total devices across {pageCount + 1} page(s)");
                     Instance.LogGraphQuery("GetCachedManagedDevices (Result)", "/deviceManagement/managedDevices", selectFields, null, _cachedManagedDevices.Count);
                     
                     return _cachedManagedDevices;
@@ -825,29 +839,43 @@ namespace ZeroTrustMigrationAddin.Services
 
                 // STEP 2: Get enrollment status from Intune (what IS enrolled)
                 Instance.Info("=== INTUNE DEVICE QUERY START ===");
-                Instance.Info("Querying Microsoft Graph API: /deviceManagement/managedDevices");
+                Instance.Info("Querying Microsoft Graph API: /deviceManagement/managedDevices (with pagination)");
                 System.Diagnostics.Debug.WriteLine("Querying Intune for managed devices...");
                 
                 var allIntuneDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
                 
                 try
                 {
-                    var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
-                        config => config.QueryParameters.Select = new[] { 
-                            "id", 
-                            "deviceName", 
-                            "operatingSystem", 
-                            "managementAgent",
-                            "enrolledDateTime",
-                            "lastSyncDateTime",
-                            "complianceState",
-                            "azureADDeviceId"
-                        }
+                    var selectFields = new[] { 
+                        "id", 
+                        "deviceName", 
+                        "operatingSystem", 
+                        "managementAgent",
+                        "enrolledDateTime",
+                        "lastSyncDateTime",
+                        "complianceState",
+                        "azureADDeviceId"
+                    };
+                    
+                    var devicesResponse = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                        config => config.QueryParameters.Select = selectFields
                     );
                     
-                    if (devices?.Value != null)
+                    // Use PageIterator to get ALL pages of results (Graph API returns ~1000 per page)
+                    if (devicesResponse != null)
                     {
-                        allIntuneDevices.AddRange(devices.Value);
+                        int pageCount = 0;
+                        var pageIterator = PageIterator<Microsoft.Graph.Models.ManagedDevice, Microsoft.Graph.Models.ManagedDeviceCollectionResponse>
+                            .CreatePageIterator(
+                                _graphClient,
+                                devicesResponse,
+                                device => { allIntuneDevices.Add(device); return true; },
+                                request => { pageCount++; Instance.Info($"[GRAPH] Fetching page {pageCount + 1} of managed devices..."); return request; }
+                            );
+
+                        await pageIterator.IterateAsync();
+                        
+                        Instance.Info($"[GRAPH] Pagination complete: Retrieved {allIntuneDevices.Count} total devices across {pageCount + 1} page(s)");
                         
                         // Cache the managed devices for other methods to use
                         _cachedManagedDevices = allIntuneDevices;
@@ -1430,15 +1458,29 @@ namespace ZeroTrustMigrationAddin.Services
                 // Get device compliance policies
                 var policies = await _graphClient.DeviceManagement.DeviceCompliancePolicies.GetAsync();
                 
-                var selectFields = new[] { "id", "complianceState", "operatingSystem" };
+                var selectFields = new[] { "id", "complianceState", "operatingSystem", "managementAgent" };
                 Instance.LogGraphQuery("GetComplianceDashboard", "/deviceManagement/managedDevices", selectFields);
                 
-                // Get device compliance status
-                var complianceStatus = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
+                // Get device compliance status with FULL PAGINATION
+                var allDevices = new List<Microsoft.Graph.Models.ManagedDevice>();
+                var complianceResponse = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(
                     config => config.QueryParameters.Select = selectFields
                 );
 
-                var allDevices = complianceStatus?.Value ?? new List<Microsoft.Graph.Models.ManagedDevice>();
+                if (complianceResponse != null)
+                {
+                    int pageCount = 0;
+                    var pageIterator = PageIterator<Microsoft.Graph.Models.ManagedDevice, Microsoft.Graph.Models.ManagedDeviceCollectionResponse>
+                        .CreatePageIterator(
+                            _graphClient,
+                            complianceResponse,
+                            device => { allDevices.Add(device); return true; },
+                            request => { pageCount++; return request; }
+                        );
+
+                    await pageIterator.IterateAsync();
+                    Instance.Info($"[GRAPH] GetComplianceDashboard: Retrieved {allDevices.Count} devices across {pageCount + 1} page(s)");
+                }
                 
                 // ⚠️ CRITICAL: Filter to ONLY Windows 10/11 workstations (Intune-eligible devices)
                 // Excludes: Servers, MDE (msSense) devices
@@ -2403,34 +2445,27 @@ namespace ZeroTrustMigrationAddin.Services
                 }
                 else
                 {
-                    // Fallback: Query Graph API for legacy OS
-                    var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
-                    {
-                        config.QueryParameters.Select = new[] { "operatingSystem", "deviceName" };
-                        config.QueryParameters.Top = 999;
-                    });
+                    // Fallback: Use cached devices (now paginated)
+                    var allDevices = await GetCachedManagedDevicesAsync();
 
-                    if (devices?.Value != null)
-                    {
-                        var legacyDevices = devices.Value.Where(d =>
-                            d.OperatingSystem != null &&
-                            (d.OperatingSystem.Contains("Windows 7") ||
-                             d.OperatingSystem.Contains("Windows 8") ||
-                             d.OperatingSystem.Contains("Windows 8.1"))
-                        ).ToList();
+                    var legacyDevices = allDevices.Where(d =>
+                        d.OperatingSystem != null &&
+                        (d.OperatingSystem.Contains("Windows 7") ||
+                         d.OperatingSystem.Contains("Windows 8") ||
+                         d.OperatingSystem.Contains("Windows 8.1"))
+                    ).ToList();
 
-                        if (legacyDevices.Count > 0)
+                    if (legacyDevices.Count > 0)
+                    {
+                        blockers.Add(new Blocker
                         {
-                            blockers.Add(new Blocker
-                            {
-                                Title = "Legacy Windows Versions Detected",
-                                Description = $"{legacyDevices.Count} devices running Windows 7, 8, or 8.1 cannot be enrolled in Intune",
-                                AffectedDevices = legacyDevices.Count,
-                                Severity = BlockerSeverity.High,
-                                RemediationUrl = "https://learn.microsoft.com/windows/deployment/upgrade/windows-10-upgrade-paths"
-                            });
-                            Instance.Info($"⚠️ Found {legacyDevices.Count} legacy OS devices (Graph API)");
-                        }
+                            Title = "Legacy Windows Versions Detected",
+                            Description = $"{legacyDevices.Count} devices running Windows 7, 8, or 8.1 cannot be enrolled in Intune",
+                            AffectedDevices = legacyDevices.Count,
+                            Severity = BlockerSeverity.High,
+                            RemediationUrl = "https://learn.microsoft.com/windows/deployment/upgrade/windows-10-upgrade-paths"
+                        });
+                        Instance.Info($"⚠️ Found {legacyDevices.Count} legacy OS devices (Graph API)");
                     }
                 }
             }
@@ -2446,33 +2481,27 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Instance.Info("Checking for devices not Azure AD joined...");
 
-                var devices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
-                {
-                    config.QueryParameters.Select = new[] { "azureADDeviceId", "operatingSystem", "deviceName" };
-                    config.QueryParameters.Top = 999;
-                });
+                // Use cached devices (now paginated)
+                var devices = await GetCachedManagedDevicesAsync();
 
-                if (devices?.Value != null)
-                {
-                    // Filter to Windows 10/11 devices without Azure AD join
-                    var notAADJoined = devices.Value.Where(d =>
-                        d.OperatingSystem != null &&
-                        (d.OperatingSystem.Contains("Windows 10") || d.OperatingSystem.Contains("Windows 11")) &&
-                        string.IsNullOrEmpty(d.AzureADDeviceId)
-                    ).ToList();
+                // Filter to Windows 10/11 devices without Azure AD join
+                var notAADJoined = devices.Where(d =>
+                    d.OperatingSystem != null &&
+                    (d.OperatingSystem.Contains("Windows 10") || d.OperatingSystem.Contains("Windows 11")) &&
+                    string.IsNullOrEmpty(d.AzureADDeviceId)
+                ).ToList();
 
-                    if (notAADJoined.Count > 0)
+                if (notAADJoined.Count > 0)
+                {
+                    blockers.Add(new Blocker
                     {
-                        blockers.Add(new Blocker
-                        {
-                            Title = "Devices Not Azure AD Joined",
-                            Description = $"{notAADJoined.Count} Windows 10/11 devices are not Azure AD joined (required for co-management)",
-                            AffectedDevices = notAADJoined.Count,
-                            Severity = BlockerSeverity.High,
-                            RemediationUrl = "https://learn.microsoft.com/azure/active-directory/devices/hybrid-azuread-join-plan"
-                        });
-                        Instance.Info($"⚠️ Found {notAADJoined.Count} devices not Azure AD joined");
-                    }
+                        Title = "Devices Not Azure AD Joined",
+                        Description = $"{notAADJoined.Count} Windows 10/11 devices are not Azure AD joined (required for co-management)",
+                        AffectedDevices = notAADJoined.Count,
+                        Severity = BlockerSeverity.High,
+                        RemediationUrl = "https://learn.microsoft.com/azure/active-directory/devices/hybrid-azuread-join-plan"
+                    });
+                    Instance.Info($"⚠️ Found {notAADJoined.Count} devices not Azure AD joined");
                 }
             }
             catch (Exception ex)
@@ -2494,21 +2523,17 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 // Check if ANY devices are co-managed using ManagementAgent-based detection
-                // This is the most reliable method - same approach as GetDeviceEnrollmentAsync
-                var allIntuneDevices = await _graphClient.DeviceManagement.ManagedDevices.GetAsync(config =>
-                {
-                    config.QueryParameters.Select = new[] { "deviceName", "operatingSystem", "managementAgent", "enrolledDateTime" };
-                    config.QueryParameters.Top = 999;
-                });
+                // Use cached devices (now paginated)
+                var allIntuneDevices = await GetCachedManagedDevicesAsync();
 
-                if (allIntuneDevices?.Value == null)
+                if (allIntuneDevices == null || allIntuneDevices.Count == 0)
                 {
                     Instance.Info("No Intune devices found - skipping co-management check");
                     return;
                 }
 
                 // Co-managed devices have ManagementAgent = ConfigurationManagerClientMdm
-                var coManagedDevices = allIntuneDevices.Value
+                var coManagedDevices = allIntuneDevices
                     .Where(d => d.ManagementAgent == Microsoft.Graph.Models.ManagementAgentType.ConfigurationManagerClientMdm)
                     .ToList();
 
