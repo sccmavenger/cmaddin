@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.121** | February 6, 2026
+**Version 3.17.122** | February 9, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -153,6 +153,39 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.122 (February 9, 2026)
+
+### Fixed
+- **CRITICAL: Fixed Graph API pagination** - Tool now retrieves ALL devices instead of only first ~1000
+  - Environments with >1000 Intune devices were showing incorrect counts (e.g., 620 vs 3,910)
+  - Implemented `PageIterator` pattern for Microsoft Graph SDK v5.x
+  - Logs now show: "Retrieved X total devices across Y page(s)"
+
+### Changed
+- **GetCachedManagedDevicesAsync** now uses full pagination - affects all downstream features
+- **GetDeviceEnrollmentAsync** uses pagination - fixes Enrollment Dashboard counts
+- **GetComplianceDashboardAsync** uses pagination - fixes compliance metrics
+- **Blocker detection methods** now use paginated cache instead of separate Top=999 queries
+  - DetectLegacyOSDevicesAsync
+  - DetectDevicesNotAADJoinedAsync
+  - DetectCoManagementNotEnabledAsync
+
+---
+
+### Version 3.17.121 (February 6, 2026)
+
+### Added
+
+### Changed
+- **Removed Application Readiness from Cloud Readiness tab** - Signal moved to Applications tab only
+  - Cloud Readiness now shows only Autopilot Readiness and Cloud-Native Readiness signals
+  - Application Readiness remains available on the Applications tab
+
+### Fixed
+
+---
+
 ### Version 3.17.120 (February 6, 2026)
 
 ### Changed
@@ -212,48 +245,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Deleted `Build-And-Distribute-v1-backup.ps1` (use git history)
 - Updated `.github/copilot-instructions.md` with command system (`@build`, `@handoff`, `@status`, `@cleanup`, `@whatsnew`)
 - Rewrote `CONTEXT.md` as living state document (vs historical log)
-
-### Fixed
-
----
-
-### Version 3.17.113 (February 5, 2026)
-
-### Added
-- **New Cloud Value Comparison Tab** - Dedicated hidden tab showing 10 comparison cards
-  - Security: Threat Detection, Active Malware, BitLocker Encryption, Device Health Attestation
-  - Visibility: Device Compliance, Response Time (Sync Freshness), Security Blind Spots (Stale Devices), Zero Trust Ready (CA)
-  - Operations: Remote Actions comparison (15 Intune vs 3 ConfigMgr actions)
-- New comparison model classes: `ThreatDetectionComparison`, `ActiveMalwareComparison`, `BitLockerComparison`, `TpmHealthComparison`, `DeviceHealthAttestationComparison`, `RemoteActionsComparison`, `DeviceComplianceComparison`
-- New service methods in CloudReadinessService for all comparison data
-- Tab hidden by default, enable with `/showtabs:comparison` command-line argument
-
-### Changed
-- Consistent visual design across all comparison cards (☁️ Intune green vs 🏢 ConfigMgr orange)
-- Moved comparison cards from Cloud Readiness tab to dedicated Cloud Value Comparison tab
-- Cloud Readiness tab now focuses only on readiness signals and blockers
-
-### Fixed
-
----
-
-### Version 3.17.110 (February 5, 2026)
-
-### Added
-- **3 New Cloud-Native Value Comparison Cards** - Expanded comparison section on Cloud Readiness tab
-  - **Sync Freshness** - Shows avg days since last sync (Intune ~0.3 vs ConfigMgr ~2.8 days)
-  - **Stale Device Rate** - Security blind spots (>14 days inactive) comparison
-  - **Conditional Access Readiness** - Zero Trust foundation (0% for ConfigMgr-only devices)
-- New service methods in CloudReadinessService:
-  - `GetSyncFreshnessComparisonAsync()` - Calculates average sync times and percent synced today
-  - `GetStaleDeviceComparisonAsync()` - Identifies devices inactive >14 days
-  - `GetConditionalAccessComparisonAsync()` - Shows CA-ready vs not eligible counts
-- New model classes: `SyncFreshnessComparison`, `StaleDeviceComparison`, `ConditionalAccessComparison`
-
-### Changed
-- Cloud Readiness comparison section now uses 2x2 grid layout for 4 cards
-- All comparison data uses real device timestamps (no estimated values)
-- Mock data now demonstrates all 4 cards when disconnected
 
 ### Fixed
 
@@ -1475,6 +1466,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-06  
-**Version**: 3.17.121  
+**Last Updated**: 2026-02-09  
+**Version**: 3.17.122  
 **Maintainer:** Cloud Native Assessment Team

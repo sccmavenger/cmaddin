@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <AssemblyName>ZeroTrustMigrationAddin</AssemblyName>
     <!-- Version Information -->
-    <Version>3.17.121</Version>
-    <AssemblyVersion>3.17.121.0</AssemblyVersion>
-    <FileVersion>3.17.121.0</FileVersion>
+    <Version>3.17.122</Version>
+    <AssemblyVersion>3.17.122.0</AssemblyVersion>
+    <FileVersion>3.17.122.0</FileVersion>
     <Product>Cloud Native Assessment</Product>
     <Company>Microsoft Configuration Manager</Company>
     <Copyright>Copyright © 2025</Copyright>

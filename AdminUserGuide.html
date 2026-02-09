@@ -248,9 +248,19 @@
             <h2><span class="emoji">🎯</span> Overview</h2>
             
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.121 - February 6, 2026</strong>
+                <strong>🎉 Version 3.17.122 - February 9, 2026</strong>
                 <ul>
-                    <li>Version update</li>
+                    <li><strong>GetCachedManagedDevicesAsync</strong> now uses full pagination - affects all downstream features</li>
+                    <li><strong>GetDeviceEnrollmentAsync</strong> uses pagination - fixes Enrollment Dashboard counts</li>
+                    <li><strong>GetComplianceDashboardAsync</strong> uses pagination - fixes compliance metrics</li>
+                    <li><strong>Blocker detection methods</strong> now use paginated cache instead of separate Top=999 queries</li>
+                    <li>DetectLegacyOSDevicesAsync</li>
+                    <li>DetectDevicesNotAADJoinedAsync</li>
+                    <li>DetectCoManagementNotEnabledAsync</li>
+                    <li><strong>CRITICAL: Fixed Graph API pagination</strong> - Tool now retrieves ALL devices instead of only first ~1000</li>
+                    <li>Environments with >1000 Intune devices were showing incorrect counts (e.g., 620 vs 3,910)</li>
+                    <li>Implemented `PageIterator` pattern for Microsoft Graph SDK v5.x</li>
+                    <li>Logs now show: "Retrieved X total devices across Y page(s)"</li>
                 </ul>
             </div>
 
@@ -800,9 +810,19 @@
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.121 - February 6, 2026</strong>
+                <strong>🎉 Version 3.17.122 - February 9, 2026</strong>
                 <ul>
-                    <li>Version update</li>
+                    <li><strong>GetCachedManagedDevicesAsync</strong> now uses full pagination - affects all downstream features</li>
+                    <li><strong>GetDeviceEnrollmentAsync</strong> uses pagination - fixes Enrollment Dashboard counts</li>
+                    <li><strong>GetComplianceDashboardAsync</strong> uses pagination - fixes compliance metrics</li>
+                    <li><strong>Blocker detection methods</strong> now use paginated cache instead of separate Top=999 queries</li>
+                    <li>DetectLegacyOSDevicesAsync</li>
+                    <li>DetectDevicesNotAADJoinedAsync</li>
+                    <li>DetectCoManagementNotEnabledAsync</li>
+                    <li><strong>CRITICAL: Fixed Graph API pagination</strong> - Tool now retrieves ALL devices instead of only first ~1000</li>
+                    <li>Environments with >1000 Intune devices were showing incorrect counts (e.g., 620 vs 3,910)</li>
+                    <li>Implemented `PageIterator` pattern for Microsoft Graph SDK v5.x</li>
+                    <li>Logs now show: "Retrieved X total devices across Y page(s)"</li>
                 </ul>
             </div>
         </section>
@@ -1382,7 +1402,7 @@
         </section>
 
         <footer>
-            <p>Cloud Native Assessment v3.17.121 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Cloud Native Assessment v3.17.122 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>

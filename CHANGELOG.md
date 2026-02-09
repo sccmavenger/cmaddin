@@ -10,6 +10,34 @@
 - 
 
 
+## [3.17.122] - 2026-02-09
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.122] - 2026-02-09
+
+### Fixed
+- **CRITICAL: Fixed Graph API pagination** - Tool now retrieves ALL devices instead of only first ~1000
+  - Environments with >1000 Intune devices were showing incorrect counts (e.g., 620 vs 3,910)
+  - Implemented `PageIterator` pattern for Microsoft Graph SDK v5.x
+  - Logs now show: "Retrieved X total devices across Y page(s)"
+
+### Changed
+- **GetCachedManagedDevicesAsync** now uses full pagination - affects all downstream features
+- **GetDeviceEnrollmentAsync** uses pagination - fixes Enrollment Dashboard counts
+- **GetComplianceDashboardAsync** uses pagination - fixes compliance metrics
+- **Blocker detection methods** now use paginated cache instead of separate Top=999 queries
+  - DetectLegacyOSDevicesAsync
+  - DetectDevicesNotAADJoinedAsync
+  - DetectCoManagementNotEnabledAsync
+
+
 ## [3.17.121] - 2026-02-06
 
 ### Added
