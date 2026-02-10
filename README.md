@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.123** | February 9, 2026
+**Version 3.17.126** | February 10, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -155,6 +155,21 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+### Version 3.17.124 (February 10, 2026)
+
+### Added
+- **Cloud Native Progress Section** on Cloud Value tab
+  - Hero section at top of Cloud Value tab showing Cloud Native count prominently
+  - Progress bar showing migration goal progress (0-100% Cloud Native)
+  - 6-month trend chart showing Cloud Native device growth over time
+  - Explanation of what "Cloud Native" means (Autopilot, BYOD, removed from ConfigMgr)
+  - Uses real enrollment data when authenticated, mock data for demos
+
+---
+
 ### Version 3.17.123 (February 9, 2026)
 
 ### Fixed
@@ -220,21 +235,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Fixed
 - Cloud Native device count was incorrectly high due to name-only matching missing some devices
 - Orphaned co-managed device detection was flagging devices that actually existed in ConfigMgr
-
----
-
-### Version 3.17.117 (February 6, 2026)
-
-### Added
-- **Comparison Methodology Documentation** - Explains data sources, calculations, and logic for each Cloud Value Comparison card
-  - `docs/COMPARISON_METHODOLOGY.md` - Detailed markdown for developers
-  - New "Comparison Methodology" section in AdminUserGuide.html for admins
-  - Documents all 10 comparison cards with data sources, formulas, and architectural facts
-
-### Changed
-- AdminUserGuide.html navigation updated with Comparison Methodology link
-
-### Fixed
 
 ---
 
@@ -1454,6 +1454,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-09  
-**Version**: 3.17.123  
+**Last Updated**: 2026-02-10  
+**Version**: 3.17.126  
 **Maintainer:** Cloud Native Assessment Team

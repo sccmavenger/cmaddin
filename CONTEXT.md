@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.123 |
+| **Version** | 3.17.126 |
 | **Last Updated** | 2026-02-05 |
 | **Branch** | main |
 | **Status** | Stable - Published to GitHub |

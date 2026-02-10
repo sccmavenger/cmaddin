@@ -10,6 +10,47 @@
 - 
 
 
+## [3.17.126] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.125] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.124] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.124] - 2026-02-10
+
+### Added
+- **Cloud Native Progress Section** on Cloud Value tab
+  - Hero section at top of Cloud Value tab showing Cloud Native count prominently
+  - Progress bar showing migration goal progress (0-100% Cloud Native)
+  - 6-month trend chart showing Cloud Native device growth over time
+  - Explanation of what "Cloud Native" means (Autopilot, BYOD, removed from ConfigMgr)
+  - Uses real enrollment data when authenticated, mock data for demos
+
+
 ## [3.17.123] - 2026-02-09
 
 ### Added
