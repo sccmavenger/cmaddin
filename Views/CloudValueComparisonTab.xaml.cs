@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using LiveCharts;
+using LiveCharts.Wpf;
 using ZeroTrustMigrationAddin.Models;
 using ZeroTrustMigrationAddin.Services;
 using static ZeroTrustMigrationAddin.Services.FileLogger;
@@ -90,6 +92,10 @@ namespace ZeroTrustMigrationAddin.Views
                 UpdateBitLockerCard(bitlocker);
                 UpdateDeviceHealthAttestationCard(attestation);
                 
+                // Load Cloud Native data from enrollment
+                var enrollment = await _graphService.GetDeviceEnrollmentAsync();
+                UpdateCloudNativeSection(enrollment);
+                
                 // Track telemetry
                 AzureTelemetryService.Instance.TrackEvent("CloudValueComparisonViewed", new Dictionary<string, string>
                 {
@@ -174,6 +180,17 @@ namespace ZeroTrustMigrationAddin.Views
             ConfigMgrCACount.Text = "403 not eligible";
             CAComparisonIcon.Text = "🛡️";
             CASummaryText.Text = "403 ConfigMgr-only devices cannot use Zero Trust (Demo)";
+            
+            // Cloud Native Section (Hero)
+            CloudNativeCount.Text = "201";
+            CloudNativePercentText.Text = "5.0% of total estate";
+            CloudNativeGoalProgress.Value = 5.0;
+            
+            // Mock trend data for chart
+            var mockValues = new ChartValues<int> { 45, 78, 112, 145, 178, 201 };
+            var mockLabels = new List<string> { "Sep 1", "Oct 1", "Nov 1", "Dec 1", "Jan 1", "Feb 1" };
+            CloudNativeSeries.Values = mockValues;
+            CloudNativeAxisX.Labels = mockLabels;
         }
 
         #region Update Card Methods
@@ -265,6 +282,39 @@ namespace ZeroTrustMigrationAddin.Views
             
             IntuneAttestedCount.Text = $"{data.IntuneFullyAttestedCount:N0}";
             AttestationSummaryText.Text = data.ComparisonSummary;
+        }
+
+        private void UpdateCloudNativeSection(DeviceEnrollment? enrollment)
+        {
+            if (enrollment == null)
+            {
+                CloudNativeCount.Text = "--";
+                CloudNativePercentText.Text = "--% of total estate";
+                CloudNativeGoalProgress.Value = 0;
+                return;
+            }
+            
+            CloudNativeCount.Text = enrollment.CloudNativeDevices.ToString("N0");
+            CloudNativePercentText.Text = $"{enrollment.CloudNativePercentage:F1}% of total estate";
+            CloudNativeGoalProgress.Value = enrollment.CloudNativePercentage;
+            
+            // Update trend chart with real data
+            if (enrollment.TrendData != null && enrollment.TrendData.Length > 0)
+            {
+                var values = new ChartValues<int>();
+                var labels = new List<string>();
+                
+                foreach (var trend in enrollment.TrendData)
+                {
+                    values.Add(trend.CloudNativeDevices);
+                    labels.Add(trend.Month.ToString("MMM d"));
+                }
+                
+                CloudNativeSeries.Values = values;
+                CloudNativeAxisX.Labels = labels;
+                
+                Instance.Info($"[COMPARISON TAB] Cloud Native trend chart updated with {enrollment.TrendData.Length} data points");
+            }
         }
 
         #endregion
