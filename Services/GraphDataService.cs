@@ -347,7 +347,7 @@ namespace ZeroTrustMigrationAddin.Services
             if (_cachedManagedDevices != null && DateTime.Now < _cacheExpiration)
             {
                 Instance.LogGraphQuery("GetCachedManagedDevices", "/deviceManagement/managedDevices", 
-                    new[] { "id", "deviceName", "operatingSystem", "managementAgent", "enrolledDateTime", "lastSyncDateTime", "complianceState", "azureADDeviceId" },
+                    new[] { "id", "deviceName", "operatingSystem", "managementAgent", "enrolledDateTime", "lastSyncDateTime", "complianceState", "azureADDeviceId", "isEncrypted", "windowsActiveMalwareCount", "windowsRemediatedMalwareCount", "partnerReportedThreatState" },
                     null, _cachedManagedDevices.Count);
                 return _cachedManagedDevices;
             }
@@ -363,7 +363,12 @@ namespace ZeroTrustMigrationAddin.Services
                     "enrolledDateTime",
                     "lastSyncDateTime",
                     "complianceState",
-                    "azureADDeviceId"
+                    "azureADDeviceId",
+                    // Security properties for comparison tab
+                    "isEncrypted",
+                    "windowsActiveMalwareCount",
+                    "windowsRemediatedMalwareCount",
+                    "partnerReportedThreatState"
                 };
                 
                 Instance.LogGraphQuery("GetCachedManagedDevices", "/deviceManagement/managedDevices", selectFields);

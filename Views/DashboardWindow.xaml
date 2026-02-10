@@ -416,7 +416,7 @@
                                     <!-- Cloud Native - BLUE (informational, not in trend) -->
                                     <Border Grid.Column="3" Background="#F0F8FF" CornerRadius="6" Padding="12" Margin="5,0,0,0"
                                             BorderBrush="#0078D4" BorderThickness="0,0,0,4"
-                                            ToolTip="Windows 10/11 devices in Intune that have NO ConfigMgr record.&#x0a;These are already fully cloud-managed (Entra joined + Intune MDM).&#x0a;&#x0a;These devices were either:&#x0a;• Enrolled directly into Intune (Autopilot, user enrollment)&#x0a;• Removed from ConfigMgr after migration">
+                                            ToolTip="Windows 10/11 devices in Intune that are NOT currently found in ConfigMgr.&#x0a;These are fully cloud-managed (Entra joined + Intune MDM).&#x0a;&#x0a;Includes Autopilot, BYOD, Azure VD, Windows 365.&#x0a;&#x0a;Note: This is a point-in-time snapshot - we detect 'not found' rather than tracking removal events.">
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <Polygon Points="5,0 10,10 0,10" Fill="#0078D4" Margin="0,0,6,0" VerticalAlignment="Center"/>

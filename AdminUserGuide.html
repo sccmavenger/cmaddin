@@ -237,6 +237,7 @@
                 <li><a href="#device-readiness">Device Readiness</a></li>
                 <li><a href="#cloud-readiness">Cloud Readiness Signals</a></li>
                 <li><a href="#enrollment-agent">Enrollment Agent</a></li>
+                <li><a href="#metric-methodology">Metric Calculations</a></li>
                 <li><a href="#comparison-methodology">Comparison Methodology</a></li>
                 <li><a href="#troubleshooting">Troubleshooting</a></li>
                 <li><a href="#faq">FAQ</a></li>
@@ -248,7 +249,7 @@
             <h2><span class="emoji">🎯</span> Overview</h2>
             
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.126 - February 10, 2026</strong>
+                <strong>🎉 Version 3.17.132 - February 10, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -800,7 +801,7 @@
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.126 - February 10, 2026</strong>
+                <strong>🎉 Version 3.17.132 - February 10, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -1229,6 +1230,94 @@
             </div>
         </section>
 
+        <!-- Metric Calculations Methodology Section -->
+        <section id="metric-methodology">
+            <h2><span class="emoji">🔢</span> Metric Calculations Guide</h2>
+            
+            <p>This section documents how each key metric is calculated. Use this as a reference when you need to understand "How did the tool get this number?"</p>
+
+            <h3>Cloud Native Devices</h3>
+            <p><strong>Definition:</strong> Devices enrolled in Intune with Azure AD identity that have <strong>no dependency on ConfigMgr</strong>.</p>
+            
+            <h4>Included in Cloud Native Count</h4>
+            <p>Any Intune device with Azure AD identity that is <strong>not currently found</strong> in ConfigMgr. This includes:</p>
+            <table>
+                <thead><tr><th>Device Type</th><th>Why Included</th></tr></thead>
+                <tbody>
+                    <tr><td>Autopilot-provisioned devices</td><td>Enrolled directly to Intune, never had ConfigMgr client</td></tr>
+                    <tr><td>BYOD devices</td><td>User-enrolled to Intune, no ConfigMgr relationship</td></tr>
+                    <tr><td>Azure Virtual Desktop / Windows 365</td><td>Cloud PCs managed by Intune only</td></tr>
+                </tbody>
+            </table>
+            <div class="alert alert-info">
+                <strong>📌 Point-in-Time Snapshot:</strong> This is a comparison at the moment of data refresh. If a device was previously in ConfigMgr but has since been removed, it will appear as Cloud Native. We cannot distinguish between "never in ConfigMgr" and "removed from ConfigMgr" - both appear as "not found."
+            </div>
+
+            <h4>Excluded from Cloud Native Count</h4>
+            <table>
+                <thead><tr><th>Device Type</th><th>Why Excluded</th><th>How Detected</th></tr></thead>
+                <tbody>
+                    <tr><td>Co-managed devices</td><td>Still have ConfigMgr dependency</td><td>Found in both Intune AND ConfigMgr (matched by AADDeviceID or device name)</td></tr>
+                    <tr><td>MDE-only devices</td><td>Servers with Defender for Endpoint, not workstations</td><td><code>ManagementAgent == MsSense</code></td></tr>
+                    <tr><td>Windows Servers</td><td>Not part of workstation migration scope</td><td><code>OperatingSystem.Contains("Server")</code></td></tr>
+                    <tr><td>Non-Windows devices</td><td>Different management paradigm</td><td><code>!OperatingSystem.Contains("Windows")</code></td></tr>
+                    <tr><td>ConfigMgr-only devices</td><td>Not yet enrolled in Intune</td><td>Not found in Intune device list</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Calculation Logic</h4>
+            <div class="code-block">
+                <pre><code>// Pseudocode for Cloud Native calculation
+CloudNative = IntuneDevices.Where(device =>
+    // Has Azure AD identity
+    !string.IsNullOrEmpty(device.AzureADDeviceId) &&
+    
+    // NOT found in ConfigMgr (by AADDeviceID first, then name)
+    !configMgrByAADDeviceID.Contains(device.AzureADDeviceId) &&
+    !configMgrByName.Contains(device.DeviceName) &&
+    
+    // NOT an MDE-only device
+    device.ManagementAgent != MsSense
+).Count();</code></pre>
+            </div>
+
+            <h4>Data Sources</h4>
+            <table>
+                <thead><tr><th>Data</th><th>Source</th><th>API/Query</th></tr></thead>
+                <tbody>
+                    <tr><td>Intune devices</td><td>Microsoft Graph</td><td><code>GET /deviceManagement/managedDevices</code></td></tr>
+                    <tr><td>ConfigMgr devices</td><td>Admin Service or WMI</td><td><code>SMS_R_System</code> with AADDeviceID</td></tr>
+                    <tr><td>Azure AD Device ID</td><td>Graph</td><td><code>managedDevice.AzureADDeviceId</code></td></tr>
+                </tbody>
+            </table>
+
+            <h3>Co-Managed Devices</h3>
+            <p><strong>Definition:</strong> Devices that exist in <strong>BOTH</strong> Intune and ConfigMgr.</p>
+            <h4>Matching Logic</h4>
+            <ol>
+                <li><strong>Primary match:</strong> AADDeviceID (most reliable for Hybrid AAD Joined devices)</li>
+                <li><strong>Fallback match:</strong> Device name (case-insensitive)</li>
+            </ol>
+            <p>A device is co-managed if it appears in both systems via either matching method.</p>
+
+            <h3>ConfigMgr-Only Devices</h3>
+            <p><strong>Definition:</strong> Devices in ConfigMgr that are <strong>NOT</strong> found in Intune.</p>
+            <p>These are devices that still need to be enrolled in Intune to complete migration.</p>
+
+            <h3>Enrollment Percentage</h3>
+            <div class="code-block">
+                <pre><code>EnrollmentPercentage = (CoManagedDevices + CloudNativeDevices) / TotalManagedDevices * 100</code></pre>
+            </div>
+            <p>Where <code>TotalManagedDevices = CoManaged + CloudNative + ConfigMgrOnly</code></p>
+
+            <h3>Cloud Native Percentage</h3>
+            <div class="code-block">
+                <pre><code>CloudNativePercentage = CloudNativeDevices / TotalManagedDevices * 100</code></pre>
+            </div>
+            <p>This shows progress toward full cloud-native management (100% = no ConfigMgr dependency).</p>
+
+        </section>
+
         <!-- Cloud Value Comparison Methodology Section -->
         <section id="comparison-methodology">
             <h2><span class="emoji">📊</span> Cloud Value Comparison Methodology</h2>
@@ -1382,7 +1471,7 @@
         </section>
 
         <footer>
-            <p>Cloud Native Assessment v3.17.126 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Cloud Native Assessment v3.17.132 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>

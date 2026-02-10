@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.126** | February 10, 2026
+**Version 3.17.132** | February 10, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -158,6 +158,90 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+
+
+
+### Version 3.17.130 (February 10, 2026)
+
+### Added
+- **NEW: Microsoft Defender Integration comparison card** - Shows real-time threat visibility gap
+  - MDE onboarding status and count
+  - Real-time malware reporting visibility  
+  - Auto-remediated threat count
+  - Highlights the "killer feature" - ConfigMgr only shows "AV enabled", Intune shows actual threat count
+- Added `GetDefenderIntegrationComparisonAsync()` method to CloudReadinessService
+- Added `DefenderIntegrationComparison` model with MDE-specific properties
+- Added `windowsActiveMalwareCount`, `windowsRemediatedMalwareCount`, `partnerReportedThreatState` to Graph device query
+
+### Changed
+- **Active Malware comparison now uses REAL data** - queries `windowsActiveMalwareCount` from Graph API
+  - Shows actual active threat count (was placeholder "0")
+  - Shows count of devices with active malware
+  - Lists device names with active threats
+  - Uses AdditionalData fallback for Beta API properties (v1.0 SDK doesn't have these)
+- **Threat Detection now uses REAL threat state** - queries `partnerReportedThreatState` from Graph API
+  - Shows Secured, Compromised, Misconfigured, Unknown based on actual MDE threat state
+  - Previously used `complianceState` as proxy (inaccurate)
+- **Defender Integration card uses AdditionalData for malware counts**
+  - Malware count properties (`windowsActiveMalwareCount`, `windowsRemediatedMalwareCount`) are Beta API only
+  - Code requests properties in Graph $select but accesses via AdditionalData dictionary
+  - Falls back gracefully when properties aren't available in response
+- Enhanced comparison card data to show real security visibility gap
+- Added `isEncrypted` to cached device properties for better BitLocker comparison
+
+### Fixed
+- Fixed build error: v1.0 Microsoft.Graph SDK doesn't have `WindowsActiveMalwareCount` property on `ManagedDevice`
+- Implemented AdditionalData fallback pattern for Beta API properties
+
+---
+
+### Version 3.17.129 (February 10, 2026)
+
+### Added
+
+### Changed
+- Removed misleading "Devices migrated OFF ConfigMgr" from Cloud Native documentation
+- Clarified that Cloud Native is a point-in-time snapshot detecting "not found in ConfigMgr"
+- Updated Cloud Native tooltip to be more accurate about detection method
+
+### Fixed
+
+---
+
+### Version 3.17.128 (February 10, 2026)
+
+### Added
+- New "Metric Calculations Guide" section in AdminUserGuide.html documenting Cloud Native calculation methodology
+- Added Cloud Native metric documentation to COMPARISON_METHODOLOGY.md
+- Documented what's included/excluded from Cloud Native count with data sources and formulas
+
+### Changed
+- Updated Cloud Native description to be more accurate: "Devices managed by Intune with NO ConfigMgr dependency"
+- Added BYOD back to Cloud Native description (since BYOD devices ARE counted)
+- Clarified that we detect "not found in ConfigMgr" rather than tracking removal events
+
+### Fixed
+
+---
+
+### Version 3.17.127 (February 10, 2026)
+
+### Added
+
+### Changed
+- Removed BYOD from Cloud Native description (BYOD devices are counted separately)
+
+### Fixed
+- Fixed crash at application exit caused by LiveCharts DLL unload issue
+- Added proper chart initialization timing (Loaded event) to prevent popup crash
+- Added chart cleanup on Unloaded event to prevent memory/resource issues
+- Wrapped chart operations in try-catch for resilience
+
+---
+
 ### Version 3.17.124 (February 10, 2026)
 
 ### Added
@@ -167,74 +251,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - 6-month trend chart showing Cloud Native device growth over time
   - Explanation of what "Cloud Native" means (Autopilot, BYOD, removed from ConfigMgr)
   - Uses real enrollment data when authenticated, mock data for demos
-
----
-
-### Version 3.17.123 (February 9, 2026)
-
-### Fixed
-- **Extended Graph API pagination to 5 more methods** - Complete coverage for large environments
-  - `GetCoManagedWorkloadAuthorityAsync` - Workload authority metrics now accurate for all devices
-  - `GetAlertsAsync` - Now uses cached devices (already paginated) for alert generation
-  - `GetAutopilotDeviceStatusAsync` - Autopilot device list now fully paginated
-  - `GetDeviceCertificatesAsync` - Certificate queries now use paginated cache
-  - `GetDeviceNetworkInfoAsync` - Network info queries now fully paginated
-
-### Changed
-- Reduced redundant API calls by reusing paginated cache in GetAlertsAsync and GetDeviceCertificatesAsync
-
----
-
-### Version 3.17.122 (February 9, 2026)
-
-### Fixed
-- **CRITICAL: Fixed Graph API pagination** - Tool now retrieves ALL devices instead of only first ~1000
-  - Environments with >1000 Intune devices were showing incorrect counts (e.g., 620 vs 3,910)
-  - Implemented `PageIterator` pattern for Microsoft Graph SDK v5.x
-  - Logs now show: "Retrieved X total devices across Y page(s)"
-
-### Changed
-- **GetCachedManagedDevicesAsync** now uses full pagination - affects all downstream features
-- **GetDeviceEnrollmentAsync** uses pagination - fixes Enrollment Dashboard counts
-- **GetComplianceDashboardAsync** uses pagination - fixes compliance metrics
-- **Blocker detection methods** now use paginated cache instead of separate Top=999 queries
-  - DetectLegacyOSDevicesAsync
-  - DetectDevicesNotAADJoinedAsync
-  - DetectCoManagementNotEnabledAsync
-
----
-
-### Version 3.17.121 (February 6, 2026)
-
-### Added
-
-### Changed
-- **Removed Application Readiness from Cloud Readiness tab** - Signal moved to Applications tab only
-  - Cloud Readiness now shows only Autopilot Readiness and Cloud-Native Readiness signals
-  - Application Readiness remains available on the Applications tab
-
-### Fixed
-
----
-
-### Version 3.17.120 (February 6, 2026)
-
-### Changed
-- **MAJOR: Device matching now uses Azure AD Device ID** - More reliable cross-referencing between Intune and ConfigMgr
-  - Primary match: Azure AD Device ID (GUID) - works for Hybrid Azure AD Joined devices
-  - Fallback match: Device name (for on-prem AD only devices without AAD ID)
-  - Fixes false "orphaned co-managed" detection caused by device name mismatches
-  - Cloud Native count now accurately excludes devices matched by either ID or name
-  - New logging shows match statistics: "Matched by AADDeviceID: X%, Matched by Name: Y%"
-
-### Added
-- `AADDeviceID` property added to ConfigMgr device queries (SMS_R_System.AADDeviceID)
-- `AADDeviceID` property added to `ConfigMgrDevice` and `ConfigMgrSystemResource` models
-- Logging shows count of ConfigMgr devices with AADDeviceID for transparency
-
-### Fixed
-- Cloud Native device count was incorrectly high due to name-only matching missing some devices
-- Orphaned co-managed device detection was flagging devices that actually existed in ConfigMgr
 
 ---
 
@@ -1455,5 +1471,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-10  
-**Version**: 3.17.126  
+**Version**: 3.17.132  
 **Maintainer:** Cloud Native Assessment Team

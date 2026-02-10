@@ -129,13 +129,13 @@
                             <TextBlock Text="What is Cloud Native?" FontSize="13" FontWeight="SemiBold" 
                                        Foreground="#333333" Margin="0,0,0,8"/>
                             <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#666666" LineHeight="20">
-                                <Run Text="These devices were:"/>
+                                <Run Text="Devices managed by Intune with NO ConfigMgr dependency:"/>
                                 <LineBreak/>
-                                <Run Text="✅ Enrolled directly into Intune (Autopilot, BYOD)"/>
+                                <Run Text="✅ Autopilot or BYOD enrolled directly to Intune"/>
                                 <LineBreak/>
-                                <Run Text="✅ Never had a ConfigMgr client installed"/>
+                                <Run Text="✅ Have Azure AD identity (AzureADDeviceId)"/>
                                 <LineBreak/>
-                                <Run Text="✅ Removed from ConfigMgr after migration"/>
+                                <Run Text="✅ Not found in ConfigMgr (by ID or name)"/>
                             </TextBlock>
                         </StackPanel>
                         
@@ -640,6 +640,78 @@
                     </Grid>
                     <Border Style="{StaticResource SummaryFooter}">
                         <TextBlock Text="Lost laptop on hotel WiFi? Cloud admin wipes in 30 seconds. On-prem admin waits for VPN." FontSize="12" Foreground="#333333" TextWrapping="Wrap" TextAlignment="Center"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+            
+            <!-- Row 6: Defender Integration (full width) - THE KILLER FEATURE -->
+            <Border Style="{StaticResource ComparisonCard}" BorderBrush="#D32F2F" BorderThickness="2">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="🛡️" FontSize="20" Margin="0,0,8,0"/>
+                        <StackPanel>
+                            <TextBlock Text="Microsoft Defender Integration" FontSize="14" FontWeight="SemiBold" Foreground="#333333"/>
+                            <TextBlock Text="Real-time threat visibility - where ConfigMgr falls short" FontSize="11" Foreground="#666666"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Intune + MDE -->
+                        <Border Grid.Column="0" Style="{StaticResource IntuneSide}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
+                                    <TextBlock Text="☁️ Intune + Defender" FontSize="12" Foreground="#2E7D32" FontWeight="SemiBold"/>
+                                </StackPanel>
+                                <StackPanel HorizontalAlignment="Center" Margin="0,0,0,8">
+                                    <TextBlock x:Name="DefenderMDEOnboarded" Text="-- devices with MDE visibility" 
+                                               FontSize="14" FontWeight="Bold" Foreground="#107C10" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="DefenderRealTimeProtection" Text="-- with real-time malware reporting" 
+                                               FontSize="11" Foreground="#2E7D32" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="DefenderRemediatedCount" Text="" 
+                                               FontSize="11" Foreground="#107C10" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <WrapPanel HorizontalAlignment="Center" Margin="0,8,0,0">
+                                    <Border Background="#C8E6C9" CornerRadius="3" Padding="6,3" Margin="2">
+                                        <TextBlock Text="Threat State" FontSize="10" Foreground="#2E7D32"/>
+                                    </Border>
+                                    <Border Background="#C8E6C9" CornerRadius="3" Padding="6,3" Margin="2">
+                                        <TextBlock Text="Malware Count" FontSize="10" Foreground="#2E7D32"/>
+                                    </Border>
+                                    <Border Background="#C8E6C9" CornerRadius="3" Padding="6,3" Margin="2">
+                                        <TextBlock Text="Auto-Remediate" FontSize="10" Foreground="#2E7D32"/>
+                                    </Border>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                        
+                        <TextBlock Grid.Column="1" Text="vs" FontSize="14" Foreground="#666666" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        
+                        <!-- ConfigMgr -->
+                        <Border Grid.Column="2" Style="{StaticResource ConfigMgrSide}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
+                                    <TextBlock Text="🏢 ConfigMgr" FontSize="12" Foreground="#E65100" FontWeight="SemiBold"/>
+                                </StackPanel>
+                                <StackPanel HorizontalAlignment="Center" Margin="0,0,0,8">
+                                    <TextBlock x:Name="DefenderConfigMgrEnabled" Text="-- devices with 'AV enabled'" 
+                                               FontSize="14" FontWeight="Bold" Foreground="#E65100" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="No real-time threat visibility" 
+                                               FontSize="11" Foreground="#D84315" HorizontalAlignment="Center" Margin="0,4,0,0" FontStyle="Italic"/>
+                                </StackPanel>
+                                <Border Background="#FFCDD2" CornerRadius="4" Padding="8,6" Margin="0,8,0,0">
+                                    <TextBlock Text="⚠️ How many devices have malware RIGHT NOW? ConfigMgr can't tell you." 
+                                               FontSize="10" Foreground="#C62828" TextWrapping="Wrap" TextAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <Border Style="{StaticResource SummaryFooter}" Background="#FFEBEE">
+                        <TextBlock x:Name="DefenderSummaryText" Text="This is the visibility gap. ConfigMgr shows 'AV enabled'. Intune shows 'You have 3 active threats on 2 devices'." FontSize="12" Foreground="#C62828" TextWrapping="Wrap" TextAlignment="Center" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
             </Border>

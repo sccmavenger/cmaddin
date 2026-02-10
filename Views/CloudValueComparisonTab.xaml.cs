@@ -23,11 +23,41 @@ namespace ZeroTrustMigrationAddin.Views
         private CloudReadinessService? _readinessService;
         private GraphDataService? _graphService;
         private ConfigMgrAdminService? _configMgrService;
+        private bool _chartInitialized = false;
 
         public CloudValueComparisonTab()
         {
             InitializeComponent();
-            LoadMockData();
+            Loaded += CloudValueComparisonTab_Loaded;
+            Unloaded += CloudValueComparisonTab_Unloaded;
+        }
+        
+        private void CloudValueComparisonTab_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Delay chart initialization until control is fully loaded
+            if (!_chartInitialized)
+            {
+                _chartInitialized = true;
+                LoadMockData();
+            }
+        }
+        
+        private void CloudValueComparisonTab_Unloaded(object sender, RoutedEventArgs e)
+        {
+            // Clean up chart resources to prevent DLL unload errors
+            try
+            {
+                if (CloudNativeTrendChart != null)
+                {
+                    CloudNativeTrendChart.Series?.Clear();
+                    CloudNativeTrendChart.AxisX?.Clear();
+                    CloudNativeTrendChart.AxisY?.Clear();
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[COMPARISON TAB] Error cleaning up chart: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -70,8 +100,9 @@ namespace ZeroTrustMigrationAddin.Views
                 var malwareTask = _readinessService.GetActiveMalwareComparisonAsync();
                 var bitlockerTask = _readinessService.GetBitLockerComparisonAsync();
                 var attestationTask = _readinessService.GetDeviceHealthAttestationComparisonAsync();
+                var defenderTask = _readinessService.GetDefenderIntegrationComparisonAsync();
                 
-                await Task.WhenAll(complianceTask, syncTask, staleTask, caTask, threatTask, malwareTask, bitlockerTask, attestationTask);
+                await Task.WhenAll(complianceTask, syncTask, staleTask, caTask, threatTask, malwareTask, bitlockerTask, attestationTask, defenderTask);
                 
                 // Update UI with real data
                 var compliance = await complianceTask;
@@ -82,6 +113,7 @@ namespace ZeroTrustMigrationAddin.Views
                 var malware = await malwareTask;
                 var bitlocker = await bitlockerTask;
                 var attestation = await attestationTask;
+                var defender = await defenderTask;
                 
                 UpdateComplianceCard(compliance);
                 UpdateSyncFreshnessCard(sync);
@@ -91,6 +123,7 @@ namespace ZeroTrustMigrationAddin.Views
                 UpdateActiveMalwareCard(malware);
                 UpdateBitLockerCard(bitlocker);
                 UpdateDeviceHealthAttestationCard(attestation);
+                UpdateDefenderIntegrationCard(defender);
                 
                 // Load Cloud Native data from enrollment
                 var enrollment = await _graphService.GetDeviceEnrollmentAsync();
@@ -181,16 +214,30 @@ namespace ZeroTrustMigrationAddin.Views
             CAComparisonIcon.Text = "🛡️";
             CASummaryText.Text = "403 ConfigMgr-only devices cannot use Zero Trust (Demo)";
             
+            // Card 9: Defender Integration (THE KILLER FEATURE)
+            DefenderMDEOnboarded.Text = "847 devices with MDE visibility";
+            DefenderRealTimeProtection.Text = "812 with real-time malware reporting";
+            DefenderRemediatedCount.Text = "✓ 47 threats auto-remediated this month";
+            DefenderConfigMgrEnabled.Text = "1,203 devices with 'AV enabled'";
+            DefenderSummaryText.Text = "⚠️ Intune shows 3 active threats on 2 devices. ConfigMgr can only tell you 'AV is enabled'. (Demo)";
+            
             // Cloud Native Section (Hero)
             CloudNativeCount.Text = "201";
             CloudNativePercentText.Text = "5.0% of total estate";
             CloudNativeGoalProgress.Value = 5.0;
             
-            // Mock trend data for chart
-            var mockValues = new ChartValues<int> { 45, 78, 112, 145, 178, 201 };
-            var mockLabels = new List<string> { "Sep 1", "Oct 1", "Nov 1", "Dec 1", "Jan 1", "Feb 1" };
-            CloudNativeSeries.Values = mockValues;
-            CloudNativeAxisX.Labels = mockLabels;
+            // Mock trend data for chart - wrapped in try-catch to prevent crashes
+            try
+            {
+                var mockValues = new ChartValues<int> { 45, 78, 112, 145, 178, 201 };
+                var mockLabels = new List<string> { "Sep 1", "Oct 1", "Nov 1", "Dec 1", "Jan 1", "Feb 1" };
+                CloudNativeSeries.Values = mockValues;
+                CloudNativeAxisX.Labels = mockLabels;
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[COMPARISON TAB] Failed to initialize trend chart: {ex.Message}");
+            }
         }
 
         #region Update Card Methods
@@ -298,23 +345,50 @@ namespace ZeroTrustMigrationAddin.Views
             CloudNativePercentText.Text = $"{enrollment.CloudNativePercentage:F1}% of total estate";
             CloudNativeGoalProgress.Value = enrollment.CloudNativePercentage;
             
-            // Update trend chart with real data
-            if (enrollment.TrendData != null && enrollment.TrendData.Length > 0)
+            // Update trend chart with real data - wrapped in try-catch to prevent crashes
+            try
             {
-                var values = new ChartValues<int>();
-                var labels = new List<string>();
-                
-                foreach (var trend in enrollment.TrendData)
+                if (enrollment.TrendData != null && enrollment.TrendData.Length > 0)
                 {
-                    values.Add(trend.CloudNativeDevices);
-                    labels.Add(trend.Month.ToString("MMM d"));
+                    var values = new ChartValues<int>();
+                    var labels = new List<string>();
+                    
+                    foreach (var trend in enrollment.TrendData)
+                    {
+                        values.Add(trend.CloudNativeDevices);
+                        labels.Add(trend.Month.ToString("MMM d"));
+                    }
+                    
+                    CloudNativeSeries.Values = values;
+                    CloudNativeAxisX.Labels = labels;
+                    
+                    Instance.Info($"[COMPARISON TAB] Cloud Native trend chart updated with {enrollment.TrendData.Length} data points");
                 }
-                
-                CloudNativeSeries.Values = values;
-                CloudNativeAxisX.Labels = labels;
-                
-                Instance.Info($"[COMPARISON TAB] Cloud Native trend chart updated with {enrollment.TrendData.Length} data points");
             }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[COMPARISON TAB] Failed to update trend chart: {ex.Message}");
+            }
+        }
+
+        private void UpdateDefenderIntegrationCard(DefenderIntegrationComparison? data)
+        {
+            if (data == null) return;
+            
+            DefenderMDEOnboarded.Text = $"{data.IntuneMDEOnboardedCount:N0} devices with MDE visibility";
+            DefenderRealTimeProtection.Text = $"{data.IntuneRealTimeProtectionCount:N0} with real-time malware reporting";
+            
+            if (data.IntuneRemediatedMalwareCount > 0)
+            {
+                DefenderRemediatedCount.Text = $"✓ {data.IntuneRemediatedMalwareCount:N0} threats auto-remediated";
+            }
+            else
+            {
+                DefenderRemediatedCount.Text = "";
+            }
+            
+            DefenderConfigMgrEnabled.Text = $"{data.ConfigMgrProtectionEnabledCount:N0} devices with 'AV enabled'";
+            DefenderSummaryText.Text = data.ComparisonSummary;
         }
 
         #endregion
