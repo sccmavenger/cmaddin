@@ -10,6 +10,102 @@
 - 
 
 
+## [3.17.132] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.131] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.130] - 2026-02-10
+
+### Added
+- **NEW: Microsoft Defender Integration comparison card** - Shows real-time threat visibility gap
+  - MDE onboarding status and count
+  - Real-time malware reporting visibility  
+  - Auto-remediated threat count
+  - Highlights the "killer feature" - ConfigMgr only shows "AV enabled", Intune shows actual threat count
+- Added `GetDefenderIntegrationComparisonAsync()` method to CloudReadinessService
+- Added `DefenderIntegrationComparison` model with MDE-specific properties
+- Added `windowsActiveMalwareCount`, `windowsRemediatedMalwareCount`, `partnerReportedThreatState` to Graph device query
+
+### Changed
+- **Active Malware comparison now uses REAL data** - queries `windowsActiveMalwareCount` from Graph API
+  - Shows actual active threat count (was placeholder "0")
+  - Shows count of devices with active malware
+  - Lists device names with active threats
+  - Uses AdditionalData fallback for Beta API properties (v1.0 SDK doesn't have these)
+- **Threat Detection now uses REAL threat state** - queries `partnerReportedThreatState` from Graph API
+  - Shows Secured, Compromised, Misconfigured, Unknown based on actual MDE threat state
+  - Previously used `complianceState` as proxy (inaccurate)
+- **Defender Integration card uses AdditionalData for malware counts**
+  - Malware count properties (`windowsActiveMalwareCount`, `windowsRemediatedMalwareCount`) are Beta API only
+  - Code requests properties in Graph $select but accesses via AdditionalData dictionary
+  - Falls back gracefully when properties aren't available in response
+- Enhanced comparison card data to show real security visibility gap
+- Added `isEncrypted` to cached device properties for better BitLocker comparison
+
+### Fixed
+- Fixed build error: v1.0 Microsoft.Graph SDK doesn't have `WindowsActiveMalwareCount` property on `ManagedDevice`
+- Implemented AdditionalData fallback pattern for Beta API properties
+
+
+## [3.17.129] - 2026-02-10
+
+### Added
+
+### Changed
+- Removed misleading "Devices migrated OFF ConfigMgr" from Cloud Native documentation
+- Clarified that Cloud Native is a point-in-time snapshot detecting "not found in ConfigMgr"
+- Updated Cloud Native tooltip to be more accurate about detection method
+
+### Fixed
+- 
+
+
+## [3.17.128] - 2026-02-10
+
+### Added
+- New "Metric Calculations Guide" section in AdminUserGuide.html documenting Cloud Native calculation methodology
+- Added Cloud Native metric documentation to COMPARISON_METHODOLOGY.md
+- Documented what's included/excluded from Cloud Native count with data sources and formulas
+
+### Changed
+- Updated Cloud Native description to be more accurate: "Devices managed by Intune with NO ConfigMgr dependency"
+- Added BYOD back to Cloud Native description (since BYOD devices ARE counted)
+- Clarified that we detect "not found in ConfigMgr" rather than tracking removal events
+
+### Fixed
+- 
+
+
+## [3.17.127] - 2026-02-10
+
+### Added
+
+### Changed
+- Removed BYOD from Cloud Native description (BYOD devices are counted separately)
+
+### Fixed
+- Fixed crash at application exit caused by LiveCharts DLL unload issue
+- Added proper chart initialization timing (Loaded event) to prevent popup crash
+- Added chart cleanup on Unloaded event to prevent memory/resource issues
+- Wrapped chart operations in try-catch for resilience
+
+
 ## [3.17.126] - 2026-02-10
 
 ### Added

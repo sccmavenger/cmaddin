@@ -823,5 +823,56 @@ namespace ZeroTrustMigrationAddin.Models
         
         public string ComparisonIcon => CloudHasBetterCompliance ? "📈" : "📊";
     }
+
+    /// <summary>
+    /// Defender/MDE Integration comparison - shows real-time security visibility.
+    /// Intune with MDE provides threat state, ConfigMgr only knows "AV enabled".
+    /// </summary>
+    public class DefenderIntegrationComparison
+    {
+        // Intune metrics
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneMDEOnboardedCount { get; set; }
+        public int IntuneRealTimeProtectionCount { get; set; }
+        public int IntuneRemediatedMalwareCount { get; set; }
+        
+        public double IntuneMDEOnboardedPercentage => IntuneDeviceCount > 0 
+            ? Math.Round((double)IntuneMDEOnboardedCount / IntuneDeviceCount * 100, 1) : 0;
+        
+        // ConfigMgr metrics - only basic AV status
+        public int ConfigMgrDeviceCount { get; set; }
+        public int ConfigMgrProtectionEnabledCount { get; set; }
+        
+        public double ConfigMgrProtectionPercentage => ConfigMgrDeviceCount > 0 
+            ? Math.Round((double)ConfigMgrProtectionEnabledCount / ConfigMgrDeviceCount * 100, 1) : 0;
+        
+        // Comparison
+        public bool HasMDEVisibility => IntuneMDEOnboardedCount > 0;
+        public bool HasRemediations => IntuneRemediatedMalwareCount > 0;
+        
+        public string ComparisonSummary => HasMDEVisibility
+            ? HasRemediations
+                ? $"{IntuneMDEOnboardedCount:N0} devices with MDE visibility, {IntuneRemediatedMalwareCount} threats auto-remediated"
+                : $"{IntuneMDEOnboardedCount:N0} devices with real-time threat visibility ({IntuneMDEOnboardedPercentage:F0}%)"
+            : IntuneDeviceCount > 0 
+                ? "Connect to Intune to see MDE visibility"
+                : "No Intune devices available";
+        
+        public string ConfigMgrSummary => ConfigMgrProtectionEnabledCount > 0
+            ? $"AV enabled on {ConfigMgrProtectionEnabledCount:N0} devices - no threat state visibility"
+            : "No AV status data available";
+        
+        public string ComparisonIcon => HasMDEVisibility ? "🛡️" : "⚠️";
+        
+        // Key capabilities only available with Intune + MDE
+        public List<string> CloudUniqueCapabilities { get; set; } = new()
+        {
+            "Real-time threat state",
+            "Active malware count",
+            "Auto-remediation tracking",
+            "Threat severity levels",
+            "Cloud-delivered protection"
+        };
+    }
 }
 

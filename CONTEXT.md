@@ -8,14 +8,23 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.126 |
-| **Last Updated** | 2026-02-05 |
+| **Version** | 3.17.132 |
+| **Last Updated** | 2026-02-10 |
 | **Branch** | main |
-| **Status** | Stable - Published to GitHub |
+| **Status** | Building - Ready to publish |
 
 ---
 
 ## Active Features
+
+### Cloud Value Comparison Tab - Security Visibility Enhancements (v3.17.130)
+- **Status**: Complete, ready to publish
+- **Major Changes**:
+  - Active Malware now uses REAL data (`windowsActiveMalwareCount`) via AdditionalData fallback
+  - Threat Detection uses REAL `partnerReportedThreatState` from MDE
+  - NEW: Microsoft Defender Integration card (THE KILLER FEATURE)
+  - Remote Actions comparison card added
+- **Technical Note**: Malware count properties are Beta API only; code uses AdditionalData fallback since v1.0 SDK doesn't have these properties
 
 ### Alternate Credentials for ConfigMgr (v3.17.115)
 - **Status**: Complete, production-ready
@@ -27,12 +36,12 @@
 - **Status**: Complete, hidden by default
 - **Enable**: Launch with `/showtabs:comparison` argument
 - **Location**: [CloudValueComparisonTab.xaml](Views/CloudValueComparisonTab.xaml)
-- **Description**: 10 comparison cards showing Intune vs ConfigMgr capabilities using real customer data
+- **Description**: 11 comparison cards showing Intune vs ConfigMgr capabilities using real customer data
 - **Documentation**: [docs/COMPARISON_METHODOLOGY.md](docs/COMPARISON_METHODOLOGY.md)
 
 ### Hidden Tabs System
 All hidden tabs can be enabled via command-line:
-- `/showtabs:comparison` - Cloud Value Comparison (10 cards)
+- `/showtabs:comparison` - Cloud Value Comparison (11 cards)
 - `/showtabs:agent` - Enrollment Agent (chat interface)
 
 ---

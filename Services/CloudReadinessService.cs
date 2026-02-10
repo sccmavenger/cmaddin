@@ -2158,22 +2158,36 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Instance.Info("🛡️ Fetching Threat Detection Comparison...");
                 
-                // Get Intune devices - we'd need partnerReportedThreatState but for now use complianceState as proxy
+                // Get Intune devices with threat state data
                 var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
                 comparison.IntuneDeviceCount = intuneDevices.Count;
                 
-                // Without partnerReportedThreatState, estimate based on compliance
-                // Compliant devices are likely "secured"
+                // Use partnerReportedThreatState for real threat status
+                // Values: activated, deactivated, secured, lowSeverity, mediumSeverity, highSeverity, unresponsive, compromised, misconfigured
                 comparison.IntuneSecuredCount = intuneDevices.Count(d => 
-                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Compliant);
-                comparison.IntuneUnknownCount = intuneDevices.Count(d => 
-                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Unknown);
-                comparison.IntuneMisconfiguredCount = intuneDevices.Count(d => 
-                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.ConfigManager);
-                comparison.IntuneCompromisedCount = intuneDevices.Count(d => 
-                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Noncompliant);
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Secured ||
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Activated);
                 
-                Instance.Info($"   ✓ Intune: {comparison.IntuneSecuredCount} secured, {comparison.IntuneCompromisedCount} non-compliant, {comparison.IntuneMisconfiguredCount} configMgr-managed");
+                comparison.IntuneUnknownCount = intuneDevices.Count(d => 
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Unknown ||
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Deactivated ||
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Unresponsive ||
+                    d.PartnerReportedThreatState == null);
+                
+                comparison.IntuneMisconfiguredCount = intuneDevices.Count(d => 
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Misconfigured);
+                
+                comparison.IntuneCompromisedCount = intuneDevices.Count(d => 
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Compromised ||
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.HighSeverity ||
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.MediumSeverity ||
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.LowSeverity);
+                
+                if (comparison.IntuneCompromisedCount > 0)
+                {
+                    Instance.Warning($"   ⚠️ Intune: {comparison.IntuneCompromisedCount} devices with THREATS detected");
+                }
+                Instance.Info($"   ✓ Intune: {comparison.IntuneSecuredCount} secured, {comparison.IntuneCompromisedCount} with threats, {comparison.IntuneMisconfiguredCount} misconfigured, {comparison.IntuneUnknownCount} unknown");
                 
                 // Get ConfigMgr AV status
                 var avStatus = await _configMgrService.GetAntivirusStatusAsync();
@@ -2181,7 +2195,7 @@ namespace ZeroTrustMigrationAddin.Services
                 comparison.ConfigMgrProtectionEnabledCount = avStatus.Count(av => av.ProtectionEnabled);
                 comparison.ConfigMgrProtectionDisabledCount = avStatus.Count(av => !av.ProtectionEnabled);
                 
-                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrProtectionEnabledCount} protection enabled, {comparison.ConfigMgrProtectionDisabledCount} disabled");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrProtectionEnabledCount} protection enabled, {comparison.ConfigMgrProtectionDisabledCount} disabled (no threat state visibility)");
                 Instance.Info($"   🛡️ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
             }
             catch (Exception ex)
@@ -2195,6 +2209,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// <summary>
         /// Gets active malware comparison data.
         /// Only Intune can report windowsActiveMalwareCount - ConfigMgr has no visibility.
+        /// Note: These properties require Beta API - using AdditionalData fallback.
         /// </summary>
         public async Task<ActiveMalwareComparison> GetActiveMalwareComparisonAsync()
         {
@@ -2204,16 +2219,50 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Instance.Info("🦠 Fetching Active Malware Comparison...");
                 
-                // Get Intune devices
+                // Get Intune devices with malware data
                 var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
                 comparison.IntuneDeviceCount = intuneDevices.Count;
                 
-                // Note: windowsActiveMalwareCount requires additional Graph property
-                // For now, we show the capability difference - ConfigMgr cannot report this at all
-                comparison.TotalActiveMalwareCount = 0; // Would need additional API call
-                comparison.DevicesWithMalwareCount = 0;
+                // Try to get malware counts from AdditionalData (Beta API properties)
+                // v1.0 API may not include these, so fall back to showing capability
+                int totalMalware = 0;
+                int devicesWithMalware = 0;
+                var devicesWithMalwareNames = new List<string>();
                 
-                Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} devices with malware visibility");
+                foreach (var device in intuneDevices)
+                {
+                    int? malwareCount = null;
+                    
+                    // Check AdditionalData for Beta API properties
+                    if (device.AdditionalData != null && device.AdditionalData.TryGetValue("windowsActiveMalwareCount", out var rawCount))
+                    {
+                        if (rawCount is int count)
+                            malwareCount = count;
+                        else if (int.TryParse(rawCount?.ToString(), out var parsedCount))
+                            malwareCount = parsedCount;
+                    }
+                    
+                    if (malwareCount.HasValue && malwareCount > 0)
+                    {
+                        totalMalware += malwareCount.Value;
+                        devicesWithMalware++;
+                        if (devicesWithMalwareNames.Count < 10)
+                            devicesWithMalwareNames.Add(device.DeviceName ?? "Unknown");
+                    }
+                }
+                
+                comparison.TotalActiveMalwareCount = totalMalware;
+                comparison.DevicesWithMalwareCount = devicesWithMalware;
+                comparison.DevicesWithMalware = devicesWithMalwareNames;
+                
+                if (comparison.TotalActiveMalwareCount > 0)
+                {
+                    Instance.Warning($"   ⚠️ Intune: {comparison.DevicesWithMalwareCount} devices have {comparison.TotalActiveMalwareCount} ACTIVE THREATS");
+                }
+                else
+                {
+                    Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} devices with malware visibility - no active threats detected");
+                }
                 
                 // ConfigMgr has no real-time malware count visibility
                 var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
@@ -2311,6 +2360,103 @@ namespace ZeroTrustMigrationAddin.Services
             catch (Exception ex)
             {
                 Instance.Error($"Device Health Attestation Comparison failed: {ex.Message}");
+            }
+            
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets remote actions comparison data.
+        /// Shows the dramatic difference in what you can do remotely with cloud vs on-prem.
+        /// </summary>
+        public Task<RemoteActionsComparison> GetRemoteActionsComparisonAsync()
+        {
+            Instance.Info("🎮 Fetching Remote Actions Comparison...");
+            
+            // RemoteActionsComparison has static data - no async query needed
+            var comparison = new RemoteActionsComparison();
+            
+            Instance.Info($"   ✓ Intune: {comparison.IntuneActionCount} remote actions available anywhere, anytime");
+            Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrActionCount} actions (requires client check-in + VPN)");
+            Instance.Info($"   🎮 Key differentiator: {comparison.CloudUniqueActions.Count} cloud-only actions");
+            
+            return Task.FromResult(comparison);
+        }
+
+        /// <summary>
+        /// Gets Defender/MDE integration comparison data.
+        /// Shows real-time protection status and MDE onboarding visibility.
+        /// Note: Malware count properties require Beta API - using AdditionalData fallback.
+        /// </summary>
+        public async Task<DefenderIntegrationComparison> GetDefenderIntegrationComparisonAsync()
+        {
+            var comparison = new DefenderIntegrationComparison();
+            
+            try
+            {
+                Instance.Info("🛡️ Fetching Defender Integration Comparison...");
+                
+                // Get Intune devices with Defender data
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+                
+                // Count devices with MDE-level threat visibility (partnerReportedThreatState populated)
+                comparison.IntuneMDEOnboardedCount = intuneDevices.Count(d => 
+                    d.PartnerReportedThreatState != null && 
+                    d.PartnerReportedThreatState != Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Unknown);
+                
+                // Count devices with real-time visibility into malware (via AdditionalData for Beta API)
+                int devicesWithMalwareVisibility = 0;
+                int totalRemediatedMalware = 0;
+                
+                foreach (var device in intuneDevices)
+                {
+                    bool hasMalwareVisibility = false;
+                    
+                    if (device.AdditionalData != null)
+                    {
+                        // Check for windowsActiveMalwareCount (Beta API property)
+                        if (device.AdditionalData.ContainsKey("windowsActiveMalwareCount"))
+                        {
+                            hasMalwareVisibility = true;
+                        }
+                        
+                        // Check for windowsRemediatedMalwareCount (Beta API property)
+                        if (device.AdditionalData.TryGetValue("windowsRemediatedMalwareCount", out var rawRemediated))
+                        {
+                            hasMalwareVisibility = true;
+                            if (rawRemediated is int count)
+                                totalRemediatedMalware += count;
+                            else if (int.TryParse(rawRemediated?.ToString(), out var parsedCount))
+                                totalRemediatedMalware += parsedCount;
+                        }
+                    }
+                    
+                    if (hasMalwareVisibility)
+                        devicesWithMalwareVisibility++;
+                }
+                
+                comparison.IntuneRealTimeProtectionCount = devicesWithMalwareVisibility;
+                comparison.IntuneRemediatedMalwareCount = totalRemediatedMalware;
+                
+                Instance.Info($"   ✓ Intune: {comparison.IntuneMDEOnboardedCount}/{comparison.IntuneDeviceCount} devices with MDE threat visibility");
+                Instance.Info($"   ✓ Intune: {comparison.IntuneRealTimeProtectionCount} devices with real-time malware reporting");
+                if (comparison.IntuneRemediatedMalwareCount > 0)
+                {
+                    Instance.Info($"   ✓ Intune: {comparison.IntuneRemediatedMalwareCount} threats auto-remediated by Defender");
+                }
+                
+                // Get ConfigMgr AV status - only knows if protection is enabled
+                var avStatus = await _configMgrService.GetAntivirusStatusAsync();
+                comparison.ConfigMgrDeviceCount = avStatus.Count;
+                comparison.ConfigMgrProtectionEnabledCount = avStatus.Count(av => av.ProtectionEnabled);
+                
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrProtectionEnabledCount} devices with 'AV enabled' (no real-time threat visibility)");
+                Instance.Info($"   🛡️ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Defender Integration Comparison failed: {ex.Message}");
             }
             
             return comparison;
