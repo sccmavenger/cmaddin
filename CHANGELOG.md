@@ -10,6 +10,16 @@
 - 
 
 
+## [3.17.142] - 2026-02-11
+
+### Added
+
+### Changed
+
+### Fixed
+- **Device Identity State Analysis showing incorrect join types** - FQDN normalization was missing from join type detection lookup, causing Intune device matching to fail and incorrect categorization
+
+
 ## [3.17.141] - 2026-02-11
 
 ### Added
