@@ -181,17 +181,17 @@
                     <!-- Top Detractors -->
                     <Border Grid.Column="2" Background="White" CornerRadius="8" Padding="16">
                         <StackPanel>
-                            <TextBlock Text="⚠️ Areas for Improvement" FontSize="14" FontWeight="SemiBold" Foreground="#DC2626" Margin="0,0,0,12"/>
+                            <TextBlock Text="⚠️ Areas for Improvement" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource ErrorRed}" Margin="0,0,0,12"/>
                             <ItemsControl x:Name="DetractorsPanel">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="#FEF2F2" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                        <Border Background="{StaticResource ErrorRedLight}" CornerRadius="4" Padding="10" Margin="0,0,0,8">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" Foreground="#991B1B"/>
-                                                    <TextBlock Text="{Binding ImpactDisplay}" FontSize="11" Foreground="#DC2626" Margin="8,0,0,0"/>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource ErrorRedDark}"/>
+                                                    <TextBlock Text="{Binding ImpactDisplay}" FontSize="11" Foreground="{StaticResource ErrorRed}" Margin="8,0,0,0"/>
                                                 </StackPanel>
-                                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#B91C1C" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource ErrorRedDark}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>

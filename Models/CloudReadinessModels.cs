@@ -620,20 +620,57 @@ namespace ZeroTrustMigrationAddin.Models
         public int ConfigMgrProtectionEnabledCount { get; set; }
         public int ConfigMgrProtectionDisabledCount { get; set; }
         
+        // License status - set by CloudReadinessService
+        public bool IsMDELicensed { get; set; } = true; // Assume licensed unless proven otherwise
+        
+        // MDE Detection - if all devices have null/Unknown threat state, MDE likely not connected
+        public bool IsMDEConnected => IntuneDeviceCount > 0 && 
+            (IntuneSecuredCount > 0 || IntuneCompromisedCount > 0 || IntuneMisconfiguredCount > 0);
+        
         // Comparison
         public bool CloudHasActionableData => IntuneCompromisedCount > 0 || IntuneMisconfiguredCount > 0;
         
-        public string ComparisonSummary => CloudHasActionableData
-            ? $"Intune detected {IntuneCompromisedCount} compromised, {IntuneMisconfiguredCount} misconfigured devices"
-            : IntuneSecuredCount > 0 
-                ? $"{IntuneSecuredCount:N0} devices confirmed secured by Defender" 
-                : "Connect to Graph to see threat detection status";
+        public string ComparisonSummary
+        {
+            get
+            {
+                // Check for unlicensed state first
+                if (!IsMDELicensed && IntuneDeviceCount > 0)
+                    return $"⚠️ MDE license not detected. Enable Microsoft Defender for Endpoint to see threat visibility for {IntuneDeviceCount:N0} devices.";
+                
+                // Check for not connected (licensed but no data)
+                if (!IsMDEConnected && IntuneDeviceCount > 0)
+                    return $"⚠️ MDE not connected - {IntuneDeviceCount:N0} devices have no threat visibility. Configure Defender for Endpoint connector in Intune.";
+                
+                // Normal cases
+                if (CloudHasActionableData)
+                    return $"Intune detected {IntuneCompromisedCount} compromised, {IntuneMisconfiguredCount} misconfigured devices";
+                
+                if (IntuneSecuredCount > 0)
+                    return $"{IntuneSecuredCount:N0} devices confirmed secured by Defender";
+                
+                return "Connect to Graph to see threat detection status";
+            }
+        }
         
         public string ConfigMgrSummary => ConfigMgrProtectionEnabledCount > 0
             ? $"Protection enabled on {ConfigMgrProtectionEnabledCount:N0} devices"
             : "No visibility into threat status";
         
-        public string ComparisonIcon => CloudHasActionableData ? "🚨" : "🛡️";
+        public string ComparisonIcon => !IsMDELicensed || !IsMDEConnected ? "⚠️" : CloudHasActionableData ? "🚨" : "🛡️";
+        
+        // Friendly message for UI when MDE not available
+        public string MDEStatusMessage
+        {
+            get
+            {
+                if (!IsMDELicensed)
+                    return "Microsoft Defender for Endpoint license not detected. Enable MDE P1 or P2 to see real-time threat visibility.";
+                if (!IsMDEConnected && IntuneDeviceCount > 0)
+                    return "MDE is licensed but not connected to Intune. Configure the Defender for Endpoint connector in Intune > Endpoint Security > Microsoft Defender for Endpoint.";
+                return "";
+            }
+        }
     }
 
     /// <summary>
@@ -651,13 +688,28 @@ namespace ZeroTrustMigrationAddin.Models
         public int ConfigMgrDeviceCount { get; set; }
         // ConfigMgr cannot report this - always unknown
         
+        // License status - set by CloudReadinessService
+        public bool IsMDEP2Licensed { get; set; } = true; // Assume licensed unless proven otherwise
+        
         public bool HasActiveMalware => TotalActiveMalwareCount > 0;
         
-        public string ComparisonSummary => HasActiveMalware
-            ? $"⚠️ {DevicesWithMalwareCount} devices have {TotalActiveMalwareCount} active threats"
-            : IntuneDeviceCount > 0 
-                ? "✓ No active malware detected"
-                : "Connect to Graph for malware visibility";
+        public string ComparisonSummary
+        {
+            get
+            {
+                // Check for P2 license requirement
+                if (!IsMDEP2Licensed && IntuneDeviceCount > 0)
+                    return $"⚠️ MDE P2 license not detected. Active malware counts require Microsoft Defender for Endpoint Plan 2.";
+                
+                if (HasActiveMalware)
+                    return $"⚠️ {DevicesWithMalwareCount} devices have {TotalActiveMalwareCount} active threats";
+                
+                if (IntuneDeviceCount > 0)
+                    return "✓ No active malware detected";
+                
+                return "Connect to Graph for malware visibility";
+            }
+        }
         
         public string ConfigMgrSummary => "No real-time malware visibility";
         
@@ -846,23 +898,56 @@ namespace ZeroTrustMigrationAddin.Models
         public double ConfigMgrProtectionPercentage => ConfigMgrDeviceCount > 0 
             ? Math.Round((double)ConfigMgrProtectionEnabledCount / ConfigMgrDeviceCount * 100, 1) : 0;
         
+        // License status - set by CloudReadinessService
+        public bool IsMDELicensed { get; set; } = true;
+        public bool IsMDEP2Licensed { get; set; } = true;
+        
         // Comparison
         public bool HasMDEVisibility => IntuneMDEOnboardedCount > 0;
         public bool HasRemediations => IntuneRemediatedMalwareCount > 0;
         
-        public string ComparisonSummary => HasMDEVisibility
-            ? HasRemediations
-                ? $"{IntuneMDEOnboardedCount:N0} devices with MDE visibility, {IntuneRemediatedMalwareCount} threats auto-remediated"
-                : $"{IntuneMDEOnboardedCount:N0} devices with real-time threat visibility ({IntuneMDEOnboardedPercentage:F0}%)"
-            : IntuneDeviceCount > 0 
-                ? "Connect to Intune to see MDE visibility"
-                : "No Intune devices available";
+        public string ComparisonSummary
+        {
+            get
+            {
+                // Check for license issues first
+                if (!IsMDELicensed && IntuneDeviceCount > 0)
+                    return $"⚠️ MDE license not detected. Enable Microsoft Defender for Endpoint to see threat visibility for {IntuneDeviceCount:N0} devices.";
+                
+                if (HasMDEVisibility)
+                {
+                    if (HasRemediations)
+                        return $"{IntuneMDEOnboardedCount:N0} devices with MDE visibility, {IntuneRemediatedMalwareCount} threats auto-remediated";
+                    return $"{IntuneMDEOnboardedCount:N0} devices with real-time threat visibility ({IntuneMDEOnboardedPercentage:F0}%)";
+                }
+                
+                if (IntuneDeviceCount > 0)
+                    return "⚠️ MDE connector not enabled. Configure Defender for Endpoint integration in Intune to see threat visibility.";
+                
+                return "No Intune devices available";
+            }
+        }
         
         public string ConfigMgrSummary => ConfigMgrProtectionEnabledCount > 0
             ? $"AV enabled on {ConfigMgrProtectionEnabledCount:N0} devices - no threat state visibility"
             : "No AV status data available";
         
-        public string ComparisonIcon => HasMDEVisibility ? "🛡️" : "⚠️";
+        public string ComparisonIcon => !IsMDELicensed ? "❌" : HasMDEVisibility ? "🛡️" : "⚠️";
+        
+        // Friendly message for UI when MDE not available
+        public string MDEStatusMessage
+        {
+            get
+            {
+                if (!IsMDELicensed)
+                    return "Microsoft Defender for Endpoint license not detected. Requires MDE P1 or P2 license.";
+                if (!HasMDEVisibility && IntuneDeviceCount > 0)
+                    return "MDE is licensed but devices aren't onboarded. Ensure devices have the MDE sensor installed and reporting.";
+                if (!IsMDEP2Licensed && HasMDEVisibility)
+                    return "MDE P1 detected. Upgrade to MDE P2 for malware counts and auto-remediation tracking.";
+                return "";
+            }
+        }
         
         // Key capabilities only available with Intune + MDE
         public List<string> CloudUniqueCapabilities { get; set; } = new()

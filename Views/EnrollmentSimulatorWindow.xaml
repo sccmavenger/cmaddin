@@ -120,19 +120,19 @@
             </Border>
 
             <!-- Ready to Enroll -->
-            <Border Grid.Column="1" Style="{StaticResource MetricCard}" Background="#E8F5E9" Margin="0,0,10,0">
+            <Border Grid.Column="1" Style="{StaticResource MetricCard}" Background="{StaticResource SuccessGreenLight}" Margin="0,0,10,0">
                 <StackPanel>
-                    <TextBlock Text="✓ READY TO ENROLL" FontSize="10" FontWeight="Bold" Foreground="#2E7D32"/>
-                    <TextBlock x:Name="ReadyDevicesCount" Text="425" FontSize="28" FontWeight="Bold" Foreground="#2E7D32" Margin="0,6,0,0"/>
-                    <TextBlock x:Name="ReadyPercent" Text="65% of unenrolled" FontSize="11" Foreground="#388E3C"/>
+                    <TextBlock Text="✓ READY TO ENROLL" FontSize="10" FontWeight="Bold" Foreground="{StaticResource SuccessGreenDark}"/>
+                    <TextBlock x:Name="ReadyDevicesCount" Text="425" FontSize="28" FontWeight="Bold" Foreground="{StaticResource SuccessGreenDark}" Margin="0,6,0,0"/>
+                    <TextBlock x:Name="ReadyPercent" Text="65% of unenrolled" FontSize="11" Foreground="{StaticResource SuccessGreen}"/>
                 </StackPanel>
             </Border>
 
             <!-- Needs Remediation -->
-            <Border Grid.Column="2" Style="{StaticResource MetricCard}" Background="#FFF3E0" Margin="0,0,10,0">
+            <Border Grid.Column="2" Style="{StaticResource MetricCard}" Background="{StaticResource WarningOrangeLight}" Margin="0,0,10,0">
                 <StackPanel>
-                    <TextBlock Text="⚠ NEEDS REMEDIATION" FontSize="10" FontWeight="Bold" Foreground="#E65100"/>
-                    <TextBlock x:Name="RemediationDevicesCount" Text="225" FontSize="28" FontWeight="Bold" Foreground="#E65100" Margin="0,6,0,0"/>
+                    <TextBlock Text="⚠ NEEDS REMEDIATION" FontSize="10" FontWeight="Bold" Foreground="{StaticResource WarningOrange}"/>
+                    <TextBlock x:Name="RemediationDevicesCount" Text="225" FontSize="28" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" Margin="0,6,0,0"/>
                     <TextBlock x:Name="RemediationPercent" Text="35% of unenrolled" FontSize="11" Foreground="#F57C00"/>
                 </StackPanel>
             </Border>

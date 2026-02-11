@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.132** | February 10, 2026
+**Version 3.17.136** | February 10, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -164,6 +164,52 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+
+### Version 3.17.134 (February 10, 2026)
+
+### Added
+- **Centralized Style System**: Created `Styles/AppStyles.xaml` with Microsoft Fluent color palette
+  - Standardized colors: Success Green (#107C10), Error Red (#D13438), Warning Orange (#E65100)
+  - Shared styles for cards, panels, badges, and typography
+  - All views now use consistent color scheme
+
+### Changed
+- **Redesigned MDE Defender Integration Card**: Complete UI overhaul with scenario-based display
+  - Shows license status badge (Licensed/Not Licensed/Partial)
+  - Displays contextual messaging based on: Not licensed → Licensed but not onboarded → Working
+  - Clear explanation of WHY there's no data (license vs configuration vs no devices)
+  - Auto-refreshes when services connect (no more stale data)
+- **Migrated Views to Standardized Colors**: Replaced 4+ different greens and 4+ different reds with consistent palette
+  - CloudValueComparisonTab, MigrationImpactCard, EnrollmentSimulatorWindow
+  - ConfidenceDetailsWindow, WorkloadDeviceListDialog
+
+### Fixed
+- **MDE Card Not Refreshing**: Card was showing mock data even after connecting to services
+- **Confusing "0 devices" Display**: Now shows license-aware messaging instead of unexplained zeros
+
+---
+
+### Version 3.17.133 (February 10, 2026)
+
+### Added
+- **Tenant License Detection Framework**: New centralized license framework that proactively queries Microsoft Graph `/subscribedSkus` endpoint to detect customer licensing
+  - Detects Microsoft 365 E5/E3, EMS E5/E3, Intune standalone, MDE P1/P2, Entra ID P1/P2
+  - Shows friendly messages when features require licenses the customer doesn't have
+  - 30-minute cache to minimize API calls
+  - `Models/LicenseModels.cs` with `TenantLicenseSummary`, `LicenseInfo`, `LicenseSkuConstants`
+- **License-Aware Comparison Cards**: Threat Detection, Active Malware, and Defender Integration cards now check license status before displaying data
+  - Shows "MDE not licensed" message instead of confusing zero values
+  - Distinguishes between "not licensed" vs "licensed but not configured"
+
+### Changed
+
+### Fixed
+
+---
+
 ### Version 3.17.130 (February 10, 2026)
 
 ### Added
@@ -224,33 +270,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Clarified that we detect "not found in ConfigMgr" rather than tracking removal events
 
 ### Fixed
-
----
-
-### Version 3.17.127 (February 10, 2026)
-
-### Added
-
-### Changed
-- Removed BYOD from Cloud Native description (BYOD devices are counted separately)
-
-### Fixed
-- Fixed crash at application exit caused by LiveCharts DLL unload issue
-- Added proper chart initialization timing (Loaded event) to prevent popup crash
-- Added chart cleanup on Unloaded event to prevent memory/resource issues
-- Wrapped chart operations in try-catch for resilience
-
----
-
-### Version 3.17.124 (February 10, 2026)
-
-### Added
-- **Cloud Native Progress Section** on Cloud Value tab
-  - Hero section at top of Cloud Value tab showing Cloud Native count prominently
-  - Progress bar showing migration goal progress (0-100% Cloud Native)
-  - 6-month trend chart showing Cloud Native device growth over time
-  - Explanation of what "Cloud Native" means (Autopilot, BYOD, removed from ConfigMgr)
-  - Uses real enrollment data when authenticated, mock data for demos
 
 ---
 
@@ -1471,5 +1490,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-10  
-**Version**: 3.17.132  
+**Version**: 3.17.136  
 **Maintainer:** Cloud Native Assessment Team

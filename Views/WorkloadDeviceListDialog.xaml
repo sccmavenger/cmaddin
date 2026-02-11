@@ -38,14 +38,14 @@
         
         <!-- Intune (Green) style -->
         <Style x:Key="IntuneCell" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#107C10"/>
+            <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
         
         <!-- ConfigMgr (Orange) style -->
         <Style x:Key="ConfigMgrCell" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#CA5010"/>
+            <Setter Property="Foreground" Value="{StaticResource WarningOrange}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>

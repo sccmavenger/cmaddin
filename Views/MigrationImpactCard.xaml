@@ -46,33 +46,33 @@
                     
                     <!-- Current State -->
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="CURRENT STATE" FontSize="10" Foreground="#6B7280" 
+                        <TextBlock Text="CURRENT STATE" FontSize="10" Foreground="{StaticResource TextSecondary}" 
                                    FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         <TextBlock x:Name="CurrentScoreText" Text="45" FontSize="36" FontWeight="Bold" 
-                                   Foreground="#6B7280" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                        <TextBlock Text="IT Posture Score" FontSize="11" Foreground="#9CA3AF" HorizontalAlignment="Center"/>
+                                   Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        <TextBlock Text="IT Posture Score" FontSize="11" Foreground="{StaticResource TextTertiary}" HorizontalAlignment="Center"/>
                     </StackPanel>
                     
                     <!-- Arrow -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="24,0">
-                        <TextBlock Text="→" FontSize="32" Foreground="#10B981" FontWeight="Bold"/>
+                        <TextBlock Text="→" FontSize="32" Foreground="{StaticResource SuccessGreen}" FontWeight="Bold"/>
                         <TextBlock x:Name="ImprovementText" Text="+37" FontSize="14" FontWeight="Bold" 
-                                   Foreground="#10B981" HorizontalAlignment="Center"/>
+                                   Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
                     </StackPanel>
                     
                     <!-- Projected State -->
                     <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                        <TextBlock Text="PROJECTED STATE" FontSize="10" Foreground="#10B981" 
+                        <TextBlock Text="PROJECTED STATE" FontSize="10" Foreground="{StaticResource SuccessGreen}" 
                                    FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         <TextBlock x:Name="ProjectedScoreText" Text="82" FontSize="36" FontWeight="Bold" 
-                                   Foreground="#10B981" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                   Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                         <TextBlock Text="After Full Enrollment" FontSize="11" Foreground="#6EE7B7" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>
             
             <!-- Executive Summary -->
-            <TextBlock x:Name="SummaryText" Grid.Row="2" TextWrapping="Wrap" FontSize="12" Foreground="#4B5563" Margin="0,0,0,16"
+            <TextBlock x:Name="SummaryText" Grid.Row="2" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,16"
                        Text="Completing your cloud migration will improve your overall IT posture by 37 points. The biggest gains will be in Security (+42 points)."/>
             
             <!-- Category Breakdown (Collapsible) -->
@@ -108,8 +108,8 @@
                                         <!-- Scores -->
                                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding CurrentScore}" FontSize="12" Foreground="#6B7280" Width="25" TextAlignment="Right"/>
-                                            <TextBlock Text=" → " FontSize="12" Foreground="#9CA3AF"/>
-                                            <TextBlock Text="{Binding ProjectedScore}" FontSize="12" FontWeight="SemiBold" Foreground="#10B981" Width="25"/>
+                                            <TextBlock Text=" → " FontSize="12" Foreground="{StaticResource TextTertiary}"/>
+                                            <TextBlock Text="{Binding ProjectedScore}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource SuccessGreen}" Width="25"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -118,11 +118,11 @@
                     </ItemsControl>
                     
                     <!-- Top Benefits -->
-                    <TextBlock Text="🌟 Top Benefits" FontSize="13" FontWeight="SemiBold" Foreground="#374151" Margin="0,12,0,8"/>
+                    <TextBlock Text="🌟 Top Benefits" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,12,0,8"/>
                     <ItemsControl x:Name="BenefitsList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#ECFDF5" CornerRadius="4" Padding="10" Margin="0,0,0,6">
+                                <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="10" Margin="0,0,0,6">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -132,12 +132,12 @@
                                         
                                         <TextBlock Text="{Binding Icon}" FontSize="14" VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1" Margin="8,0">
-                                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="#065F46"/>
-                                            <TextBlock Text="{Binding Description}" FontSize="10" Foreground="#047857" 
+                                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource SuccessGreenDark}"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="10" Foreground="{StaticResource SuccessGreen}" 
                                                        TextWrapping="Wrap" MaxWidth="350"/>
                                         </StackPanel>
                                         <TextBlock Grid.Column="2" Text="{Binding QuantifiedImpact}" FontSize="12" 
-                                                   FontWeight="Bold" Foreground="#059669" VerticalAlignment="Center"/>
+                                                   FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" VerticalAlignment="Center"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
