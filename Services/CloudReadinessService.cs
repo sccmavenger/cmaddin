@@ -2158,6 +2158,10 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 Instance.Info("🛡️ Fetching Threat Detection Comparison...");
                 
+                // Check license status first
+                var licenses = _graphService.GetCachedLicenses() ?? await _graphService.GetTenantLicensesAsync();
+                comparison.IsMDELicensed = licenses.HasMDE;
+                
                 // Get Intune devices with threat state data
                 var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
                 comparison.IntuneDeviceCount = intuneDevices.Count;
@@ -2218,6 +2222,10 @@ namespace ZeroTrustMigrationAddin.Services
             try
             {
                 Instance.Info("🦠 Fetching Active Malware Comparison...");
+                
+                // Check license status first - malware counts require MDE P2
+                var licenses = _graphService.GetCachedLicenses() ?? await _graphService.GetTenantLicensesAsync();
+                comparison.IsMDEP2Licensed = licenses.HasMDEP2;
                 
                 // Get Intune devices with malware data
                 var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
@@ -2395,6 +2403,11 @@ namespace ZeroTrustMigrationAddin.Services
             try
             {
                 Instance.Info("🛡️ Fetching Defender Integration Comparison...");
+                
+                // Check license status first
+                var licenses = _graphService.GetCachedLicenses() ?? await _graphService.GetTenantLicensesAsync();
+                comparison.IsMDELicensed = licenses.HasMDE;
+                comparison.IsMDEP2Licensed = licenses.HasMDEP2;
                 
                 // Get Intune devices with Defender data
                 var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();

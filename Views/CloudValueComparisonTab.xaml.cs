@@ -63,7 +63,7 @@ namespace ZeroTrustMigrationAddin.Views
         /// <summary>
         /// Initializes the tab with service references.
         /// </summary>
-        public void Initialize(GraphDataService? graphService, ConfigMgrAdminService? configMgrService)
+        public async void Initialize(GraphDataService? graphService, ConfigMgrAdminService? configMgrService)
         {
             _graphService = graphService;
             _configMgrService = configMgrService;
@@ -71,6 +71,10 @@ namespace ZeroTrustMigrationAddin.Views
             if (_graphService != null && _configMgrService != null)
             {
                 _readinessService = new CloudReadinessService(_configMgrService, _graphService);
+                
+                // Auto-refresh when services become available
+                Instance.Info("[COMPARISON TAB] Services connected, auto-refreshing...");
+                await RefreshAsync();
             }
         }
 
@@ -214,12 +218,26 @@ namespace ZeroTrustMigrationAddin.Views
             CAComparisonIcon.Text = "🛡️";
             CASummaryText.Text = "403 ConfigMgr-only devices cannot use Zero Trust (Demo)";
             
-            // Card 9: Defender Integration (THE KILLER FEATURE)
+            // Card 9: Defender Integration - Demo showing VALUE of the feature
+            DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
+            DefenderOnboardingHint.Visibility = Visibility.Collapsed;
+            DefenderDataPanel.Visibility = Visibility.Visible;
+            DefenderCapabilityTags.Opacity = 1.0;
+            
+            // Show demo as if MDE is working with real data
+            DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusLicensed");
+            DefenderLicenseIcon.Text = "🟢";
+            DefenderLicenseText.Text = "Demo Data";
+            DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
+            
             DefenderMDEOnboarded.Text = "847 devices with MDE visibility";
             DefenderRealTimeProtection.Text = "812 with real-time malware reporting";
             DefenderRemediatedCount.Text = "✓ 47 threats auto-remediated this month";
             DefenderConfigMgrEnabled.Text = "1,203 devices with 'AV enabled'";
-            DefenderSummaryText.Text = "⚠️ Intune shows 3 active threats on 2 devices. ConfigMgr can only tell you 'AV is enabled'. (Demo)";
+            
+            DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("SuccessGreenLight");
+            DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
+            DefenderSummaryText.Text = "🛡️ Intune sees 3 active threats on 2 devices. ConfigMgr only knows 'AV is enabled'. (Demo)";
             
             // Cloud Native Section (Hero)
             CloudNativeCount.Text = "201";
@@ -375,20 +393,111 @@ namespace ZeroTrustMigrationAddin.Views
         {
             if (data == null) return;
             
-            DefenderMDEOnboarded.Text = $"{data.IntuneMDEOnboardedCount:N0} devices with MDE visibility";
-            DefenderRealTimeProtection.Text = $"{data.IntuneRealTimeProtectionCount:N0} with real-time malware reporting";
+            Instance.Info($"[COMPARISON TAB] Updating Defender card: Licensed={data.IsMDELicensed}, P2={data.IsMDEP2Licensed}, Onboarded={data.IntuneMDEOnboardedCount}");
             
-            if (data.IntuneRemediatedMalwareCount > 0)
+            // Update license status badge
+            UpdateDefenderLicenseBadge(data);
+            
+            // Scenario 1: Not licensed - show the warning banner
+            if (!data.IsMDELicensed && data.IntuneDeviceCount > 0)
             {
-                DefenderRemediatedCount.Text = $"✓ {data.IntuneRemediatedMalwareCount:N0} threats auto-remediated";
+                DefenderNotLicensedBanner.Visibility = Visibility.Visible;
+                DefenderNotLicensedHint.Text = $"Your {data.IntuneDeviceCount:N0} Intune devices could have real-time threat visibility with MDE.";
+                DefenderCapabilityTags.Opacity = 0.5; // Dim the capability tags
+                DefenderDataPanel.Visibility = Visibility.Collapsed;
+                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
+                
+                // Summary shows the gap
+                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("ErrorRedLight");
+                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("ErrorRedDark");
+                DefenderSummaryText.Text = "⚠️ You have NO visibility into active threats. ConfigMgr only knows if AV is installed.";
+            }
+            // Scenario 2: Licensed but no devices onboarded
+            else if (data.IsMDELicensed && data.IntuneMDEOnboardedCount == 0 && data.IntuneDeviceCount > 0)
+            {
+                DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
+                DefenderCapabilityTags.Opacity = 1.0;
+                DefenderDataPanel.Visibility = Visibility.Visible;
+                DefenderOnboardingHint.Visibility = Visibility.Visible;
+                
+                DefenderMDEOnboarded.Text = $"0 of {data.IntuneDeviceCount:N0} devices reporting";
+                DefenderRealTimeProtection.Text = "Deploy MDE sensor to enable visibility";
+                DefenderRemediatedCount.Text = "";
+                
+                // Summary shows onboarding needed
+                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("WarningOrangeLight");
+                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("WarningOrange");
+                DefenderSummaryText.Text = "⚠️ MDE is licensed but devices need the sensor deployed to report threat data.";
+            }
+            // Scenario 3: Working - show real data
+            else if (data.IntuneMDEOnboardedCount > 0)
+            {
+                DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
+                DefenderCapabilityTags.Opacity = 1.0;
+                DefenderDataPanel.Visibility = Visibility.Visible;
+                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
+                
+                DefenderMDEOnboarded.Text = $"{data.IntuneMDEOnboardedCount:N0} devices with MDE visibility";
+                DefenderRealTimeProtection.Text = $"{data.IntuneRealTimeProtectionCount:N0} with real-time malware reporting";
+                
+                if (data.IntuneRemediatedMalwareCount > 0)
+                {
+                    DefenderRemediatedCount.Text = $"✓ {data.IntuneRemediatedMalwareCount:N0} threats auto-remediated";
+                }
+                else
+                {
+                    DefenderRemediatedCount.Text = "";
+                }
+                
+                // Summary shows the value
+                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("SuccessGreenLight");
+                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
+                DefenderSummaryText.Text = data.ComparisonSummary;
+            }
+            // Scenario 4: No Intune devices yet
+            else
+            {
+                DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
+                DefenderDataPanel.Visibility = Visibility.Visible;
+                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
+                DefenderCapabilityTags.Opacity = 0.5;
+                
+                DefenderMDEOnboarded.Text = "No Intune devices yet";
+                DefenderRealTimeProtection.Text = "Connect to Intune to see threat visibility";
+                DefenderRemediatedCount.Text = "";
+                
+                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("BackgroundSubtle");
+                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondary");
+                DefenderSummaryText.Text = "Enroll devices to Intune to enable real-time threat visibility with MDE.";
+            }
+            
+            // ConfigMgr side is always the same - they only have AV status
+            DefenderConfigMgrEnabled.Text = $"{data.ConfigMgrProtectionEnabledCount:N0} devices with 'AV enabled'";
+        }
+        
+        private void UpdateDefenderLicenseBadge(DefenderIntegrationComparison data)
+        {
+            if (!data.IsMDELicensed)
+            {
+                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusNotLicensed");
+                DefenderLicenseIcon.Text = "🔴";
+                DefenderLicenseText.Text = "MDE Not Licensed";
+                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("ErrorRed");
+            }
+            else if (!data.IsMDEP2Licensed)
+            {
+                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusPartial");
+                DefenderLicenseIcon.Text = "🟡";
+                DefenderLicenseText.Text = "MDE P1 (Limited)";
+                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("WarningOrange");
             }
             else
             {
-                DefenderRemediatedCount.Text = "";
+                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusLicensed");
+                DefenderLicenseIcon.Text = "🟢";
+                DefenderLicenseText.Text = "MDE Licensed";
+                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
             }
-            
-            DefenderConfigMgrEnabled.Text = $"{data.ConfigMgrProtectionEnabledCount:N0} devices with 'AV enabled'";
-            DefenderSummaryText.Text = data.ComparisonSummary;
         }
 
         #endregion

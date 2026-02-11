@@ -10,6 +10,67 @@
 - 
 
 
+## [3.17.136] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.135] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.134] - 2026-02-10
+
+### Added
+- **Centralized Style System**: Created `Styles/AppStyles.xaml` with Microsoft Fluent color palette
+  - Standardized colors: Success Green (#107C10), Error Red (#D13438), Warning Orange (#E65100)
+  - Shared styles for cards, panels, badges, and typography
+  - All views now use consistent color scheme
+
+### Changed
+- **Redesigned MDE Defender Integration Card**: Complete UI overhaul with scenario-based display
+  - Shows license status badge (Licensed/Not Licensed/Partial)
+  - Displays contextual messaging based on: Not licensed → Licensed but not onboarded → Working
+  - Clear explanation of WHY there's no data (license vs configuration vs no devices)
+  - Auto-refreshes when services connect (no more stale data)
+- **Migrated Views to Standardized Colors**: Replaced 4+ different greens and 4+ different reds with consistent palette
+  - CloudValueComparisonTab, MigrationImpactCard, EnrollmentSimulatorWindow
+  - ConfidenceDetailsWindow, WorkloadDeviceListDialog
+
+### Fixed
+- **MDE Card Not Refreshing**: Card was showing mock data even after connecting to services
+- **Confusing "0 devices" Display**: Now shows license-aware messaging instead of unexplained zeros
+
+
+## [3.17.133] - 2026-02-10
+
+### Added
+- **Tenant License Detection Framework**: New centralized license framework that proactively queries Microsoft Graph `/subscribedSkus` endpoint to detect customer licensing
+  - Detects Microsoft 365 E5/E3, EMS E5/E3, Intune standalone, MDE P1/P2, Entra ID P1/P2
+  - Shows friendly messages when features require licenses the customer doesn't have
+  - 30-minute cache to minimize API calls
+  - `Models/LicenseModels.cs` with `TenantLicenseSummary`, `LicenseInfo`, `LicenseSkuConstants`
+- **License-Aware Comparison Cards**: Threat Detection, Active Malware, and Defender Integration cards now check license status before displaying data
+  - Shows "MDE not licensed" message instead of confusing zero values
+  - Distinguishes between "not licensed" vs "licensed but not configured"
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.132] - 2026-02-10
 
 ### Added

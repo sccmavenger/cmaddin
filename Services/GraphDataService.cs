@@ -34,6 +34,11 @@ namespace ZeroTrustMigrationAddin.Services
         private List<Microsoft.Graph.Models.ManagedDevice>? _cachedManagedDevices;
         private DateTime _cacheExpiration = DateTime.MinValue;
         private readonly TimeSpan _cacheLifetime = TimeSpan.FromMinutes(5);
+        
+        // Cache for tenant license data
+        private TenantLicenseSummary? _cachedLicenseSummary;
+        private DateTime _licenseCacheExpiration = DateTime.MinValue;
+        private readonly TimeSpan _licenseCacheLifetime = TimeSpan.FromMinutes(30);
 
         public GraphDataService()
         {
@@ -3188,6 +3193,159 @@ namespace ZeroTrustMigrationAddin.Services
                     Issues = new List<string> { ex.Message }
                 };
             }
+        }
+
+        #endregion
+
+        #region License Management
+
+        /// <summary>
+        /// Gets tenant license summary with caching.
+        /// Queries the /subscribedSkus endpoint to determine feature availability.
+        /// </summary>
+        public async Task<TenantLicenseSummary> GetTenantLicensesAsync()
+        {
+            if (_graphClient == null)
+                throw new InvalidOperationException("Not authenticated. Call AuthenticateAsync first.");
+
+            // Check cache
+            if (_cachedLicenseSummary != null && DateTime.Now < _licenseCacheExpiration)
+            {
+                Instance.Info("[GRAPH] Returning cached license data");
+                return _cachedLicenseSummary;
+            }
+
+            Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
+            Instance.Info("│ 📜 QUERYING TENANT LICENSES                                                            │");
+            Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
+
+            var summary = new TenantLicenseSummary { LastRefreshed = DateTime.Now };
+
+            try
+            {
+                Instance.LogGraphQuery("GetTenantLicenses", "/subscribedSkus", null);
+                
+                var skus = await _graphClient.SubscribedSkus.GetAsync();
+                
+                if (skus?.Value != null)
+                {
+                    foreach (var sku in skus.Value)
+                    {
+                        if (sku.CapabilityStatus?.ToString() != "Enabled") continue; // Skip suspended/warning licenses
+                        
+                        var license = new LicenseInfo
+                        {
+                            SkuId = sku.SkuId?.ToString() ?? "",
+                            SkuPartNumber = sku.SkuPartNumber ?? "",
+                            DisplayName = LicenseSkuConstants.GetDisplayName(sku.SkuPartNumber),
+                            CapabilityStatus = sku.CapabilityStatus?.ToString() ?? "",
+                            TotalUnits = sku.PrepaidUnits?.Enabled ?? 0,
+                            ConsumedUnits = sku.ConsumedUnits ?? 0
+                        };
+
+                        // Map service plans and detect features
+                        if (sku.ServicePlans != null)
+                        {
+                            foreach (var sp in sku.ServicePlans)
+                            {
+                                if (sp.ProvisioningStatus?.ToString() != "Success") continue;
+                                
+                                license.ServicePlans.Add(new ServicePlanInfo
+                                {
+                                    ServicePlanId = sp.ServicePlanId?.ToString() ?? "",
+                                    ServicePlanName = sp.ServicePlanName ?? "",
+                                    ProvisioningStatus = sp.ProvisioningStatus?.ToString() ?? ""
+                                });
+
+                                // Set feature flags based on service plan names
+                                var planName = sp.ServicePlanName?.ToUpperInvariant() ?? "";
+                                
+                                if (planName.Contains("INTUNE_A") || planName == "INTUNE_O365")
+                                    summary.HasIntune = true;
+                                if (planName.Contains("INTUNE_P2"))
+                                    summary.HasIntunePlan2 = true;
+                                if (planName == "AAD_PREMIUM" || planName.Contains("AAD_PREMIUM_P1"))
+                                    summary.HasEntraIdP1 = true;
+                                if (planName == "AAD_PREMIUM_P2" || planName.Contains("ENTRA_ID_P2"))
+                                    summary.HasEntraIdP2 = true;
+                                if (planName.Contains("DEFENDER_ENDPOINT_P1") || planName.Contains("ATP_ENTERPRISE_GOV"))
+                                    summary.HasMDEP1 = true;
+                                if (planName.Contains("DEFENDER_ENDPOINT_P2") || planName == "WINDEFATP" || planName.Contains("MICROSOFTDEFENDERFOROFFICE365"))
+                                    summary.HasMDEP2 = true;
+                            }
+                        }
+
+                        summary.Licenses.Add(license);
+                        summary.TotalLicenses += license.TotalUnits;
+                        summary.AssignedLicenses += license.ConsumedUnits;
+
+                        // Count Intune-specific licenses
+                        if (license.IncludesIntune)
+                        {
+                            summary.IntuneLicensesAvailable += license.AvailableUnits;
+                            summary.IntuneLicensesAssigned += license.ConsumedUnits;
+                        }
+                    }
+                }
+
+                // Determine migration readiness
+                summary.MigrationReadiness = DetermineLicenseReadiness(summary);
+
+                // Log summary
+                Instance.Info($"   📜 Total SKUs: {summary.Licenses.Count}");
+                Instance.Info($"   📊 Total licenses: {summary.TotalLicenses:N0} ({summary.AssignedLicenses:N0} assigned)");
+                Instance.Info($"   🔷 Intune licenses: {summary.IntuneLicensesTotal:N0} ({summary.IntuneLicensesAssigned:N0} assigned)");
+                Instance.Info($"   ✅ Features: Intune={summary.HasIntune}, Entra P1={summary.HasEntraIdP1}, P2={summary.HasEntraIdP2}, MDE P1={summary.HasMDEP1}, P2={summary.HasMDEP2}");
+                Instance.Info($"   🎯 Migration Readiness: {summary.MigrationReadiness}");
+
+                // Cache result
+                _cachedLicenseSummary = summary;
+                _licenseCacheExpiration = DateTime.Now.Add(_licenseCacheLifetime);
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Failed to retrieve licenses: {ex.Message}");
+                // Return empty summary rather than throwing - license check shouldn't break the app
+                summary.MigrationReadiness = LicenseReadiness.Unknown;
+            }
+
+            return summary;
+        }
+
+        /// <summary>
+        /// Determines the overall license readiness for migration.
+        /// </summary>
+        private static LicenseReadiness DetermineLicenseReadiness(TenantLicenseSummary summary)
+        {
+            if (summary.HasIntune && summary.HasMDE && summary.HasConditionalAccess)
+                return LicenseReadiness.FullyReady;
+            if (summary.HasIntune && summary.HasConditionalAccess)
+                return LicenseReadiness.CloudReady;
+            if (summary.HasIntune)
+                return LicenseReadiness.BasicReady;
+            if (summary.IntuneLicensesTotal == 0)
+                return LicenseReadiness.NeedsLicenses;
+            return LicenseReadiness.Unknown;
+        }
+
+        /// <summary>
+        /// Gets cached license summary if available, otherwise returns null.
+        /// Use this for quick checks without making API calls.
+        /// </summary>
+        public TenantLicenseSummary? GetCachedLicenses()
+        {
+            if (_cachedLicenseSummary != null && DateTime.Now < _licenseCacheExpiration)
+                return _cachedLicenseSummary;
+            return null;
+        }
+
+        /// <summary>
+        /// Clears the cached license data to force a refresh on next query.
+        /// </summary>
+        public void ClearLicenseCache()
+        {
+            _cachedLicenseSummary = null;
+            _licenseCacheExpiration = DateTime.MinValue;
         }
 
         #endregion
