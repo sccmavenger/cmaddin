@@ -4,7 +4,7 @@
         Title="Enrollment Recommendations" 
         Height="550" Width="700"
         WindowStartupLocation="CenterOwner"
-        Background="#F3F4F6"
+        Background="{StaticResource Gray100}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial">
     
     <Grid Margin="20">
@@ -19,9 +19,9 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="💡" FontSize="28" VerticalAlignment="Center"/>
                 <StackPanel Margin="12,0,0,0">
-                    <TextBlock Text="Recommendations to Improve Your Score" FontSize="20" FontWeight="Bold" Foreground="#1F2937"/>
+                    <TextBlock Text="Recommendations to Improve Your Score" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextDark}"/>
                     <TextBlock x:Name="SubtitleText" Text="Actionable steps to accelerate your cloud migration" 
-                               FontSize="13" Foreground="#6B7280" Margin="0,4,0,0"/>
+                               FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
                 </StackPanel>
             </StackPanel>
         </StackPanel>
@@ -34,7 +34,7 @@
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="⏳" FontSize="32" HorizontalAlignment="Center"/>
                         <TextBlock Text="Generating personalized recommendations..." FontSize="14" 
-                                   Foreground="#6B7280" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                                   Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,12,0,0"/>
                     </StackPanel>
                 </Border>
                 
@@ -46,7 +46,7 @@
         <Border Grid.Row="2" Margin="0,16,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button x:Name="RefreshButton" Content="🔄 Refresh" Padding="16,8" Click="RefreshButton_Click" Margin="0,0,8,0"
-                        Background="Transparent" BorderBrush="#3B82F6" BorderThickness="1" Foreground="#3B82F6" Cursor="Hand">
+                        Background="Transparent" BorderBrush="#3B82F6" BorderThickness="1" Foreground="{StaticResource PrimaryBlue}" Cursor="Hand">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" 
@@ -72,3 +72,4 @@
         </Border>
     </Grid>
 </Window>
+

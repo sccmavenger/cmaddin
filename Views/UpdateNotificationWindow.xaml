@@ -7,7 +7,7 @@
         Width="600" Height="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Background="#F5F5F5"
+        Background="{StaticResource BackgroundPage}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial">
     
     <Window.Resources>
@@ -38,7 +38,7 @@
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
             <TextBlock Text="🔄" FontSize="48" VerticalAlignment="Center" Margin="0,0,15,0"/>
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Update Available" FontSize="24" FontWeight="Bold" Foreground="#0078D4"/>
+                <TextBlock Text="Update Available" FontSize="24" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}"/>
                 <TextBlock FontSize="14" Foreground="#666">
                     <Run Text="Version"/>
                     <Run Text="{Binding LatestVersion}" FontWeight="Bold"/>
@@ -49,7 +49,7 @@
 
         <!-- Version Info -->
         <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15"
-                BorderBrush="#E0E0E0" BorderThickness="1">
+                BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -63,18 +63,18 @@
                 </StackPanel>
 
                 <TextBlock Grid.Column="1" Text="→" FontSize="32" VerticalAlignment="Center" 
-                          Foreground="#0078D4" Margin="20,0"/>
+                          Foreground="{StaticResource PrimaryBlue}" Margin="20,0"/>
 
                 <StackPanel Grid.Column="2">
                     <TextBlock Text="New Version" FontSize="12" Foreground="#666" Margin="0,0,0,5"/>
-                    <TextBlock Text="{Binding LatestVersion}" FontSize="20" FontWeight="Bold" Foreground="#0078D4"/>
+                    <TextBlock Text="{Binding LatestVersion}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Release Notes -->
         <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15"
-                BorderBrush="#E0E0E0" BorderThickness="1">
+                BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="What's New" FontSize="14" FontWeight="Bold" 
                           Margin="0,0,0,10"/>
@@ -108,9 +108,9 @@
         <Border Grid.Row="4" Margin="0,0,0,15" Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisConverter}}">
             <StackPanel>
                 <TextBlock Text="{Binding StatusMessage}" FontSize="13" Margin="0,0,0,5" 
-                          HorizontalAlignment="Center" Foreground="#0078D4"/>
+                          HorizontalAlignment="Center" Foreground="{StaticResource PrimaryBlue}"/>
                 <ProgressBar Height="8" Value="{Binding DownloadProgress}" Maximum="100" 
-                            BorderThickness="0" Background="#E0E0E0" Foreground="#0078D4"/>
+                            BorderThickness="0" Background="#E0E0E0" Foreground="{StaticResource PrimaryBlue}"/>
             </StackPanel>
         </Border>
 
@@ -123,7 +123,7 @@
             </Grid.ColumnDefinitions>
 
             <Button Grid.Column="0" Content="Download &amp; Install" 
-                    Background="#0078D4" 
+                    Background="{StaticResource PrimaryBlue}" 
                     Command="{Binding DownloadCommand}"
                     IsEnabled="{Binding IsDownloading, Converter={StaticResource InverseBoolConverter}}"/>
 
@@ -139,3 +139,4 @@
         </Grid>
     </Grid>
 </Window>
+

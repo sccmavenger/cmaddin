@@ -77,16 +77,84 @@
     <SolidColorBrush x:Key="TextTertiary" Color="{StaticResource TextTertiaryColor}"/>
     <SolidColorBrush x:Key="TextDisabled" Color="{StaticResource TextDisabledColor}"/>
     
-    <!-- Borders and Backgrounds -->
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SEMANTIC COLORS - INFO (Blue)
+         Use for: Information, links, neutral highlights
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <Color x:Key="InfoBlueColor">#1976D2</Color>
+    <Color x:Key="InfoBlueLightColor">#E3F2FD</Color>
+    <Color x:Key="InfoBlueMediumColor">#BBDEFB</Color>
+    <Color x:Key="InfoBlueDarkColor">#0D47A1</Color>
+    
+    <SolidColorBrush x:Key="InfoBlue" Color="{StaticResource InfoBlueColor}"/>
+    <SolidColorBrush x:Key="InfoBlueLight" Color="{StaticResource InfoBlueLightColor}"/>
+    <SolidColorBrush x:Key="InfoBlueMedium" Color="{StaticResource InfoBlueMediumColor}"/>
+    <SolidColorBrush x:Key="InfoBlueDark" Color="{StaticResource InfoBlueDarkColor}"/>
+    
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ACCENT COLORS
+         Use for: Special highlights, categories, visual variety
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <Color x:Key="AccentPurpleColor">#6A1B9A</Color>
+    <Color x:Key="AccentPurpleLightColor">#F3E5F5</Color>
+    <Color x:Key="AccentTealColor">#00897B</Color>
+    <Color x:Key="AccentTealLightColor">#E0F2F1</Color>
+    <Color x:Key="AccentAmberColor">#F59E0B</Color>
+    <Color x:Key="AccentAmberLightColor">#FEF3C7</Color>
+    
+    <SolidColorBrush x:Key="AccentPurple" Color="{StaticResource AccentPurpleColor}"/>
+    <SolidColorBrush x:Key="AccentPurpleLight" Color="{StaticResource AccentPurpleLightColor}"/>
+    <SolidColorBrush x:Key="AccentTeal" Color="{StaticResource AccentTealColor}"/>
+    <SolidColorBrush x:Key="AccentTealLight" Color="{StaticResource AccentTealLightColor}"/>
+    <SolidColorBrush x:Key="AccentAmber" Color="{StaticResource AccentAmberColor}"/>
+    <SolidColorBrush x:Key="AccentAmberLight" Color="{StaticResource AccentAmberLightColor}"/>
+    
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         EXTENDED GRAY PALETTE
+         Use for: More nuanced text and UI elements
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <Color x:Key="TextDarkColor">#1F2937</Color>
+    <Color x:Key="TextMutedColor">#6B7280</Color>
+    <Color x:Key="TextLightColor">#9CA3AF</Color>
+    <Color x:Key="Gray700Color">#374151</Color>
+    <Color x:Key="Gray600Color">#4B5563</Color>
+    <Color x:Key="Gray400Color">#9CA3AF</Color>
+    <Color x:Key="Gray300Color">#D1D5DB</Color>
+    <Color x:Key="Gray200Color">#E5E7EB</Color>
+    <Color x:Key="Gray100Color">#F3F4F6</Color>
+    <Color x:Key="Gray50Color">#F9FAFB</Color>
+    
+    <SolidColorBrush x:Key="TextDark" Color="{StaticResource TextDarkColor}"/>
+    <SolidColorBrush x:Key="TextMuted" Color="{StaticResource TextMutedColor}"/>
+    <SolidColorBrush x:Key="TextLight" Color="{StaticResource TextLightColor}"/>
+    <SolidColorBrush x:Key="Gray700" Color="{StaticResource Gray700Color}"/>
+    <SolidColorBrush x:Key="Gray600" Color="{StaticResource Gray600Color}"/>
+    <SolidColorBrush x:Key="Gray400" Color="{StaticResource Gray400Color}"/>
+    <SolidColorBrush x:Key="Gray300" Color="{StaticResource Gray300Color}"/>
+    <SolidColorBrush x:Key="Gray200" Color="{StaticResource Gray200Color}"/>
+    <SolidColorBrush x:Key="Gray100" Color="{StaticResource Gray100Color}"/>
+    <SolidColorBrush x:Key="Gray50" Color="{StaticResource Gray50Color}"/>
+    
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         BORDERS AND BACKGROUNDS
+         ═══════════════════════════════════════════════════════════════════════ -->
     <Color x:Key="BorderLightColor">#E0E0E0</Color>
+    <Color x:Key="BorderMediumColor">#BDBDBD</Color>
     <Color x:Key="BackgroundPageColor">#F5F5F5</Color>
     <Color x:Key="BackgroundCardColor">#FFFFFF</Color>
     <Color x:Key="BackgroundSubtleColor">#F8F9FA</Color>
+    <Color x:Key="BackgroundMutedColor">#F9FAFB</Color>
+    <Color x:Key="BackgroundAliceColor">#F0F8FF</Color>
+    <Color x:Key="BackgroundMintColor">#ECFDF5</Color>
     
     <SolidColorBrush x:Key="BorderLight" Color="{StaticResource BorderLightColor}"/>
+    <SolidColorBrush x:Key="BorderMedium" Color="{StaticResource BorderMediumColor}"/>
     <SolidColorBrush x:Key="BackgroundPage" Color="{StaticResource BackgroundPageColor}"/>
     <SolidColorBrush x:Key="BackgroundCard" Color="{StaticResource BackgroundCardColor}"/>
     <SolidColorBrush x:Key="BackgroundSubtle" Color="{StaticResource BackgroundSubtleColor}"/>
+    <SolidColorBrush x:Key="BackgroundMuted" Color="{StaticResource BackgroundMutedColor}"/>
+    <SolidColorBrush x:Key="BackgroundAlice" Color="{StaticResource BackgroundAliceColor}"/>
+    <SolidColorBrush x:Key="BackgroundMint" Color="{StaticResource BackgroundMintColor}"/>
     
     <!-- ═══════════════════════════════════════════════════════════════════════
          TYPOGRAPHY - Font Sizes

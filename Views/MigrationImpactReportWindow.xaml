@@ -4,7 +4,7 @@
         Title="Migration Impact Report" 
         Height="700" Width="900"
         WindowStartupLocation="CenterOwner"
-        Background="#F3F4F6"
+        Background="{StaticResource Gray100}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial">
     
     <Grid Margin="20">
@@ -26,25 +26,25 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📈" FontSize="28" VerticalAlignment="Center"/>
                         <StackPanel Margin="12,0,0,0">
-                            <TextBlock Text="Migration Impact Report" FontSize="22" FontWeight="Bold" Foreground="#1F2937"/>
+                            <TextBlock Text="Migration Impact Report" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextDark}"/>
                             <TextBlock x:Name="GeneratedText" Text="Generated: January 16, 2026" 
-                                       FontSize="12" Foreground="#6B7280" Margin="0,4,0,0"/>
+                                       FontSize="12" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
                 
                 <!-- Overall Improvement -->
-                <Border Grid.Column="1" Background="#ECFDF5" CornerRadius="8" Padding="16">
+                <Border Grid.Column="1" Background="{StaticResource BackgroundMint}" CornerRadius="8" Padding="16">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="OVERALL IMPROVEMENT" FontSize="10" Foreground="#059669" 
+                        <TextBlock Text="OVERALL IMPROVEMENT" FontSize="10" Foreground="{StaticResource SuccessGreen}" 
                                    FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock x:Name="CurrentScoreText" Text="45" FontSize="24" FontWeight="Bold" Foreground="#6B7280"/>
-                            <TextBlock Text=" → " FontSize="24" Foreground="#9CA3AF"/>
-                            <TextBlock x:Name="ProjectedScoreText" Text="82" FontSize="24" FontWeight="Bold" Foreground="#10B981"/>
+                            <TextBlock x:Name="CurrentScoreText" Text="45" FontSize="24" FontWeight="Bold" Foreground="{StaticResource TextMuted}"/>
+                            <TextBlock Text=" → " FontSize="24" Foreground="{StaticResource TextLight}"/>
+                            <TextBlock x:Name="ProjectedScoreText" Text="82" FontSize="24" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}"/>
                         </StackPanel>
                         <TextBlock x:Name="ImprovementText" Text="+37 points" FontSize="14" FontWeight="Bold" 
-                                   Foreground="#059669" HorizontalAlignment="Center"/>
+                                   Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -56,13 +56,13 @@
                 <!-- Executive Summary -->
                 <Border Background="White" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                     <StackPanel>
-                        <TextBlock Text="📋 Executive Summary" FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,8"/>
-                        <TextBlock x:Name="SummaryText" TextWrapping="Wrap" FontSize="13" Foreground="#4B5563" LineHeight="22"/>
+                        <TextBlock Text="📋 Executive Summary" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource Gray700}" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="SummaryText" TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource Gray600}" LineHeight="22"/>
                     </StackPanel>
                 </Border>
                 
                 <!-- Category Breakdown -->
-                <TextBlock Text="Impact by Category" FontSize="16" FontWeight="SemiBold" Foreground="#1F2937" Margin="0,0,0,12"/>
+                <TextBlock Text="Impact by Category" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextDark}" Margin="0,0,0,12"/>
                 <ItemsControl x:Name="CategoryCards">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -87,21 +87,21 @@
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
                                             <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="SemiBold" 
-                                                       Foreground="#1F2937" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                       Foreground="{StaticResource TextDark}" VerticalAlignment="Center" Margin="12,0,0,0"/>
                                         </StackPanel>
                                         
                                         <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                            <TextBlock Text="{Binding CurrentScore}" FontSize="20" FontWeight="Bold" Foreground="#6B7280"/>
+                                            <TextBlock Text="{Binding CurrentScore}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextMuted}"/>
                                             <TextBlock Text=" → " FontSize="20" Foreground="#D1D5DB"/>
-                                            <TextBlock Text="{Binding ProjectedScore}" FontSize="20" FontWeight="Bold" Foreground="#10B981"/>
+                                            <TextBlock Text="{Binding ProjectedScore}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}"/>
                                             <TextBlock Text="{Binding ScoreImprovementDisplay}" FontSize="12" FontWeight="SemiBold" 
-                                                       Foreground="#059669" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                       Foreground="{StaticResource SuccessGreen}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                         </StackPanel>
                                     </Grid>
                                     
                                     <!-- Summary -->
                                     <TextBlock Grid.Row="1" Text="{Binding Summary}" TextWrapping="Wrap" 
-                                               FontSize="12" Foreground="#6B7280" Margin="0,8,0,8"/>
+                                               FontSize="12" Foreground="{StaticResource TextMuted}" Margin="0,8,0,8"/>
                                     
                                     <!-- Key Metrics -->
                                     <ItemsControl Grid.Row="2" ItemsSource="{Binding Metrics}">
@@ -112,13 +112,13 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Background="#F9FAFB" CornerRadius="4" Padding="8" Margin="0,0,8,8" MinWidth="180">
+                                                <Border Background="{StaticResource BackgroundMuted}" CornerRadius="4" Padding="8" Margin="0,0,8,8" MinWidth="180">
                                                     <StackPanel>
-                                                        <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="#374151"/>
+                                                        <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Gray700}"/>
                                                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                                            <TextBlock Text="{Binding CurrentDisplay}" FontSize="12" Foreground="#6B7280"/>
+                                                            <TextBlock Text="{Binding CurrentDisplay}" FontSize="12" Foreground="{StaticResource TextMuted}"/>
                                                             <TextBlock Text=" → " FontSize="12" Foreground="#D1D5DB"/>
-                                                            <TextBlock Text="{Binding ProjectedDisplay}" FontSize="12" FontWeight="SemiBold" Foreground="#10B981"/>
+                                                            <TextBlock Text="{Binding ProjectedDisplay}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource SuccessGreen}"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>
@@ -132,12 +132,12 @@
                 </ItemsControl>
                 
                 <!-- Workload Impacts -->
-                <TextBlock Text="Co-Management Workload Benefits" FontSize="16" FontWeight="SemiBold" Foreground="#1F2937" Margin="0,8,0,12"/>
+                <TextBlock Text="Co-Management Workload Benefits" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextDark}" Margin="0,8,0,12"/>
                 <Border Background="White" CornerRadius="8" Padding="16">
                     <ItemsControl x:Name="WorkloadList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="8" Margin="0,0,0,8">
+                                <Border BorderBrush="{StaticResource Gray200}" BorderThickness="0,0,0,1" Padding="8" Margin="0,0,0,8">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -148,11 +148,11 @@
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Icon}" FontSize="18"/>
                                             <TextBlock Text="{Binding WorkloadName}" FontSize="13" FontWeight="SemiBold" 
-                                                       Foreground="#374151" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                                       Foreground="{StaticResource Gray700}" Margin="8,0,0,0" VerticalAlignment="Center"/>
                                         </StackPanel>
                                         
                                         <TextBlock Grid.Column="1" Text="{Binding CurrentState}" FontSize="11" 
-                                                   Foreground="#6B7280" VerticalAlignment="Center" Margin="16,0"/>
+                                                   Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="16,0"/>
                                         
                                         <Border Grid.Column="2" CornerRadius="4" Padding="8,4"
                                                 Background="{Binding StatusBackground}">
@@ -166,7 +166,7 @@
                 </Border>
                 
                 <!-- Timeline -->
-                <Border Background="#FEF3C7" CornerRadius="8" Padding="16" Margin="0,16,0,0">
+                <Border Background="{StaticResource AccentAmberLight}" CornerRadius="8" Padding="16" Margin="0,16,0,0">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="⏱️" FontSize="20" VerticalAlignment="Center"/>
                         <StackPanel Margin="12,0,0,0">
@@ -182,7 +182,7 @@
         <Border Grid.Row="2" Margin="0,16,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="📋 Copy Summary" Click="CopySummary_Click" Padding="16,8" Margin="0,0,8,0"
-                        Background="Transparent" BorderBrush="#6B7280" BorderThickness="1" Foreground="#6B7280" Cursor="Hand">
+                        Background="Transparent" BorderBrush="#6B7280" BorderThickness="1" Foreground="{StaticResource TextMuted}" Cursor="Hand">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" 
@@ -208,3 +208,4 @@
         </Border>
     </Grid>
 </Window>
+

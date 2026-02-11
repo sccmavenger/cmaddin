@@ -29,9 +29,9 @@
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
                 <TextBlock Text="📈" FontSize="20" VerticalAlignment="Center"/>
                 <TextBlock Text=" MIGRATION IMPACT FORECAST" FontSize="14" FontWeight="Bold" 
-                           Foreground="#333333" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                           Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,0,0"/>
                 <Button x:Name="ShowBreakdownButton" Content="▼ Show Details" 
-                        Background="Transparent" BorderThickness="0" Foreground="#0078D4"
+                        Background="Transparent" BorderThickness="0" Foreground="{StaticResource PrimaryBlue}"
                         FontSize="11" Cursor="Hand" Margin="12,0,0,0" Click="ShowBreakdownButton_Click"/>
             </StackPanel>
             
@@ -82,7 +82,7 @@
                     <ItemsControl x:Name="CategoryList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#F9FAFB" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                                <Border Background="{StaticResource BackgroundMuted}" CornerRadius="6" Padding="12" Margin="0,0,0,8">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -94,20 +94,20 @@
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Icon}" FontSize="16" VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" 
-                                                       Foreground="#374151" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                       Foreground="{StaticResource Gray700}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                         </StackPanel>
                                         
                                         <!-- Progress Bar -->
                                         <Grid Grid.Column="1" Margin="16,0" VerticalAlignment="Center">
                                             <ProgressBar Value="{Binding CurrentScore}" Maximum="100" 
-                                                         Height="8" Background="#E5E7EB" Foreground="#9CA3AF"/>
+                                                         Height="8" Background="#E5E7EB" Foreground="{StaticResource TextLight}"/>
                                             <ProgressBar Value="{Binding ProjectedScore}" Maximum="100" 
                                                          Height="8" Background="Transparent" Foreground="{Binding Color}" Opacity="0.6"/>
                                         </Grid>
                                         
                                         <!-- Scores -->
                                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding CurrentScore}" FontSize="12" Foreground="#6B7280" Width="25" TextAlignment="Right"/>
+                                            <TextBlock Text="{Binding CurrentScore}" FontSize="12" Foreground="{StaticResource TextMuted}" Width="25" TextAlignment="Right"/>
                                             <TextBlock Text=" → " FontSize="12" Foreground="{StaticResource TextTertiary}"/>
                                             <TextBlock Text="{Binding ProjectedScore}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource SuccessGreen}" Width="25"/>
                                         </StackPanel>
@@ -150,7 +150,7 @@
             <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
                 <Button x:Name="RefreshButton" Content="🔄 Refresh" Click="RefreshButton_Click"
                         Background="Transparent" BorderBrush="#6B7280" BorderThickness="1"
-                        Foreground="#6B7280" Padding="12,6" FontSize="12" Cursor="Hand" Margin="0,0,10,0">
+                        Foreground="{StaticResource TextMuted}" Padding="12,6" FontSize="12" Cursor="Hand" Margin="0,0,10,0">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" 
@@ -163,7 +163,7 @@
                     </Button.Template>
                 </Button>
                 <Button x:Name="ViewFullReportButton" Content="📊 View Full Report" Click="ViewFullReportButton_Click"
-                        Background="#0078D4" Foreground="White" 
+                        Background="{StaticResource PrimaryBlue}" Foreground="White" 
                         Padding="12,6" FontSize="12" BorderThickness="0" Cursor="Hand">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
@@ -177,3 +177,4 @@
         </Grid>
     </Border>
 </UserControl>
+

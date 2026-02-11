@@ -4,7 +4,7 @@
         Title="Enrollment Confidence - Full Analysis" 
         Height="600" Width="800"
         WindowStartupLocation="CenterOwner"
-        Background="#F3F4F6"
+        Background="{StaticResource Gray100}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial">
     
     <Window.Resources>
@@ -33,9 +33,9 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🎯" FontSize="28" VerticalAlignment="Center"/>
                 <StackPanel Margin="12,0,0,0">
-                    <TextBlock Text="Enrollment Confidence Analysis" FontSize="20" FontWeight="Bold" Foreground="#1F2937"/>
+                    <TextBlock Text="Enrollment Confidence Analysis" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextDark}"/>
                     <TextBlock x:Name="SummaryText" Text="Detailed breakdown of your enrollment readiness score" 
-                               FontSize="13" Foreground="#6B7280" Margin="0,4,0,0"/>
+                               FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
                 </StackPanel>
             </StackPanel>
             
@@ -54,20 +54,20 @@
                                  StrokeDashArray="100,100" StrokeDashOffset="75"/>
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock x:Name="ScoreText" Text="68" FontSize="32" FontWeight="Bold" 
-                                       Foreground="#1F2937" HorizontalAlignment="Center"/>
-                            <TextBlock Text="/100" FontSize="14" Foreground="#6B7280" HorizontalAlignment="Center"/>
+                                       Foreground="{StaticResource TextDark}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="/100" FontSize="14" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
                     
                     <!-- Band and Explanation -->
                     <StackPanel Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
-                            <Border x:Name="BandBadge" Background="#FEF3C7" CornerRadius="4" Padding="8,4">
-                                <TextBlock x:Name="BandText" Text="Medium" FontSize="12" FontWeight="SemiBold" Foreground="#D97706"/>
+                            <Border x:Name="BandBadge" Background="{StaticResource AccentAmberLight}" CornerRadius="4" Padding="8,4">
+                                <TextBlock x:Name="BandText" Text="Medium" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource WarningOrange}"/>
                             </Border>
                         </StackPanel>
                         <TextBlock x:Name="ExplanationText" TextWrapping="Wrap" Margin="0,8,0,0"
-                                   FontSize="13" Foreground="#4B5563" MaxWidth="500"/>
+                                   FontSize="13" Foreground="{StaticResource Gray600}" MaxWidth="500"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -88,10 +88,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="⚡ Velocity" FontSize="13" Foreground="#374151" VerticalAlignment="Center"/>
+                            <TextBlock Text="⚡ Velocity" FontSize="13" Foreground="{StaticResource Gray700}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="VelocityBar" Grid.Column="1" Style="{StaticResource ScoreBar}" Value="50" Margin="12,0"/>
                             <TextBlock x:Name="VelocityScore" Grid.Column="2" Text="50" FontSize="13" FontWeight="SemiBold" 
-                                       Foreground="#374151" HorizontalAlignment="Right"/>
+                                       Foreground="{StaticResource Gray700}" HorizontalAlignment="Right"/>
                         </Grid>
                         
                         <!-- Success Rate -->
@@ -101,10 +101,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="✅ Success Rate" FontSize="13" Foreground="#374151" VerticalAlignment="Center"/>
+                            <TextBlock Text="✅ Success Rate" FontSize="13" Foreground="{StaticResource Gray700}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="SuccessBar" Grid.Column="1" Style="{StaticResource ScoreBar}" Value="75" Margin="12,0"/>
                             <TextBlock x:Name="SuccessScore" Grid.Column="2" Text="75" FontSize="13" FontWeight="SemiBold" 
-                                       Foreground="#374151" HorizontalAlignment="Right"/>
+                                       Foreground="{StaticResource Gray700}" HorizontalAlignment="Right"/>
                         </Grid>
                         
                         <!-- Complexity -->
@@ -114,10 +114,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="🔧 Complexity" FontSize="13" Foreground="#374151" VerticalAlignment="Center"/>
+                            <TextBlock Text="🔧 Complexity" FontSize="13" Foreground="{StaticResource Gray700}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="ComplexityBar" Grid.Column="1" Style="{StaticResource ScoreBar}" Value="60" Margin="12,0"/>
                             <TextBlock x:Name="ComplexityScore" Grid.Column="2" Text="60" FontSize="13" FontWeight="SemiBold" 
-                                       Foreground="#374151" HorizontalAlignment="Right"/>
+                                       Foreground="{StaticResource Gray700}" HorizontalAlignment="Right"/>
                         </Grid>
                         
                         <!-- Infrastructure -->
@@ -127,10 +127,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="🏗️ Infrastructure" FontSize="13" Foreground="#374151" VerticalAlignment="Center"/>
+                            <TextBlock Text="🏗️ Infrastructure" FontSize="13" Foreground="{StaticResource Gray700}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="InfraBar" Grid.Column="1" Style="{StaticResource ScoreBar}" Value="80" Margin="12,0"/>
                             <TextBlock x:Name="InfraScore" Grid.Column="2" Text="80" FontSize="13" FontWeight="SemiBold" 
-                                       Foreground="#374151" HorizontalAlignment="Right"/>
+                                       Foreground="{StaticResource Gray700}" HorizontalAlignment="Right"/>
                         </Grid>
                         
                         <!-- Conditional Access -->
@@ -140,10 +140,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="🛡️ Conditional Access" FontSize="13" Foreground="#374151" VerticalAlignment="Center"/>
+                            <TextBlock Text="🛡️ Conditional Access" FontSize="13" Foreground="{StaticResource Gray700}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="CABar" Grid.Column="1" Style="{StaticResource ScoreBar}" Value="70" Margin="12,0"/>
                             <TextBlock x:Name="CAScore" Grid.Column="2" Text="70" FontSize="13" FontWeight="SemiBold" 
-                                       Foreground="#374151" HorizontalAlignment="Right"/>
+                                       Foreground="{StaticResource Gray700}" HorizontalAlignment="Right"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -159,15 +159,15 @@
                     <!-- Top Drivers -->
                     <Border Background="White" CornerRadius="8" Padding="16">
                         <StackPanel>
-                            <TextBlock Text="✨ Top Drivers" FontSize="14" FontWeight="SemiBold" Foreground="#059669" Margin="0,0,0,12"/>
+                            <TextBlock Text="✨ Top Drivers" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,12"/>
                             <ItemsControl x:Name="DriversPanel">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="#ECFDF5" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                        <Border Background="{StaticResource BackgroundMint}" CornerRadius="4" Padding="10" Margin="0,0,0,8">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" Foreground="#065F46"/>
-                                                    <TextBlock Text="{Binding ImpactDisplay}" FontSize="11" Foreground="#059669" Margin="8,0,0,0"/>
+                                                    <TextBlock Text="{Binding ImpactDisplay}" FontSize="11" Foreground="{StaticResource SuccessGreen}" Margin="8,0,0,0"/>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#047857" Margin="0,4,0,0" TextWrapping="Wrap"/>
                                             </StackPanel>
@@ -218,3 +218,4 @@
         </Border>
     </Grid>
 </Window>
+

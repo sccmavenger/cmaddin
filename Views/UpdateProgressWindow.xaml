@@ -10,7 +10,7 @@
         Background="Transparent"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial">
     
-    <Border Background="White" CornerRadius="10" BorderBrush="#0078D4" BorderThickness="2">
+    <Border Background="White" CornerRadius="10" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="2">
         <Border.Effect>
             <DropShadowEffect Color="#0078D4" Direction="270" ShadowDepth="3" BlurRadius="10" Opacity="0.3"/>
         </Border.Effect>
@@ -27,7 +27,7 @@
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
                 <TextBlock Text="🔄" FontSize="40" VerticalAlignment="Center" Margin="0,0,15,0"/>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock x:Name="TitleText" Text="Downloading Update" FontSize="20" FontWeight="Bold" Foreground="#0078D4"/>
+                    <TextBlock x:Name="TitleText" Text="Downloading Update" FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}"/>
                     <TextBlock x:Name="VersionText" FontSize="13" Foreground="#666" Margin="0,5,0,0">
                         <Run Text="Updating to version"/>
                         <Run x:Name="NewVersionRun" Text="3.14.26" FontWeight="Bold"/>
@@ -45,10 +45,10 @@
                       Margin="0,0,0,15"/>
 
             <!-- Progress Bar -->
-            <Border Grid.Row="2" Background="#F0F0F0" CornerRadius="8" Height="30" Margin="0,0,0,20">
+            <Border Grid.Row="2" Background="{StaticResource BackgroundPage}" CornerRadius="8" Height="30" Margin="0,0,0,20">
                 <Grid>
                     <Border x:Name="ProgressBar" 
-                           Background="#0078D4" 
+                           Background="{StaticResource PrimaryBlue}" 
                            CornerRadius="8" 
                            HorizontalAlignment="Left"
                            Width="0"/>
@@ -70,3 +70,4 @@
         </Grid>
     </Border>
 </Window>
+

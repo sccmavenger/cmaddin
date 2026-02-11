@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.136** | February 10, 2026
+**Version 3.17.139** | February 10, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -168,6 +168,30 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+### Version 3.17.137 (February 10, 2026)
+
+### Added
+- Comprehensive centralized color palette with 50+ color resources in AppStyles.xaml
+- New color categories: Info Blue, Accent Purple, Accent Teal, Accent Amber
+- Extended gray palette (Gray50-Gray700) for nuanced UI elements
+- Background variations: BackgroundMint, BackgroundAlice, BackgroundMuted
+
+### Changed
+- **Migrated 493 hardcoded colors (77%) to centralized StaticResource references**
+- All major Views now use consistent color scheme from AppStyles.xaml
+- Unified text colors: TextPrimary (#333333), TextSecondary (#666666), TextMuted (#6B7280)
+- Standardized success/warning/error colors using Microsoft Fluent palette
+- Comparison cards now use consistent Intune (green) and ConfigMgr (orange) branding
+
+### Fixed
+- Inconsistent color scheme across comparison cards and dashboard
+- Mixed design systems (Tailwind + Fluent) now standardized to Microsoft Fluent
+
+---
+
 ### Version 3.17.134 (February 10, 2026)
 
 ### Added
@@ -252,22 +276,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Removed misleading "Devices migrated OFF ConfigMgr" from Cloud Native documentation
 - Clarified that Cloud Native is a point-in-time snapshot detecting "not found in ConfigMgr"
 - Updated Cloud Native tooltip to be more accurate about detection method
-
-### Fixed
-
----
-
-### Version 3.17.128 (February 10, 2026)
-
-### Added
-- New "Metric Calculations Guide" section in AdminUserGuide.html documenting Cloud Native calculation methodology
-- Added Cloud Native metric documentation to COMPARISON_METHODOLOGY.md
-- Documented what's included/excluded from Cloud Native count with data sources and formulas
-
-### Changed
-- Updated Cloud Native description to be more accurate: "Devices managed by Intune with NO ConfigMgr dependency"
-- Added BYOD back to Cloud Native description (since BYOD devices ARE counted)
-- Clarified that we detect "not found in ConfigMgr" rather than tracking removal events
 
 ### Fixed
 
@@ -1490,5 +1498,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-10  
-**Version**: 3.17.136  
+**Version**: 3.17.139  
 **Maintainer:** Cloud Native Assessment Team

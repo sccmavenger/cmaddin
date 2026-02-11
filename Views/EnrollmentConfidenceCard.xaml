@@ -10,12 +10,12 @@
         <Style x:Key="ScoreBar" TargetType="Border">
             <Setter Property="Height" Value="8"/>
             <Setter Property="CornerRadius" Value="4"/>
-            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="Background" Value="{StaticResource BorderLight}"/>
         </Style>
     </UserControl.Resources>
 
     <Border Background="White" CornerRadius="8" Padding="20" 
-            BorderBrush="#E0E0E0" BorderThickness="1">
+            BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -48,20 +48,20 @@
                                 <SolidColorBrush Color="{Binding BandColor}"/>
                             </TextBlock.Foreground>
                         </TextBlock>
-                        <TextBlock Text="/100" FontSize="10" Foreground="#666666" 
+                        <TextBlock Text="/100" FontSize="10" Foreground="{StaticResource TextSecondary}" 
                                    HorizontalAlignment="Center" Margin="0,-3,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Title and Description -->
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="🎯 ENROLLMENT CONFIDENCE" FontSize="14" FontWeight="Bold" Foreground="#333333"/>
+                    <TextBlock Text="🎯 ENROLLMENT CONFIDENCE" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
                     <TextBlock Text="{Binding Band}" FontSize="18" FontWeight="SemiBold" Margin="0,5,0,0">
                         <TextBlock.Foreground>
                             <SolidColorBrush Color="{Binding BandColor}"/>
                         </TextBlock.Foreground>
                     </TextBlock>
-                    <TextBlock Text="{Binding Explanation}" FontSize="12" Foreground="#666666" 
+                    <TextBlock Text="{Binding Explanation}" FontSize="12" Foreground="{StaticResource TextSecondary}" 
                                TextWrapping="Wrap" Margin="0,5,0,0" MaxWidth="350"/>
                 </StackPanel>
 
@@ -69,22 +69,22 @@
                 <Button Grid.Column="2" Content="{Binding ShowBreakdown, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter='CollapseExpand'}"
                         Command="{Binding ToggleBreakdownCommand}"
                         Background="Transparent" BorderThickness="0"
-                        FontSize="12" Foreground="#0078D4" Cursor="Hand"
+                        FontSize="12" Foreground="{StaticResource PrimaryBlue}" Cursor="Hand"
                         VerticalAlignment="Top">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <TextBlock Text="▼ Show Breakdown" Foreground="#0078D4" FontSize="12"/>
+                            <TextBlock Text="▼ Show Breakdown" Foreground="{StaticResource PrimaryBlue}" FontSize="12"/>
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
             </Grid>
 
             <!-- Score Breakdown (Expandable) -->
-            <Border Grid.Row="1" Background="#F8F9FA" CornerRadius="6" Padding="15" Margin="0,0,0,15"
+            <Border Grid.Row="1" Background="{StaticResource BackgroundSubtle}" CornerRadius="6" Padding="15" Margin="0,0,0,15"
                     Visibility="{Binding ShowBreakdown, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel>
                     <TextBlock Text="SCORE BREAKDOWN" FontSize="11" FontWeight="SemiBold" 
-                               Foreground="#666666" Margin="0,0,0,15"/>
+                               Foreground="{StaticResource TextSecondary}" Margin="0,0,0,15"/>
 
                     <!-- Velocity Component (30%) -->
                     <Grid Margin="0,0,0,12">
@@ -93,16 +93,16 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Velocity (30%)" FontSize="12" Foreground="#333333"/>
+                        <TextBlock Grid.Column="0" Text="Velocity (30%)" FontSize="12" Foreground="{StaticResource TextPrimary}"/>
                         <Border Grid.Column="1" Style="{StaticResource ScoreBar}">
-                            <Border CornerRadius="4" HorizontalAlignment="Left" Background="#0078D4">
+                            <Border CornerRadius="4" HorizontalAlignment="Left" Background="{StaticResource PrimaryBlue}">
                                 <Border.Width>
                                     <Binding Path="VelocityScore" Converter="{StaticResource BoolToVisibilityConverter}" ConverterParameter="ScoreWidth"/>
                                 </Border.Width>
                             </Border>
                         </Border>
                         <TextBlock Grid.Column="2" Text="{Binding VelocityScore}" FontSize="12" 
-                                   FontWeight="SemiBold" Foreground="#0078D4" HorizontalAlignment="Right"/>
+                                   FontWeight="SemiBold" Foreground="{StaticResource PrimaryBlue}" HorizontalAlignment="Right"/>
                     </Grid>
 
                     <!-- Success Rate Component (25%) -->
@@ -112,16 +112,16 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Success Rate (25%)" FontSize="12" Foreground="#333333"/>
+                        <TextBlock Grid.Column="0" Text="Success Rate (25%)" FontSize="12" Foreground="{StaticResource TextPrimary}"/>
                         <Border Grid.Column="1" Style="{StaticResource ScoreBar}">
-                            <Border CornerRadius="4" HorizontalAlignment="Left" Background="#107C10">
+                            <Border CornerRadius="4" HorizontalAlignment="Left" Background="{StaticResource SuccessGreen}">
                                 <Border.Width>
                                     <Binding Path="SuccessRateScore" Converter="{StaticResource BoolToVisibilityConverter}" ConverterParameter="ScoreWidth"/>
                                 </Border.Width>
                             </Border>
                         </Border>
                         <TextBlock Grid.Column="2" Text="{Binding SuccessRateScore}" FontSize="12" 
-                                   FontWeight="SemiBold" Foreground="#107C10" HorizontalAlignment="Right"/>
+                                   FontWeight="SemiBold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Right"/>
                     </Grid>
 
                     <!-- Complexity Component (20%) -->
@@ -131,7 +131,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Complexity (20%)" FontSize="12" Foreground="#333333"/>
+                        <TextBlock Grid.Column="0" Text="Complexity (20%)" FontSize="12" Foreground="{StaticResource TextPrimary}"/>
                         <Border Grid.Column="1" Style="{StaticResource ScoreBar}">
                             <Border CornerRadius="4" HorizontalAlignment="Left" Background="#F57C00">
                                 <Border.Width>
@@ -140,7 +140,7 @@
                             </Border>
                         </Border>
                         <TextBlock Grid.Column="2" Text="{Binding ComplexityScore}" FontSize="12" 
-                                   FontWeight="SemiBold" Foreground="#F57C00" HorizontalAlignment="Right"/>
+                                   FontWeight="SemiBold" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Right"/>
                     </Grid>
 
                     <!-- Infrastructure Component (15%) -->
@@ -150,7 +150,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Infrastructure (15%)" FontSize="12" Foreground="#333333"/>
+                        <TextBlock Grid.Column="0" Text="Infrastructure (15%)" FontSize="12" Foreground="{StaticResource TextPrimary}"/>
                         <Border Grid.Column="1" Style="{StaticResource ScoreBar}">
                             <Border CornerRadius="4" HorizontalAlignment="Left" Background="#6A1B9A">
                                 <Border.Width>
@@ -159,7 +159,7 @@
                             </Border>
                         </Border>
                         <TextBlock Grid.Column="2" Text="{Binding InfrastructureScore}" FontSize="12" 
-                                   FontWeight="SemiBold" Foreground="#6A1B9A" HorizontalAlignment="Right"/>
+                                   FontWeight="SemiBold" Foreground="{StaticResource AccentPurple}" HorizontalAlignment="Right"/>
                     </Grid>
 
                     <!-- Conditional Access Component (10%) -->
@@ -169,7 +169,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="CA Readiness (10%)" FontSize="12" Foreground="#333333"/>
+                        <TextBlock Grid.Column="0" Text="CA Readiness (10%)" FontSize="12" Foreground="{StaticResource TextPrimary}"/>
                         <Border Grid.Column="1" Style="{StaticResource ScoreBar}">
                             <Border CornerRadius="4" HorizontalAlignment="Left" Background="#00897B">
                                 <Border.Width>
@@ -178,7 +178,7 @@
                             </Border>
                         </Border>
                         <TextBlock Grid.Column="2" Text="{Binding ConditionalAccessScore}" FontSize="12" 
-                                   FontWeight="SemiBold" Foreground="#00897B" HorizontalAlignment="Right"/>
+                                   FontWeight="SemiBold" Foreground="{StaticResource AccentTeal}" HorizontalAlignment="Right"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -192,20 +192,20 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Top Drivers -->
-                <Border Grid.Column="0" Background="#E8F5E9" CornerRadius="6" Padding="15">
+                <Border Grid.Column="0" Background="{StaticResource SuccessGreenLight}" CornerRadius="6" Padding="15">
                     <StackPanel>
                         <TextBlock Text="✅ TOP DRIVERS" FontSize="11" FontWeight="SemiBold" 
-                                   Foreground="#2E7D32" Margin="0,0,0,10"/>
+                                   Foreground="{StaticResource SuccessGreenDark}" Margin="0,0,0,10"/>
                         <ItemsControl ItemsSource="{Binding TopDrivers}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="0,0,0,8">
                                         <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" 
-                                                   Foreground="#333333"/>
-                                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#666666" 
+                                                   Foreground="{StaticResource TextPrimary}"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource TextSecondary}" 
                                                    TextWrapping="Wrap"/>
                                         <TextBlock Text="{Binding ImpactDisplay}" FontSize="10" FontWeight="Bold"
-                                                   Foreground="#107C10" Margin="0,3,0,0"/>
+                                                   Foreground="{StaticResource SuccessGreen}" Margin="0,3,0,0"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -214,20 +214,20 @@
                 </Border>
 
                 <!-- Top Detractors -->
-                <Border Grid.Column="2" Background="#FFEBEE" CornerRadius="6" Padding="15">
+                <Border Grid.Column="2" Background="{StaticResource ErrorRedLight}" CornerRadius="6" Padding="15">
                     <StackPanel>
                         <TextBlock Text="⚠️ TOP DETRACTORS" FontSize="11" FontWeight="SemiBold" 
-                                   Foreground="#C62828" Margin="0,0,0,10"/>
+                                   Foreground="{StaticResource ErrorRedDark}" Margin="0,0,0,10"/>
                         <ItemsControl ItemsSource="{Binding TopDetractors}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="0,0,0,8">
                                         <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" 
-                                                   Foreground="#333333"/>
-                                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#666666" 
+                                                   Foreground="{StaticResource TextPrimary}"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource TextSecondary}" 
                                                    TextWrapping="Wrap"/>
                                         <TextBlock Text="{Binding ImpactDisplay}" FontSize="10" FontWeight="Bold"
-                                                   Foreground="#D32F2F" Margin="0,3,0,0"/>
+                                                   Foreground="{StaticResource ErrorRed}" Margin="0,3,0,0"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -239,8 +239,8 @@
             <!-- Quick Actions -->
             <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
                 <Button Content="📊 View Full Analysis" Command="{Binding ViewDetailsCommand}"
-                        Background="Transparent" BorderBrush="#0078D4" BorderThickness="1"
-                        Foreground="#0078D4" Padding="12,6" FontSize="12" Cursor="Hand" Margin="0,0,10,0">
+                        Background="Transparent" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="1"
+                        Foreground="{StaticResource PrimaryBlue}" Padding="12,6" FontSize="12" Cursor="Hand" Margin="0,0,10,0">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" 
@@ -253,7 +253,7 @@
                     </Button.Template>
                 </Button>
                 <Button Content="💡 Get Recommendations" Command="{Binding GetRecommendationsCommand}"
-                        Background="#0078D4" Foreground="White" 
+                        Background="{StaticResource PrimaryBlue}" Foreground="White" 
                         Padding="12,6" FontSize="12" BorderThickness="0" Cursor="Hand">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
@@ -267,3 +267,4 @@
         </Grid>
     </Border>
 </UserControl>
+
