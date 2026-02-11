@@ -735,10 +735,10 @@ namespace ZeroTrustMigrationAddin.Services
                 var allIntuneDevices = await GetCachedManagedDevicesAsync();
                 Instance.Info($"Total Intune devices: {allIntuneDevices.Count}");
                 
-                // Build Intune device lookup by name for matching
+                // Build Intune device lookup by name for matching (normalized to handle FQDN vs short name)
                 var intuneDevicesByName = allIntuneDevices
                     .Where(d => !string.IsNullOrEmpty(d.DeviceName))
-                    .GroupBy(d => d.DeviceName!.ToLowerInvariant())
+                    .GroupBy(d => NormalizeDeviceName(d.DeviceName))
                     .ToDictionary(g => g.Key, g => g.First());
                 
                 if (_configMgrService.IsConfigured)
@@ -751,10 +751,10 @@ namespace ZeroTrustMigrationAddin.Services
                     {
                         foreach (var cmDevice in configMgrDevices)
                         {
-                            // Try to find matching Intune device by name
+                            // Try to find matching Intune device by name (normalized to handle FQDN)
                             Microsoft.Graph.Models.ManagedDevice? intuneDevice = null;
                             if (!string.IsNullOrEmpty(cmDevice.Name) &&
-                                intuneDevicesByName.TryGetValue(cmDevice.Name.ToLowerInvariant(), out var found))
+                                intuneDevicesByName.TryGetValue(NormalizeDeviceName(cmDevice.Name), out var found))
                             {
                                 intuneDevice = found;
                             }
@@ -1262,7 +1262,7 @@ namespace ZeroTrustMigrationAddin.Services
 
                     var intuneDevicesByName = allIntuneDevices
                         .Where(d => !string.IsNullOrEmpty(d.DeviceName))
-                        .GroupBy(d => d.DeviceName!.ToLowerInvariant())
+                        .GroupBy(d => NormalizeDeviceName(d.DeviceName))
                         .ToDictionary(g => g.Key, g => g.First());
 
                     if (configMgrDevices != null && configMgrDevices.Any())
@@ -1274,11 +1274,11 @@ namespace ZeroTrustMigrationAddin.Services
                         {
                             try
                             {
-                                // Try to find matching Intune device by name
+                                // Try to find matching Intune device by name (normalized to handle FQDN)
                                 Microsoft.Graph.Models.ManagedDevice? intuneDevice = null;
                                 if (!string.IsNullOrEmpty(cmDevice.Name))
                                 {
-                                    intuneDevicesByName.TryGetValue(cmDevice.Name.ToLowerInvariant(), out intuneDevice);
+                                    intuneDevicesByName.TryGetValue(NormalizeDeviceName(cmDevice.Name), out intuneDevice);
                                 }
 
                                 var joinType = DetectJoinType(
