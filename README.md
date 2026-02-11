@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.139** | February 10, 2026
+**Version 3.17.141** | February 11, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -171,6 +171,23 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.140 (February 11, 2026)
+
+### Added
+- `NormalizeDeviceName()` helper to strip FQDN suffixes (e.g., `WORKSTATION1.contoso.com` → `workstation1`)
+
+### Changed
+- Device matching now normalizes names before comparison (handles FQDN vs short name mismatch)
+- Enhanced diagnostic logging shows FQDN detection count and match breakdown
+
+### Fixed
+- **Cloud Native count showing same number as ConfigMgr baseline** - devices were incorrectly counted as Cloud Native because ConfigMgr stores FQDNs (`device.contoso.com`) while Intune stores short names (`device`). Normalization now strips domain suffix before matching.
+- Co-managed device matching now correctly identifies devices when AADDeviceID is not available
+
+---
+
 ### Version 3.17.137 (February 10, 2026)
 
 ### Added
@@ -265,19 +282,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Fixed
 - Fixed build error: v1.0 Microsoft.Graph SDK doesn't have `WindowsActiveMalwareCount` property on `ManagedDevice`
 - Implemented AdditionalData fallback pattern for Beta API properties
-
----
-
-### Version 3.17.129 (February 10, 2026)
-
-### Added
-
-### Changed
-- Removed misleading "Devices migrated OFF ConfigMgr" from Cloud Native documentation
-- Clarified that Cloud Native is a point-in-time snapshot detecting "not found in ConfigMgr"
-- Updated Cloud Native tooltip to be more accurate about detection method
-
-### Fixed
 
 ---
 
@@ -1497,6 +1501,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-10  
-**Version**: 3.17.139  
+**Last Updated**: 2026-02-11  
+**Version**: 3.17.141  
 **Maintainer:** Cloud Native Assessment Team

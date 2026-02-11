@@ -10,6 +10,30 @@
 - 
 
 
+## [3.17.141] - 2026-02-11
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.140] - 2026-02-11
+
+### Added
+- `NormalizeDeviceName()` helper to strip FQDN suffixes (e.g., `WORKSTATION1.contoso.com` → `workstation1`)
+
+### Changed
+- Device matching now normalizes names before comparison (handles FQDN vs short name mismatch)
+- Enhanced diagnostic logging shows FQDN detection count and match breakdown
+
+### Fixed
+- **Cloud Native count showing same number as ConfigMgr baseline** - devices were incorrectly counted as Cloud Native because ConfigMgr stores FQDNs (`device.contoso.com`) while Intune stores short names (`device`). Normalization now strips domain suffix before matching.
+- Co-managed device matching now correctly identifies devices when AADDeviceID is not available
+
+
 ## [3.17.139] - 2026-02-10
 
 ### Added
