@@ -4,7 +4,7 @@
         Title="Microsoft Graph Authentication Settings" 
         Height="550" Width="600"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5"
+        Background="{StaticResource BackgroundPage}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial">
 
     <Grid Margin="20">
@@ -18,7 +18,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,20">
             <TextBlock Text="⚙️ Microsoft Graph Authentication" 
                        FontSize="24" FontWeight="Bold" 
-                       Foreground="#0078D4"/>
+                       Foreground="{StaticResource PrimaryBlue}"/>
             <TextBlock Text="Configure how Cloud Native Assessment connects to Microsoft Graph (Intune)" 
                        FontSize="14" Foreground="#666"
                        TextWrapping="Wrap"
@@ -87,7 +87,7 @@
                                        FontSize="10" Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
                             
                             <!-- Required Permissions Info -->
-                            <Border Background="#E3F2FD" CornerRadius="4" Padding="10" Margin="0,5,0,0">
+                            <Border Background="{StaticResource InfoBlueLight}" CornerRadius="4" Padding="10" Margin="0,5,0,0">
                                 <StackPanel>
                                     <TextBlock Text="📋 Required API Permissions (Delegated)" 
                                                FontSize="12" FontWeight="SemiBold" Margin="0,0,0,5"/>
@@ -127,7 +127,7 @@
                                         <LineBreak/>
                                         <LineBreak/>
                                         <Run Text="Redirect URI: " FontWeight="SemiBold"/>
-                                        <Run Text="http://localhost" Foreground="#0078D4"/>
+                                        <Run Text="http://localhost" Foreground="{StaticResource PrimaryBlue}"/>
                                     </TextBlock>
                                 </StackPanel>
                             </Border>
@@ -177,7 +177,7 @@
                     Click="ResetButton_Click"
                     FontSize="12"
                     Padding="15,8"
-                    Background="#6C757D"
+                    Background="{StaticResource Gray600}"
                     Foreground="White"
                     BorderThickness="0"
                     Cursor="Hand"
@@ -219,7 +219,7 @@
                     Click="SaveButton_Click"
                     FontSize="12"
                     Padding="15,8"
-                    Background="#0078D4"
+                    Background="{StaticResource PrimaryBlue}"
                     Foreground="White"
                     BorderThickness="0"
                     Cursor="Hand">
@@ -236,3 +236,4 @@
         </StackPanel>
     </Grid>
 </Window>
+

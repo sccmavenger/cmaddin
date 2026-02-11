@@ -5,7 +5,7 @@
         Title="Azure OpenAI Settings (Optional Enhancement)" 
         Height="600" Width="700"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5"
+        Background="{StaticResource BackgroundPage}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial">
 
     <Window.Resources>
@@ -23,7 +23,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,20">
             <TextBlock Text="🤖 Azure OpenAI Settings" 
                        FontSize="24" FontWeight="Bold" 
-                       Foreground="#0078D4"/>
+                       Foreground="{StaticResource PrimaryBlue}"/>
             <TextBlock Text="Enable GPT-4 enhanced recommendations (optional - requires Azure OpenAI subscription)" 
                        FontSize="14" Foreground="#666"
                        TextWrapping="Wrap"
@@ -34,7 +34,7 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- Feature Overview -->
-                <Border Background="#E3F2FD" CornerRadius="8" Padding="15" Margin="0,0,0,20">
+                <Border Background="{StaticResource InfoBlueLight}" CornerRadius="8" Padding="15" Margin="0,0,0,20">
                     <StackPanel>
                         <TextBlock Text="💡 What does this enable?" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
                         <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#333">
@@ -118,7 +118,7 @@
                                 Command="{Binding TestOpenAIConnectionCommand}"
                                 FontSize="12"
                                 Padding="15,8"
-                                Background="#0078D4"
+                                Background="{StaticResource PrimaryBlue}"
                                 Foreground="White"
                                 BorderThickness="0"
                                 Cursor="Hand"
@@ -168,10 +168,10 @@
                 </Border>
 
                 <!-- Setup Guide Link -->
-                <Border Background="#E3F2FD" CornerRadius="8" Padding="15" Margin="0,15,0,0">
+                <Border Background="{StaticResource InfoBlueLight}" CornerRadius="8" Padding="15" Margin="0,15,0,0">
                     <StackPanel>
                         <TextBlock Text="📚 Need Help Setting Up?" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                        <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#0078D4" Margin="0,0,0,5">
+                        <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,5">
                             <Run Text="1. Create Azure OpenAI resource in Azure Portal"/>
                             <LineBreak/>
                             <Run Text="2. Deploy GPT-4 model (recommend: gpt-4o-2024-08-06)"/>
@@ -185,8 +185,8 @@
                                 FontSize="11"
                                 Padding="10,6"
                                 Background="White"
-                                Foreground="#0078D4"
-                                BorderBrush="#0078D4"
+                                Foreground="{StaticResource PrimaryBlue}"
+                                BorderBrush="{StaticResource PrimaryBlue}"
                                 BorderThickness="1"
                                 Cursor="Hand"
                                 HorizontalAlignment="Left"
@@ -214,7 +214,7 @@
                     Command="{Binding SaveOpenAIConfigCommand}"
                     Width="140" Height="36" 
                     FontSize="13"
-                    Background="#107C10" 
+                    Background="{StaticResource SuccessGreen}" 
                     Foreground="White"
                     BorderThickness="0"
                     Cursor="Hand"
@@ -233,7 +233,7 @@
                     Click="CancelButton_Click"
                     Width="100" Height="36" 
                     FontSize="13"
-                    Background="#6C757D" 
+                    Background="{StaticResource Gray600}" 
                     Foreground="White"
                     BorderThickness="0"
                     Cursor="Hand">
@@ -250,3 +250,4 @@
         </StackPanel>
     </Grid>
 </Window>
+

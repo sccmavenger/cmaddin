@@ -5,7 +5,7 @@
         Height="650" Width="520"
         MinHeight="550" MinWidth="450"
         WindowStartupLocation="CenterOwner"
-        Background="#F5F5F5"
+        Background="{StaticResource BackgroundPage}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial"
         ResizeMode="CanResize">
 
@@ -25,7 +25,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
             <TextBlock Text="💬 Submit Feedback" 
                        FontSize="24" FontWeight="Bold" 
-                       Foreground="#0078D4"/>
+                       Foreground="{StaticResource PrimaryBlue}"/>
             <TextBlock Text="Report bugs, suggest features, or share your thoughts" 
                        FontSize="14" Foreground="#666"
                        Margin="0,5,0,0"/>
@@ -143,7 +143,7 @@
                 <Button.Style>
                     <Style TargetType="Button">
                         <Setter Property="Background" Value="Transparent"/>
-                        <Setter Property="Foreground" Value="#0078D4"/>
+                        <Setter Property="Foreground" Value="{StaticResource PrimaryBlue}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Cursor" Value="Hand"/>
                     </Style>
@@ -154,7 +154,7 @@
                     Click="Cancel_Click">
                 <Button.Style>
                     <Style TargetType="Button">
-                        <Setter Property="Background" Value="#E0E0E0"/>
+                        <Setter Property="Background" Value="{StaticResource BorderLight}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Template">
                             <Setter.Value>
@@ -178,7 +178,7 @@
                     Click="Submit_Click">
                 <Button.Style>
                     <Style TargetType="Button">
-                        <Setter Property="Background" Value="#0078D4"/>
+                        <Setter Property="Background" Value="{StaticResource PrimaryBlue}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Template">
                             <Setter.Value>
@@ -202,3 +202,4 @@
         </Grid>
     </Grid>
 </Window>
+

@@ -12,13 +12,13 @@
             <Setter Property="Background" Value="White"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="15"/>
-            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
         
         <Style x:Key="MetricLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         
@@ -28,7 +28,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Background="#F8F9FA" CornerRadius="8" Padding="20">
+    <Border Background="{StaticResource BackgroundSubtle}" CornerRadius="8" Padding="20">
         <StackPanel>
             <!-- Header -->
             <Grid Margin="0,0,0,20">
@@ -38,13 +38,13 @@
                 </Grid.ColumnDefinitions>
                 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="📈 ENROLLMENT MOMENTUM" FontSize="16" FontWeight="Bold" Foreground="#333333"/>
-                    <TextBlock Text="Real-time velocity tracking and trend analysis" FontSize="12" Foreground="#666666" Margin="0,5,0,0"/>
+                    <TextBlock Text="📈 ENROLLMENT MOMENTUM" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                    <TextBlock Text="Real-time velocity tracking and trend analysis" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,5,0,0"/>
                 </StackPanel>
                 
                 <Button Grid.Column="1" Content="↻ Refresh" 
                         Command="{Binding RefreshCommand}"
-                        Background="#0078D4" Foreground="White" 
+                        Background="{StaticResource PrimaryBlue}" Foreground="White" 
                         Padding="15,8" FontSize="12"
                         BorderThickness="0" Cursor="Hand">
                     <Button.Template>
@@ -77,7 +77,7 @@
                         <TextBlock Text="CONFIGMGR DEVICES" Style="{StaticResource MetricLabel}"/>
                         <TextBlock Text="{Binding TotalConfigMgrDevices, StringFormat='{}{0:N0}'}" 
                                    Style="{StaticResource MetricValue}" Foreground="#D83B01"/>
-                        <TextBlock Text="Still managed by SCCM" FontSize="10" Foreground="#999999" Margin="0,5,0,0"/>
+                        <TextBlock Text="Still managed by SCCM" FontSize="10" Foreground="{StaticResource TextLight}" Margin="0,5,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -86,8 +86,8 @@
                     <StackPanel>
                         <TextBlock Text="CO-MANAGED DEVICES" Style="{StaticResource MetricLabel}"/>
                         <TextBlock Text="{Binding TotalIntuneDevices, StringFormat='{}{0:N0}'}" 
-                                   Style="{StaticResource MetricValue}" Foreground="#107C10"/>
-                        <TextBlock Text="ConfigMgr + Intune" FontSize="10" Foreground="#999999" Margin="0,5,0,0"/>
+                                   Style="{StaticResource MetricValue}" Foreground="{StaticResource SuccessGreen}"/>
+                        <TextBlock Text="ConfigMgr + Intune" FontSize="10" Foreground="{StaticResource TextLight}" Margin="0,5,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -96,8 +96,8 @@
                     <StackPanel>
                         <TextBlock Text="ENROLLMENT GAP" Style="{StaticResource MetricLabel}"/>
                         <TextBlock Text="{Binding Gap, StringFormat='{}{0:N0}'}" 
-                                   Style="{StaticResource MetricValue}" Foreground="#F57C00"/>
-                        <TextBlock FontSize="10" Foreground="#999999" Margin="0,5,0,0">
+                                   Style="{StaticResource MetricValue}" Foreground="{StaticResource WarningOrange}"/>
+                        <TextBlock FontSize="10" Foreground="{StaticResource TextLight}" Margin="0,5,0,0">
                             <Run Text="{Binding EnrolledPct, StringFormat='{}{0:F1}%', Mode=OneWay}"/>
                             <Run Text=" enrolled"/>
                         </TextBlock>
@@ -109,10 +109,10 @@
                     <StackPanel>
                         <TextBlock Text="7-DAY VELOCITY" Style="{StaticResource MetricLabel}"/>
                         <TextBlock Style="{StaticResource MetricValue}">
-                            <Run Text="{Binding Velocity7Day, StringFormat='{}{0:F0}', Mode=OneWay}" Foreground="#0078D4"/>
-                            <Run Text="/wk" FontSize="12" Foreground="#666666"/>
+                            <Run Text="{Binding Velocity7Day, StringFormat='{}{0:F0}', Mode=OneWay}" Foreground="{StaticResource PrimaryBlue}"/>
+                            <Run Text="/wk" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                         </TextBlock>
-                        <TextBlock Text="Recent enrollment rate" FontSize="10" Foreground="#999999" Margin="0,5,0,0"/>
+                        <TextBlock Text="Recent enrollment rate" FontSize="10" Foreground="{StaticResource TextLight}" Margin="0,5,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -121,17 +121,17 @@
                     <StackPanel>
                         <TextBlock Text="30-DAY VELOCITY" Style="{StaticResource MetricLabel}"/>
                         <TextBlock Style="{StaticResource MetricValue}">
-                            <Run Text="{Binding Velocity30, StringFormat='{}{0:F0}', Mode=OneWay}" Foreground="#6A1B9A"/>
-                            <Run Text="/wk" FontSize="12" Foreground="#666666"/>
+                            <Run Text="{Binding Velocity30, StringFormat='{}{0:F0}', Mode=OneWay}" Foreground="{StaticResource AccentPurple}"/>
+                            <Run Text="/wk" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                         </TextBlock>
-                        <TextBlock Text="Average weekly rate" FontSize="10" Foreground="#999999" Margin="0,5,0,0"/>
+                        <TextBlock Text="Average weekly rate" FontSize="10" Foreground="{StaticResource TextLight}" Margin="0,5,0,0"/>
                     </StackPanel>
                 </Border>
             </Grid>
 
             <!-- Trend Status Card -->
             <Border Background="White" CornerRadius="6" Padding="15" Margin="0,0,0,20"
-                    BorderBrush="#E0E0E0" BorderThickness="1">
+                    BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -149,27 +149,27 @@
                     <!-- Trend Description -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <TextBlock Text="{Binding TrendDescription}" FontSize="14" FontWeight="SemiBold" 
-                                   Foreground="#333333" TextWrapping="Wrap"/>
-                        <TextBlock Text="{Binding TrendExplanation}" FontSize="12" Foreground="#666666" 
+                                   Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding TrendExplanation}" FontSize="12" Foreground="{StaticResource TextSecondary}" 
                                    TextWrapping="Wrap" Margin="0,5,0,0"/>
                     </StackPanel>
 
                     <!-- Trust Trough Warning -->
-                    <Border Grid.Column="2" Background="#FFF3E0" CornerRadius="6" Padding="12,8"
+                    <Border Grid.Column="2" Background="{StaticResource WarningOrangeLight}" CornerRadius="6" Padding="12,8"
                             Visibility="{Binding IsTrustTroughRisk, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
-                            <TextBlock Text="⚠️ TRUST TROUGH ZONE" FontSize="11" FontWeight="Bold" Foreground="#E65100"/>
-                            <TextBlock Text="50-60% is a common stall point" FontSize="10" Foreground="#666666"/>
+                            <TextBlock Text="⚠️ TRUST TROUGH ZONE" FontSize="11" FontWeight="Bold" Foreground="{StaticResource WarningOrange}"/>
+                            <TextBlock Text="50-60% is a common stall point" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
                     </Border>
                 </Grid>
             </Border>
 
             <!-- Velocity Chart -->
-            <Border Background="White" CornerRadius="6" Padding="15" BorderBrush="#E0E0E0" BorderThickness="1">
+            <Border Background="White" CornerRadius="6" Padding="15" BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
                 <StackPanel>
                     <TextBlock Text="📊 VELOCITY TREND (Last 12 Weeks)" FontSize="13" FontWeight="SemiBold" 
-                               Foreground="#333333" Margin="0,0,0,15"/>
+                               Foreground="{StaticResource TextPrimary}" Margin="0,0,0,15"/>
                     
                     <lvc:CartesianChart Height="200" DisableAnimations="True"
                                          Series="{Binding VelocitySeries}">
@@ -183,7 +183,7 @@
                         <lvc:CartesianChart.AxisY>
                             <lvc:Axis Title="Devices/Week" MinValue="0" FontSize="10">
                                 <lvc:Axis.Separator>
-                                    <lvc:Separator StrokeThickness="0.5" Stroke="#E0E0E0"/>
+                                    <lvc:Separator StrokeThickness="0.5" Stroke="{StaticResource BorderLight}"/>
                                 </lvc:Axis.Separator>
                             </lvc:Axis>
                         </lvc:CartesianChart.AxisY>
@@ -192,12 +192,12 @@
                     <!-- Chart Legend -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
                         <StackPanel Orientation="Horizontal" Margin="0,0,20,0">
-                            <Ellipse Width="10" Height="10" Fill="#0078D4" Margin="0,0,5,0"/>
-                            <TextBlock Text="Weekly Enrollments" FontSize="11" Foreground="#666666"/>
+                            <Ellipse Width="10" Height="10" Fill="{StaticResource PrimaryBlue}" Margin="0,0,5,0"/>
+                            <TextBlock Text="Weekly Enrollments" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <Rectangle Width="20" Height="2" Fill="#107C10" Margin="0,0,5,0"/>
-                            <TextBlock Text="Target Velocity" FontSize="11" Foreground="#666666"/>
+                            <Rectangle Width="20" Height="2" Fill="{StaticResource SuccessGreen}" Margin="0,0,5,0"/>
+                            <TextBlock Text="Target Velocity" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -205,3 +205,4 @@
         </StackPanel>
     </Border>
 </UserControl>
+

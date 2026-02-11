@@ -4,7 +4,7 @@
         Title="Connection Diagnostics" 
         Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5"
+        Background="{StaticResource BackgroundPage}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial">
 
     <Grid Margin="20">
@@ -18,7 +18,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,20">
             <TextBlock Text="🔍 Connection &amp; Data Source Diagnostics" 
                        FontSize="24" FontWeight="Bold" 
-                       Foreground="#0078D4"/>
+                       Foreground="{StaticResource PrimaryBlue}"/>
             <TextBlock Text="See exactly what's connected and which data is real vs mock" 
                        FontSize="14" Foreground="#666"
                        Margin="0,5,0,0"/>
@@ -94,7 +94,7 @@
                                   HeadersVisibility="Column"
                                   GridLinesVisibility="Horizontal"
                                   BorderThickness="1"
-                                  BorderBrush="#E0E0E0">
+                                  BorderBrush="{StaticResource BorderLight}">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat=HH:mm:ss}" Width="70"/>
                                 <DataGridTextColumn Header="Source" Binding="{Binding SourceDisplay}" Width="100"/>
@@ -138,13 +138,14 @@
             <Button Content="🔧 Manual ConfigMgr Setup" Width="200" Height="35" 
                     Margin="0,0,10,0"
                     Click="ManualConfigMgrButton_Click"
-                    Background="#FF8C00" Foreground="White" 
+                    Background="{StaticResource WarningOrange}" Foreground="White" 
                     BorderThickness="0" FontSize="14" FontWeight="SemiBold"
                     ToolTip="Manually enter your ConfigMgr site server name"/>
             <Button Content="Close" Width="100" Height="35" 
                     Click="CloseButton_Click"
-                    Background="#0078D4" Foreground="White" 
+                    Background="{StaticResource PrimaryBlue}" Foreground="White" 
                     BorderThickness="0" FontSize="14" FontWeight="SemiBold"/>
         </StackPanel>
     </Grid>
 </Window>
+

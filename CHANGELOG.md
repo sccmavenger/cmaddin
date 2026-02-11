@@ -10,6 +10,46 @@
 - 
 
 
+## [3.17.139] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.138] - 2026-02-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.137] - 2026-02-10
+
+### Added
+- Comprehensive centralized color palette with 50+ color resources in AppStyles.xaml
+- New color categories: Info Blue, Accent Purple, Accent Teal, Accent Amber
+- Extended gray palette (Gray50-Gray700) for nuanced UI elements
+- Background variations: BackgroundMint, BackgroundAlice, BackgroundMuted
+
+### Changed
+- **Migrated 493 hardcoded colors (77%) to centralized StaticResource references**
+- All major Views now use consistent color scheme from AppStyles.xaml
+- Unified text colors: TextPrimary (#333333), TextSecondary (#666666), TextMuted (#6B7280)
+- Standardized success/warning/error colors using Microsoft Fluent palette
+- Comparison cards now use consistent Intune (green) and ConfigMgr (orange) branding
+
+### Fixed
+- Inconsistent color scheme across comparison cards and dashboard
+- Mixed design systems (Tailwind + Fluent) now standardized to Microsoft Fluent
+
+
 ## [3.17.136] - 2026-02-10
 
 ### Added

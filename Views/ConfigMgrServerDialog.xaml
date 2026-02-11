@@ -8,13 +8,13 @@
         WindowStartupLocation="CenterOwner"
         WindowStyle="SingleBorderWindow"
         ResizeMode="NoResize"
-        Background="#F3F3F3"
+        Background="{StaticResource BackgroundPage}"
         FontFamily="Segoe UI Emoji, Segoe UI, Arial"
         ShowInTaskbar="False">
     
     <Window.Resources>
         <Style x:Key="ModernButton" TargetType="Button">
-            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Background" Value="{StaticResource PrimaryBlue}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -31,10 +31,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#106EBE"/>
+                                <Setter Property="Background" Value="{StaticResource PrimaryBlueHover}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#005A9E"/>
+                                <Setter Property="Background" Value="{StaticResource PrimaryBlueHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -43,11 +43,11 @@
         </Style>
         
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-            <Setter Property="Background" Value="#E1E1E1"/>
-            <Setter Property="Foreground" Value="#323130"/>
+            <Setter Property="Background" Value="{StaticResource Gray200}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#D1D1D1"/>
+                    <Setter Property="Background" Value="{StaticResource Gray300}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -55,7 +55,7 @@
         <Style x:Key="ModernTextBox" TargetType="TextBox">
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="BorderBrush" Value="#8A8886"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -68,7 +68,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="#0078D4"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBlue}"/>
                                 <Setter Property="BorderThickness" Value="2"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -80,7 +80,7 @@
         <Style x:Key="ModernPasswordBox" TargetType="PasswordBox">
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="BorderBrush" Value="#8A8886"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -93,7 +93,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="#0078D4"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBlue}"/>
                                 <Setter Property="BorderThickness" Value="2"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -115,14 +115,14 @@
         
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="🖥️ Connect to ConfigMgr" FontSize="20" FontWeight="SemiBold" Foreground="#323130"/>
+            <TextBlock Text="🖥️ Connect to ConfigMgr" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
             <TextBlock Text="Enter your ConfigMgr Site Server name or FQDN" 
-                       FontSize="13" Foreground="#605E5C" Margin="0,4,0,0"/>
+                       FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0"/>
         </StackPanel>
         
         <!-- Input Field -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
-            <TextBlock Text="Site Server" FontSize="13" FontWeight="SemiBold" Foreground="#323130" Margin="0,0,0,6"/>
+            <TextBlock Text="Site Server" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,6"/>
             <TextBox x:Name="ServerNameTextBox" Style="{StaticResource ModernTextBox}"/>
         </StackPanel>
         
@@ -131,52 +131,52 @@
             <CheckBox x:Name="UseAlternateCredsCheckBox" 
                       Content="Use alternate account" 
                       FontSize="13" 
-                      Foreground="#323130"
+                      Foreground="{StaticResource TextPrimary}"
                       Checked="UseAlternateCredsCheckBox_Changed"
                       Unchecked="UseAlternateCredsCheckBox_Changed"/>
             <TextBlock Text="Connect with different credentials than your current Windows login"
-                       FontSize="11" Foreground="#605E5C" Margin="20,2,0,0"/>
+                       FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="20,2,0,0"/>
             
             <!-- Credential Fields (hidden by default) -->
             <Border x:Name="CredentialsPanel" 
-                    Background="#E8F4FD" 
-                    BorderBrush="#0078D4" 
+                    Background="{StaticResource InfoBlueLight}" 
+                    BorderBrush="{StaticResource PrimaryBlue}" 
                     BorderThickness="1"
                     CornerRadius="4" 
                     Padding="12" 
                     Margin="0,12,0,0"
                     Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="Username" FontSize="12" FontWeight="SemiBold" Foreground="#323130" Margin="0,0,0,4"/>
+                    <TextBlock Text="Username" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
                     <TextBox x:Name="UsernameTextBox" Style="{StaticResource ModernTextBox}"/>
                     <TextBlock Text="Format: DOMAIN\username or user@domain.com" 
-                               FontSize="11" Foreground="#605E5C" Margin="0,4,0,8"/>
+                               FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,8"/>
                     
-                    <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold" Foreground="#323130" Margin="0,4,0,4"/>
+                    <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,4"/>
                     <PasswordBox x:Name="PasswordBox" Style="{StaticResource ModernPasswordBox}"/>
                     
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <TextBlock Text="🔒" FontSize="12" Margin="0,0,4,0"/>
                         <TextBlock Text="Credentials are encrypted and stored locally on this computer only." 
-                                   FontSize="11" Foreground="#605E5C" TextWrapping="Wrap"/>
+                                   FontSize="11" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
         </StackPanel>
         
         <!-- Examples -->
-        <Border Grid.Row="3" Background="#F0F0F0" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+        <Border Grid.Row="3" Background="{StaticResource BackgroundPage}" CornerRadius="4" Padding="12" Margin="0,0,0,12">
             <StackPanel>
-                <TextBlock Text="Examples:" FontSize="12" FontWeight="SemiBold" Foreground="#605E5C" Margin="0,0,0,6"/>
-                <TextBlock Text="• CM01.contoso.com" FontSize="12" Foreground="#605E5C"/>
-                <TextBlock Text="• sccm.corp.contoso.local" FontSize="12" Foreground="#605E5C"/>
+                <TextBlock Text="Examples:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,6"/>
+                <TextBlock Text="• CM01.contoso.com" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                <TextBlock Text="• sccm.corp.contoso.local" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
             </StackPanel>
         </Border>
         
         <!-- Info Text -->
         <TextBlock Grid.Row="4" 
                    Text="The app will try both Admin Service (REST API) and WMI as fallback."
-                   FontSize="12" Foreground="#605E5C" 
+                   FontSize="12" Foreground="{StaticResource TextSecondary}" 
                    TextWrapping="Wrap"
                    VerticalAlignment="Bottom"
                    Margin="0,0,0,12"/>
@@ -205,3 +205,5 @@
         </StackPanel>
     </Grid>
 </Window>
+
+

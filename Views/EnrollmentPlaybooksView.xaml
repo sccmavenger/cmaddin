@@ -12,13 +12,13 @@
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="15"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
-            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
         <Style x:Key="StepItem" TargetType="Border">
-            <Setter Property="Background" Value="#F8F9FA"/>
+            <Setter Property="Background" Value="{StaticResource BackgroundSubtle}"/>
             <Setter Property="CornerRadius" Value="4"/>
             <Setter Property="Padding" Value="12"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
@@ -31,7 +31,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Background="#F8F9FA" CornerRadius="8" Padding="20">
+    <Border Background="{StaticResource BackgroundSubtle}" CornerRadius="8" Padding="20">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -48,13 +48,13 @@
                 </Grid.ColumnDefinitions>
                 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="📋 ENROLLMENT PLAYBOOKS" FontSize="16" FontWeight="Bold" Foreground="#333333"/>
-                    <TextBlock Text="Guided actions to optimize your enrollment journey" FontSize="12" Foreground="#666666" Margin="0,5,0,0"/>
+                    <TextBlock Text="📋 ENROLLMENT PLAYBOOKS" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                    <TextBlock Text="Guided actions to optimize your enrollment journey" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,5,0,0"/>
                 </StackPanel>
                 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="📄 Export All" Command="{Binding ExportToMarkdownCommand}"
-                            Background="#107C10" Foreground="White" 
+                            Background="{StaticResource SuccessGreen}" Foreground="White" 
                             Padding="12,8" FontSize="12" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
@@ -65,7 +65,7 @@
                         </Button.Template>
                     </Button>
                     <Button Content="↻ Refresh" Command="{Binding RefreshCommand}"
-                            Background="#0078D4" Foreground="White" 
+                            Background="{StaticResource PrimaryBlue}" Foreground="White" 
                             Padding="12,8" FontSize="12" BorderThickness="0" Cursor="Hand">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
@@ -80,7 +80,7 @@
 
             <!-- Filters and Summary -->
             <Border Grid.Row="1" Background="White" CornerRadius="6" Padding="15" Margin="0,0,0,15"
-                    BorderBrush="#E0E0E0" BorderThickness="1">
+                    BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -90,7 +90,7 @@
 
                     <!-- Filters -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <TextBlock Text="Filter:" FontSize="12" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Text="Filter:" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <ComboBox ItemsSource="{Binding RiskFilterOptions}" 
                                   SelectedItem="{Binding SelectedRiskFilter, Mode=TwoWay}"
                                   Style="{StaticResource FilterComboBox}" Margin="0,0,10,0"/>
@@ -101,22 +101,22 @@
 
                     <!-- Summary Stats -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
-                        <Border Background="#E8F5E9" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
+                        <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🟢 Low Risk: " FontSize="11" Foreground="#2E7D32"/>
-                                <TextBlock Text="{Binding HighPriorityCount}" FontSize="11" FontWeight="Bold" Foreground="#2E7D32"/>
+                                <TextBlock Text="🟢 Low Risk: " FontSize="11" Foreground="{StaticResource SuccessGreenDark}"/>
+                                <TextBlock Text="{Binding HighPriorityCount}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource SuccessGreenDark}"/>
                             </StackPanel>
                         </Border>
-                        <Border Background="#FFF3E0" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
+                        <Border Background="{StaticResource WarningOrangeLight}" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🟡 Medium: " FontSize="11" Foreground="#E65100"/>
-                                <TextBlock Text="{Binding MediumPriorityCount}" FontSize="11" FontWeight="Bold" Foreground="#E65100"/>
+                                <TextBlock Text="🟡 Medium: " FontSize="11" Foreground="{StaticResource WarningOrange}"/>
+                                <TextBlock Text="{Binding MediumPriorityCount}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource WarningOrange}"/>
                             </StackPanel>
                         </Border>
                         <Border Background="#F3F3F3" CornerRadius="4" Padding="10,5">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Total: " FontSize="11" Foreground="#666666"/>
-                                <TextBlock Text="{Binding TotalPlaybooks}" FontSize="11" FontWeight="Bold" Foreground="#333333"/>
+                                <TextBlock Text="Total: " FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Text="{Binding TotalPlaybooks}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -154,8 +154,8 @@
                                         <!-- Title and Type -->
                                         <StackPanel Grid.Column="1">
                                             <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" 
-                                                       Foreground="#333333" TextWrapping="Wrap"/>
-                                            <TextBlock FontSize="11" Foreground="#666666" Margin="0,3,0,0">
+                                                       Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap"/>
+                                            <TextBlock FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0">
                                                 <Run Text="{Binding Type, Mode=OneWay}"/>
                                                 <Run Text=" • "/>
                                                 <Run Text="{Binding AffectedDeviceCount, Mode=OneWay}"/>
@@ -172,7 +172,7 @@
                                             <ToggleButton.Template>
                                                 <ControlTemplate TargetType="ToggleButton">
                                                     <Border Background="Transparent" Padding="{TemplateBinding Padding}">
-                                                        <TextBlock x:Name="Arrow" Text="▼" FontSize="12" Foreground="#0078D4"/>
+                                                        <TextBlock x:Name="Arrow" Text="▼" FontSize="12" Foreground="{StaticResource PrimaryBlue}"/>
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsChecked" Value="True">
@@ -185,7 +185,7 @@
                                     </Grid>
 
                                     <!-- Description -->
-                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#666666" 
+                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextSecondary}" 
                                                TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                                     <!-- Expanded Content: Steps -->
@@ -193,7 +193,7 @@
                                         <Border Height="1" Background="#E0E0E0" Margin="0,5,0,15"/>
                                         
                                         <TextBlock Text="📝 STEPS" FontSize="12" FontWeight="SemiBold" 
-                                                   Foreground="#333333" Margin="0,0,0,10"/>
+                                                   Foreground="{StaticResource TextPrimary}" Margin="0,0,0,10"/>
                                         
                                         <ItemsControl ItemsSource="{Binding Steps}">
                                             <ItemsControl.ItemTemplate>
@@ -208,7 +208,7 @@
 
                                                             <!-- Step Number -->
                                                             <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
-                                                                    Background="#0078D4" Margin="0,0,12,0" VerticalAlignment="Top">
+                                                                    Background="{StaticResource PrimaryBlue}" Margin="0,0,12,0" VerticalAlignment="Top">
                                                                 <TextBlock Text="{Binding Order}" FontSize="12" FontWeight="Bold"
                                                                            Foreground="White" HorizontalAlignment="Center" 
                                                                            VerticalAlignment="Center"/>
@@ -217,21 +217,21 @@
                                                             <!-- Step Content -->
                                                             <StackPanel Grid.Column="1">
                                                                 <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" 
-                                                                           Foreground="#333333"/>
-                                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#666666" 
+                                                                           Foreground="{StaticResource TextPrimary}"/>
+                                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextSecondary}" 
                                                                            TextWrapping="Wrap" Margin="0,3,0,0"/>
                                                                 
                                                                 <!-- Script indicator -->
-                                                                <Border Background="#E3F2FD" CornerRadius="3" Padding="6,3" 
+                                                                <Border Background="{StaticResource InfoBlueLight}" CornerRadius="3" Padding="6,3" 
                                                                         Margin="0,8,0,0" HorizontalAlignment="Left"
                                                                         Visibility="{Binding HasScript, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                                    <TextBlock Text="💻 PowerShell script available" FontSize="10" Foreground="#0078D4"/>
+                                                                    <TextBlock Text="💻 PowerShell script available" FontSize="10" Foreground="{StaticResource PrimaryBlue}"/>
                                                                 </Border>
 
                                                                 <!-- Documentation link -->
                                                                 <TextBlock Margin="0,5,0,0" FontSize="11"
                                                                            Visibility="{Binding HasDocumentation, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                                    <Hyperlink NavigateUri="{Binding Documentation}" Foreground="#0078D4">
+                                                                    <Hyperlink NavigateUri="{Binding Documentation}" Foreground="{StaticResource PrimaryBlue}">
                                                                         <Run Text="📚 View Documentation"/>
                                                                     </Hyperlink>
                                                                 </TextBlock>
@@ -246,11 +246,11 @@
                                                                     <TextBlock.Style>
                                                                         <Style TargetType="TextBlock">
                                                                             <Setter Property="Text" Value="🤖 Auto"/>
-                                                                            <Setter Property="Foreground" Value="#107C10"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                                                                             <Style.Triggers>
                                                                                 <DataTrigger Binding="{Binding IsManual}" Value="True">
                                                                                     <Setter Property="Text" Value="👤 Manual"/>
-                                                                                    <Setter Property="Foreground" Value="#666666"/>
+                                                                                    <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
                                                                                 </DataTrigger>
                                                                             </Style.Triggers>
                                                                         </Style>
@@ -267,8 +267,8 @@
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
                                             <Button Content="📋 Copy Steps" 
                                                     Command="{Binding DataContext.CopyStepsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    Background="Transparent" BorderBrush="#0078D4" BorderThickness="1"
-                                                    Foreground="#0078D4" Padding="10,5" FontSize="11" Cursor="Hand" Margin="0,0,10,0">
+                                                    Background="Transparent" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="1"
+                                                    Foreground="{StaticResource PrimaryBlue}" Padding="10,5" FontSize="11" Cursor="Hand" Margin="0,0,10,0">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
                                                         <Border Background="{TemplateBinding Background}" 
@@ -282,7 +282,7 @@
                                             </Button>
                                             <Button Content="📄 Export Markdown"
                                                     Command="{Binding DataContext.ExportSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    Background="#107C10" Foreground="White" 
+                                                    Background="{StaticResource SuccessGreen}" Foreground="White" 
                                                     Padding="10,5" FontSize="11" BorderThickness="0" Cursor="Hand">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
@@ -303,24 +303,25 @@
 
             <!-- Status Bar -->
             <Border Grid.Row="3" Background="White" CornerRadius="4" Padding="10" Margin="0,10,0,0"
-                    BorderBrush="#E0E0E0" BorderThickness="1">
+                    BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     
-                    <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="11" Foreground="#666666" 
+                    <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="11" Foreground="{StaticResource TextSecondary}" 
                                VerticalAlignment="Center"/>
                     
                     <!-- Loading Indicator -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" 
                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
                         <TextBlock Text="⏳" FontSize="12" Margin="0,0,5,0"/>
-                        <TextBlock Text="Loading..." FontSize="11" Foreground="#666666"/>
+                        <TextBlock Text="Loading..." FontSize="11" Foreground="{StaticResource TextSecondary}"/>
                     </StackPanel>
                 </Grid>
             </Border>
         </Grid>
     </Border>
 </UserControl>
+

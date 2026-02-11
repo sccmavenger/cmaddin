@@ -18,8 +18,8 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Padding" Value="8,6"/>
-            <Setter Property="Background" Value="#F5F5F5"/>
-            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="Background" Value="{StaticResource BackgroundPage}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
             <Setter Property="BorderThickness" Value="0,0,1,1"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
         </Style>
@@ -93,7 +93,7 @@
                         <Setter Property="Foreground" Value="#666"/>
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#F0F0F0"/>
+                                <Setter Property="Background" Value="{StaticResource BackgroundPage}"/>
                                 <Setter Property="Foreground" Value="#333"/>
                             </Trigger>
                         </Style.Triggers>
@@ -106,21 +106,21 @@
         <Border Grid.Row="1" Background="#F9F9F9" CornerRadius="6" Padding="15,10" Margin="0,0,0,15">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Legend: " FontWeight="SemiBold" Foreground="#333" VerticalAlignment="Center"/>
-                <Border Background="#E8F5E9" CornerRadius="3" Padding="8,4" Margin="10,0,0,0">
+                <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="3" Padding="8,4" Margin="10,0,0,0">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="✅" Margin="0,0,5,0"/>
-                        <TextBlock Text="Intune" Foreground="#107C10" FontWeight="SemiBold"/>
+                        <TextBlock Text="Intune" Foreground="{StaticResource SuccessGreen}" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Border>
-                <Border Background="#FFF3E0" CornerRadius="3" Padding="8,4" Margin="10,0,0,0">
+                <Border Background="{StaticResource WarningOrangeLight}" CornerRadius="3" Padding="8,4" Margin="10,0,0,0">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="⚙️" Margin="0,0,5,0"/>
-                        <TextBlock Text="ConfigMgr" Foreground="#CA5010" FontWeight="SemiBold"/>
+                        <TextBlock Text="ConfigMgr" Foreground="{StaticResource WarningOrange}" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Border>
                 <TextBlock Text="  |  " Foreground="#CCC" VerticalAlignment="Center" Margin="10,0"/>
                 <TextBlock Text="Goal: Move all workloads to " Foreground="#666" VerticalAlignment="Center"/>
-                <TextBlock Text="✅ Intune" Foreground="#107C10" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <TextBlock Text="✅ Intune" Foreground="{StaticResource SuccessGreen}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 <TextBlock Text=" for cloud-native readiness" Foreground="#666" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
@@ -128,7 +128,7 @@
         <!-- Search Box -->
         <Border Grid.Row="2" 
                 Background="#F9F9F9" 
-                BorderBrush="#E0E0E0" 
+                BorderBrush="{StaticResource BorderLight}" 
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="12,10"
@@ -184,7 +184,7 @@
                   CanUserDeleteRows="False"
                   GridLinesVisibility="Horizontal"
                   HorizontalGridLinesBrush="#E8E8E8"
-                  BorderBrush="#E0E0E0"
+                  BorderBrush="{StaticResource BorderLight}"
                   BorderThickness="1"
                   RowHeight="36"
                   HeadersVisibility="Column"
@@ -210,7 +210,7 @@
                         <Style TargetType="TextBlock">
                             <Setter Property="HorizontalAlignment" Value="Center"/>
                             <Setter Property="FontWeight" Value="Bold"/>
-                            <Setter Property="Foreground" Value="#107C10"/>
+                            <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
@@ -227,7 +227,7 @@
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding CompliancePolicyManagedByConfigMgr}" Value="False">
-                                                <Setter Property="Foreground" Value="#107C10"/>
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding CompliancePolicyManagedByConfigMgr}" Value="True">
                                                 <Setter Property="Foreground" Value="#CA5010"/>
@@ -252,7 +252,7 @@
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding DeviceConfigurationManagedByConfigMgr}" Value="False">
-                                                <Setter Property="Foreground" Value="#107C10"/>
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding DeviceConfigurationManagedByConfigMgr}" Value="True">
                                                 <Setter Property="Foreground" Value="#CA5010"/>
@@ -277,7 +277,7 @@
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding WindowsUpdateManagedByConfigMgr}" Value="False">
-                                                <Setter Property="Foreground" Value="#107C10"/>
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding WindowsUpdateManagedByConfigMgr}" Value="True">
                                                 <Setter Property="Foreground" Value="#CA5010"/>
@@ -302,7 +302,7 @@
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding EndpointProtectionManagedByConfigMgr}" Value="False">
-                                                <Setter Property="Foreground" Value="#107C10"/>
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding EndpointProtectionManagedByConfigMgr}" Value="True">
                                                 <Setter Property="Foreground" Value="#CA5010"/>
@@ -327,7 +327,7 @@
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding ModernAppsManagedByConfigMgr}" Value="False">
-                                                <Setter Property="Foreground" Value="#107C10"/>
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding ModernAppsManagedByConfigMgr}" Value="True">
                                                 <Setter Property="Foreground" Value="#CA5010"/>
@@ -352,7 +352,7 @@
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding OfficeAppsManagedByConfigMgr}" Value="False">
-                                                <Setter Property="Foreground" Value="#107C10"/>
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding OfficeAppsManagedByConfigMgr}" Value="True">
                                                 <Setter Property="Foreground" Value="#CA5010"/>
@@ -377,7 +377,7 @@
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding ResourceAccessManagedByConfigMgr}" Value="False">
-                                                <Setter Property="Foreground" Value="#107C10"/>
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessGreen}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding ResourceAccessManagedByConfigMgr}" Value="True">
                                                 <Setter Property="Foreground" Value="#CA5010"/>
@@ -412,7 +412,7 @@
                     Click="ExportButton_Click"
                     Padding="15,8"
                     Margin="0,0,10,0"
-                    Background="#0078D4"
+                    Background="{StaticResource PrimaryBlue}"
                     Foreground="White"
                     BorderThickness="0"
                     Cursor="Hand">
@@ -431,7 +431,7 @@
                     Content="Close"
                     Click="CloseButton_Click"
                     Padding="20,8"
-                    Background="#F0F0F0"
+                    Background="{StaticResource BackgroundPage}"
                     Foreground="#333"
                     BorderThickness="1"
                     BorderBrush="#CCC"
@@ -451,3 +451,4 @@
         </Grid>
     </Grid>
 </Window>
+
