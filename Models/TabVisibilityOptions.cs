@@ -42,9 +42,9 @@ namespace ZeroTrustMigrationAddin.Models
         public Visibility ShowCloudReadinessTab { get; set; } = Visibility.Visible;
 
         /// <summary>
-        /// Shows or hides the Cloud Value Comparison tab (hidden by default - internal feature)
+        /// Shows or hides the Cloud Native tab
         /// </summary>
-        public Visibility ShowCloudValueComparisonTab { get; set; } = Visibility.Collapsed;
+        public Visibility ShowCloudValueComparisonTab { get; set; } = Visibility.Visible;
 
         /// <summary>
         /// Parse command-line arguments to determine tab visibility.
@@ -94,6 +94,7 @@ namespace ZeroTrustMigrationAddin.Models
                                 break;
                             case "cloudvaluecomparison":
                             case "comparison":
+                            case "cloudnative":
                                 options.ShowCloudValueComparisonTab = Visibility.Collapsed;
                                 break;
                         }
@@ -142,6 +143,7 @@ namespace ZeroTrustMigrationAddin.Models
                                 break;
                             case "cloudvaluecomparison":
                             case "comparison":
+                            case "cloudnative":
                                 options.ShowCloudValueComparisonTab = Visibility.Visible;
                                 break;
                         }
