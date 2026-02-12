@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.164** | February 12, 2026
+**Version 3.17.166** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -192,6 +192,18 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.165 (February 12, 2026)
+
+### Fixed
+- **Use SMS_CombinedDeviceResources instead of SMS_CH_Summary**: Fixed incorrect WMI class
+  - SMS_CH_Summary is undocumented and may not exist in all ConfigMgr versions
+  - SMS_CombinedDeviceResources is officially documented with LastActiveTime, LastHardwareScan, etc.
+  - Source: [Microsoft Learn - SMS_CombinedDeviceResources](https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/clients/collections/sms_combineddeviceresources-server-wmi-class)
+  - Added ResourceType=5 filter to only include system resources (not users)
+
+---
+
 ### Version 3.17.163 (February 12, 2026)
 
 ### Fixed
@@ -228,16 +240,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - GetClientHealthMetricsAsync now only uses REST API
   - Returns empty list if REST fails (graceful degradation)
   - Activity timestamps will fall back to device last sync time instead
-
----
-
-### Version 3.17.157 (February 12, 2026)
-
-### Fixed
-- **Auto-update no longer interrupts authentication**: Delayed update check by 60 seconds
-  - Update check now waits for user to authenticate and start using the app
-  - Prevents "app disappearing" during sign-in to Graph/ConfigMgr
-  - Logs delay: "Delaying update check by 60 seconds to avoid interrupting authentication..."
 
 ---
 
@@ -1458,5 +1460,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.164  
+**Version**: 3.17.166  
 **Maintainer:** Cloud Native Assessment Team

@@ -10,6 +10,26 @@
 - 
 
 
+## [3.17.166] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.165] - 2026-02-12
+
+### Fixed
+- **Use SMS_CombinedDeviceResources instead of SMS_CH_Summary**: Fixed incorrect WMI class
+  - SMS_CH_Summary is undocumented and may not exist in all ConfigMgr versions
+  - SMS_CombinedDeviceResources is officially documented with LastActiveTime, LastHardwareScan, etc.
+  - Source: [Microsoft Learn - SMS_CombinedDeviceResources](https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/clients/collections/sms_combineddeviceresources-server-wmi-class)
+  - Added ResourceType=5 filter to only include system resources (not users)
+
+
 ## [3.17.164] - 2026-02-12
 
 ### Added

@@ -1854,8 +1854,8 @@ namespace ZeroTrustMigrationAddin.Services
             }
             catch (Exception ex)
             {
-                Instance.Warning($"[CONFIGMGR] SMS_CH_Summary not available via REST API: {ex.Message}");
-                Instance.Info("[CONFIGMGR] Trying PowerShell fallback for SMS_CH_Summary...");
+                Instance.Warning($"[CONFIGMGR] SMS_CombinedDeviceResources not available via REST API: {ex.Message}");
+                Instance.Info("[CONFIGMGR] Trying PowerShell fallback for SMS_CombinedDeviceResources...");
                 
                 try
                 {
@@ -1874,9 +1874,10 @@ namespace ZeroTrustMigrationAddin.Services
         {
             try
             {
-                var query = $"{_adminServiceUrl}/wmi/SMS_CH_Summary?$select=ResourceID,ClientActiveStatus,LastActiveTime,LastPolicyRequest,LastDDR,LastHardwareScan,LastSoftwareScan";
+                // Use SMS_CombinedDeviceResources (documented class) with filter for systems (ResourceType=5)
+                var query = $"{_adminServiceUrl}/wmi/SMS_CombinedDeviceResources?$select=ResourceID,ClientActiveStatus,LastActiveTime,LastPolicyRequest,LastDDR,LastHardwareScan,LastSoftwareScan&$filter=ResourceType eq 5";
 
-                Instance.Info("[CONFIGMGR] GetClientHealth via REST - querying ConfigMgr Admin Service");
+                Instance.Info("[CONFIGMGR] GetClientHealth via REST - querying ConfigMgr Admin Service (SMS_CombinedDeviceResources)");
                 Instance.Info($"[CONFIGMGR] Query: {query}");
 
                 var response = await _httpClient.GetAsync(query);
@@ -1926,13 +1927,15 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     Instance.Info("[CONFIGMGR] GetClientHealth via WMI - connecting to WMI namespace");
                     var wmiNamespace = $"\\\\{_siteServer}\\root\\sms\\site_{_siteCode}";
-                    Instance.LogWmiQuery(wmiNamespace, "SELECT * FROM SMS_CH_Summary");
+                    Instance.LogWmiQuery(wmiNamespace, "SELECT ResourceID, ClientActiveStatus, LastActiveTime, LastPolicyRequest, LastDDR, LastHardwareScan, LastSoftwareScan FROM SMS_CombinedDeviceResources WHERE ResourceType = 5");
 
                     var healthMetrics = new List<ConfigMgrClientHealth>();
                     var scope = CreateWmiScope(wmiNamespace);
                     scope.Connect();
 
-                    var query = new SelectQuery("SMS_CH_Summary");
+                    // Use SMS_CombinedDeviceResources (documented class) with filter for systems (ResourceType=5)
+                    var query = new SelectQuery("SMS_CombinedDeviceResources", "ResourceType = 5", 
+                        new[] { "ResourceID", "ClientActiveStatus", "LastActiveTime", "LastPolicyRequest", "LastDDR", "LastHardwareScan", "LastSoftwareScan" });
                     var searcher = new ManagementObjectSearcher(scope, query);
 
                     foreach (ManagementObject obj in searcher.Get())
@@ -1976,12 +1979,13 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     Instance.Info("[CONFIGMGR] GetClientHealth via PowerShell - spawning pwsh.exe process");
                     var wmiNamespace = $"root\\sms\\site_{_siteCode}";
-                    Instance.LogWmiQuery($"\\\\{_siteServer}\\{wmiNamespace}", "SELECT * FROM SMS_CH_Summary (via PowerShell)");
+                    Instance.LogWmiQuery($"\\\\{_siteServer}\\{wmiNamespace}", "SELECT ResourceID, ClientActiveStatus, LastActiveTime, LastPolicyRequest, LastDDR, LastHardwareScan, LastSoftwareScan FROM SMS_CombinedDeviceResources (via PowerShell)");
 
-                    // PowerShell script to query SMS_CH_Summary and output JSON
+                    // PowerShell script to query SMS_CombinedDeviceResources (documented class with activity timestamps)
                     // Convert CIM datetime objects to ISO string format for proper JSON parsing
                     var psScript = $@"
-$results = Get-CimInstance -Namespace '{wmiNamespace}' -ClassName SMS_CH_Summary -ComputerName '{_siteServer}' -ErrorAction Stop |
+$results = Get-CimInstance -Namespace '{wmiNamespace}' -ClassName SMS_CombinedDeviceResources -ComputerName '{_siteServer}' -ErrorAction Stop |
+    Where-Object {{ $_.ResourceType -eq 5 }} |
     Select-Object ResourceID, ClientActiveStatus, 
         @{{N='LastActiveTime';E={{if($_.LastActiveTime){{$_.LastActiveTime.ToString('o')}}else{{$null}}}}}},
         @{{N='LastPolicyRequest';E={{if($_.LastPolicyRequest){{$_.LastPolicyRequest.ToString('o')}}else{{$null}}}}}},
@@ -2023,7 +2027,7 @@ $results | ConvertTo-Json -Compress
 
                     if (string.IsNullOrWhiteSpace(output) || output.Trim() == "null")
                     {
-                        Instance.Warning("[CONFIGMGR] PowerShell returned no data for SMS_CH_Summary");
+                        Instance.Warning("[CONFIGMGR] PowerShell returned no data for SMS_CombinedDeviceResources");
                         return healthMetrics;
                     }
 
@@ -2050,7 +2054,7 @@ $results | ConvertTo-Json -Compress
                             // Log first item for debugging datetime parsing
                             if (firstItem)
                             {
-                                Instance.Info($"[CONFIGMGR] SMS_CH_Summary sample - ResourceId: {health.ResourceId}, Active: {health.ClientActiveStatus}, LastActive: {health.LastActiveTime?.ToString() ?? "NULL"}, LastHWScan: {health.LastHardwareScan?.ToString() ?? "NULL"}");
+                                Instance.Info($"[CONFIGMGR] SMS_CombinedDeviceResources sample - ResourceId: {health.ResourceId}, Active: {health.ClientActiveStatus}, LastActive: {health.LastActiveTime?.ToString() ?? "NULL"}, LastHWScan: {health.LastHardwareScan?.ToString() ?? "NULL"}");
                                 firstItem = false;
                             }
                             
