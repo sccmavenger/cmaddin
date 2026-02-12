@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.146** | February 11, 2026
+**Version 3.17.148** | February 11, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -178,6 +178,32 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.147 (February 11, 2026)
+
+### Added
+- **Comprehensive comparison tile documentation** in AdminUserGuide - Each tile now has detailed methodology explaining data sources, API fields, calculations, and architectural limitations
+
+### Changed
+- **Consistent color scheme on Cloud Native tab** - Stale Devices card now uses orange (standard ConfigMgr color) instead of red; Red is now reserved exclusively for architectural impossibilities (Device Health Attestation=0, Conditional Access=0%)
+- **Updated AdminUserGuide comparison section** - Renamed from "Cloud Value" to "Cloud Native", updated hidden feature note (tab now visible by default), added Quick Reference data source table
+
+### Fixed
+
+---
+
+### Version 3.17.146 (February 11, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Cloud Native Growth Trend chart** - Fixed chart showing garbage floating-point axis values when no trend data available; now hides chart and shows informative message instead
+
+---
+
 ### Version 3.17.145 (February 11, 2026)
 
 ### Added
@@ -229,42 +255,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 - **Device Identity State Analysis showing incorrect join types** - FQDN normalization was missing from join type detection lookup, causing Intune device matching to fail and incorrect categorization
-
----
-
-### Version 3.17.140 (February 11, 2026)
-
-### Added
-- `NormalizeDeviceName()` helper to strip FQDN suffixes (e.g., `WORKSTATION1.contoso.com` → `workstation1`)
-
-### Changed
-- Device matching now normalizes names before comparison (handles FQDN vs short name mismatch)
-- Enhanced diagnostic logging shows FQDN detection count and match breakdown
-
-### Fixed
-- **Cloud Native count showing same number as ConfigMgr baseline** - devices were incorrectly counted as Cloud Native because ConfigMgr stores FQDNs (`device.contoso.com`) while Intune stores short names (`device`). Normalization now strips domain suffix before matching.
-- Co-managed device matching now correctly identifies devices when AADDeviceID is not available
-
----
-
-### Version 3.17.137 (February 10, 2026)
-
-### Added
-- Comprehensive centralized color palette with 50+ color resources in AppStyles.xaml
-- New color categories: Info Blue, Accent Purple, Accent Teal, Accent Amber
-- Extended gray palette (Gray50-Gray700) for nuanced UI elements
-- Background variations: BackgroundMint, BackgroundAlice, BackgroundMuted
-
-### Changed
-- **Migrated 493 hardcoded colors (77%) to centralized StaticResource references**
-- All major Views now use consistent color scheme from AppStyles.xaml
-- Unified text colors: TextPrimary (#333333), TextSecondary (#666666), TextMuted (#6B7280)
-- Standardized success/warning/error colors using Microsoft Fluent palette
-- Comparison cards now use consistent Intune (green) and ConfigMgr (orange) branding
-
-### Fixed
-- Inconsistent color scheme across comparison cards and dashboard
-- Mixed design systems (Tailwind + Fluent) now standardized to Microsoft Fluent
 
 ---
 
@@ -1485,5 +1475,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-11  
-**Version**: 3.17.146  
+**Version**: 3.17.148  
 **Maintainer:** Cloud Native Assessment Team

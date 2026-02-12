@@ -10,6 +10,29 @@
 - 
 
 
+## [3.17.148] - 2026-02-11
+
+### Added
+
+### Changed
+
+### Fixed
+- **CRT cleanup error dialog on app exit** - Suppressed benign DllNotFoundException that appeared after closing the app (caused by native DLL unload timing with LiveCharts)
+
+
+## [3.17.147] - 2026-02-11
+
+### Added
+- **Comprehensive comparison tile documentation** in AdminUserGuide - Each tile now has detailed methodology explaining data sources, API fields, calculations, and architectural limitations
+
+### Changed
+- **Consistent color scheme on Cloud Native tab** - Stale Devices card now uses orange (standard ConfigMgr color) instead of red; Red is now reserved exclusively for architectural impossibilities (Device Health Attestation=0, Conditional Access=0%)
+- **Updated AdminUserGuide comparison section** - Renamed from "Cloud Value" to "Cloud Native", updated hidden feature note (tab now visible by default), added Quick Reference data source table
+
+### Fixed
+- 
+
+
 ## [3.17.146] - 2026-02-11
 
 ### Added

@@ -492,10 +492,10 @@
                                 </StackPanel>
                             </Border>
                             <TextBlock Grid.Column="1" x:Name="StaleComparisonIcon" Text="🔍" FontSize="14" VerticalAlignment="Center" Margin="6,0"/>
-                            <Border Grid.Column="2" Background="{StaticResource ErrorRedLight}" CornerRadius="6" Padding="12">
+                            <Border Grid.Column="2" Style="{StaticResource ConfigMgrSide}">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="🏢 ConfigMgr" FontSize="11" Foreground="{StaticResource ErrorRedDark}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="ConfigMgrStalePercent" Text="--%" FontSize="20" FontWeight="Bold" Foreground="{StaticResource ErrorRed}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="🏢 ConfigMgr" FontSize="11" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="ConfigMgrStalePercent" Text="--%" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
                                     <TextBlock x:Name="ConfigMgrStaleCount" Text="0 stale" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
