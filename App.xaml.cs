@@ -195,14 +195,14 @@ namespace ZeroTrustMigrationAddin
         {
             try
             {
-                Services.FileLogger.Instance.Info($"[UPDATE] Delaying update check by {delay.TotalSeconds} seconds to avoid interrupting authentication...");
-                await System.Threading.Tasks.Task.Delay(delay);
-                
-                // Only check for updates if the app is still running
-                if (Application.Current?.MainWindow != null)
+                if (delay.TotalSeconds > 0)
                 {
-                    await CheckForUpdatesAsync();
+                    Services.FileLogger.Instance.Info($"[UPDATE] Delaying update check by {delay.TotalSeconds} seconds to avoid interrupting authentication...");
+                    await System.Threading.Tasks.Task.Delay(delay);
                 }
+                
+                // Check for updates - don't require MainWindow since we want updates on startup
+                await CheckForUpdatesAsync();
             }
             catch (Exception ex)
             {
