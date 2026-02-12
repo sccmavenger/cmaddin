@@ -1969,28 +1969,35 @@ namespace ZeroTrustMigrationAddin.Services
 
                 if (configMgrDevices.Count > 0)
                 {
-                    var devicesWithActive = configMgrDevices.Where(d => d.LastActiveTime.HasValue).ToList();
-                    Instance.Info($"   📊 ConfigMgr LastActiveTime data quality: {devicesWithActive.Count}/{configMgrDevices.Count} devices have LastActiveTime");
+                    // Use GetBestActivityTime() which falls back to LastPolicyRequest, LastDDR, etc.
+                    var devicesWithActive = configMgrDevices.Where(d => d.GetBestActivityTime().HasValue).ToList();
+                    
+                    // Log data quality breakdown
+                    var fieldBreakdown = configMgrDevices.GroupBy(d => d.GetActivityTimeFieldName())
+                        .OrderByDescending(g => g.Count())
+                        .Select(g => $"{g.Key}: {g.Count()}");
+                    Instance.Info($"   📊 ConfigMgr activity time data: {devicesWithActive.Count}/{configMgrDevices.Count} devices have timestamp");
+                    Instance.Info($"      Field sources: {string.Join(", ", fieldBreakdown)}");
                     
                     if (devicesWithActive.Any())
                     {
                         var totalDays = devicesWithActive.Sum(d => 
-                            (DateTime.UtcNow - d.LastActiveTime!.Value).TotalDays);
+                            (DateTime.UtcNow - d.GetBestActivityTime()!.Value).TotalDays);
                         comparison.ConfigMgrAvgDaysSinceScan = Math.Round(totalDays / devicesWithActive.Count, 2);
                         
                         // Count devices active in last 24 hours
                         comparison.ConfigMgrScannedToday = devicesWithActive.Count(d => 
-                            (DateTime.UtcNow - d.LastActiveTime!.Value).TotalDays < 1);
+                            (DateTime.UtcNow - d.GetBestActivityTime()!.Value).TotalDays < 1);
                         comparison.ConfigMgrScannedTodayPercentage = Math.Round(
                             (double)comparison.ConfigMgrScannedToday / configMgrDevices.Count * 100, 1);
-                        Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices, avg {comparison.ConfigMgrAvgDaysSinceScan} days since scan, {comparison.ConfigMgrScannedTodayPercentage}% scanned today");
+                        Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices, avg {comparison.ConfigMgrAvgDaysSinceScan} days since last activity, {comparison.ConfigMgrScannedTodayPercentage}% active today");
                     }
                     else
                     {
-                        Instance.Warning($"   ⚠️ NO LASTACTIVETIME DATA: {configMgrDevices.Count} ConfigMgr devices returned but NONE have LastActiveTime populated");
+                        Instance.Warning($"   ⚠️ NO ACTIVITY TIME DATA: {configMgrDevices.Count} ConfigMgr devices returned but NONE have any activity timestamp");
                         Instance.Warning($"      RESULT: Response Time tile will show 'No ConfigMgr scan data available for comparison'");
-                        Instance.Warning($"      TROUBLESHOOT: Check Admin Service query log - was $select removed during retry?");
-                        Instance.Warning(@"      TROUBLESHOOT: Verify SMS_R_System.LastActiveTime has values in WMI (run: Get-WmiObject -Namespace root\sms\site_XXX -Query 'SELECT LastActiveTime FROM SMS_R_System WHERE LastActiveTime IS NOT NULL' | Select -First 5)");
+                        Instance.Warning($"      NOTE: Tried primary (LastActiveTime) and fallback (LastPolicyRequest, LastDDR, LastHardwareScan, LastSoftwareScan)");
+                        Instance.Warning(@"      TROUBLESHOOT: Verify SMS_CH_Summary has data (run: Get-WmiObject -Namespace root\sms\site_XXX -Query 'SELECT * FROM SMS_CH_Summary' | Select -First 5)");
                     }
                 }
 
@@ -2039,18 +2046,19 @@ namespace ZeroTrustMigrationAddin.Services
 
                 if (configMgrDevices.Count > 0)
                 {
-                    // Track how many have no LastActiveTime (data quality indicator)
-                    comparison.ConfigMgrDevicesWithNoLastActiveTime = configMgrDevices.Count(d => !d.LastActiveTime.HasValue);
+                    // Track how many have no activity time at all (data quality indicator)
+                    // Use GetBestActivityTime() which tries LastActiveTime, LastPolicyRequest, LastDDR, etc.
+                    comparison.ConfigMgrDevicesWithNoLastActiveTime = configMgrDevices.Count(d => !d.GetBestActivityTime().HasValue);
                     
                     comparison.ConfigMgrStaleCount = configMgrDevices.Count(d => 
-                        !d.LastActiveTime.HasValue || d.LastActiveTime.Value < staleThreshold);
+                        !d.GetBestActivityTime().HasValue || d.GetBestActivityTime()!.Value < staleThreshold);
                     comparison.ConfigMgrStalePercentage = Math.Round(
                         (double)comparison.ConfigMgrStaleCount / configMgrDevices.Count * 100, 1);
                     
                     Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrStaleCount}/{comparison.ConfigMgrDeviceCount} stale ({comparison.ConfigMgrStalePercentage}%)");
                     if (comparison.ConfigMgrDevicesWithNoLastActiveTime > 0)
                     {
-                        Instance.Info($"      ⚠️ {comparison.ConfigMgrDevicesWithNoLastActiveTime} devices have no LastActiveTime data");
+                        Instance.Info($"      ⚠️ {comparison.ConfigMgrDevicesWithNoLastActiveTime} devices have no activity time data (treated as stale)");
                     }
                 }
 

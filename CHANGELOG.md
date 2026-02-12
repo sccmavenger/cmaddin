@@ -10,9 +10,59 @@
 - 
 
 
+## [3.17.153] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.152] - 2026-02-12
+
+### Added
+- **Robust LastActiveTime data acquisition**: Multi-layer fallback system ensures ConfigMgr Response Time data is always available
+  - Primary: Query Admin Service WITHOUT $select to get all fields (avoids 404 on $select)
+  - Fallback 1: Query WITH $select if no-select fails
+  - Fallback 2: Query without filter if contains() not supported
+  - WMI extraction: Now includes LastActiveTime and CreationDate from WMI fallback
+  - SMS_CH_Summary enrichment: Auto-enriches devices from Client Health data when >50% missing timestamps
+- **Alternative timestamp support**: ConfigMgrDevice model now supports multiple activity timestamps
+  - LastPolicyRequest, LastDDR, LastHardwareScan, LastSoftwareScan from SMS_CH_Summary
+  - GetBestActivityTime() helper returns best available timestamp
+  - GetActivityTimeFieldName() indicates which field is being used
+  - ActivityTimeSource property tracks data origin (Primary, ClientHealth, WMI)
+- **Enhanced logging for activity time data quality**
+  - Logs field breakdown showing which timestamp sources are being used
+  - Tracks enrichment success and provides actionable troubleshooting steps
+
+### Changed
+- Admin Service query strategy changed: now queries WITHOUT $select first for maximum field coverage
+- CloudReadinessService Response Time and Stale Device calculations now use GetBestActivityTime()
+
+### Fixed
+- **ConfigMgr Response Time tile showing "No data"**: Root cause was Admin Service returning 404 on $select parameter
+  - Fixed by querying without $select first (returns all fields)
+  - Added WMI LastActiveTime extraction (was missing before)
+  - Added automatic SMS_CH_Summary data enrichment when primary data insufficient
+
+
 ## [3.17.151] - 2026-02-12
 
 ### Added
+- **Enhanced ConfigMgr LastActiveTime diagnostics**: Added detailed logging when ConfigMgr devices are missing LastActiveTime data
+  - Logs percentage of devices with valid LastActiveTime field
+  - Warns prominently when 0% of devices have data (causes "No data" on Response Time tile)
+  - Includes WMI troubleshooting command for administrators
+  - Logs LastActiveTime date range and average for debugging
+- **Query mode tracking**: Logs which Admin Service query mode succeeded (WithSelect, WithoutSelect, Fallback)
+  - Helps diagnose when $select parameter is stripped during retry
+  - Warns when fallback mode may cause missing field data
+- **CloudReadinessService data quality logging**: Added diagnostic output when calculating sync freshness
+  - Shows count of devices with valid LastActiveTime before averaging
+  - Provides actionable troubleshooting steps when data is unavailable
 
 ### Changed
 
