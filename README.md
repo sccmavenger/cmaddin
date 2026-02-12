@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.157** | February 12, 2026
+**Version 3.17.158** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -188,6 +188,17 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.157 (February 12, 2026)
+
+### Fixed
+- **Auto-update no longer interrupts authentication**: Delayed update check by 60 seconds
+  - Update check now waits for user to authenticate and start using the app
+  - Prevents "app disappearing" during sign-in to Graph/ConfigMgr
+  - Logs delay: "Delaying update check by 60 seconds to avoid interrupting authentication..."
+
+---
+
 ### Version 3.17.156 (February 12, 2026)
 
 ### Fixed
@@ -257,17 +268,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Changed
 
 ### Fixed
-
----
-
-### Version 3.17.148 (February 11, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **CRT cleanup error dialog on app exit** - Suppressed benign DllNotFoundException that appeared after closing the app (caused by native DLL unload timing with LiveCharts)
 
 ---
 
@@ -1488,5 +1488,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.157  
+**Version**: 3.17.158  
 **Maintainer:** Cloud Native Assessment Team
