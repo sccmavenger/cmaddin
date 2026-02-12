@@ -136,35 +136,47 @@
                         </Border>
                     </Grid>
                     
-                    <!-- Trend Chart -->
-                    <TextBlock Text="📈 Cloud Native Growth Trend (Last 6 Months)" 
-                               FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,10,0,10"/>
+                    <!-- Trend Chart Section -->
+                    <StackPanel x:Name="TrendChartPanel" Visibility="Collapsed">
+                        <TextBlock Text="📈 Cloud Native Growth Trend (Last 6 Months)" 
+                                   FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,10,0,10"/>
+                        
+                        <lvc:CartesianChart x:Name="CloudNativeTrendChart" Height="180" DisableAnimations="True">
+                            <lvc:CartesianChart.Series>
+                                <lvc:LineSeries x:Name="CloudNativeSeries" 
+                                                Title="Cloud Native" 
+                                                Stroke="{StaticResource PrimaryBlue}" 
+                                                Fill="#1A0078D4" 
+                                                StrokeThickness="3"
+                                                PointGeometrySize="8"
+                                                LineSmoothness="0.3"/>
+                            </lvc:CartesianChart.Series>
+                            <lvc:CartesianChart.AxisX>
+                                <lvc:Axis x:Name="CloudNativeAxisX" ShowLabels="True" FontSize="10">
+                                    <lvc:Axis.Separator>
+                                        <lvc:Separator StrokeThickness="0"/>
+                                    </lvc:Axis.Separator>
+                                </lvc:Axis>
+                            </lvc:CartesianChart.AxisX>
+                            <lvc:CartesianChart.AxisY>
+                                <lvc:Axis Title="Devices" MinValue="0" FontSize="10">
+                                    <lvc:Axis.Separator>
+                                        <lvc:Separator StrokeThickness="0.5" Stroke="{StaticResource BorderLight}"/>
+                                    </lvc:Axis.Separator>
+                                </lvc:Axis>
+                            </lvc:CartesianChart.AxisY>
+                        </lvc:CartesianChart>
+                    </StackPanel>
                     
-                    <lvc:CartesianChart x:Name="CloudNativeTrendChart" Height="180" DisableAnimations="True">
-                        <lvc:CartesianChart.Series>
-                            <lvc:LineSeries x:Name="CloudNativeSeries" 
-                                            Title="Cloud Native" 
-                                            Stroke="{StaticResource PrimaryBlue}" 
-                                            Fill="#1A0078D4" 
-                                            StrokeThickness="3"
-                                            PointGeometrySize="8"
-                                            LineSmoothness="0.3"/>
-                        </lvc:CartesianChart.Series>
-                        <lvc:CartesianChart.AxisX>
-                            <lvc:Axis x:Name="CloudNativeAxisX" ShowLabels="True" FontSize="10">
-                                <lvc:Axis.Separator>
-                                    <lvc:Separator StrokeThickness="0"/>
-                                </lvc:Axis.Separator>
-                            </lvc:Axis>
-                        </lvc:CartesianChart.AxisX>
-                        <lvc:CartesianChart.AxisY>
-                            <lvc:Axis Title="Devices" MinValue="0" FontSize="10">
-                                <lvc:Axis.Separator>
-                                    <lvc:Separator StrokeThickness="0.5" Stroke="{StaticResource BorderLight}"/>
-                                </lvc:Axis.Separator>
-                            </lvc:Axis>
-                        </lvc:CartesianChart.AxisY>
-                    </lvc:CartesianChart>
+                    <!-- No Trend Data Message -->
+                    <Border x:Name="NoTrendDataPanel" Visibility="Visible" 
+                            Background="{StaticResource InfoBlueLight}" CornerRadius="6" Padding="15" Margin="0,10,0,0">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="📅" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Growth trend requires historical data. Run the tool periodically to build trend history." 
+                                       FontSize="12" Foreground="{StaticResource InfoBlue}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
 

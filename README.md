@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.145** | February 11, 2026
+**Version 3.17.146** | February 11, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -177,6 +177,21 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.145 (February 11, 2026)
+
+### Added
+
+### Changed
+- **Renamed Cloud Value tab to Cloud Native** - Better reflects tab purpose of tracking cloud-native device progress
+- **Cloud Native tab now visible by default** - Default tabs are now: Overview, Enrollment, Cloud Readiness, Cloud Native
+- **Added "cloudnative" command-line alias** - Can now use `/showtabs:cloudnative` or `/hidetabs:cloudnative`
+
+### Fixed
+- **Cloud Native Growth Trend chart** - Fixed chart showing garbage axis values when no trend data available; now shows placeholder with proper labels
+
+---
+
 ### Version 3.17.143 (February 11, 2026)
 
 ### Added
@@ -250,30 +265,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Fixed
 - Inconsistent color scheme across comparison cards and dashboard
 - Mixed design systems (Tailwind + Fluent) now standardized to Microsoft Fluent
-
----
-
-### Version 3.17.134 (February 10, 2026)
-
-### Added
-- **Centralized Style System**: Created `Styles/AppStyles.xaml` with Microsoft Fluent color palette
-  - Standardized colors: Success Green (#107C10), Error Red (#D13438), Warning Orange (#E65100)
-  - Shared styles for cards, panels, badges, and typography
-  - All views now use consistent color scheme
-
-### Changed
-- **Redesigned MDE Defender Integration Card**: Complete UI overhaul with scenario-based display
-  - Shows license status badge (Licensed/Not Licensed/Partial)
-  - Displays contextual messaging based on: Not licensed → Licensed but not onboarded → Working
-  - Clear explanation of WHY there's no data (license vs configuration vs no devices)
-  - Auto-refreshes when services connect (no more stale data)
-- **Migrated Views to Standardized Colors**: Replaced 4+ different greens and 4+ different reds with consistent palette
-  - CloudValueComparisonTab, MigrationImpactCard, EnrollmentSimulatorWindow
-  - ConfidenceDetailsWindow, WorkloadDeviceListDialog
-
-### Fixed
-- **MDE Card Not Refreshing**: Card was showing mock data even after connecting to services
-- **Confusing "0 devices" Display**: Now shows license-aware messaging instead of unexplained zeros
 
 ---
 
@@ -1494,5 +1485,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-11  
-**Version**: 3.17.145  
+**Version**: 3.17.146  
 **Maintainer:** Cloud Native Assessment Team
