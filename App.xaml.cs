@@ -96,9 +96,8 @@ namespace ZeroTrustMigrationAddin
 
                 Services.FileLogger.Instance.Info("[APP] Application started");
 
-                // Check for updates AFTER a delay to let user authenticate first
-                // This prevents the app from closing during authentication to apply updates
-                _ = DelayedUpdateCheckAsync(TimeSpan.FromSeconds(60));
+                // Check for updates immediately on startup
+                _ = DelayedUpdateCheckAsync(TimeSpan.FromSeconds(0));
 
                 // Temporarily disable ConfigMgr Console check to diagnose startup issues
                 // (Console detection can be re-enabled after verifying the app launches)

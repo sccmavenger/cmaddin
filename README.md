@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.160** | February 12, 2026
+**Version 3.17.162** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -190,6 +190,15 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.161 (February 12, 2026)
+
+### Changed
+- **Auto-update runs immediately on startup**: Removed 60-second delay, updates check instantly
+  - PowerShell WMI implementation confirmed stable (no hangs), delay no longer needed
+
+---
+
 ### Version 3.17.159 (February 12, 2026)
 
 ### Fixed
@@ -229,16 +238,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - GetChangedFiles filters out invalid entries before processing
   - DownloadDeltaFilesAsync aborts if >50% of files are missing to prevent corruption
   - Better logging shows file details (name, size, critical flag) when files not found
-
----
-
-### Version 3.17.154 (February 12, 2026)
-
-### Fixed
-- **SMS_CH_Summary 404 fallback to WMI**: Admin Service REST API doesn't expose SMS_CH_Summary on all ConfigMgr versions
-  - GetClientHealthMetricsAsync() now automatically falls back to WMI when REST returns 404
-  - Enables enrichment to work even when Admin Service doesn't support SMS_CH_Summary
-  - Logs fallback for diagnostics: "SMS_CH_Summary not available via REST API (404) - falling back to WMI..."
 
 ---
 
@@ -1459,5 +1458,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.160  
+**Version**: 3.17.162  
 **Maintainer:** Cloud Native Assessment Team
