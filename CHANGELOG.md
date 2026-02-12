@@ -10,6 +10,26 @@
 - 
 
 
+## [3.17.160] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.159] - 2026-02-12
+
+### Fixed
+- **PowerShell-based SMS_CH_Summary query**: Re-enabled client health enrichment via PowerShell instead of .NET WMI
+  - .NET WMI (ManagementObjectSearcher) was causing app hangs on some ConfigMgr versions
+  - PowerShell `Get-CimInstance` runs in separate process with 30-second timeout
+  - Falls back gracefully if PowerShell fails (REST API → PowerShell → empty list)
+  - Enables Response Time metrics without risking app hang
+
+
 ## [3.17.158] - 2026-02-12
 
 ### Fixed
