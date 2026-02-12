@@ -96,8 +96,9 @@ namespace ZeroTrustMigrationAddin
 
                 Services.FileLogger.Instance.Info("[APP] Application started");
 
-                // Check for updates on startup (once per day)
-                _ = CheckForUpdatesAsync();
+                // Check for updates AFTER a delay to let user authenticate first
+                // This prevents the app from closing during authentication to apply updates
+                _ = DelayedUpdateCheckAsync(TimeSpan.FromSeconds(60));
 
                 // Temporarily disable ConfigMgr Console check to diagnose startup issues
                 // (Console detection can be re-enabled after verifying the app launches)
@@ -185,6 +186,29 @@ namespace ZeroTrustMigrationAddin
             }
 
             base.OnExit(e);
+        }
+
+        /// <summary>
+        /// Delays the update check to allow user to authenticate and start using the app.
+        /// Prevents the jarring experience of app closing during authentication.
+        /// </summary>
+        private async System.Threading.Tasks.Task DelayedUpdateCheckAsync(TimeSpan delay)
+        {
+            try
+            {
+                Services.FileLogger.Instance.Info($"[UPDATE] Delaying update check by {delay.TotalSeconds} seconds to avoid interrupting authentication...");
+                await System.Threading.Tasks.Task.Delay(delay);
+                
+                // Only check for updates if the app is still running
+                if (Application.Current?.MainWindow != null)
+                {
+                    await CheckForUpdatesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Services.FileLogger.Instance.Warning($"[UPDATE] Delayed update check failed: {ex.Message}");
+            }
         }
 
         /// <summary>
