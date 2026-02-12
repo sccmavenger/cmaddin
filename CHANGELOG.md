@@ -10,6 +10,16 @@
 - 
 
 
+## [3.17.146] - 2026-02-11
+
+### Added
+
+### Changed
+
+### Fixed
+- **Cloud Native Growth Trend chart** - Fixed chart showing garbage floating-point axis values when no trend data available; now hides chart and shows informative message instead
+
+
 ## [3.17.145] - 2026-02-11
 
 ### Added
