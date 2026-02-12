@@ -10,6 +10,15 @@
 - 
 
 
+## [3.17.157] - 2026-02-12
+
+### Fixed
+- **Auto-update no longer interrupts authentication**: Delayed update check by 60 seconds
+  - Update check now waits for user to authenticate and start using the app
+  - Prevents "app disappearing" during sign-in to Graph/ConfigMgr
+  - Logs delay: "Delaying update check by 60 seconds to avoid interrupting authentication..."
+
+
 ## [3.17.156] - 2026-02-12
 
 ### Fixed

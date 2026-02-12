@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.156** | February 12, 2026
+**Version 3.17.157** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -187,6 +187,18 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.156 (February 12, 2026)
+
+### Fixed
+- **Delta update crash prevention**: Fixed app crash caused by corrupted local manifest with empty RelativePath values
+  - LoadLocalManifest now validates entries and auto-deletes corrupted manifest
+  - GetChangedFiles filters out invalid entries before processing
+  - DownloadDeltaFilesAsync aborts if >50% of files are missing to prevent corruption
+  - Better logging shows file details (name, size, critical flag) when files not found
+
+---
+
 ### Version 3.17.154 (February 12, 2026)
 
 ### Fixed
@@ -256,19 +268,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 - **CRT cleanup error dialog on app exit** - Suppressed benign DllNotFoundException that appeared after closing the app (caused by native DLL unload timing with LiveCharts)
-
----
-
-### Version 3.17.147 (February 11, 2026)
-
-### Added
-- **Comprehensive comparison tile documentation** in AdminUserGuide - Each tile now has detailed methodology explaining data sources, API fields, calculations, and architectural limitations
-
-### Changed
-- **Consistent color scheme on Cloud Native tab** - Stale Devices card now uses orange (standard ConfigMgr color) instead of red; Red is now reserved exclusively for architectural impossibilities (Device Health Attestation=0, Conditional Access=0%)
-- **Updated AdminUserGuide comparison section** - Renamed from "Cloud Value" to "Cloud Native", updated hidden feature note (tab now visible by default), added Quick Reference data source table
-
-### Fixed
 
 ---
 
@@ -1489,5 +1488,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.156  
+**Version**: 3.17.157  
 **Maintainer:** Cloud Native Assessment Team
