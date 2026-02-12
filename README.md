@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.167** | February 12, 2026
+**Version 3.17.169** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -194,6 +194,17 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.168 (February 12, 2026)
+
+### Fixed
+- **Auto-update not running on startup**: Fixed MainWindow null check preventing update check
+  - With 0-second delay, MainWindow wasn't created yet causing update check to be silently skipped
+  - Removed MainWindow null check since updates should run on startup regardless
+  - Added conditional logging (only log delay message when delay > 0)
+
+---
+
 ### Version 3.17.165 (February 12, 2026)
 
 ### Fixed
@@ -231,16 +242,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - PowerShell `Get-CimInstance` runs in separate process with 30-second timeout
   - Falls back gracefully if PowerShell fails (REST API → PowerShell → empty list)
   - Enables Response Time metrics without risking app hang
-
----
-
-### Version 3.17.158 (February 12, 2026)
-
-### Fixed
-- **Disabled WMI fallback for SMS_CH_Summary**: WMI calls were causing app to hang/crash on some ConfigMgr versions
-  - GetClientHealthMetricsAsync now only uses REST API
-  - Returns empty list if REST fails (graceful degradation)
-  - Activity timestamps will fall back to device last sync time instead
 
 ---
 
@@ -1461,5 +1462,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.167  
+**Version**: 3.17.169  
 **Maintainer:** Cloud Native Assessment Team

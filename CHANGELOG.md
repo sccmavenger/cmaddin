@@ -10,6 +10,25 @@
 - 
 
 
+## [3.17.169] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.168] - 2026-02-12
+
+### Fixed
+- **Auto-update not running on startup**: Fixed MainWindow null check preventing update check
+  - With 0-second delay, MainWindow wasn't created yet causing update check to be silently skipped
+  - Removed MainWindow null check since updates should run on startup regardless
+  - Added conditional logging (only log delay message when delay > 0)
+
+
 ## [3.17.167] - 2026-02-12
 
 ### Added
