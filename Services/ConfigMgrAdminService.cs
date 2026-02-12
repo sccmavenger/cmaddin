@@ -873,6 +873,9 @@ namespace ZeroTrustMigrationAddin.Services
                 devices = await GetDevicesViaRestApiAsync();
             }
             
+            // Check LastActiveTime data quality and enrich from SMS_CH_Summary if needed
+            devices = await EnrichDevicesWithActivityTimestampsAsync(devices);
+            
             // Update cache
             _cachedDevices = devices;
             _deviceCacheExpiration = DateTime.Now.Add(_deviceCacheLifetime);
@@ -885,6 +888,104 @@ namespace ZeroTrustMigrationAddin.Services
                 devices.Count, 
                 SiteVersion, 
                 _useWmiFallback);
+            
+            return devices;
+        }
+        
+        /// <summary>
+        /// Enriches devices with activity timestamps from SMS_CH_Summary if primary data is missing.
+        /// This ensures we have LastActiveTime or equivalent for Response Time calculations.
+        /// </summary>
+        private async Task<List<ConfigMgrDevice>> EnrichDevicesWithActivityTimestampsAsync(List<ConfigMgrDevice> devices)
+        {
+            if (devices.Count == 0) return devices;
+            
+            var devicesWithPrimaryTime = devices.Count(d => d.LastActiveTime.HasValue);
+            var percentWithPrimary = devicesWithPrimaryTime * 100 / devices.Count;
+            
+            Instance.Info($"   📊 Activity Time Data Quality Check:");
+            Instance.Info($"      Primary (LastActiveTime from SMS_R_System): {devicesWithPrimaryTime}/{devices.Count} ({percentWithPrimary}%)");
+            
+            // If >50% of devices have LastActiveTime, consider it sufficient
+            if (percentWithPrimary >= 50)
+            {
+                Instance.Info($"      ✅ Primary data sufficient - no enrichment needed");
+                return devices;
+            }
+            
+            // LastActiveTime is missing for >50% of devices, try to enrich from SMS_CH_Summary
+            Instance.Warning($"      ⚠️ Primary data insufficient - attempting enrichment from SMS_CH_Summary (Client Health)...");
+            
+            try
+            {
+                var clientHealth = await GetClientHealthMetricsAsync();
+                
+                if (clientHealth.Count == 0)
+                {
+                    Instance.Warning($"      ❌ SMS_CH_Summary returned 0 records - cannot enrich activity timestamps");
+                    Instance.Warning($"         MANUAL CHECK: Get-WmiObject -Namespace root\\sms\\site_{_siteCode} -Query 'SELECT * FROM SMS_CH_Summary WHERE ResourceID = <some-id>'");
+                    return devices;
+                }
+                
+                Instance.Info($"      📥 Retrieved {clientHealth.Count} records from SMS_CH_Summary");
+                
+                // Build lookup dictionary by ResourceID
+                var healthLookup = clientHealth.ToDictionary(h => h.ResourceId, h => h);
+                
+                int enrichedCount = 0;
+                int nowHasAnyTime = 0;
+                
+                foreach (var device in devices)
+                {
+                    if (healthLookup.TryGetValue(device.ResourceId, out var health))
+                    {
+                        // If device doesn't have LastActiveTime from primary source, try to populate it
+                        if (!device.LastActiveTime.HasValue && health.LastActiveTime.HasValue)
+                        {
+                            device.LastActiveTime = health.LastActiveTime;
+                            device.ActivityTimeSource = "ClientHealth-LastActiveTime";
+                            enrichedCount++;
+                        }
+                        
+                        // Always populate alternative timestamps for fallback
+                        device.LastPolicyRequest = health.LastPolicyRequest;
+                        device.LastDDR = health.LastDDR;
+                        device.LastHardwareScan = health.LastHardwareScan;
+                        device.LastSoftwareScan = health.LastSoftwareScan;
+                        
+                        // Track if device now has any activity time
+                        if (device.GetBestActivityTime().HasValue)
+                        {
+                            nowHasAnyTime++;
+                        }
+                    }
+                }
+                
+                var devicesWithAnyTime = devices.Count(d => d.GetBestActivityTime().HasValue);
+                var percentWithAny = devices.Count > 0 ? devicesWithAnyTime * 100 / devices.Count : 0;
+                
+                Instance.Info($"      ✅ Enrichment complete:");
+                Instance.Info($"         - Devices with LastActiveTime added from ClientHealth: {enrichedCount}");
+                Instance.Info($"         - Devices with ANY activity timestamp: {devicesWithAnyTime}/{devices.Count} ({percentWithAny}%)");
+                
+                // Log the breakdown of which timestamp fields are being used
+                var fieldUsage = devices.GroupBy(d => d.GetActivityTimeFieldName())
+                    .OrderByDescending(g => g.Count())
+                    .Select(g => $"{g.Key}: {g.Count()}");
+                Instance.Info($"         - Field breakdown: {string.Join(", ", fieldUsage)}");
+                
+                if (percentWithAny < 50)
+                {
+                    Instance.Warning($"      ⚠️ WARNING: Still insufficient activity time data ({percentWithAny}%)");
+                    Instance.Warning($"         Response Time tile may show 'No data'");
+                    Instance.Warning($"         CHECK: Heartbeat Discovery enabled? Client health data populated?");
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"      ❌ Failed to enrich from SMS_CH_Summary: {ex.Message}");
+                Instance.Error($"         Continuing with available data - some tiles may show 'No data'");
+            }
             
             return devices;
         }
@@ -909,16 +1010,16 @@ namespace ZeroTrustMigrationAddin.Services
                 string query;
                 HttpResponseMessage response;
                 
-                // Try query with $select first (preferred - less data transfer)
-                // Include CreationDate to track when device was first discovered in ConfigMgr
-                // Include AADDeviceID for reliable cross-referencing with Intune
+                // STRATEGY: Try WITHOUT $select first to get ALL fields including LastActiveTime
+                // Some ConfigMgr Admin Service versions return 404 when $select includes certain fields
+                // By not using $select, we ensure we get all available fields from SMS_R_System
                 query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
                     "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
-                    "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')" +
-                    "&$select=ResourceId,Name,OperatingSystemNameandVersion,LastActiveTime,ClientVersion,ResourceDomainORWorkgroup,CreationDate,AADDeviceID";
+                    "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')";
 
                 Instance.LogAdminServiceQuery("GetWindows1011Devices", query);
                 Instance.Info("=== ConfigMgr Admin Service REST API Query ===");
+                Instance.Info($"   Strategy: Query WITHOUT $select to get all fields (avoids 404 issues)");
                 Instance.Info($"   Query URL: {query}");
                 Instance.Info($"   Method: GET");
                 Instance.Info($"   Authentication: Windows Integrated (UseDefaultCredentials)");
@@ -928,33 +1029,32 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info($"   Response Status: {(int)response.StatusCode} {response.StatusCode}");
                 
                 // Track which query mode succeeded for diagnostics
-                var queryMode = "WithSelect"; // Track: WithSelect, WithoutSelect, Fallback
+                var queryMode = "NoSelect"; // Track: NoSelect, WithSelect, Fallback
                 
-                // If 404, try without $select (field might not exist)
+                // If 404, try WITH $select (maybe Admin Service doesn't support filter without select)
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    Instance.Warning("   ⚠️ Query with $select failed (404), trying without $select parameter...");
-                    Instance.Warning("      NOTE: Removing $select may cause Admin Service to return different/all fields");
-                    Instance.Warning("      If LastActiveTime is missing from response, this tile will show 'No data'");
-                    queryMode = "WithoutSelect";
+                    Instance.Warning("   ⚠️ Query without $select failed (404), trying with explicit $select...");
+                    queryMode = "WithSelect";
                     query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
                         "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
-                        "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')";
+                        "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')" +
+                        "&$select=ResourceId,Name,OperatingSystemNameandVersion,LastActiveTime,ClientVersion,ResourceDomainORWorkgroup,CreationDate,AADDeviceID";
                     
-                    Instance.LogAdminServiceQuery("GetWindows1011Devices (Retry)", query);
+                    Instance.LogAdminServiceQuery("GetWindows1011Devices (With $select)", query);
                     Instance.Info($"   Retry Query URL: {query}");
                     response = await _httpClient.GetAsync(query);
                     Instance.Info($"   Retry Response Status: {(int)response.StatusCode} {response.StatusCode}");
                 }
                 
-                // If still 404, try simple query without filter (get all devices, filter client-side)
+                // If still 404, try without $select AND simpler filter
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    Instance.Warning("   ⚠️ Query with contains() failed (404), trying simple query with $top limit...");
-                    queryMode = "Fallback";
+                    Instance.Warning("   ⚠️ Query with contains() filter failed (404), trying without filter...");
+                    queryMode = "NoFilter";
                     query = $"{_adminServiceUrl}/wmi/SMS_R_System?$top=5000";
                     
-                    Instance.LogAdminServiceQuery("GetWindows1011Devices (Fallback)", query);
+                    Instance.LogAdminServiceQuery("GetWindows1011Devices (No Filter)", query);
                     Instance.Info($"   Fallback Query URL: {query}");
                     response = await _httpClient.GetAsync(query);
                     Instance.Info($"   Fallback Response Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -962,9 +1062,9 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 // Log which query mode succeeded
                 Instance.Info($"   ✅ Query succeeded using mode: {queryMode}");
-                if (queryMode != "WithSelect")
+                if (queryMode != "NoSelect")
                 {
-                    Instance.Warning($"      ⚠️ Query fallback was required - some field data may be unavailable");
+                    Instance.Warning($"      ⚠️ Query fallback was required - primary query (no $select) failed");
                 }
                 
                 Instance.Info($"   Response Headers: {response.Headers}");
@@ -1102,6 +1202,8 @@ namespace ZeroTrustMigrationAddin.Services
                     
                     var searcher = new ManagementObjectSearcher(scope, query);
                     
+                    Instance.Info("[CONFIGMGR] WMI Fallback - retrieving devices with activity timestamps");
+                    
                     foreach (ManagementObject obj in searcher.Get())
                     {
                         var device = new ConfigMgrDevice
@@ -1112,7 +1214,16 @@ namespace ZeroTrustMigrationAddin.Services
                             ClientVersion = obj["ClientVersion"]?.ToString(),
                             IsCoManaged = false, // Will check separately
                             CoManagementFlags = 0,
-                            AADDeviceID = obj["AADDeviceID"]?.ToString() // Azure AD Device ID for hybrid joined devices
+                            AADDeviceID = obj["AADDeviceID"]?.ToString(), // Azure AD Device ID for hybrid joined devices
+                            // Extract LastActiveTime from WMI (SMS_R_System.LastActiveTime)
+                            LastActiveTime = obj["LastActiveTime"] != null 
+                                ? ManagementDateTimeConverter.ToDateTime(obj["LastActiveTime"].ToString()) 
+                                : null,
+                            // Extract CreationDate from WMI (SMS_R_System.CreationDate)
+                            CreationDate = obj["CreationDate"] != null 
+                                ? ManagementDateTimeConverter.ToDateTime(obj["CreationDate"].ToString()) 
+                                : null,
+                            ActivityTimeSource = "WMI"
                         };
 
                         // Check co-management status
@@ -2721,6 +2832,44 @@ namespace ZeroTrustMigrationAddin.Services
         /// Used for reliable cross-referencing with Intune devices
         /// </summary>
         public string? AADDeviceID { get; set; }
+        
+        // Alternative timestamp fields from SMS_CH_Summary (used when LastActiveTime is unavailable)
+        /// <summary>Last policy request time from SMS_CH_Summary</summary>
+        public DateTime? LastPolicyRequest { get; set; }
+        /// <summary>Last DDR (heartbeat discovery) time from SMS_CH_Summary</summary>
+        public DateTime? LastDDR { get; set; }
+        /// <summary>Last hardware inventory scan from SMS_CH_Summary</summary>
+        public DateTime? LastHardwareScan { get; set; }
+        /// <summary>Last software inventory scan from SMS_CH_Summary</summary>
+        public DateTime? LastSoftwareScan { get; set; }
+        /// <summary>Source of activity time data: Primary (SMS_R_System), ClientHealth (SMS_CH_Summary), or None</summary>
+        public string ActivityTimeSource { get; set; } = "Primary";
+        
+        /// <summary>
+        /// Gets the best available activity timestamp for the device.
+        /// Priority: LastActiveTime > LastPolicyRequest > LastDDR > LastHardwareScan > LastSoftwareScan
+        /// </summary>
+        public DateTime? GetBestActivityTime()
+        {
+            return LastActiveTime 
+                ?? LastPolicyRequest 
+                ?? LastDDR 
+                ?? LastHardwareScan 
+                ?? LastSoftwareScan;
+        }
+        
+        /// <summary>
+        /// Gets the name of the field used for the best activity time.
+        /// </summary>
+        public string GetActivityTimeFieldName()
+        {
+            if (LastActiveTime.HasValue) return "LastActiveTime";
+            if (LastPolicyRequest.HasValue) return "LastPolicyRequest";
+            if (LastDDR.HasValue) return "LastDDR";
+            if (LastHardwareScan.HasValue) return "LastHardwareScan";
+            if (LastSoftwareScan.HasValue) return "LastSoftwareScan";
+            return "None";
+        }
     }
 
     public class ConfigMgrApplication

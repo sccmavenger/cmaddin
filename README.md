@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.151** | February 12, 2026
+**Version 3.17.153** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -183,6 +183,58 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.152 (February 12, 2026)
+
+### Added
+- **Robust LastActiveTime data acquisition**: Multi-layer fallback system ensures ConfigMgr Response Time data is always available
+  - Primary: Query Admin Service WITHOUT $select to get all fields (avoids 404 on $select)
+  - Fallback 1: Query WITH $select if no-select fails
+  - Fallback 2: Query without filter if contains() not supported
+  - WMI extraction: Now includes LastActiveTime and CreationDate from WMI fallback
+  - SMS_CH_Summary enrichment: Auto-enriches devices from Client Health data when >50% missing timestamps
+- **Alternative timestamp support**: ConfigMgrDevice model now supports multiple activity timestamps
+  - LastPolicyRequest, LastDDR, LastHardwareScan, LastSoftwareScan from SMS_CH_Summary
+  - GetBestActivityTime() helper returns best available timestamp
+  - GetActivityTimeFieldName() indicates which field is being used
+  - ActivityTimeSource property tracks data origin (Primary, ClientHealth, WMI)
+- **Enhanced logging for activity time data quality**
+  - Logs field breakdown showing which timestamp sources are being used
+  - Tracks enrichment success and provides actionable troubleshooting steps
+
+### Changed
+- Admin Service query strategy changed: now queries WITHOUT $select first for maximum field coverage
+- CloudReadinessService Response Time and Stale Device calculations now use GetBestActivityTime()
+
+### Fixed
+- **ConfigMgr Response Time tile showing "No data"**: Root cause was Admin Service returning 404 on $select parameter
+  - Fixed by querying without $select first (returns all fields)
+  - Added WMI LastActiveTime extraction (was missing before)
+  - Added automatic SMS_CH_Summary data enrichment when primary data insufficient
+
+---
+
+### Version 3.17.151 (February 12, 2026)
+
+### Added
+- **Enhanced ConfigMgr LastActiveTime diagnostics**: Added detailed logging when ConfigMgr devices are missing LastActiveTime data
+  - Logs percentage of devices with valid LastActiveTime field
+  - Warns prominently when 0% of devices have data (causes "No data" on Response Time tile)
+  - Includes WMI troubleshooting command for administrators
+  - Logs LastActiveTime date range and average for debugging
+- **Query mode tracking**: Logs which Admin Service query mode succeeded (WithSelect, WithoutSelect, Fallback)
+  - Helps diagnose when $select parameter is stripped during retry
+  - Warns when fallback mode may cause missing field data
+- **CloudReadinessService data quality logging**: Added diagnostic output when calculating sync freshness
+  - Shows count of devices with valid LastActiveTime before averaging
+  - Provides actionable troubleshooting steps when data is unavailable
+
+### Changed
+
+### Fixed
+
+---
+
 ### Version 3.17.148 (February 11, 2026)
 
 ### Added
@@ -215,49 +267,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 - **Cloud Native Growth Trend chart** - Fixed chart showing garbage floating-point axis values when no trend data available; now hides chart and shows informative message instead
-
----
-
-### Version 3.17.145 (February 11, 2026)
-
-### Added
-
-### Changed
-- **Renamed Cloud Value tab to Cloud Native** - Better reflects tab purpose of tracking cloud-native device progress
-- **Cloud Native tab now visible by default** - Default tabs are now: Overview, Enrollment, Cloud Readiness, Cloud Native
-- **Added "cloudnative" command-line alias** - Can now use `/showtabs:cloudnative` or `/hidetabs:cloudnative`
-
-### Fixed
-- **Cloud Native Growth Trend chart** - Fixed chart showing garbage axis values when no trend data available; now shows placeholder with proper labels
-
----
-
-### Version 3.17.143 (February 11, 2026)
-
-### Added
-- **ConfigMgr version telemetry** - Track site version, site build, and connection method when connecting to ConfigMgr for debugging version-specific API issues
-- **API query result telemetry** - Track device query results (count, status code, fallback usage) to correlate empty results with specific CM versions
-- **Azure Workbook Infrastructure section** - Added "Infrastructure Environment" section showing CM version distribution, connection methods, and API results by version
-- **VP-level strategic telemetry** - New tracking methods for leadership insights:
-  - `TrackMigrationBlockers()` - Devices missing AAD ID, stale, not in Autopilot
-  - `TrackSecurityPostureComparison()` - Compliance/CA/Encryption delta between Intune and ConfigMgr
-  - `TrackDeviceOrphans()` - Cross-platform device mismatches (CM-only, Intune-only, co-managed)
-  - `TrackAutopilotReadiness()` - Autopilot registration funnel
-- **Azure Workbook VP Dashboard** - New "VP Migration Dashboard" section at top showing:
-  - Aggregate migration progress across all organizations
-  - Migration blockers summary
-  - Security improvement delta (Intune vs ConfigMgr)
-  - Cross-platform device distribution
-  - Autopilot readiness funnel
-  - Migration progress over time trend
-- **Telemetry auto-flush** - Added periodic flush every 2 minutes to ensure telemetry is sent even if app crashes or is force-closed. Also immediate flush for important events (AppStarted, AppExited, EstateSnapshot)
-
-### Changed
-
-### Fixed 
-- **Response Time comparison showing "comparable" with no data** - When ConfigMgr Admin Service returns no LastActiveTime data (0.0 days), now shows "No ConfigMgr scan data available for comparison" instead of misleading "comparable" message
-- **Security Blind Spots showing 100% with no data** - When all ConfigMgr devices have no LastActiveTime, now shows "ConfigMgr not reporting LastActiveTime - data unavailable" instead of falsely claiming 100% stale
-- **BitLocker showing 0% when encryption status unknown** - Added detection for devices where `IsEncrypted` returns null from Graph API. Now shows "Intune not reporting encryption status" instead of misleading 0%. Added detailed logging of encrypted/not encrypted/unknown breakdown
 
 ---
 
@@ -1478,5 +1487,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.151  
+**Version**: 3.17.153  
 **Maintainer:** Cloud Native Assessment Team
