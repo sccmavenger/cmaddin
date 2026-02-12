@@ -45,6 +45,18 @@ namespace ZeroTrustMigrationAddin
         {
             var ex = e.ExceptionObject as Exception;
 
+            // Skip CRT cleanup exceptions that occur during app shutdown - these are benign
+            // and caused by native DLL unloading order issues (common with LiveCharts and other native interop)
+            if (ex is DllNotFoundException && 
+                (ex.StackTrace?.Contains("__std_type_info") == true ||
+                 ex.StackTrace?.Contains("_scrt_uninitialize") == true ||
+                 ex.StackTrace?.Contains("ModuleUninitializer") == true))
+            {
+                // Log silently but don't show error dialog
+                Services.FileLogger.Instance.Info("[APP] CRT cleanup exception suppressed during shutdown (benign)");
+                return;
+            }
+
             // Track exception to Azure
             if (ex != null)
             {
