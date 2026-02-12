@@ -10,6 +10,25 @@
 - 
 
 
+## [3.17.164] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.163] - 2026-02-12
+
+### Fixed
+- **SMS_CH_Summary datetime parsing**: Fixed CIM datetime conversion for PowerShell WMI
+  - CIM datetimes now converted to ISO 8601 format before JSON serialization
+  - Resolves "ConfigMgr not reporting LastActiveTime" showing 100% stale devices
+  - Added diagnostic logging for first parsed record (ResourceId, dates)
+
+
 ## [3.17.162] - 2026-02-12
 
 ### Added
