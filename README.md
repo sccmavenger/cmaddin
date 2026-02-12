@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.162** | February 12, 2026
+**Version 3.17.164** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -191,6 +191,17 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.163 (February 12, 2026)
+
+### Fixed
+- **SMS_CH_Summary datetime parsing**: Fixed CIM datetime conversion for PowerShell WMI
+  - CIM datetimes now converted to ISO 8601 format before JSON serialization
+  - Resolves "ConfigMgr not reporting LastActiveTime" showing 100% stale devices
+  - Added diagnostic logging for first parsed record (ResourceId, dates)
+
+---
+
 ### Version 3.17.161 (February 12, 2026)
 
 ### Changed
@@ -227,17 +238,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Update check now waits for user to authenticate and start using the app
   - Prevents "app disappearing" during sign-in to Graph/ConfigMgr
   - Logs delay: "Delaying update check by 60 seconds to avoid interrupting authentication..."
-
----
-
-### Version 3.17.156 (February 12, 2026)
-
-### Fixed
-- **Delta update crash prevention**: Fixed app crash caused by corrupted local manifest with empty RelativePath values
-  - LoadLocalManifest now validates entries and auto-deletes corrupted manifest
-  - GetChangedFiles filters out invalid entries before processing
-  - DownloadDeltaFilesAsync aborts if >50% of files are missing to prevent corruption
-  - Better logging shows file details (name, size, critical flag) when files not found
 
 ---
 
@@ -1458,5 +1458,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.162  
+**Version**: 3.17.164  
 **Maintainer:** Cloud Native Assessment Team

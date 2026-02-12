@@ -1979,9 +1979,15 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.LogWmiQuery($"\\\\{_siteServer}\\{wmiNamespace}", "SELECT * FROM SMS_CH_Summary (via PowerShell)");
 
                     // PowerShell script to query SMS_CH_Summary and output JSON
+                    // Convert CIM datetime objects to ISO string format for proper JSON parsing
                     var psScript = $@"
 $results = Get-CimInstance -Namespace '{wmiNamespace}' -ClassName SMS_CH_Summary -ComputerName '{_siteServer}' -ErrorAction Stop |
-    Select-Object ResourceID, ClientActiveStatus, LastActiveTime, LastPolicyRequest, LastDDR, LastHardwareScan, LastSoftwareScan
+    Select-Object ResourceID, ClientActiveStatus, 
+        @{{N='LastActiveTime';E={{if($_.LastActiveTime){{$_.LastActiveTime.ToString('o')}}else{{$null}}}}}},
+        @{{N='LastPolicyRequest';E={{if($_.LastPolicyRequest){{$_.LastPolicyRequest.ToString('o')}}else{{$null}}}}}},
+        @{{N='LastDDR';E={{if($_.LastDDR){{$_.LastDDR.ToString('o')}}else{{$null}}}}}},
+        @{{N='LastHardwareScan';E={{if($_.LastHardwareScan){{$_.LastHardwareScan.ToString('o')}}else{{$null}}}}}},
+        @{{N='LastSoftwareScan';E={{if($_.LastSoftwareScan){{$_.LastSoftwareScan.ToString('o')}}else{{$null}}}}}}
 $results | ConvertTo-Json -Compress
 ";
 
@@ -2027,9 +2033,10 @@ $results | ConvertTo-Json -Compress
                     
                     if (items != null)
                     {
+                        var firstItem = true;
                         foreach (var item in items)
                         {
-                            healthMetrics.Add(new ConfigMgrClientHealth
+                            var health = new ConfigMgrClientHealth
                             {
                                 ResourceId = item.TryGetProperty("ResourceID", out var rid) ? rid.GetInt32() : 0,
                                 ClientActiveStatus = item.TryGetProperty("ClientActiveStatus", out var cas) && cas.ValueKind != System.Text.Json.JsonValueKind.Null ? cas.GetInt32() : 0,
@@ -2038,13 +2045,23 @@ $results | ConvertTo-Json -Compress
                                 LastDDR = ParseJsonDateTime(item, "LastDDR"),
                                 LastHardwareScan = ParseJsonDateTime(item, "LastHardwareScan"),
                                 LastSoftwareScan = ParseJsonDateTime(item, "LastSoftwareScan")
-                            });
+                            };
+                            
+                            // Log first item for debugging datetime parsing
+                            if (firstItem)
+                            {
+                                Instance.Info($"[CONFIGMGR] SMS_CH_Summary sample - ResourceId: {health.ResourceId}, Active: {health.ClientActiveStatus}, LastActive: {health.LastActiveTime?.ToString() ?? "NULL"}, LastHWScan: {health.LastHardwareScan?.ToString() ?? "NULL"}");
+                                firstItem = false;
+                            }
+                            
+                            healthMetrics.Add(health);
                         }
                     }
 
                     var active = healthMetrics.Count(h => h.ClientActiveStatus == 1);
                     var inactive = healthMetrics.Count(h => h.ClientActiveStatus != 1);
-                    Instance.Info($"[CONFIGMGR] GetClientHealth via PowerShell - returned {healthMetrics.Count} devices (Active: {active}, Inactive: {inactive})");
+                    var withDates = healthMetrics.Count(h => h.LastActiveTime.HasValue || h.LastHardwareScan.HasValue);
+                    Instance.Info($"[CONFIGMGR] GetClientHealth via PowerShell - returned {healthMetrics.Count} devices (Active: {active}, Inactive: {inactive}, WithDates: {withDates})");
                     return healthMetrics;
                 }
                 catch (Exception ex)
@@ -2056,14 +2073,22 @@ $results | ConvertTo-Json -Compress
         }
 
         /// <summary>
-        /// Helper to parse DateTime from JSON element (handles CIM datetime format).
+        /// Helper to parse DateTime from JSON element (handles ISO string format from PowerShell).
         /// </summary>
         private DateTime? ParseJsonDateTime(System.Text.Json.JsonElement item, string propertyName)
         {
             if (!item.TryGetProperty(propertyName, out var prop) || prop.ValueKind == System.Text.Json.JsonValueKind.Null)
                 return null;
 
-            // CIM datetimes come as objects with DateTime property
+            // Primary: Direct ISO string (from our ToString('o') conversion)
+            if (prop.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                var str = prop.GetString();
+                if (!string.IsNullOrEmpty(str) && DateTime.TryParse(str, out var dt))
+                    return dt;
+            }
+
+            // Fallback: CIM datetimes as objects with DateTime property
             if (prop.ValueKind == System.Text.Json.JsonValueKind.Object && prop.TryGetProperty("DateTime", out var dtProp))
             {
                 if (DateTime.TryParse(dtProp.GetString(), out var dt))
