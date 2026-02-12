@@ -1,10 +1,26 @@
 # Cloud Native Assessment - Change Log
 
-## [3.17.154] - 2026-02-12
+## [Unreleased]
 
 ### Added
 
 ### Changed
+
+### Fixed
+- 
+
+
+## [3.17.156] - 2026-02-12
+
+### Fixed
+- **Delta update crash prevention**: Fixed app crash caused by corrupted local manifest with empty RelativePath values
+  - LoadLocalManifest now validates entries and auto-deletes corrupted manifest
+  - GetChangedFiles filters out invalid entries before processing
+  - DownloadDeltaFilesAsync aborts if >50% of files are missing to prevent corruption
+  - Better logging shows file details (name, size, critical flag) when files not found
+
+
+## [3.17.154] - 2026-02-12
 
 ### Fixed
 - **SMS_CH_Summary 404 fallback to WMI**: Admin Service REST API doesn't expose SMS_CH_Summary on all ConfigMgr versions

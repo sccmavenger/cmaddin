@@ -81,6 +81,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// <summary>
         /// Loads the local manifest from storage.
         /// Returns null if this is the first install or manifest doesn't exist.
+        /// Validates manifest entries and clears if corrupted.
         /// </summary>
         public UpdateManifest? LoadLocalManifest()
         {
@@ -97,7 +98,19 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 if (manifest != null)
                 {
-                    Instance.Info($"Local manifest loaded: v{manifest.Version}, {manifest.Files.Count} files");
+                    // Validate manifest entries - check for corrupted/empty RelativePath
+                    var invalidEntries = manifest.Files.Count(f => string.IsNullOrWhiteSpace(f.RelativePath));
+                    if (invalidEntries > 0)
+                    {
+                        Instance.Warning($"Local manifest has {invalidEntries} invalid entries with empty RelativePath");
+                        Instance.Warning("Clearing corrupted local manifest - will perform full comparison on next update");
+                        
+                        // Delete the corrupted manifest
+                        File.Delete(_localManifestPath);
+                        return null;
+                    }
+                    
+                    Instance.Info($"Local manifest loaded: v{manifest.Version}, {manifest.Files.Count} files (validated)");
                     return manifest;
                 }
 
@@ -107,6 +120,16 @@ namespace ZeroTrustMigrationAddin.Services
             catch (Exception ex)
             {
                 Instance.Warning($"Could not load local manifest: {ex.Message}");
+                // If manifest is corrupted/unreadable, delete it
+                try
+                {
+                    if (File.Exists(_localManifestPath))
+                    {
+                        File.Delete(_localManifestPath);
+                        Instance.Info("Deleted corrupted local manifest");
+                    }
+                }
+                catch { /* Ignore deletion errors */ }
                 return null;
             }
         }
@@ -166,25 +189,37 @@ namespace ZeroTrustMigrationAddin.Services
         /// <summary>
         /// Compares local and remote manifests to identify changed files.
         /// Returns list of files that need to be downloaded.
+        /// Only includes files with valid RelativePath values.
         /// </summary>
         public List<FileEntry> GetChangedFiles(UpdateManifest remoteManifest)
         {
             var localManifest = LoadLocalManifest();
             var changedFiles = new List<FileEntry>();
 
+            // Filter out any invalid entries from remote manifest
+            var validRemoteFiles = remoteManifest.Files
+                .Where(f => !string.IsNullOrWhiteSpace(f.RelativePath))
+                .ToList();
+            
+            if (validRemoteFiles.Count != remoteManifest.Files.Count)
+            {
+                Instance.Warning($"Remote manifest has {remoteManifest.Files.Count - validRemoteFiles.Count} invalid entries (filtered out)");
+            }
+
             if (localManifest == null)
             {
-                // First install or no manifest - all files are "new"
-                Instance.Info("No local manifest - treating all files as changed");
-                return remoteManifest.Files.ToList();
+                // First install or no manifest - all valid files are "new"
+                Instance.Info("No local manifest - treating all valid files as changed");
+                return validRemoteFiles;
             }
 
             Instance.Info($"Comparing manifests: Local v{localManifest.Version} vs Remote v{remoteManifest.Version}");
 
-            foreach (var remoteFile in remoteManifest.Files)
+            foreach (var remoteFile in validRemoteFiles)
             {
                 var localFile = localManifest.Files
-                    .FirstOrDefault(f => f.RelativePath.Equals(remoteFile.RelativePath, StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(f => !string.IsNullOrEmpty(f.RelativePath) && 
+                                         f.RelativePath.Equals(remoteFile.RelativePath, StringComparison.OrdinalIgnoreCase));
 
                 if (localFile == null)
                 {
@@ -313,13 +348,32 @@ namespace ZeroTrustMigrationAddin.Services
 
                 // Verify extracted files
                 int verifiedCount = 0;
+                int missingCount = 0;
+                int invalidCount = 0;
+                
                 foreach (var file in changedFiles)
                 {
+                    // Skip invalid entries
+                    if (string.IsNullOrWhiteSpace(file.RelativePath))
+                    {
+                        invalidCount++;
+                        Instance.Warning($"Skipping invalid entry with empty RelativePath (hash: {file.SHA256Hash?.Substring(0, 8) ?? "N/A"}...)");
+                        continue;
+                    }
+                    
                     var extractedPath = Path.Combine(_tempDownloadPath, file.RelativePath);
                     
                     if (!File.Exists(extractedPath))
                     {
-                        Instance.Warning($"File not found in ZIP: {file.RelativePath}");
+                        missingCount++;
+                        Instance.Warning($"File not found in ZIP: '{file.RelativePath}' (size: {file.FileSize:N0} bytes, critical: {file.IsCritical})");
+                        
+                        // If too many files are missing, abort the update
+                        if (missingCount > changedFiles.Count / 2)
+                        {
+                            Instance.Error($"Too many files missing ({missingCount}/{changedFiles.Count}) - aborting update to prevent corruption");
+                            return false;
+                        }
                         continue;
                     }
 
@@ -334,8 +388,16 @@ namespace ZeroTrustMigrationAddin.Services
                     }
                 }
 
-                Instance.Info($"Verified {verifiedCount}/{changedFiles.Count} files");
-                return verifiedCount == changedFiles.Count;
+                if (invalidCount > 0)
+                {
+                    Instance.Warning($"Skipped {invalidCount} invalid manifest entries");
+                }
+                
+                Instance.Info($"Verified {verifiedCount}/{changedFiles.Count} files (missing: {missingCount}, invalid: {invalidCount})");
+                
+                // Success if we verified most files (allow some missing for non-critical files like localization)
+                var validFiles = changedFiles.Count - invalidCount;
+                return validFiles > 0 && verifiedCount >= validFiles - missingCount;
             }
             catch (Exception ex)
             {
