@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.153** | February 12, 2026
+**Version 3.17.155** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -184,6 +184,22 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.154 (February 12, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **SMS_CH_Summary 404 fallback to WMI**: Admin Service REST API doesn't expose SMS_CH_Summary on all ConfigMgr versions
+  - GetClientHealthMetricsAsync() now automatically falls back to WMI when REST returns 404
+  - Enables enrichment to work even when Admin Service doesn't support SMS_CH_Summary
+  - Logs fallback for diagnostics: "SMS_CH_Summary not available via REST API (404) - falling back to WMI..."
+
+---
+
 ### Version 3.17.152 (February 12, 2026)
 
 ### Added
@@ -256,17 +272,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - **Updated AdminUserGuide comparison section** - Renamed from "Cloud Value" to "Cloud Native", updated hidden feature note (tab now visible by default), added Quick Reference data source table
 
 ### Fixed
-
----
-
-### Version 3.17.146 (February 11, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **Cloud Native Growth Trend chart** - Fixed chart showing garbage floating-point axis values when no trend data available; now hides chart and shows informative message instead
 
 ---
 
@@ -1487,5 +1492,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.153  
+**Version**: 3.17.155  
 **Maintainer:** Cloud Native Assessment Team
