@@ -10,6 +10,23 @@
 - 
 
 
+## [3.17.162] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.161] - 2026-02-12
+
+### Changed
+- **Auto-update runs immediately on startup**: Removed 60-second delay, updates check instantly
+  - PowerShell WMI implementation confirmed stable (no hangs), delay no longer needed
+
+
 ## [3.17.160] - 2026-02-12
 
 ### Added
