@@ -10,6 +10,19 @@
 - 
 
 
+## [3.17.145] - 2026-02-11
+
+### Added
+
+### Changed
+- **Renamed Cloud Value tab to Cloud Native** - Better reflects tab purpose of tracking cloud-native device progress
+- **Cloud Native tab now visible by default** - Default tabs are now: Overview, Enrollment, Cloud Readiness, Cloud Native
+- **Added "cloudnative" command-line alias** - Can now use `/showtabs:cloudnative` or `/hidetabs:cloudnative`
+
+### Fixed
+- **Cloud Native Growth Trend chart** - Fixed chart showing garbage axis values when no trend data available; now shows placeholder with proper labels
+
+
 ## [3.17.144] - 2026-02-11
 
 ### Added

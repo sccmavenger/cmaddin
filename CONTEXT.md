@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.144 |
+| **Version** | 3.17.145 |
 | **Last Updated** | 2026-02-10 |
 | **Branch** | main |
 | **Status** | Building - Ready to publish |

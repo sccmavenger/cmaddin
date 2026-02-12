@@ -2739,8 +2739,8 @@
                     <views:CloudReadinessTab x:Name="CloudReadinessTab"/>
                 </TabItem>
 
-                <!-- CLOUD VALUE COMPARISON TAB (Hidden by default - internal feature) -->
-                <TabItem Header="📊 Cloud Value" Visibility="{Binding ShowCloudValueComparisonTab}">
+                <!-- CLOUD NATIVE TAB -->
+                <TabItem Header="🌐 Cloud Native" Visibility="{Binding ShowCloudValueComparisonTab}">
                     <views:CloudValueComparisonTab x:Name="CloudValueComparisonTab"/>
                 </TabItem>
 

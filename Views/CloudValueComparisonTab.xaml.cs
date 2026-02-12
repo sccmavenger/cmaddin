@@ -368,6 +368,7 @@ namespace ZeroTrustMigrationAddin.Views
                 CloudNativeCount.Text = "--";
                 CloudNativePercentText.Text = "--% of total estate";
                 CloudNativeGoalProgress.Value = 0;
+                ClearTrendChart();
                 return;
             }
             
@@ -394,10 +395,35 @@ namespace ZeroTrustMigrationAddin.Views
                     
                     Instance.Info($"[COMPARISON TAB] Cloud Native trend chart updated with {enrollment.TrendData.Length} data points");
                 }
+                else
+                {
+                    // No trend data available - show placeholder
+                    ClearTrendChart();
+                    Instance.Info($"[COMPARISON TAB] No trend data available for Cloud Native chart");
+                }
             }
             catch (Exception ex)
             {
                 Instance.Warning($"[COMPARISON TAB] Failed to update trend chart: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Clears the trend chart and shows placeholder data
+        /// </summary>
+        private void ClearTrendChart()
+        {
+            try
+            {
+                // Show empty chart with placeholder labels
+                var emptyValues = new ChartValues<int> { 0, 0, 0, 0, 0, 0 };
+                var placeholderLabels = new List<string> { "Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6" };
+                CloudNativeSeries.Values = emptyValues;
+                CloudNativeAxisX.Labels = placeholderLabels;
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[COMPARISON TAB] Failed to clear trend chart: {ex.Message}");
             }
         }
 
