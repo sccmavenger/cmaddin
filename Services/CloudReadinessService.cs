@@ -1970,6 +1970,8 @@ namespace ZeroTrustMigrationAddin.Services
                 if (configMgrDevices.Count > 0)
                 {
                     var devicesWithActive = configMgrDevices.Where(d => d.LastActiveTime.HasValue).ToList();
+                    Instance.Info($"   📊 ConfigMgr LastActiveTime data quality: {devicesWithActive.Count}/{configMgrDevices.Count} devices have LastActiveTime");
+                    
                     if (devicesWithActive.Any())
                     {
                         var totalDays = devicesWithActive.Sum(d => 
@@ -1981,8 +1983,15 @@ namespace ZeroTrustMigrationAddin.Services
                             (DateTime.UtcNow - d.LastActiveTime!.Value).TotalDays < 1);
                         comparison.ConfigMgrScannedTodayPercentage = Math.Round(
                             (double)comparison.ConfigMgrScannedToday / configMgrDevices.Count * 100, 1);
+                        Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices, avg {comparison.ConfigMgrAvgDaysSinceScan} days since scan, {comparison.ConfigMgrScannedTodayPercentage}% scanned today");
                     }
-                    Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices, avg {comparison.ConfigMgrAvgDaysSinceScan} days since scan, {comparison.ConfigMgrScannedTodayPercentage}% scanned today");
+                    else
+                    {
+                        Instance.Warning($"   ⚠️ NO LASTACTIVETIME DATA: {configMgrDevices.Count} ConfigMgr devices returned but NONE have LastActiveTime populated");
+                        Instance.Warning($"      RESULT: Response Time tile will show 'No ConfigMgr scan data available for comparison'");
+                        Instance.Warning($"      TROUBLESHOOT: Check Admin Service query log - was $select removed during retry?");
+                        Instance.Warning(@"      TROUBLESHOOT: Verify SMS_R_System.LastActiveTime has values in WMI (run: Get-WmiObject -Namespace root\sms\site_XXX -Query 'SELECT LastActiveTime FROM SMS_R_System WHERE LastActiveTime IS NOT NULL' | Select -First 5)");
+                    }
                 }
 
                 Instance.Info($"   ⚡ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");

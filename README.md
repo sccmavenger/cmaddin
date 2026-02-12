@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.148** | February 11, 2026
+**Version 3.17.151** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -180,6 +180,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+### Version 3.17.148 (February 11, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **CRT cleanup error dialog on app exit** - Suppressed benign DllNotFoundException that appeared after closing the app (caused by native DLL unload timing with LiveCharts)
+
+---
+
 ### Version 3.17.147 (February 11, 2026)
 
 ### Added
@@ -244,17 +258,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - **Response Time comparison showing "comparable" with no data** - When ConfigMgr Admin Service returns no LastActiveTime data (0.0 days), now shows "No ConfigMgr scan data available for comparison" instead of misleading "comparable" message
 - **Security Blind Spots showing 100% with no data** - When all ConfigMgr devices have no LastActiveTime, now shows "ConfigMgr not reporting LastActiveTime - data unavailable" instead of falsely claiming 100% stale
 - **BitLocker showing 0% when encryption status unknown** - Added detection for devices where `IsEncrypted` returns null from Graph API. Now shows "Intune not reporting encryption status" instead of misleading 0%. Added detailed logging of encrypted/not encrypted/unknown breakdown
-
----
-
-### Version 3.17.142 (February 11, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **Device Identity State Analysis showing incorrect join types** - FQDN normalization was missing from join type detection lookup, causing Intune device matching to fail and incorrect categorization
 
 ---
 
@@ -1474,6 +1477,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-11  
-**Version**: 3.17.148  
+**Last Updated**: 2026-02-12  
+**Version**: 3.17.151  
 **Maintainer:** Cloud Native Assessment Team

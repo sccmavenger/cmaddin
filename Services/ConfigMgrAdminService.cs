@@ -927,10 +927,16 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info($"   Response Status: {(int)response.StatusCode} {response.StatusCode}");
                 
+                // Track which query mode succeeded for diagnostics
+                var queryMode = "WithSelect"; // Track: WithSelect, WithoutSelect, Fallback
+                
                 // If 404, try without $select (field might not exist)
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     Instance.Warning("   ⚠️ Query with $select failed (404), trying without $select parameter...");
+                    Instance.Warning("      NOTE: Removing $select may cause Admin Service to return different/all fields");
+                    Instance.Warning("      If LastActiveTime is missing from response, this tile will show 'No data'");
+                    queryMode = "WithoutSelect";
                     query = $"{_adminServiceUrl}/wmi/SMS_R_System?$filter=" +
                         "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 10') or " +
                         "contains(OperatingSystemNameandVersion,'Microsoft Windows NT Workstation 11')";
@@ -945,12 +951,20 @@ namespace ZeroTrustMigrationAddin.Services
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     Instance.Warning("   ⚠️ Query with contains() failed (404), trying simple query with $top limit...");
+                    queryMode = "Fallback";
                     query = $"{_adminServiceUrl}/wmi/SMS_R_System?$top=5000";
                     
                     Instance.LogAdminServiceQuery("GetWindows1011Devices (Fallback)", query);
                     Instance.Info($"   Fallback Query URL: {query}");
                     response = await _httpClient.GetAsync(query);
                     Instance.Info($"   Fallback Response Status: {(int)response.StatusCode} {response.StatusCode}");
+                }
+                
+                // Log which query mode succeeded
+                Instance.Info($"   ✅ Query succeeded using mode: {queryMode}");
+                if (queryMode != "WithSelect")
+                {
+                    Instance.Warning($"      ⚠️ Query fallback was required - some field data may be unavailable");
                 }
                 
                 Instance.Info($"   Response Headers: {response.Headers}");
@@ -1013,6 +1027,36 @@ namespace ZeroTrustMigrationAddin.Services
                         var oldest = devices.Where(d => d.CreationDate.HasValue).Min(d => d.CreationDate);
                         var newest = devices.Where(d => d.CreationDate.HasValue).Max(d => d.CreationDate);
                         FileLogger.Instance.Info($"      Oldest: {oldest:yyyy-MM-dd}, Newest: {newest:yyyy-MM-dd}");
+                    }
+                    
+                    // Log LastActiveTime info for debugging (critical for Response Time tile)
+                    var devicesWithLastActive = devices.Count(d => d.LastActiveTime.HasValue);
+                    var lastActivePercent = devices.Count > 0 ? devicesWithLastActive * 100 / devices.Count : 0;
+                    if (devicesWithLastActive == 0)
+                    {
+                        FileLogger.Instance.Warning($"   ⏰ Devices with LastActiveTime: 0/{devices.Count} (0%) - RESPONSE TIME TILE WILL SHOW 'NO DATA'");
+                        FileLogger.Instance.Warning($"      CAUSE: Admin Service query returned devices but LastActiveTime field is null for all");
+                        FileLogger.Instance.Warning($"      CHECK: 1) SMS_R_System.LastActiveTime populated in WMI? 2) Heartbeat Discovery enabled? 3) Admin Service version supports this field?");
+                    }
+                    else if (lastActivePercent < 50)
+                    {
+                        FileLogger.Instance.Warning($"   ⏰ Devices with LastActiveTime: {devicesWithLastActive}/{devices.Count} ({lastActivePercent}%) - PARTIAL DATA");
+                        FileLogger.Instance.Info($"      Note: Some devices missing LastActiveTime - check client health/heartbeat discovery");
+                    }
+                    else
+                    {
+                        FileLogger.Instance.Info($"   ⏰ Devices with LastActiveTime: {devicesWithLastActive}/{devices.Count} ({lastActivePercent}%)");
+                    }
+                    
+                    // Log LastActiveTime range if available
+                    if (devices.Any(d => d.LastActiveTime.HasValue))
+                    {
+                        var oldestActive = devices.Where(d => d.LastActiveTime.HasValue).Min(d => d.LastActiveTime);
+                        var newestActive = devices.Where(d => d.LastActiveTime.HasValue).Max(d => d.LastActiveTime);
+                        var avgDaysSinceActive = devices.Where(d => d.LastActiveTime.HasValue)
+                            .Average(d => (DateTime.UtcNow - d.LastActiveTime!.Value).TotalDays);
+                        FileLogger.Instance.Info($"      LastActive range: {oldestActive:yyyy-MM-dd HH:mm} to {newestActive:yyyy-MM-dd HH:mm}");
+                        FileLogger.Instance.Info($"      Average days since LastActive: {avgDaysSinceActive:F1} days");
                     }
                     
                     FileLogger.Instance.Info($"   📋 Note: Co-management status will be determined by cross-checking with Intune");
