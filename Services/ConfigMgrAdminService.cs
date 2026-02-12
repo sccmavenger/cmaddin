@@ -1838,7 +1838,8 @@ namespace ZeroTrustMigrationAddin.Services
 
         /// <summary>
         /// Get client health metrics beyond basic version.
-        /// Auto-fallbacks to WMI if REST API returns 404 (SMS_CH_Summary not exposed via Admin Service on some CM versions).
+        /// NOTE: WMI fallback DISABLED - was causing app hangs on some ConfigMgr versions.
+        /// Will return empty list if REST API fails.
         /// </summary>
         public async Task<List<ConfigMgrClientHealth>> GetClientHealthMetricsAsync()
         {
@@ -1847,21 +1848,17 @@ namespace ZeroTrustMigrationAddin.Services
                 throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
             }
 
-            // WMI fallback mode - always use WMI
-            if (_useWmiFallback)
-            {
-                return await GetClientHealthViaWmiAsync();
-            }
-            
-            // Try REST first, auto-fallback to WMI if SMS_CH_Summary returns 404
+            // WMI fallback DISABLED - was causing app to hang/crash
+            // If REST fails, return empty list and let caller handle gracefully
             try
             {
                 return await GetClientHealthViaRestApiAsync();
             }
-            catch (Exception ex) when (ex.Message.Contains("404") || ex.InnerException?.Message?.Contains("404") == true)
+            catch (Exception ex)
             {
-                Instance.Warning("[CONFIGMGR] SMS_CH_Summary not available via REST API (404) - falling back to WMI...");
-                return await GetClientHealthViaWmiAsync();
+                Instance.Warning($"[CONFIGMGR] SMS_CH_Summary not available via REST API: {ex.Message}");
+                Instance.Warning("[CONFIGMGR] WMI fallback is DISABLED - returning empty list. Activity timestamps will use device last sync time instead.");
+                return new List<ConfigMgrClientHealth>();
             }
         }
 

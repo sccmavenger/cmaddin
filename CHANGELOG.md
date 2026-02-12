@@ -10,6 +10,15 @@
 - 
 
 
+## [3.17.158] - 2026-02-12
+
+### Fixed
+- **Disabled WMI fallback for SMS_CH_Summary**: WMI calls were causing app to hang/crash on some ConfigMgr versions
+  - GetClientHealthMetricsAsync now only uses REST API
+  - Returns empty list if REST fails (graceful degradation)
+  - Activity timestamps will fall back to device last sync time instead
+
+
 ## [3.17.157] - 2026-02-12
 
 ### Fixed
