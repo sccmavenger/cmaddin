@@ -524,18 +524,38 @@ namespace ZeroTrustMigrationAddin.Models
         public int ConfigMgrScannedToday { get; set; }
         public double ConfigMgrScannedTodayPercentage { get; set; }
         
+        // Data availability flags
+        public bool HasIntuneData => IntuneDeviceCount > 0 && IntuneAvgDaysSinceSync > 0;
+        public bool HasConfigMgrData => ConfigMgrDeviceCount > 0 && ConfigMgrAvgDaysSinceScan > 0;
+        
         // Comparison
-        public double SpeedMultiplier => ConfigMgrAvgDaysSinceScan > 0 && IntuneAvgDaysSinceSync > 0 
+        public double SpeedMultiplier => HasConfigMgrData && HasIntuneData 
             ? Math.Round(ConfigMgrAvgDaysSinceScan / IntuneAvgDaysSinceSync, 1) 
             : 0;
         
-        public bool CloudNativeIsFaster => IntuneAvgDaysSinceSync < ConfigMgrAvgDaysSinceScan;
+        public bool CloudNativeIsFaster => HasIntuneData && HasConfigMgrData && IntuneAvgDaysSinceSync < ConfigMgrAvgDaysSinceScan;
         
-        public string ComparisonSummary => CloudNativeIsFaster && SpeedMultiplier > 1
-            ? $"Cloud-native devices respond {SpeedMultiplier:F0}x faster to policy changes"
-            : "Response times are comparable";
+        public string ComparisonSummary
+        {
+            get
+            {
+                // Handle missing data cases
+                if (!HasConfigMgrData && !HasIntuneData)
+                    return "No sync data available from either source";
+                if (!HasConfigMgrData)
+                    return "No ConfigMgr scan data available for comparison";
+                if (!HasIntuneData)
+                    return "No Intune sync data available for comparison";
+                
+                // Both have data - compare
+                if (CloudNativeIsFaster && SpeedMultiplier > 1)
+                    return $"Cloud-native devices respond {SpeedMultiplier:F0}x faster to policy changes";
+                
+                return "Response times are comparable";
+            }
+        }
         
-        public string ComparisonIcon => CloudNativeIsFaster ? "⚡" : "➡️";
+        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData ? "❓" : (CloudNativeIsFaster ? "⚡" : "➡️");
     }
 
     /// <summary>
@@ -556,6 +576,11 @@ namespace ZeroTrustMigrationAddin.Models
         public int ConfigMgrStaleCount { get; set; }
         public double ConfigMgrStalePercentage { get; set; }
         
+        // Track devices with missing data (counted as stale but actually unknown)
+        public int ConfigMgrDevicesWithNoLastActiveTime { get; set; }
+        public bool ConfigMgrAllMissingData => ConfigMgrDeviceCount > 0 && 
+            ConfigMgrDevicesWithNoLastActiveTime == ConfigMgrDeviceCount;
+        
         // Comparison
         public double StaleRatioMultiplier => IntuneStalePercentage > 0 
             ? Math.Round(ConfigMgrStalePercentage / IntuneStalePercentage, 1) 
@@ -563,13 +588,25 @@ namespace ZeroTrustMigrationAddin.Models
         
         public bool CloudNativeHasFewerStale => IntuneStalePercentage < ConfigMgrStalePercentage;
         
-        public string ComparisonSummary => CloudNativeHasFewerStale && StaleRatioMultiplier > 1
-            ? $"Cloud-native has {StaleRatioMultiplier:F0}x fewer security blind spots"
-            : IntuneStalePercentage == ConfigMgrStalePercentage 
-                ? "Stale device rates are equal"
-                : $"ConfigMgr has {Math.Round(IntuneStalePercentage / ConfigMgrStalePercentage, 1):F0}x fewer stale devices";
+        public string ComparisonSummary
+        {
+            get
+            {
+                // If all ConfigMgr devices have no data, show specific message
+                if (ConfigMgrAllMissingData)
+                    return "ConfigMgr not reporting LastActiveTime - data unavailable";
+                
+                if (CloudNativeHasFewerStale && StaleRatioMultiplier > 1)
+                    return $"Cloud-native has {StaleRatioMultiplier:F0}x fewer security blind spots";
+                
+                if (IntuneStalePercentage == ConfigMgrStalePercentage)
+                    return "Stale device rates are equal";
+                
+                return $"ConfigMgr has {Math.Round(IntuneStalePercentage / ConfigMgrStalePercentage, 1):F0}x fewer stale devices";
+            }
+        }
         
-        public string ComparisonIcon => CloudNativeHasFewerStale ? "🔍" : "➡️";
+        public string ComparisonIcon => ConfigMgrAllMissingData ? "❓" : (CloudNativeHasFewerStale ? "🔍" : "➡️");
     }
 
     /// <summary>
@@ -724,6 +761,7 @@ namespace ZeroTrustMigrationAddin.Models
         // Intune metrics (from isEncrypted)
         public int IntuneDeviceCount { get; set; }
         public int IntuneEncryptedCount { get; set; }
+        public int IntuneEncryptionUnknownCount { get; set; } // Devices with IsEncrypted=null
         public double IntuneEncryptedPercentage => IntuneDeviceCount > 0 
             ? Math.Round((double)IntuneEncryptedCount / IntuneDeviceCount * 100, 1) : 0;
         
@@ -733,19 +771,40 @@ namespace ZeroTrustMigrationAddin.Models
         public double ConfigMgrEncryptedPercentage => ConfigMgrDeviceCount > 0 
             ? Math.Round((double)ConfigMgrEncryptedCount / ConfigMgrDeviceCount * 100, 1) : 0;
         
+        // Data availability
+        public bool HasIntuneData => IntuneDeviceCount > 0 && IntuneEncryptionUnknownCount < IntuneDeviceCount;
+        public bool HasConfigMgrData => ConfigMgrDeviceCount > 0;
+        
         // Cloud advantage
         public string CloudBenefit => "Recovery keys in Azure AD - accessible from any browser";
         public string OnPremNote => "Recovery keys in MBAM - requires VPN + console";
         
-        public bool CloudHasHigherEncryption => IntuneEncryptedPercentage > ConfigMgrEncryptedPercentage;
+        public bool CloudHasHigherEncryption => HasIntuneData && IntuneEncryptedPercentage > ConfigMgrEncryptedPercentage;
         
-        public string ComparisonSummary => CloudHasHigherEncryption
-            ? $"Cloud-native {IntuneEncryptedPercentage - ConfigMgrEncryptedPercentage:F0}% more encrypted"
-            : Math.Abs(IntuneEncryptedPercentage - ConfigMgrEncryptedPercentage) < 5
-                ? "Encryption rates comparable - cloud recovery keys accessible anywhere"
-                : $"Similar encryption - cloud advantage is key recovery accessibility";
+        public string ComparisonSummary
+        {
+            get
+            {
+                // Handle missing data - Intune not reporting encryption status
+                if (IntuneDeviceCount > 0 && IntuneEncryptionUnknownCount == IntuneDeviceCount)
+                    return "Intune not reporting encryption status - check device sync";
+                
+                // Handle missing ConfigMgr data
+                if (!HasConfigMgrData && HasIntuneData)
+                    return "No ConfigMgr BitLocker data - SMS_G_System_ENCRYPTABLE_VOLUME not inventoried";
+                
+                // Both have data - compare
+                if (CloudHasHigherEncryption)
+                    return $"Cloud-native {IntuneEncryptedPercentage - ConfigMgrEncryptedPercentage:F0}% more encrypted";
+                
+                if (Math.Abs(IntuneEncryptedPercentage - ConfigMgrEncryptedPercentage) < 5)
+                    return "Encryption rates comparable - cloud recovery keys accessible anywhere";
+                
+                return "Similar encryption - cloud advantage is key recovery accessibility";
+            }
+        }
         
-        public string ComparisonIcon => "🔑";
+        public string ComparisonIcon => (!HasIntuneData && IntuneDeviceCount > 0) ? "❓" : "🔑";
     }
 
     /// <summary>

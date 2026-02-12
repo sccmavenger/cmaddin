@@ -24,6 +24,8 @@ namespace ZeroTrustMigrationAddin.Services
         private readonly TelemetryClient? _telemetryClient;
         private readonly string _anonymousUserId;
         private readonly bool _isEnabled;
+        private readonly System.Timers.Timer? _flushTimer;
+        private int _eventsSinceLastFlush = 0;
 
         private const string ConnectionString = 
             "InstrumentationKey=30d5a38c-0d53-44f8-b26b-8b83d89b57b3;" +
@@ -52,15 +54,36 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 _isEnabled = true;
 
+                // Start periodic flush timer (every 2 minutes) to ensure telemetry is sent
+                // even if app crashes or is force-closed
+                _flushTimer = new System.Timers.Timer(120000); // 2 minutes
+                _flushTimer.Elapsed += (s, e) => FlushIfNeeded();
+                _flushTimer.AutoReset = true;
+                _flushTimer.Start();
+
                 FileLogger.Instance.Info("[TELEMETRY] Azure Application Insights initialized successfully");
                 FileLogger.Instance.Info($"[TELEMETRY] Anonymous User ID: {_anonymousUserId}");
                 FileLogger.Instance.Info($"[TELEMETRY] Session ID: {_telemetryClient.Context.Session.Id}");
+                FileLogger.Instance.Info("[TELEMETRY] Auto-flush timer started (every 2 minutes)");
             }
             catch (Exception ex)
             {
                 _isEnabled = false;
                 FileLogger.Instance.Warning($"[TELEMETRY] Failed to initialize: {ex.Message}");
                 FileLogger.Instance.Info("[TELEMETRY] Application will continue without telemetry");
+            }
+        }
+
+        /// <summary>
+        /// Flush telemetry if there are pending events.
+        /// </summary>
+        private void FlushIfNeeded()
+        {
+            if (_eventsSinceLastFlush > 0)
+            {
+                FileLogger.Instance.Debug($"[TELEMETRY] Auto-flushing {_eventsSinceLastFlush} events...");
+                _telemetryClient?.Flush();
+                _eventsSinceLastFlush = 0;
             }
         }
 
@@ -82,8 +105,17 @@ namespace ZeroTrustMigrationAddin.Services
                 sanitizedProperties["OSVersion"] = Environment.OSVersion.VersionString;
 
                 _telemetryClient.TrackEvent(eventName, sanitizedProperties, metrics);
+                _eventsSinceLastFlush++;
                 
-                FileLogger.Instance.Debug($"[TELEMETRY] Event: {eventName}");
+                // Immediately flush important events to ensure they're sent
+                if (eventName == "AppStarted" || eventName == "AppExited" || eventName == "EstateSnapshot")
+                {
+                    _telemetryClient.Flush();
+                    _eventsSinceLastFlush = 0;
+                    FileLogger.Instance.Debug($"[TELEMETRY] Immediate flush for {eventName}");
+                }
+                
+                FileLogger.Instance.Debug($"[TELEMETRY] Event: {eventName} (pending: {_eventsSinceLastFlush})");
             }
             catch (Exception ex)
             {
@@ -473,6 +505,199 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
+        #endregion
+
+        #region VP-Level Strategic Insights (Cross-Platform Unique Data)
+
+        /// <summary>
+        /// Track migration blockers - what's preventing devices from being fully cloud-managed.
+        /// This is UNIQUE data only this tool can provide (sees both CM and Intune simultaneously).
+        /// </summary>
+        public void TrackMigrationBlockers(
+            int noAADDeviceId,
+            int staleDevices14Days,
+            int hardwareIssues,
+            int notInAutopilot,
+            int configMgrOnlyNoIntune,
+            int intotalDevices)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var estateBand = GetEstateSizeBand(intotalDevices);
+                
+                var properties = new Dictionary<string, string>
+                {
+                    ["EstateSizeBand"] = estateBand,
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["NoAADDeviceId"] = noAADDeviceId,
+                    ["StaleDevices14Days"] = staleDevices14Days,
+                    ["HardwareIssues"] = hardwareIssues,
+                    ["NotInAutopilot"] = notInAutopilot,
+                    ["ConfigMgrOnlyNoIntune"] = configMgrOnlyNoIntune,
+                    ["TotalDevices"] = intotalDevices,
+                    // Percentages for normalization across estates
+                    ["NoAADDeviceIdPct"] = intotalDevices > 0 ? Math.Round((double)noAADDeviceId / intotalDevices * 100, 1) : 0,
+                    ["StalePct"] = intotalDevices > 0 ? Math.Round((double)staleDevices14Days / intotalDevices * 100, 1) : 0,
+                    ["NotInAutopilotPct"] = intotalDevices > 0 ? Math.Round((double)notInAutopilot / intotalDevices * 100, 1) : 0
+                };
+
+                _telemetryClient.TrackEvent("MigrationBlockers", properties, metrics);
+                _eventsSinceLastFlush++;
+                
+                FileLogger.Instance.Info($"[TELEMETRY] MigrationBlockers: NoAADDeviceId={noAADDeviceId}, Stale={staleDevices14Days}, HardwareIssues={hardwareIssues}, NotAutopilot={notInAutopilot}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track migration blockers: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track security posture comparison - the delta between CM-managed and cloud-managed devices.
+        /// KEY INSIGHT: Shows security improvement potential from migration.
+        /// </summary>
+        public void TrackSecurityPostureComparison(
+            double intuneCompliancePct,
+            double configMgrCompliancePct,
+            double intuneCAReadyPct,
+            double configMgrCAReadyPct,
+            double intuneEncryptedPct,
+            double configMgrEncryptedPct,
+            int totalIntuneDevices,
+            int totalConfigMgrDevices)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["IntuneEstateBand"] = GetEstateSizeBand(totalIntuneDevices),
+                    ["ConfigMgrEstateBand"] = GetEstateSizeBand(totalConfigMgrDevices),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["IntuneCompliancePct"] = intuneCompliancePct,
+                    ["ConfigMgrCompliancePct"] = configMgrCompliancePct,
+                    ["ComplianceDelta"] = intuneCompliancePct - configMgrCompliancePct,
+                    ["IntuneCAReadyPct"] = intuneCAReadyPct,
+                    ["ConfigMgrCAReadyPct"] = configMgrCAReadyPct,
+                    ["CAReadyDelta"] = intuneCAReadyPct - configMgrCAReadyPct,
+                    ["IntuneEncryptedPct"] = intuneEncryptedPct,
+                    ["ConfigMgrEncryptedPct"] = configMgrEncryptedPct,
+                    ["EncryptionDelta"] = intuneEncryptedPct - configMgrEncryptedPct
+                };
+
+                _telemetryClient.TrackEvent("SecurityPostureComparison", properties, metrics);
+                _eventsSinceLastFlush++;
+                
+                FileLogger.Instance.Info($"[TELEMETRY] SecurityPostureComparison: Compliance Delta={intuneCompliancePct - configMgrCompliancePct:+0.0;-0.0}%, CA Delta={intuneCAReadyPct - configMgrCAReadyPct:+0.0;-0.0}%");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track security posture: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track device orphan analysis - devices in one system but not the other.
+        /// UNIQUE INSIGHT: Only this tool can see cross-platform device mismatches.
+        /// </summary>
+        public void TrackDeviceOrphans(
+            int inConfigMgrNotIntune,
+            int inIntuneNotConfigMgr,
+            int coManagedDevices,
+            int cloudNativeDevices,
+            int totalDevices)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["EstateSizeBand"] = GetEstateSizeBand(totalDevices),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["InConfigMgrNotIntune"] = inConfigMgrNotIntune,
+                    ["InIntuneNotConfigMgr"] = inIntuneNotConfigMgr,
+                    ["CoManagedDevices"] = coManagedDevices,
+                    ["CloudNativeDevices"] = cloudNativeDevices,
+                    ["TotalDevices"] = totalDevices,
+                    // Percentages
+                    ["OrphanedInCMPct"] = totalDevices > 0 ? Math.Round((double)inConfigMgrNotIntune / totalDevices * 100, 1) : 0,
+                    ["CloudNativePct"] = totalDevices > 0 ? Math.Round((double)cloudNativeDevices / totalDevices * 100, 1) : 0,
+                    ["CoManagedPct"] = totalDevices > 0 ? Math.Round((double)coManagedDevices / totalDevices * 100, 1) : 0
+                };
+
+                _telemetryClient.TrackEvent("DeviceOrphans", properties, metrics);
+                _eventsSinceLastFlush++;
+                
+                FileLogger.Instance.Info($"[TELEMETRY] DeviceOrphans: CM-only={inConfigMgrNotIntune}, Intune-only={inIntuneNotConfigMgr}, Co-managed={coManagedDevices}, CloudNative={cloudNativeDevices}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track device orphans: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track Autopilot readiness funnel - how many devices are ready for cloud provisioning.
+        /// </summary>
+        public void TrackAutopilotReadiness(
+            int totalDevices,
+            int registeredInAutopilot,
+            int hasAADDeviceId,
+            int hasTpm20,
+            int supportsSecureBoot)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["EstateSizeBand"] = GetEstateSizeBand(totalDevices),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["TotalDevices"] = totalDevices,
+                    ["RegisteredInAutopilot"] = registeredInAutopilot,
+                    ["HasAADDeviceId"] = hasAADDeviceId,
+                    ["HasTpm20"] = hasTpm20,
+                    ["SupportsSecureBoot"] = supportsSecureBoot,
+                    // Funnel percentages
+                    ["AutopilotRegisteredPct"] = totalDevices > 0 ? Math.Round((double)registeredInAutopilot / totalDevices * 100, 1) : 0,
+                    ["HybridJoinedPct"] = totalDevices > 0 ? Math.Round((double)hasAADDeviceId / totalDevices * 100, 1) : 0,
+                    ["Tpm20Pct"] = totalDevices > 0 ? Math.Round((double)hasTpm20 / totalDevices * 100, 1) : 0
+                };
+
+                _telemetryClient.TrackEvent("AutopilotReadiness", properties, metrics);
+                _eventsSinceLastFlush++;
+                
+                FileLogger.Instance.Info($"[TELEMETRY] AutopilotReadiness: Registered={registeredInAutopilot}/{totalDevices}, HybridJoined={hasAADDeviceId}, TPM2.0={hasTpm20}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track Autopilot readiness: {ex.Message}");
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// Convert app count to band for privacy (e.g., "1-25", "26-50").
         /// </summary>
@@ -578,8 +803,6 @@ namespace ZeroTrustMigrationAddin.Services
             };
         }
 
-        #endregion
-
         /// <summary>
         /// Flush all pending telemetry immediately. Call before app shutdown.
         /// </summary>
@@ -602,6 +825,11 @@ namespace ZeroTrustMigrationAddin.Services
 
         public void Dispose()
         {
+            // Stop the auto-flush timer
+            _flushTimer?.Stop();
+            _flushTimer?.Dispose();
+            
+            // Flush any remaining telemetry
             Flush();
         }
 
@@ -725,6 +953,75 @@ namespace ZeroTrustMigrationAddin.Services
             var sanitizedMessage = SanitizeString(exception.Message);
             var sanitizedException = new Exception(sanitizedMessage, exception.InnerException);
             return sanitizedException;
+        }
+
+        #endregion
+
+        #region Infrastructure Telemetry
+
+        /// <summary>
+        /// Track ConfigMgr connection details for debugging version-specific issues.
+        /// </summary>
+        public void TrackConfigMgrConnected(string? siteCode, string? siteVersion, string? siteBuild, string connectionMethod)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["SiteCode"] = SanitizeString(siteCode ?? "unknown"),
+                    ["SiteVersion"] = siteVersion ?? "unknown",
+                    ["SiteBuild"] = siteBuild ?? "unknown",
+                    ["ConnectionMethod"] = connectionMethod,
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                _telemetryClient.TrackEvent("ConfigMgrConnected", properties);
+                
+                FileLogger.Instance.Info($"[TELEMETRY] ConfigMgrConnected: Version={siteVersion}, Method={connectionMethod}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track ConfigMgr connection: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track API query results for debugging empty result issues.
+        /// </summary>
+        public void TrackApiQueryResult(string queryType, int statusCode, int resultCount, string? siteVersion, bool usedFallback)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["QueryType"] = queryType,
+                    ["SiteVersion"] = siteVersion ?? "unknown",
+                    ["UsedFallback"] = usedFallback.ToString(),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["StatusCode"] = statusCode,
+                    ["ResultCount"] = resultCount
+                };
+
+                _telemetryClient.TrackEvent("ApiQueryResult", properties, metrics);
+                
+                // Only log non-success or empty results to avoid log spam
+                if (statusCode != 200 || resultCount == 0)
+                {
+                    FileLogger.Instance.Info($"[TELEMETRY] ApiQueryResult: {queryType} Status={statusCode}, Count={resultCount}, Version={siteVersion}");
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track API query result: {ex.Message}");
+            }
         }
 
         #endregion

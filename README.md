@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.142** | February 11, 2026
+**Version 3.17.144** | February 11, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -174,6 +174,48 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.143 (February 11, 2026)
+
+### Added
+- **ConfigMgr version telemetry** - Track site version, site build, and connection method when connecting to ConfigMgr for debugging version-specific API issues
+- **API query result telemetry** - Track device query results (count, status code, fallback usage) to correlate empty results with specific CM versions
+- **Azure Workbook Infrastructure section** - Added "Infrastructure Environment" section showing CM version distribution, connection methods, and API results by version
+- **VP-level strategic telemetry** - New tracking methods for leadership insights:
+  - `TrackMigrationBlockers()` - Devices missing AAD ID, stale, not in Autopilot
+  - `TrackSecurityPostureComparison()` - Compliance/CA/Encryption delta between Intune and ConfigMgr
+  - `TrackDeviceOrphans()` - Cross-platform device mismatches (CM-only, Intune-only, co-managed)
+  - `TrackAutopilotReadiness()` - Autopilot registration funnel
+- **Azure Workbook VP Dashboard** - New "VP Migration Dashboard" section at top showing:
+  - Aggregate migration progress across all organizations
+  - Migration blockers summary
+  - Security improvement delta (Intune vs ConfigMgr)
+  - Cross-platform device distribution
+  - Autopilot readiness funnel
+  - Migration progress over time trend
+- **Telemetry auto-flush** - Added periodic flush every 2 minutes to ensure telemetry is sent even if app crashes or is force-closed. Also immediate flush for important events (AppStarted, AppExited, EstateSnapshot)
+
+### Changed
+
+### Fixed 
+- **Response Time comparison showing "comparable" with no data** - When ConfigMgr Admin Service returns no LastActiveTime data (0.0 days), now shows "No ConfigMgr scan data available for comparison" instead of misleading "comparable" message
+- **Security Blind Spots showing 100% with no data** - When all ConfigMgr devices have no LastActiveTime, now shows "ConfigMgr not reporting LastActiveTime - data unavailable" instead of falsely claiming 100% stale
+- **BitLocker showing 0% when encryption status unknown** - Added detection for devices where `IsEncrypted` returns null from Graph API. Now shows "Intune not reporting encryption status" instead of misleading 0%. Added detailed logging of encrypted/not encrypted/unknown breakdown
+
+---
+
+### Version 3.17.142 (February 11, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Device Identity State Analysis showing incorrect join types** - FQDN normalization was missing from join type detection lookup, causing Intune device matching to fail and incorrect categorization
+
+---
+
 ### Version 3.17.140 (February 11, 2026)
 
 ### Added
@@ -231,58 +273,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Fixed
 - **MDE Card Not Refreshing**: Card was showing mock data even after connecting to services
 - **Confusing "0 devices" Display**: Now shows license-aware messaging instead of unexplained zeros
-
----
-
-### Version 3.17.133 (February 10, 2026)
-
-### Added
-- **Tenant License Detection Framework**: New centralized license framework that proactively queries Microsoft Graph `/subscribedSkus` endpoint to detect customer licensing
-  - Detects Microsoft 365 E5/E3, EMS E5/E3, Intune standalone, MDE P1/P2, Entra ID P1/P2
-  - Shows friendly messages when features require licenses the customer doesn't have
-  - 30-minute cache to minimize API calls
-  - `Models/LicenseModels.cs` with `TenantLicenseSummary`, `LicenseInfo`, `LicenseSkuConstants`
-- **License-Aware Comparison Cards**: Threat Detection, Active Malware, and Defender Integration cards now check license status before displaying data
-  - Shows "MDE not licensed" message instead of confusing zero values
-  - Distinguishes between "not licensed" vs "licensed but not configured"
-
-### Changed
-
-### Fixed
-
----
-
-### Version 3.17.130 (February 10, 2026)
-
-### Added
-- **NEW: Microsoft Defender Integration comparison card** - Shows real-time threat visibility gap
-  - MDE onboarding status and count
-  - Real-time malware reporting visibility  
-  - Auto-remediated threat count
-  - Highlights the "killer feature" - ConfigMgr only shows "AV enabled", Intune shows actual threat count
-- Added `GetDefenderIntegrationComparisonAsync()` method to CloudReadinessService
-- Added `DefenderIntegrationComparison` model with MDE-specific properties
-- Added `windowsActiveMalwareCount`, `windowsRemediatedMalwareCount`, `partnerReportedThreatState` to Graph device query
-
-### Changed
-- **Active Malware comparison now uses REAL data** - queries `windowsActiveMalwareCount` from Graph API
-  - Shows actual active threat count (was placeholder "0")
-  - Shows count of devices with active malware
-  - Lists device names with active threats
-  - Uses AdditionalData fallback for Beta API properties (v1.0 SDK doesn't have these)
-- **Threat Detection now uses REAL threat state** - queries `partnerReportedThreatState` from Graph API
-  - Shows Secured, Compromised, Misconfigured, Unknown based on actual MDE threat state
-  - Previously used `complianceState` as proxy (inaccurate)
-- **Defender Integration card uses AdditionalData for malware counts**
-  - Malware count properties (`windowsActiveMalwareCount`, `windowsRemediatedMalwareCount`) are Beta API only
-  - Code requests properties in Graph $select but accesses via AdditionalData dictionary
-  - Falls back gracefully when properties aren't available in response
-- Enhanced comparison card data to show real security visibility gap
-- Added `isEncrypted` to cached device properties for better BitLocker comparison
-
-### Fixed
-- Fixed build error: v1.0 Microsoft.Graph SDK doesn't have `WindowsActiveMalwareCount` property on `ManagedDevice`
-- Implemented AdditionalData fallback pattern for Beta API properties
 
 ---
 
@@ -1503,5 +1493,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-11  
-**Version**: 3.17.142  
+**Version**: 3.17.144  
 **Maintainer:** Cloud Native Assessment Team

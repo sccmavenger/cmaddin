@@ -1461,7 +1461,31 @@ namespace ZeroTrustMigrationAddin.Services
                         0, // Daily velocity - requires historical data
                         "Unknown"); // Trend direction - requires historical data
                     
+                    // NEW: Track device orphans (cross-platform distribution)
+                    AzureTelemetryService.Instance.TrackDeviceOrphans(
+                        configMgrOnlyCount,     // In ConfigMgr but not Intune
+                        cloudNativeCount,       // In Intune but not ConfigMgr
+                        coManagedCount,         // In both
+                        cloudNativeCount,       // Cloud native
+                        totalDevices);
+                    
+                    // NEW: Track migration blockers
+                    // Calculate devices missing AAD Device ID (blocks reliable co-management matching)
+                    var noAADDeviceIdCount = configMgrDevices?.Count(d => string.IsNullOrEmpty(d.AADDeviceID)) ?? 0;
+                    // Stale devices (14+ days since last check-in)
+                    var staleThreshold = DateTime.UtcNow.AddDays(-14);
+                    var staleConfigMgrCount = configMgrDevices?.Count(d => !d.LastActiveTime.HasValue || d.LastActiveTime.Value < staleThreshold) ?? 0;
+                    
+                    AzureTelemetryService.Instance.TrackMigrationBlockers(
+                        noAADDeviceIdCount,
+                        staleConfigMgrCount,
+                        0, // Hardware issues - would need separate query
+                        0, // Not in Autopilot - would need Autopilot data
+                        configMgrOnlyCount,
+                        totalDevices);
+                    
                     Instance.Info($"[TELEMETRY] Strategic metrics sent: {totalDevices} total, {enrollmentPercentage:F1}% enrolled");
+                    Instance.Info($"[TELEMETRY] Blockers: NoAADID={noAADDeviceIdCount}, Stale={staleConfigMgrCount}");
                 }
                 catch (Exception telemetryEx)
                 {

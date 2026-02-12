@@ -242,6 +242,16 @@ namespace ZeroTrustMigrationAddin.Services
         public bool IsUsingWmiFallback => _useWmiFallback;
         
         /// <summary>
+        /// Gets the ConfigMgr site version (e.g., "5.0.9128.1000").
+        /// </summary>
+        public string? SiteVersion { get; private set; }
+        
+        /// <summary>
+        /// Gets the ConfigMgr site build number.
+        /// </summary>
+        public string? SiteBuild { get; private set; }
+        
+        /// <summary>
         /// Gets the saved ConfigMgr settings (site server URL, etc.)
         /// </summary>
         public static ConfigMgrSettings SavedSettings => _savedSettings ??= ConfigMgrSettings.Load();
@@ -481,6 +491,11 @@ namespace ZeroTrustMigrationAddin.Services
                         {
                             var version = key.GetValue("Full Version") as string;
                             var buildNumber = key.GetValue("Build") as string;
+                            
+                            // Store for telemetry correlation
+                            SiteVersion = version;
+                            SiteBuild = buildNumber;
+                            
                             FileLogger.Instance.Info($"   ConfigMgr Version: {version ?? "Unknown"}");
                             FileLogger.Instance.Info($"   ConfigMgr Build: {buildNumber ?? "Unknown"}");
                         }
@@ -625,6 +640,9 @@ namespace ZeroTrustMigrationAddin.Services
                     
                     // Log environment details
                     LogEnvironmentInfo();
+                    
+                    // Track connection for telemetry
+                    AzureTelemetryService.Instance.TrackConfigMgrConnected(_siteCode, SiteVersion, SiteBuild, _connectionMethod);
                     
                     // Save settings for next session
                     SaveConnectionSettings();
@@ -778,6 +796,12 @@ namespace ZeroTrustMigrationAddin.Services
                             _lastConnectionError = string.Empty; // Clear error - WMI worked
                             System.Diagnostics.Debug.WriteLine($"✅ WMI fallback SUCCESSFUL: {_siteServer}, Site: {_siteCode}");
                             
+                            // Log environment details (populates SiteVersion)
+                            LogEnvironmentInfo();
+                            
+                            // Track connection for telemetry
+                            AzureTelemetryService.Instance.TrackConfigMgrConnected(_siteCode, SiteVersion, SiteBuild, _connectionMethod);
+                            
                             // Save settings for next session
                             SaveConnectionSettings();
                             
@@ -853,6 +877,14 @@ namespace ZeroTrustMigrationAddin.Services
             _cachedDevices = devices;
             _deviceCacheExpiration = DateTime.Now.Add(_deviceCacheLifetime);
             Instance.Info($"[CACHE UPDATE] Cached {devices.Count} ConfigMgr devices for {_deviceCacheLifetime.TotalMinutes} minutes");
+            
+            // Track query result for telemetry
+            AzureTelemetryService.Instance.TrackApiQueryResult(
+                "GetWindows1011Devices", 
+                200, // Success if we get here
+                devices.Count, 
+                SiteVersion, 
+                _useWmiFallback);
             
             return devices;
         }
