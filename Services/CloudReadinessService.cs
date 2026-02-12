@@ -2030,12 +2030,19 @@ namespace ZeroTrustMigrationAddin.Services
 
                 if (configMgrDevices.Count > 0)
                 {
+                    // Track how many have no LastActiveTime (data quality indicator)
+                    comparison.ConfigMgrDevicesWithNoLastActiveTime = configMgrDevices.Count(d => !d.LastActiveTime.HasValue);
+                    
                     comparison.ConfigMgrStaleCount = configMgrDevices.Count(d => 
                         !d.LastActiveTime.HasValue || d.LastActiveTime.Value < staleThreshold);
                     comparison.ConfigMgrStalePercentage = Math.Round(
                         (double)comparison.ConfigMgrStaleCount / configMgrDevices.Count * 100, 1);
                     
                     Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrStaleCount}/{comparison.ConfigMgrDeviceCount} stale ({comparison.ConfigMgrStalePercentage}%)");
+                    if (comparison.ConfigMgrDevicesWithNoLastActiveTime > 0)
+                    {
+                        Instance.Info($"      ⚠️ {comparison.ConfigMgrDevicesWithNoLastActiveTime} devices have no LastActiveTime data");
+                    }
                 }
 
                 Instance.Info($"   🔍 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
@@ -2304,7 +2311,17 @@ namespace ZeroTrustMigrationAddin.Services
                 comparison.IntuneDeviceCount = intuneDevices.Count;
                 comparison.IntuneEncryptedCount = intuneDevices.Count(d => d.IsEncrypted == true);
                 
+                // Track devices where encryption status is unknown (null)
+                var encryptionUnknown = intuneDevices.Count(d => d.IsEncrypted == null);
+                var encryptionFalse = intuneDevices.Count(d => d.IsEncrypted == false);
+                comparison.IntuneEncryptionUnknownCount = encryptionUnknown;
+                
                 Instance.Info($"   ✓ Intune: {comparison.IntuneEncryptedCount}/{comparison.IntuneDeviceCount} encrypted ({comparison.IntuneEncryptedPercentage:F1}%)");
+                if (encryptionUnknown > 0)
+                {
+                    Instance.Info($"      ⚠️ {encryptionUnknown} devices have no encryption status reported (IsEncrypted=null)");
+                    Instance.Info($"      📊 Breakdown: {comparison.IntuneEncryptedCount} encrypted, {encryptionFalse} not encrypted, {encryptionUnknown} unknown");
+                }
                 
                 // Get ConfigMgr BitLocker status
                 var bitlockerStatus = await _configMgrService.GetBitLockerStatusAsync();
@@ -2316,6 +2333,10 @@ namespace ZeroTrustMigrationAddin.Services
                     g.Any(b => b.ProtectionStatus >= 1));
                 
                 Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrEncryptedCount}/{comparison.ConfigMgrDeviceCount} encrypted ({comparison.ConfigMgrEncryptedPercentage:F1}%)");
+                if (uniqueDevices.Count == 0)
+                {
+                    Instance.Info($"      ⚠️ No BitLocker data from ConfigMgr - SMS_G_System_ENCRYPTABLE_VOLUME may not be inventoried");
+                }
                 Instance.Info($"   🔑 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
             }
             catch (Exception ex)

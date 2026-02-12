@@ -141,6 +141,18 @@ namespace ZeroTrustMigrationAddin.Views
                     { "UsedMockData", "false" }
                 });
                 
+                // NEW: Track security posture comparison for VP dashboards
+                // This is UNIQUE data only this tool can provide - comparing security across both platforms
+                AzureTelemetryService.Instance.TrackSecurityPostureComparison(
+                    compliance?.IntuneCompliancePercentage ?? 0,
+                    compliance?.ConfigMgrCompliancePercentage ?? 0,
+                    ca?.IntuneCAReadyPercentage ?? 0,
+                    0, // ConfigMgr-only devices cannot participate in CA (always 0%)
+                    bitlocker?.IntuneEncryptedPercentage ?? 0,
+                    bitlocker?.ConfigMgrEncryptedPercentage ?? 0,
+                    compliance?.IntuneDeviceCount ?? 0,
+                    compliance?.ConfigMgrDeviceCount ?? 0);
+                
                 Instance.Info("[COMPARISON TAB] Comparison data loaded successfully");
             }
             catch (Exception ex)

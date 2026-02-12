@@ -10,6 +10,44 @@
 - 
 
 
+## [3.17.144] - 2026-02-11
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.143] - 2026-02-11
+
+### Added
+- **ConfigMgr version telemetry** - Track site version, site build, and connection method when connecting to ConfigMgr for debugging version-specific API issues
+- **API query result telemetry** - Track device query results (count, status code, fallback usage) to correlate empty results with specific CM versions
+- **Azure Workbook Infrastructure section** - Added "Infrastructure Environment" section showing CM version distribution, connection methods, and API results by version
+- **VP-level strategic telemetry** - New tracking methods for leadership insights:
+  - `TrackMigrationBlockers()` - Devices missing AAD ID, stale, not in Autopilot
+  - `TrackSecurityPostureComparison()` - Compliance/CA/Encryption delta between Intune and ConfigMgr
+  - `TrackDeviceOrphans()` - Cross-platform device mismatches (CM-only, Intune-only, co-managed)
+  - `TrackAutopilotReadiness()` - Autopilot registration funnel
+- **Azure Workbook VP Dashboard** - New "VP Migration Dashboard" section at top showing:
+  - Aggregate migration progress across all organizations
+  - Migration blockers summary
+  - Security improvement delta (Intune vs ConfigMgr)
+  - Cross-platform device distribution
+  - Autopilot readiness funnel
+  - Migration progress over time trend
+- **Telemetry auto-flush** - Added periodic flush every 2 minutes to ensure telemetry is sent even if app crashes or is force-closed. Also immediate flush for important events (AppStarted, AppExited, EstateSnapshot)
+
+### Changed
+
+### Fixed 
+- **Response Time comparison showing "comparable" with no data** - When ConfigMgr Admin Service returns no LastActiveTime data (0.0 days), now shows "No ConfigMgr scan data available for comparison" instead of misleading "comparable" message
+- **Security Blind Spots showing 100% with no data** - When all ConfigMgr devices have no LastActiveTime, now shows "ConfigMgr not reporting LastActiveTime - data unavailable" instead of falsely claiming 100% stale
+- **BitLocker showing 0% when encryption status unknown** - Added detection for devices where `IsEncrypted` returns null from Graph API. Now shows "Intune not reporting encryption status" instead of misleading 0%. Added detailed logging of encrypted/not encrypted/unknown breakdown
+
+
 ## [3.17.142] - 2026-02-11
 
 ### Added

@@ -87,6 +87,18 @@ namespace ZeroTrustMigrationAddin.Views
                     { "UsedMockData", "false" }
                 });
                 
+                // NEW: Track Autopilot readiness for VP dashboards
+                var autopilotSignal = _currentDashboard.Signals.FirstOrDefault(s => s.Id == "autopilot");
+                if (autopilotSignal != null)
+                {
+                    AzureTelemetryService.Instance.TrackAutopilotReadiness(
+                        _currentDashboard.TotalAssessedDevices,
+                        autopilotSignal.ReadyDevices,
+                        autopilotSignal.TotalDevices, // Using total as proxy for devices with AAD ID
+                        0, // TPM 2.0 - would need separate query
+                        0); // Secure Boot - would need separate query
+                }
+                
                 Instance.Info($"[CLOUD READINESS TAB] Assessment complete: {_currentDashboard.OverallReadiness}% overall readiness");
             }
             catch (Exception ex)
