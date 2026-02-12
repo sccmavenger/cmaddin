@@ -1837,7 +1837,8 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Get client health metrics beyond basic version
+        /// Get client health metrics beyond basic version.
+        /// Auto-fallbacks to WMI if REST API returns 404 (SMS_CH_Summary not exposed via Admin Service on some CM versions).
         /// </summary>
         public async Task<List<ConfigMgrClientHealth>> GetClientHealthMetricsAsync()
         {
@@ -1846,13 +1847,21 @@ namespace ZeroTrustMigrationAddin.Services
                 throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
             }
 
+            // WMI fallback mode - always use WMI
             if (_useWmiFallback)
             {
                 return await GetClientHealthViaWmiAsync();
             }
-            else
+            
+            // Try REST first, auto-fallback to WMI if SMS_CH_Summary returns 404
+            try
             {
                 return await GetClientHealthViaRestApiAsync();
+            }
+            catch (Exception ex) when (ex.Message.Contains("404") || ex.InnerException?.Message?.Contains("404") == true)
+            {
+                Instance.Warning("[CONFIGMGR] SMS_CH_Summary not available via REST API (404) - falling back to WMI...");
+                return await GetClientHealthViaWmiAsync();
             }
         }
 

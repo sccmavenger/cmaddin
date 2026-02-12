@@ -1,13 +1,16 @@
 # Cloud Native Assessment - Change Log
 
-## [Unreleased]
+## [3.17.154] - 2026-02-12
 
 ### Added
 
 ### Changed
 
 ### Fixed
-- 
+- **SMS_CH_Summary 404 fallback to WMI**: Admin Service REST API doesn't expose SMS_CH_Summary on all ConfigMgr versions
+  - GetClientHealthMetricsAsync() now automatically falls back to WMI when REST returns 404
+  - Enables enrichment to work even when Admin Service doesn't support SMS_CH_Summary
+  - Logs fallback for diagnostics: "SMS_CH_Summary not available via REST API (404) - falling back to WMI..."
 
 
 ## [3.17.153] - 2026-02-12
