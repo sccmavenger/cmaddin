@@ -1838,8 +1838,7 @@ namespace ZeroTrustMigrationAddin.Services
 
         /// <summary>
         /// Get client health metrics beyond basic version.
-        /// NOTE: WMI fallback DISABLED - was causing app hangs on some ConfigMgr versions.
-        /// Will return empty list if REST API fails.
+        /// Uses REST API first, then falls back to PowerShell (not .NET WMI which can hang).
         /// </summary>
         public async Task<List<ConfigMgrClientHealth>> GetClientHealthMetricsAsync()
         {
@@ -1848,8 +1847,7 @@ namespace ZeroTrustMigrationAddin.Services
                 throw new InvalidOperationException("Not configured. Call ConfigureAsync first.");
             }
 
-            // WMI fallback DISABLED - was causing app to hang/crash
-            // If REST fails, return empty list and let caller handle gracefully
+            // Try REST first
             try
             {
                 return await GetClientHealthViaRestApiAsync();
@@ -1857,8 +1855,18 @@ namespace ZeroTrustMigrationAddin.Services
             catch (Exception ex)
             {
                 Instance.Warning($"[CONFIGMGR] SMS_CH_Summary not available via REST API: {ex.Message}");
-                Instance.Warning("[CONFIGMGR] WMI fallback is DISABLED - returning empty list. Activity timestamps will use device last sync time instead.");
-                return new List<ConfigMgrClientHealth>();
+                Instance.Info("[CONFIGMGR] Trying PowerShell fallback for SMS_CH_Summary...");
+                
+                try
+                {
+                    return await GetClientHealthViaPowerShellAsync();
+                }
+                catch (Exception psEx)
+                {
+                    Instance.Warning($"[CONFIGMGR] PowerShell fallback also failed: {psEx.Message}");
+                    Instance.Warning("[CONFIGMGR] Returning empty list - activity timestamps will use device last sync time instead.");
+                    return new List<ConfigMgrClientHealth>();
+                }
             }
         }
 
@@ -1952,6 +1960,123 @@ namespace ZeroTrustMigrationAddin.Services
                     throw new Exception($"Failed to get client health metrics via WMI: {ex.Message}", ex);
                 }
             });
+        }
+
+        /// <summary>
+        /// Get client health via PowerShell (avoids .NET WMI hanging issues).
+        /// Spawns pwsh.exe process with timeout to prevent hanging.
+        /// </summary>
+        private async Task<List<ConfigMgrClientHealth>> GetClientHealthViaPowerShellAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var healthMetrics = new List<ConfigMgrClientHealth>();
+                
+                try
+                {
+                    Instance.Info("[CONFIGMGR] GetClientHealth via PowerShell - spawning pwsh.exe process");
+                    var wmiNamespace = $"root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery($"\\\\{_siteServer}\\{wmiNamespace}", "SELECT * FROM SMS_CH_Summary (via PowerShell)");
+
+                    // PowerShell script to query SMS_CH_Summary and output JSON
+                    var psScript = $@"
+$results = Get-CimInstance -Namespace '{wmiNamespace}' -ClassName SMS_CH_Summary -ComputerName '{_siteServer}' -ErrorAction Stop |
+    Select-Object ResourceID, ClientActiveStatus, LastActiveTime, LastPolicyRequest, LastDDR, LastHardwareScan, LastSoftwareScan
+$results | ConvertTo-Json -Compress
+";
+
+                    var startInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "pwsh.exe",
+                        Arguments = $"-NoProfile -NonInteractive -Command \"{psScript.Replace("\"", "\\\"")}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var process = new System.Diagnostics.Process { StartInfo = startInfo };
+                    process.Start();
+
+                    // Wait with timeout (30 seconds max)
+                    var completed = process.WaitForExit(30000);
+                    
+                    if (!completed)
+                    {
+                        process.Kill();
+                        throw new TimeoutException("PowerShell query timed out after 30 seconds");
+                    }
+
+                    var output = process.StandardOutput.ReadToEnd();
+                    var error = process.StandardError.ReadToEnd();
+
+                    if (process.ExitCode != 0 || !string.IsNullOrEmpty(error))
+                    {
+                        throw new Exception($"PowerShell error (exit code {process.ExitCode}): {error}");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(output) || output.Trim() == "null")
+                    {
+                        Instance.Warning("[CONFIGMGR] PowerShell returned no data for SMS_CH_Summary");
+                        return healthMetrics;
+                    }
+
+                    // Parse JSON output
+                    var jsonArray = output.Trim().StartsWith("[") ? output : "[" + output + "]";
+                    var items = System.Text.Json.JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(jsonArray);
+                    
+                    if (items != null)
+                    {
+                        foreach (var item in items)
+                        {
+                            healthMetrics.Add(new ConfigMgrClientHealth
+                            {
+                                ResourceId = item.TryGetProperty("ResourceID", out var rid) ? rid.GetInt32() : 0,
+                                ClientActiveStatus = item.TryGetProperty("ClientActiveStatus", out var cas) && cas.ValueKind != System.Text.Json.JsonValueKind.Null ? cas.GetInt32() : 0,
+                                LastActiveTime = ParseJsonDateTime(item, "LastActiveTime"),
+                                LastPolicyRequest = ParseJsonDateTime(item, "LastPolicyRequest"),
+                                LastDDR = ParseJsonDateTime(item, "LastDDR"),
+                                LastHardwareScan = ParseJsonDateTime(item, "LastHardwareScan"),
+                                LastSoftwareScan = ParseJsonDateTime(item, "LastSoftwareScan")
+                            });
+                        }
+                    }
+
+                    var active = healthMetrics.Count(h => h.ClientActiveStatus == 1);
+                    var inactive = healthMetrics.Count(h => h.ClientActiveStatus != 1);
+                    Instance.Info($"[CONFIGMGR] GetClientHealth via PowerShell - returned {healthMetrics.Count} devices (Active: {active}, Inactive: {inactive})");
+                    return healthMetrics;
+                }
+                catch (Exception ex)
+                {
+                    Instance.Error($"[CONFIGMGR] GetClientHealth via PowerShell FAILED: {ex.Message}");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Helper to parse DateTime from JSON element (handles CIM datetime format).
+        /// </summary>
+        private DateTime? ParseJsonDateTime(System.Text.Json.JsonElement item, string propertyName)
+        {
+            if (!item.TryGetProperty(propertyName, out var prop) || prop.ValueKind == System.Text.Json.JsonValueKind.Null)
+                return null;
+
+            // CIM datetimes come as objects with DateTime property
+            if (prop.ValueKind == System.Text.Json.JsonValueKind.Object && prop.TryGetProperty("DateTime", out var dtProp))
+            {
+                if (DateTime.TryParse(dtProp.GetString(), out var dt))
+                    return dt;
+            }
+            // Or as direct string
+            else if (prop.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                if (DateTime.TryParse(prop.GetString(), out var dt))
+                    return dt;
+            }
+
+            return null;
         }
 
         #region Security Inventory for Enrollment Simulator

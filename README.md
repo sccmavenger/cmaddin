@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.158** | February 12, 2026
+**Version 3.17.160** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -189,6 +189,28 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.159 (February 12, 2026)
+
+### Fixed
+- **PowerShell-based SMS_CH_Summary query**: Re-enabled client health enrichment via PowerShell instead of .NET WMI
+  - .NET WMI (ManagementObjectSearcher) was causing app hangs on some ConfigMgr versions
+  - PowerShell `Get-CimInstance` runs in separate process with 30-second timeout
+  - Falls back gracefully if PowerShell fails (REST API → PowerShell → empty list)
+  - Enables Response Time metrics without risking app hang
+
+---
+
+### Version 3.17.158 (February 12, 2026)
+
+### Fixed
+- **Disabled WMI fallback for SMS_CH_Summary**: WMI calls were causing app to hang/crash on some ConfigMgr versions
+  - GetClientHealthMetricsAsync now only uses REST API
+  - Returns empty list if REST fails (graceful degradation)
+  - Activity timestamps will fall back to device last sync time instead
+
+---
+
 ### Version 3.17.157 (February 12, 2026)
 
 ### Fixed
@@ -217,57 +239,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - GetClientHealthMetricsAsync() now automatically falls back to WMI when REST returns 404
   - Enables enrichment to work even when Admin Service doesn't support SMS_CH_Summary
   - Logs fallback for diagnostics: "SMS_CH_Summary not available via REST API (404) - falling back to WMI..."
-
----
-
-### Version 3.17.152 (February 12, 2026)
-
-### Added
-- **Robust LastActiveTime data acquisition**: Multi-layer fallback system ensures ConfigMgr Response Time data is always available
-  - Primary: Query Admin Service WITHOUT $select to get all fields (avoids 404 on $select)
-  - Fallback 1: Query WITH $select if no-select fails
-  - Fallback 2: Query without filter if contains() not supported
-  - WMI extraction: Now includes LastActiveTime and CreationDate from WMI fallback
-  - SMS_CH_Summary enrichment: Auto-enriches devices from Client Health data when >50% missing timestamps
-- **Alternative timestamp support**: ConfigMgrDevice model now supports multiple activity timestamps
-  - LastPolicyRequest, LastDDR, LastHardwareScan, LastSoftwareScan from SMS_CH_Summary
-  - GetBestActivityTime() helper returns best available timestamp
-  - GetActivityTimeFieldName() indicates which field is being used
-  - ActivityTimeSource property tracks data origin (Primary, ClientHealth, WMI)
-- **Enhanced logging for activity time data quality**
-  - Logs field breakdown showing which timestamp sources are being used
-  - Tracks enrichment success and provides actionable troubleshooting steps
-
-### Changed
-- Admin Service query strategy changed: now queries WITHOUT $select first for maximum field coverage
-- CloudReadinessService Response Time and Stale Device calculations now use GetBestActivityTime()
-
-### Fixed
-- **ConfigMgr Response Time tile showing "No data"**: Root cause was Admin Service returning 404 on $select parameter
-  - Fixed by querying without $select first (returns all fields)
-  - Added WMI LastActiveTime extraction (was missing before)
-  - Added automatic SMS_CH_Summary data enrichment when primary data insufficient
-
----
-
-### Version 3.17.151 (February 12, 2026)
-
-### Added
-- **Enhanced ConfigMgr LastActiveTime diagnostics**: Added detailed logging when ConfigMgr devices are missing LastActiveTime data
-  - Logs percentage of devices with valid LastActiveTime field
-  - Warns prominently when 0% of devices have data (causes "No data" on Response Time tile)
-  - Includes WMI troubleshooting command for administrators
-  - Logs LastActiveTime date range and average for debugging
-- **Query mode tracking**: Logs which Admin Service query mode succeeded (WithSelect, WithoutSelect, Fallback)
-  - Helps diagnose when $select parameter is stripped during retry
-  - Warns when fallback mode may cause missing field data
-- **CloudReadinessService data quality logging**: Added diagnostic output when calculating sync freshness
-  - Shows count of devices with valid LastActiveTime before averaging
-  - Provides actionable troubleshooting steps when data is unavailable
-
-### Changed
-
-### Fixed
 
 ---
 
@@ -1488,5 +1459,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.158  
+**Version**: 3.17.160  
 **Maintainer:** Cloud Native Assessment Team
