@@ -10,6 +10,43 @@
 - 
 
 
+## [3.17.189] - 2026-02-13
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.188] - 2026-02-13
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.187] - 2026-02-13
+
+### Added
+
+### Changed
+- **Security Blind Spots v3 - Show device scope context**: Makes cloud visibility advantage obvious
+  - Old display: "62 stale" vs "0 stale" (wrongly implies ConfigMgr is better)
+  - New display: "62 of 80 tracked" vs "0 of 4 visible" (shows ConfigMgr's limited scope)
+  - New summary: "62 devices need attention - 76 only visible via cloud"
+  - Added `DevicesOnlyVisibleViaCloud`, `CloudSeesMoreDevices`, `IntuneCountDisplay`, `ConfigMgrCountDisplay` properties
+  - Cloud icon (☁️) now shown when Intune manages more devices than ConfigMgr
+  - Key insight: ConfigMgr showing 0% isn't better - it just can't see most devices
+
+### Fixed
+- 
+
+
 ## [3.17.186] - 2026-02-13
 
 ### Added

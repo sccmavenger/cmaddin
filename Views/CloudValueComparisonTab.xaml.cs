@@ -305,9 +305,10 @@ namespace ZeroTrustMigrationAddin.Views
             if (data == null) return;
             
             IntuneStalePercent.Text = $"{data.IntuneStalePercentage:F1}%";
-            IntuneStaleCount.Text = $"{data.IntuneStaleCount:N0} stale";
+            // Use contextual display: "62 of 80 tracked" vs "0 of 4 visible" to show scope difference
+            IntuneStaleCount.Text = data.IntuneCountDisplay;
             ConfigMgrStalePercent.Text = $"{data.ConfigMgrStalePercentage:F1}%";
-            ConfigMgrStaleCount.Text = $"{data.ConfigMgrStaleCount:N0} stale";
+            ConfigMgrStaleCount.Text = data.ConfigMgrCountDisplay;
             StaleComparisonIcon.Text = data.ComparisonIcon;
             StaleSummaryText.Text = data.ComparisonSummary;
         }
