@@ -10,6 +10,26 @@
 - 
 
 
+## [3.17.191] - 2026-02-13
+
+### Added
+- **Executive Headlines methodology documentation**: Added full reference in COMPARISON_METHODOLOGY.md
+  - Each headline explained: what it measures, data source, formula, why it matters
+  - Includes cloud-native capability comparison table
+  - Documents all 9 headlines with actionable context
+
+### Changed
+- **Azure Workbook Executive Headlines v2**: Clearer, more actionable one-liners
+  - "Devices At Risk": Now shows "no cloud remediation, no Conditional Access, no Autopilot recovery"
+  - "Cloud-Native Progress": Fixed 100.7% bug - now shows count + capped percentage with definition
+  - "Don't Waste Time": Now breaks down blockers: "X missing AAD ID + Y stale 14+ days"
+  - "Autopilot Opportunity": Now explains impact: "if rebuilt, require manual setup"
+  - All messages now answer "what?" and "so what?"
+
+### Fixed
+- **100.7% cloud-native bug**: Changed denominator from TotalDevices to CloudManagedDevices, capped at 100% 
+
+
 ## [3.17.190] - 2026-02-13
 
 ### Added
