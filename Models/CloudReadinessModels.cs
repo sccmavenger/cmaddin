@@ -524,16 +524,17 @@ namespace ZeroTrustMigrationAddin.Models
         public int ConfigMgrScannedToday { get; set; }
         public double ConfigMgrScannedTodayPercentage { get; set; }
         
-        // Data availability flags
-        public bool HasIntuneData => IntuneDeviceCount > 0 && IntuneAvgDaysSinceSync > 0;
-        public bool HasConfigMgrData => ConfigMgrDeviceCount > 0 && ConfigMgrAvgDaysSinceScan > 0;
+        // Data availability flags (0 days is valid - means synced today)
+        public bool HasIntuneData => IntuneDeviceCount > 0;
+        public bool HasConfigMgrData => ConfigMgrDeviceCount > 0 && ConfigMgrScannedToday >= 0;
         
         // Comparison
-        public double SpeedMultiplier => HasConfigMgrData && HasIntuneData 
+        public double SpeedMultiplier => HasConfigMgrData && HasIntuneData && IntuneAvgDaysSinceSync > 0
             ? Math.Round(ConfigMgrAvgDaysSinceScan / IntuneAvgDaysSinceSync, 1) 
             : 0;
         
         public bool CloudNativeIsFaster => HasIntuneData && HasConfigMgrData && IntuneAvgDaysSinceSync < ConfigMgrAvgDaysSinceScan;
+        public bool ConfigMgrIsFaster => HasIntuneData && HasConfigMgrData && ConfigMgrAvgDaysSinceScan < IntuneAvgDaysSinceSync;
         
         public string ComparisonSummary
         {
@@ -547,15 +548,39 @@ namespace ZeroTrustMigrationAddin.Models
                 if (!HasIntuneData)
                     return "No Intune sync data available for comparison";
                 
-                // Both have data - compare
-                if (CloudNativeIsFaster && SpeedMultiplier > 1)
-                    return $"Cloud-native devices respond {SpeedMultiplier:F0}x faster to policy changes";
+                // Compare average days since sync (lower is better)
+                var intuneDays = IntuneAvgDaysSinceSync;
+                var configMgrDays = ConfigMgrAvgDaysSinceScan;
+                
+                // If both are very recent (< 1 day), they're both good
+                if (intuneDays < 1 && configMgrDays < 1)
+                    return "Both platforms have excellent response times";
+                
+                // If ConfigMgr is significantly better (lower days)
+                if (configMgrDays < intuneDays && intuneDays > 1)
+                {
+                    if (configMgrDays < 1)
+                        return $"ConfigMgr devices synced today vs Intune avg {intuneDays:F0} days";
+                    var ratio = Math.Round(intuneDays / configMgrDays, 1);
+                    return $"ConfigMgr responds {ratio:F0}x faster ({configMgrDays:F0}d vs {intuneDays:F0}d)";
+                }
+                
+                // If Intune is significantly better
+                if (intuneDays < configMgrDays && configMgrDays > 1)
+                {
+                    if (intuneDays < 1)
+                        return $"Cloud-native synced today vs ConfigMgr avg {configMgrDays:F0} days";
+                    var ratio = Math.Round(configMgrDays / intuneDays, 1);
+                    return $"Cloud-native responds {ratio:F0}x faster ({intuneDays:F0}d vs {configMgrDays:F0}d)";
+                }
                 
                 return "Response times are comparable";
             }
         }
         
-        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData ? "❓" : (CloudNativeIsFaster ? "⚡" : "➡️");
+        // Icon: ⚡ = Cloud faster, ➖ = ConfigMgr faster, ➡️ = comparable, ❓ = no data
+        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData ? "❓" : 
+            (ConfigMgrIsFaster ? "➖" : (CloudNativeIsFaster ? "⚡" : "➡️"));
     }
 
     /// <summary>
@@ -594,15 +619,27 @@ namespace ZeroTrustMigrationAddin.Models
             {
                 // If all ConfigMgr devices have no data, show specific message
                 if (ConfigMgrAllMissingData)
-                    return "ConfigMgr not reporting LastActiveTime - data unavailable";
+                    return "ConfigMgr not reporting LastPolicyRequest - data unavailable";
                 
+                // Handle zero stale percentages (division by zero protection)
+                if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage == 0)
+                    return "Both platforms have no stale devices";
+                
+                if (ConfigMgrStalePercentage == 0)
+                    return $"ConfigMgr has zero security blind spots ({IntuneStaleCount} stale in Intune)";
+                
+                if (IntuneStalePercentage == 0)
+                    return $"Intune has zero security blind spots ({ConfigMgrStaleCount} stale in ConfigMgr)";
+                
+                // Both have stale devices - compare
                 if (CloudNativeHasFewerStale && StaleRatioMultiplier > 1)
                     return $"Cloud-native has {StaleRatioMultiplier:F0}x fewer security blind spots";
                 
                 if (IntuneStalePercentage == ConfigMgrStalePercentage)
                     return "Stale device rates are equal";
                 
-                return $"ConfigMgr has {Math.Round(IntuneStalePercentage / ConfigMgrStalePercentage, 1):F0}x fewer stale devices";
+                var ratio = Math.Round(IntuneStalePercentage / ConfigMgrStalePercentage, 1);
+                return $"ConfigMgr has {ratio:F0}x fewer stale devices";
             }
         }
         
