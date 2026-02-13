@@ -1959,6 +1959,37 @@ namespace ZeroTrustMigrationAddin.Services
                             (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays < 1);
                         comparison.IntuneSyncedTodayPercentage = Math.Round(
                             (double)comparison.IntuneSyncedToday / intuneDevices.Count * 100, 1);
+                        
+                        // === DIAGNOSTIC: Breakdown by sync age ===
+                        var syncedToday = devicesWithSync.Count(d => (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays < 1);
+                        var synced1to7 = devicesWithSync.Count(d => { var days = (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays; return days >= 1 && days < 7; });
+                        var synced7to14 = devicesWithSync.Count(d => { var days = (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays; return days >= 7 && days < 14; });
+                        var synced14to30 = devicesWithSync.Count(d => { var days = (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays; return days >= 14 && days < 30; });
+                        var synced30to90 = devicesWithSync.Count(d => { var days = (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays; return days >= 30 && days < 90; });
+                        var syncedOver90 = devicesWithSync.Count(d => (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays >= 90);
+                        
+                        Instance.Info($"   📊 INTUNE SYNC AGE BREAKDOWN (Response Time diagnostic):");
+                        Instance.Info($"      Today (<1 day):     {syncedToday} devices");
+                        Instance.Info($"      Recent (1-7 days):  {synced1to7} devices");
+                        Instance.Info($"      Week+ (7-14 days):  {synced7to14} devices");
+                        Instance.Info($"      Stale (14-30 days): {synced14to30} devices");
+                        Instance.Info($"      Old (30-90 days):   {synced30to90} devices");
+                        Instance.Info($"      Abandoned (90+ days): {syncedOver90} devices ⚠️");
+                        
+                        // Show top 5 oldest devices dragging average up
+                        if (comparison.IntuneAvgDaysSinceSync > 7)
+                        {
+                            var oldestDevices = devicesWithSync
+                                .OrderByDescending(d => (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays)
+                                .Take(5)
+                                .Select(d => $"{d.DeviceName ?? "Unknown"}: {(int)(DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays} days");
+                            Instance.Warning($"   ⚠️ TOP 5 OLDEST DEVICES (dragging avg to {comparison.IntuneAvgDaysSinceSync} days):");
+                            foreach (var device in oldestDevices)
+                            {
+                                Instance.Warning($"      • {device}");
+                            }
+                            Instance.Info($"   💡 RECOMMENDATION: Remove or remediate abandoned devices to improve Response Time metric");
+                        }
                     }
                     Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} devices, avg {comparison.IntuneAvgDaysSinceSync} days since sync, {comparison.IntuneSyncedTodayPercentage}% synced today");
                 }
@@ -2038,6 +2069,48 @@ namespace ZeroTrustMigrationAddin.Services
                         (double)comparison.IntuneStaleCount / intuneDevices.Count * 100, 1);
                     
                     Instance.Info($"   ✓ Intune: {comparison.IntuneStaleCount}/{comparison.IntuneDeviceCount} stale ({comparison.IntuneStalePercentage}%)");
+                    
+                    // === DIAGNOSTIC: Show stale device details ===
+                    if (comparison.IntuneStaleCount > 0)
+                    {
+                        var noSyncDate = intuneDevices.Count(d => d.LastSyncDateTime == null);
+                        var staleDevices = intuneDevices
+                            .Where(d => d.LastSyncDateTime == null || d.LastSyncDateTime.Value.UtcDateTime < staleThreshold)
+                            .ToList();
+                        
+                        // Breakdown by age
+                        var stale14to30 = staleDevices.Count(d => d.LastSyncDateTime != null && 
+                            (DateTime.UtcNow - d.LastSyncDateTime.Value.UtcDateTime).TotalDays >= 14 &&
+                            (DateTime.UtcNow - d.LastSyncDateTime.Value.UtcDateTime).TotalDays < 30);
+                        var stale30to90 = staleDevices.Count(d => d.LastSyncDateTime != null && 
+                            (DateTime.UtcNow - d.LastSyncDateTime.Value.UtcDateTime).TotalDays >= 30 &&
+                            (DateTime.UtcNow - d.LastSyncDateTime.Value.UtcDateTime).TotalDays < 90);
+                        var staleOver90 = staleDevices.Count(d => d.LastSyncDateTime != null && 
+                            (DateTime.UtcNow - d.LastSyncDateTime.Value.UtcDateTime).TotalDays >= 90);
+                        
+                        Instance.Info($"   📊 INTUNE STALE DEVICE BREAKDOWN (Security Blind Spots diagnostic):");
+                        Instance.Info($"      No sync date:       {noSyncDate} devices (never synced or data missing)");
+                        Instance.Info($"      Stale (14-30 days): {stale14to30} devices");
+                        Instance.Info($"      Old (30-90 days):   {stale30to90} devices");
+                        Instance.Info($"      Abandoned (90+ days): {staleOver90} devices ⚠️");
+                        
+                        // Show top 5 worst offenders
+                        var worstDevices = staleDevices
+                            .Where(d => d.LastSyncDateTime != null)
+                            .OrderByDescending(d => (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays)
+                            .Take(5)
+                            .Select(d => $"{d.DeviceName ?? "Unknown"}: {(int)(DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays} days stale");
+                        
+                        if (worstDevices.Any())
+                        {
+                            Instance.Warning($"   ⚠️ TOP 5 STALEST INTUNE DEVICES:");
+                            foreach (var device in worstDevices)
+                            {
+                                Instance.Warning($"      • {device}");
+                            }
+                        }
+                        Instance.Info($"   💡 RECOMMENDATION: Retire or remediate stale devices to improve Security Blind Spots metric");
+                    }
                 }
 
                 // Get ConfigMgr devices
@@ -2059,6 +2132,53 @@ namespace ZeroTrustMigrationAddin.Services
                     if (comparison.ConfigMgrDevicesWithNoLastActiveTime > 0)
                     {
                         Instance.Info($"      ⚠️ {comparison.ConfigMgrDevicesWithNoLastActiveTime} devices have no activity time data (treated as stale)");
+                    }
+
+                    // DIAGNOSTIC: Show ConfigMgr stale device breakdown by age
+                    if (comparison.ConfigMgrStaleCount > 0)
+                    {
+                        var staleDevices = configMgrDevices
+                            .Where(d => !d.GetBestActivityTime().HasValue || d.GetBestActivityTime()!.Value < staleThreshold)
+                            .ToList();
+                        
+                        var noActivityDevices = staleDevices.Where(d => !d.GetBestActivityTime().HasValue).ToList();
+                        var staleWithDates = staleDevices
+                            .Where(d => d.GetBestActivityTime().HasValue)
+                            .Select(d => new { Device = d, DaysStale = (DateTime.UtcNow - d.GetBestActivityTime()!.Value).TotalDays })
+                            .ToList();
+                        
+                        var stale14to30 = staleWithDates.Count(d => d.DaysStale >= StaleDeviceComparison.StaleThresholdDays && d.DaysStale < 30);
+                        var stale30to90 = staleWithDates.Count(d => d.DaysStale >= 30 && d.DaysStale < 90);
+                        var stale90plus = staleWithDates.Count(d => d.DaysStale >= 90);
+                        
+                        Instance.Warning($"   📊 CONFIGMGR STALE BREAKDOWN ({comparison.ConfigMgrStaleCount} stale devices):");
+                        Instance.Warning($"      • No activity data: {noActivityDevices.Count} devices");
+                        Instance.Warning($"      • 14-30 days stale: {stale14to30} devices");
+                        Instance.Warning($"      • 30-90 days stale: {stale30to90} devices");
+                        Instance.Warning($"      • 90+ days stale: {stale90plus} devices");
+                        
+                        // Show top 5 worst offenders including those with no dates
+                        var worstWithDates = staleWithDates
+                            .OrderByDescending(d => d.DaysStale)
+                            .Take(5)
+                            .Select(d => $"{d.Device.Name ?? "Unknown"}: {d.DaysStale:F0} days stale (LastPolicyRequest: {d.Device.GetBestActivityTime():yyyy-MM-dd})")
+                            .ToList();
+                        
+                        var worstNoDates = noActivityDevices
+                            .Take(5 - worstWithDates.Count)
+                            .Select(d => $"{d.Name ?? "Unknown"}: NO ACTIVITY DATA")
+                            .ToList();
+                        
+                        var worstDevices = worstWithDates.Union(worstNoDates).ToList();
+                        if (worstDevices.Any())
+                        {
+                            Instance.Warning($"   ⚠️ TOP STALEST CONFIGMGR DEVICES:");
+                            foreach (var device in worstDevices)
+                            {
+                                Instance.Warning($"      • {device}");
+                            }
+                        }
+                        Instance.Info($"   💡 NOTE: ConfigMgr activity based on LastPolicyRequest (updates every ~60 min)");
                     }
                 }
 
