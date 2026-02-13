@@ -10,6 +10,19 @@
 - 
 
 
+## [3.17.182] - 2026-02-13
+
+### Added
+
+### Changed
+
+### Fixed
+- **Improved comparison tile messages**: Made Security Blind Spots and Response Time messages less technical
+  - "ConfigMgr not reporting LastPolicyRequest - data unavailable" → "ConfigMgr activity data not available"
+  - "ConfigMgr devices synced today vs Intune avg X days" → "ConfigMgr avg today, Intune avg X days"
+  - Added data quality check to detect when ConfigMgr shows 0.0 days with 0% scanned (suspect data)
+
+
 ## [3.17.181] - 2026-02-13
 
 ### Added
