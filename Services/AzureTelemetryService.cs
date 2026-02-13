@@ -696,6 +696,55 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
+        /// <summary>
+        /// Track workload authority snapshot - per-workload Intune adoption rates.
+        /// KEY INSIGHT: Shows which workloads are ready to move and which need work.
+        /// </summary>
+        public void TrackWorkloadAuthoritySnapshot(
+            int totalCoManagedDevices,
+            int devicesReadyForCloudNative,
+            Dictionary<string, int> workloadIntuneAdoptionCounts)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["EstateSizeBand"] = GetEstateSizeBand(totalCoManagedDevices),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["TotalCoManagedDevices"] = totalCoManagedDevices,
+                    ["DevicesReadyForCloudNative"] = devicesReadyForCloudNative,
+                    ["CloudNativeReadyPct"] = totalCoManagedDevices > 0 
+                        ? Math.Round((double)devicesReadyForCloudNative / totalCoManagedDevices * 100, 1) 
+                        : 0
+                };
+
+                // Add per-workload adoption counts and percentages
+                foreach (var workload in workloadIntuneAdoptionCounts)
+                {
+                    var safeName = workload.Key.Replace(" ", "");
+                    metrics[$"{safeName}Count"] = workload.Value;
+                    metrics[$"{safeName}Pct"] = totalCoManagedDevices > 0 
+                        ? Math.Round((double)workload.Value / totalCoManagedDevices * 100, 1) 
+                        : 0;
+                }
+
+                _telemetryClient.TrackEvent("WorkloadAuthoritySnapshot", properties, metrics);
+                _eventsSinceLastFlush++;
+
+                FileLogger.Instance.Info($"[TELEMETRY] WorkloadAuthoritySnapshot: CoManaged={totalCoManagedDevices}, CloudNativeReady={devicesReadyForCloudNative}, Workloads={workloadIntuneAdoptionCounts.Count}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track workload authority: {ex.Message}");
+            }
+        }
+
         #endregion
 
         /// <summary>

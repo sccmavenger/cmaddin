@@ -626,6 +626,19 @@ namespace ZeroTrustMigrationAddin.Services
 
                 Instance.LogGraphQuery("GetCoManagedWorkloadAuthority (Result)", 
                     "/deviceManagement/managedDevices", selectFields, null, coManagedDevices.Count);
+                
+                // Track workload authority telemetry
+                try
+                {
+                    AzureTelemetryService.Instance.TrackWorkloadAuthoritySnapshot(
+                        summary.TotalCoManagedDevices,
+                        summary.DevicesReadyForCloudNative,
+                        summary.WorkloadIntuneAdoptionCounts);
+                }
+                catch (Exception telemetryEx)
+                {
+                    Instance.Warning($"[TELEMETRY] Failed to track workload authority: {telemetryEx.Message}");
+                }
             }
             catch (Exception ex)
             {
@@ -1476,16 +1489,59 @@ namespace ZeroTrustMigrationAddin.Services
                     var staleThreshold = DateTime.UtcNow.AddDays(-14);
                     var staleConfigMgrCount = configMgrDevices?.Count(d => !d.LastActiveTime.HasValue || d.LastActiveTime.Value < staleThreshold) ?? 0;
                     
+                    // Calculate devices NOT in Autopilot (opportunity for cloud-native provisioning)
+                    int notInAutopilotCount = 0;
+                    try
+                    {
+                        // Get Autopilot devices to cross-reference
+                        var autopilotDevices = await GetAutopilotDeviceStatusAsync();
+                        if (autopilotDevices != null && autopilotDevices.Count > 0)
+                        {
+                            // Build a set of Autopilot serial numbers (case-insensitive)
+                            var autopilotSerials = new HashSet<string>(
+                                autopilotDevices.Where(a => !string.IsNullOrEmpty(a.SerialNumber))
+                                    .Select(a => a.SerialNumber.ToUpperInvariant()),
+                                StringComparer.OrdinalIgnoreCase);
+                            
+                            // Find Intune devices whose serial numbers ARE in Autopilot (these are registered)
+                            var autopilotRegisteredDeviceNames = new HashSet<string>(
+                                allIntuneDevices
+                                    .Where(d => !string.IsNullOrEmpty(d.SerialNumber) && 
+                                               autopilotSerials.Contains(d.SerialNumber.ToUpperInvariant()))
+                                    .Select(d => d.DeviceName ?? "")
+                                    .Where(n => !string.IsNullOrEmpty(n)),
+                                StringComparer.OrdinalIgnoreCase);
+                            
+                            // Count ConfigMgr devices NOT in the Autopilot-registered set
+                            notInAutopilotCount = configMgrDevices?
+                                .Count(d => !string.IsNullOrEmpty(d.Name) && 
+                                           !autopilotRegisteredDeviceNames.Contains(d.Name)) ?? 0;
+                            
+                            Instance.Info($"[TELEMETRY] Autopilot: {autopilotDevices.Count} registered, {autopilotRegisteredDeviceNames.Count} matched to Intune, {notInAutopilotCount} ConfigMgr devices NOT in Autopilot");
+                        }
+                        else
+                        {
+                            // No Autopilot devices found - all ConfigMgr devices are "not in Autopilot"
+                            notInAutopilotCount = configMgrDevices?.Count ?? 0;
+                            Instance.Info($"[TELEMETRY] No Autopilot devices found - {notInAutopilotCount} devices not registered");
+                        }
+                    }
+                    catch (Exception autopilotEx)
+                    {
+                        Instance.Warning($"[TELEMETRY] Failed to get Autopilot data: {autopilotEx.Message}");
+                        // Leave notInAutopilotCount as 0 - don't fail telemetry if Autopilot lookup fails
+                    }
+                    
                     AzureTelemetryService.Instance.TrackMigrationBlockers(
                         noAADDeviceIdCount,
                         staleConfigMgrCount,
                         0, // Hardware issues - would need separate query
-                        0, // Not in Autopilot - would need Autopilot data
+                        notInAutopilotCount,
                         configMgrOnlyCount,
                         totalDevices);
                     
                     Instance.Info($"[TELEMETRY] Strategic metrics sent: {totalDevices} total, {enrollmentPercentage:F1}% enrolled");
-                    Instance.Info($"[TELEMETRY] Blockers: NoAADID={noAADDeviceIdCount}, Stale={staleConfigMgrCount}");
+                    Instance.Info($"[TELEMETRY] Blockers: NoAADID={noAADDeviceIdCount}, Stale={staleConfigMgrCount}, NotInAutopilot={notInAutopilotCount}");
                 }
                 catch (Exception telemetryEx)
                 {

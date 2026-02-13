@@ -2633,6 +2633,9 @@ namespace ZeroTrustMigrationAddin.Services
                 comparison.IntuneDeviceCount = intuneDevices.Count;
                 
                 // Count devices with MDE-level threat visibility (partnerReportedThreatState populated)
+                // NOTE: This property is ONLY populated when the Intune-to-MDE connector is enabled in Intune
+                // Even if devices ARE onboarded to MDE, this will show 0 without the connector.
+                // Connector: Intune > Endpoint Security > Microsoft Defender for Endpoint > Enable MDE integration
                 comparison.IntuneMDEOnboardedCount = intuneDevices.Count(d => 
                     d.PartnerReportedThreatState != null && 
                     d.PartnerReportedThreatState != Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Unknown);
@@ -2673,6 +2676,16 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info($"   ✓ Intune: {comparison.IntuneMDEOnboardedCount}/{comparison.IntuneDeviceCount} devices with MDE threat visibility");
                 Instance.Info($"   ✓ Intune: {comparison.IntuneRealTimeProtectionCount} devices with real-time malware reporting");
+                
+                // Warn if we have devices but no MDE data - likely connector issue
+                if (comparison.IntuneDeviceCount > 0 && comparison.IntuneMDEOnboardedCount == 0)
+                {
+                    Instance.Warning($"   ⚠️ NOTE: 0 devices with MDE visibility despite {comparison.IntuneDeviceCount} devices enrolled.");
+                    Instance.Warning($"      This usually means the MDE connector is NOT enabled in Intune.");
+                    Instance.Warning($"      Even if devices are onboarded to Defender directly, Intune won't show threat state without the connector.");
+                    Instance.Warning($"      Enable: Intune > Endpoint Security > Microsoft Defender for Endpoint > Connection status");
+                }
+                
                 if (comparison.IntuneRemediatedMalwareCount > 0)
                 {
                     Instance.Info($"   ✓ Intune: {comparison.IntuneRemediatedMalwareCount} threats auto-remediated by Defender");
@@ -2683,7 +2696,16 @@ namespace ZeroTrustMigrationAddin.Services
                 comparison.ConfigMgrDeviceCount = avStatus.Count;
                 comparison.ConfigMgrProtectionEnabledCount = avStatus.Count(av => av.ProtectionEnabled);
                 
-                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrProtectionEnabledCount} devices with 'AV enabled' (no real-time threat visibility)");
+                // Log ConfigMgr status with helpful context
+                if (avStatus.Count == 0)
+                {
+                    Instance.Info($"   ✓ ConfigMgr: 0 devices with 'AV enabled' (no real-time threat visibility)");
+                    Instance.Info($"      (This may mean Endpoint Protection role isn't installed, or Admin Service isn't enabled)");
+                }
+                else
+                {
+                    Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrProtectionEnabledCount} devices with 'AV enabled' (no real-time threat visibility)");
+                }
                 Instance.Info($"   🛡️ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
             }
             catch (Exception ex)
