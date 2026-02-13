@@ -619,6 +619,13 @@ namespace ZeroTrustMigrationAddin.Models
         
         public bool CloudNativeHasFewerStale => IntuneStalePercentage < ConfigMgrStalePercentage;
         
+        /// <summary>
+        /// Security impact explanation for the stale devices
+        /// </summary>
+        public string SecurityImpact => IntuneStaleCount > 0
+            ? $"{IntuneStaleCount} devices may have outdated security policies - only visible via cloud"
+            : "All devices are receiving current security policies";
+        
         public string ComparisonSummary
         {
             get
@@ -632,13 +639,14 @@ namespace ZeroTrustMigrationAddin.Models
                     return "All devices are actively communicating";
                 
                 // KEY INSIGHT: Intune detecting stale devices is CLOUD VISIBILITY in action
-                // ConfigMgr showing 0 stale with few devices may indicate limited visibility
+                // ConfigMgr CANNOT see devices when they're off-network (no VPN, remote workers)
+                // Intune sees them because cloud = always connected over internet
                 if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage > 0)
                 {
-                    // When ConfigMgr has few devices and 0 stale, emphasize Intune's cloud tracking
+                    // Emphasize security impact and cloud advantage
                     if (IntuneStaleCount > 0)
-                        return $"Intune tracks {IntuneStaleCount} unreachable devices via cloud connectivity";
-                    return "Intune provides always-on cloud visibility";
+                        return $"{IntuneStaleCount} devices with policy gaps - visible only via cloud";
+                    return "Cloud provides visibility ConfigMgr cannot";
                 }
                 
                 if (IntuneStalePercentage == 0 && ConfigMgrStalePercentage > 0)
@@ -651,9 +659,9 @@ namespace ZeroTrustMigrationAddin.Models
                 if (IntuneStalePercentage == ConfigMgrStalePercentage)
                     return "Similar visibility across both platforms";
                 
-                // More stale in Intune - but frame as cloud visibility advantage
+                // More stale in Intune - emphasize these are VISIBLE because of cloud
                 if (IntuneStalePercentage > ConfigMgrStalePercentage)
-                    return $"Intune monitors {IntuneStaleCount} unreachable devices (cloud tracking)";
+                    return $"{IntuneStaleCount} off-network devices identified via cloud visibility";
                 
                 var ratio = Math.Round(ConfigMgrStalePercentage / IntuneStalePercentage, 1);
                 return $"Cloud-native has {ratio:F0}x fewer blind spots";
