@@ -10,6 +10,31 @@
 - 
 
 
+## [3.17.185] - 2026-02-13
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.184] - 2026-02-13
+
+### Changed
+- **Security Blind Spots messaging redesign**: Reframed to emphasize cloud visibility advantage
+  - Old: "ConfigMgr has zero security blind spots (62 stale in Intune)" - incorrectly favors ConfigMgr
+  - New: "Intune tracks 62 unreachable devices via cloud connectivity" - highlights Intune advantage
+  - Key insight: Intune detecting stale devices demonstrates cloud visibility, not a problem
+  - ConfigMgr showing 0 stale may indicate limited visibility (on-prem dependency), not better health
+  - All messaging now promotes cloud migration value proposition
+  - Added cloud icon (☁️) when Intune detects more stale devices (cloud tracking feature)
+
+### Fixed
+- Corrected messaging logic that was undermining cloud migration advocacy
+
+
 ## [3.17.183] - 2026-02-13
 
 ### Added

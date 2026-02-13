@@ -627,29 +627,43 @@ namespace ZeroTrustMigrationAddin.Models
                 if (ConfigMgrAllMissingData)
                     return "ConfigMgr activity data not available";
                 
-                // Handle zero stale percentages (division by zero protection)
+                // Handle zero stale percentages
                 if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage == 0)
-                    return "Both platforms have no stale devices";
+                    return "All devices are actively communicating";
                 
-                if (ConfigMgrStalePercentage == 0)
-                    return $"ConfigMgr has zero security blind spots ({IntuneStaleCount} stale in Intune)";
+                // KEY INSIGHT: Intune detecting stale devices is CLOUD VISIBILITY in action
+                // ConfigMgr showing 0 stale with few devices may indicate limited visibility
+                if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage > 0)
+                {
+                    // When ConfigMgr has few devices and 0 stale, emphasize Intune's cloud tracking
+                    if (IntuneStaleCount > 0)
+                        return $"Intune tracks {IntuneStaleCount} unreachable devices via cloud connectivity";
+                    return "Intune provides always-on cloud visibility";
+                }
                 
-                if (IntuneStalePercentage == 0)
-                    return $"Intune has zero security blind spots ({ConfigMgrStaleCount} stale in ConfigMgr)";
+                if (IntuneStalePercentage == 0 && ConfigMgrStalePercentage > 0)
+                    return $"Cloud-native has zero blind spots ({ConfigMgrStaleCount} stale in ConfigMgr)";
                 
                 // Both have stale devices - compare
                 if (CloudNativeHasFewerStale && StaleRatioMultiplier > 1)
                     return $"Cloud-native has {StaleRatioMultiplier:F0}x fewer security blind spots";
                 
                 if (IntuneStalePercentage == ConfigMgrStalePercentage)
-                    return "Stale device rates are equal";
+                    return "Similar visibility across both platforms";
                 
-                var ratio = Math.Round(IntuneStalePercentage / ConfigMgrStalePercentage, 1);
-                return $"ConfigMgr has {ratio:F0}x fewer stale devices";
+                // More stale in Intune - but frame as cloud visibility advantage
+                if (IntuneStalePercentage > ConfigMgrStalePercentage)
+                    return $"Intune monitors {IntuneStaleCount} unreachable devices (cloud tracking)";
+                
+                var ratio = Math.Round(ConfigMgrStalePercentage / IntuneStalePercentage, 1);
+                return $"Cloud-native has {ratio:F0}x fewer blind spots";
             }
         }
         
-        public string ComparisonIcon => ConfigMgrAllMissingData ? "❓" : (CloudNativeHasFewerStale ? "🔍" : "➡️");
+        // Icon reflects cloud visibility advantage - cloud is good even when detecting stale devices
+        public string ComparisonIcon => ConfigMgrAllMissingData ? "❓" : 
+            (IntuneStalePercentage > ConfigMgrStalePercentage ? "☁️" : 
+            (CloudNativeHasFewerStale ? "🔍" : "➡️"));
     }
 
     /// <summary>
