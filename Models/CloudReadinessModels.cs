@@ -630,17 +630,17 @@ namespace ZeroTrustMigrationAddin.Models
         public bool CloudSeesMoreDevices => IntuneDeviceCount > ConfigMgrDeviceCount;
         
         /// <summary>
-        /// Display text for Intune side - shows full context when cloud sees more
+        /// Display text for Intune side - explicitly says "stale" with total context
         /// </summary>
-        public string IntuneCountDisplay => CloudSeesMoreDevices && IntuneStaleCount > 0
-            ? $"{IntuneStaleCount} of {IntuneDeviceCount} tracked"
+        public string IntuneCountDisplay => CloudSeesMoreDevices
+            ? $"{IntuneStaleCount} stale (of {IntuneDeviceCount})"
             : $"{IntuneStaleCount:N0} stale";
         
         /// <summary>
-        /// Display text for ConfigMgr side - shows limited scope when cloud sees more
+        /// Display text for ConfigMgr side - shows the limited scope
         /// </summary>
         public string ConfigMgrCountDisplay => CloudSeesMoreDevices
-            ? $"{ConfigMgrStaleCount} of {ConfigMgrDeviceCount} visible"
+            ? $"{ConfigMgrStaleCount} stale (of {ConfigMgrDeviceCount})"
             : $"{ConfigMgrStaleCount:N0} stale";
         
         /// <summary>
@@ -663,20 +663,16 @@ namespace ZeroTrustMigrationAddin.Models
                     return "All devices are actively communicating";
                 
                 // KEY INSIGHT: Cloud sees MORE devices than ConfigMgr
-                // If ConfigMgr has fewer devices, it simply cannot see those stale ones
+                // ConfigMgr cannot see these devices - they're remote/cloud-native
                 if (CloudSeesMoreDevices && IntuneStaleCount > 0)
                 {
-                    if (DevicesOnlyVisibleViaCloud > 0)
-                        return $"{IntuneStaleCount} devices need attention - {DevicesOnlyVisibleViaCloud} only visible via cloud";
-                    return $"Cloud visibility reveals {IntuneStaleCount} devices needing attention";
+                    return $"{IntuneStaleCount} devices haven't synced in 14+ days - ConfigMgr only sees {ConfigMgrDeviceCount}";
                 }
                 
                 // Fallback for same-size populations
                 if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage > 0)
                 {
-                    if (IntuneStaleCount > 0)
-                        return $"{IntuneStaleCount} devices with policy gaps - visible only via cloud";
-                    return "Cloud provides visibility ConfigMgr cannot";
+                    return $"{IntuneStaleCount} devices haven't synced in 14+ days";
                 }
                 
                 if (IntuneStalePercentage == 0 && ConfigMgrStalePercentage > 0)
