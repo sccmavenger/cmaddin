@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.190 |
+| **Version** | 3.17.191 |
 | **Last Updated** | 2026-02-13 |
 | **Branch** | main |
 | **Status** | Stable - UX fixes pending in [Unreleased] |

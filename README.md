@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.190** | February 13, 2026
+**Version 3.17.191** | February 13, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -214,6 +214,21 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.190 (February 13, 2026)
+
+### Added
+
+### Changed
+- **Security Blind Spots v4 - Crystal clear messaging**: Final clarity improvements
+  - Display: "62 stale (of 80)" and "0 stale (of 4)" - explicitly uses word "stale"
+  - Summary: "62 devices haven't synced in 14+ days - ConfigMgr only sees 4"
+  - Explains WHAT (devices haven't synced), WHY it matters (14+ days = outdated policies), and ConfigMgr limitation
+
+### Fixed
+
+---
+
 ### Version 3.17.187 (February 13, 2026)
 
 ### Added
@@ -275,20 +290,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Changed
 
 ### Fixed
-
----
-
-### Version 3.17.182 (February 13, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **Improved comparison tile messages**: Made Security Blind Spots and Response Time messages less technical
-  - "ConfigMgr not reporting LastPolicyRequest - data unavailable" → "ConfigMgr activity data not available"
-  - "ConfigMgr devices synced today vs Intune avg X days" → "ConfigMgr avg today, Intune avg X days"
-  - Added data quality check to detect when ConfigMgr shows 0.0 days with 0% scanned (suspect data)
 
 ---
 
@@ -1509,5 +1510,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-13  
-**Version**: 3.17.190  
+**Version**: 3.17.191  
 **Maintainer:** Cloud Native Assessment Team
