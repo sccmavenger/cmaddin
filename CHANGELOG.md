@@ -10,6 +10,78 @@
 - 
 
 
+## [3.17.180] - 2026-02-13
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.179] - 2026-02-13
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.178] - 2026-02-13
+
+### Added
+- **VP-Ready Dashboard Improvements**: Complete overhaul for executive consumption
+  - Executive Headlines section with 9 bold statement KPI tiles:
+    - Devices At Risk, Security Blind Spots, Cloud-Native Progress, Security Improvement
+    - **Autopilot Opportunity**: Devices not in Autopilot with registration potential %
+    - **Co-Managed Opportunity**: "X devices are 1 workload shift away from cloud-native"
+    - **Identity Ready**: Hybrid AD Joined % showing identity foundation status
+    - **Hardware Ready**: TPM 2.0 % showing Windows 11/BitLocker readiness
+    - **Don't Waste Time**: Devices with blockers that should be excluded from migration planning
+  - Contextual explanation callouts before each major section explaining "why this matters"
+  - Recommended Actions table with metric-to-action guidance
+  - Dynamic text generation using KQL `strcat()` for real bold statements from live data
+- **Workload Authority Telemetry**: NEW - Per-workload Intune adoption tracking
+  - New `TrackWorkloadAuthoritySnapshot()` telemetry event with per-workload adoption counts
+  - Tracks: Windows Update, Compliance Policy, Device Configuration, Resource Access, Endpoint Protection, Office Apps, Modern Apps
+  - Tracks `DevicesReadyForCloudNative` count (all workloads on Intune)
+  - New dashboard section: "Workload Authority Analysis" with:
+    - "One Step Away" headline tile showing devices ready to remove ConfigMgr client
+    - Per-workload adoption table with percentages
+    - Workload adoption ranking bar chart
+- **Autopilot Opportunity Tracking**: NEW - Identifies devices not registered in Windows Autopilot
+  - Wired up Autopilot data in MigrationBlockers telemetry (was previously hardcoded to 0)
+  - Cross-references ConfigMgr devices against Autopilot registrations via serial number matching
+  - New dashboard headline: "✈️ {X} devices NOT in Autopilot — registering these would bring {Y}% of your estate into cloud-ready provisioning"
+  - Enables VP-level statement: "Registering these devices enables zero-touch deployment, eliminating imaging infrastructure"
+- **Dashboard Interpretation Guide** (`telemetry/DASHBOARD_INTERPRETATION_GUIDE.md`): Comprehensive 300+ line document explaining:
+  - Every metric definition with calculation formulas
+  - Data sources and telemetry events behind each number
+  - "Why a VP should care" explanations
+  - Thresholds (🟢 Good / 🟡 Warning / 🔴 Critical) for all key metrics
+  - Bold statement templates with fill-in-the-blank patterns
+  - KQL query reference for advanced users
+
+### Changed
+- Dashboard header now includes "What is this?", "Why does this matter?", "How is data collected?" context
+- VP Migration Dashboard section includes unique value proposition callout
+- Migration Blockers tile now preceded by explanation of each blocker type and remediation steps
+- Security Posture section explains how deltas are calculated and how to use them
+- Cross-Platform Distribution explains why this view is unique (neither console shows this)
+- Autopilot Readiness explains each metric and target state
+- Executive Summary section now includes adoption metric context
+
+### Fixed
+- **Improved MDE/Defender Tile Diagnostics**: Better logging when MDE connector or ConfigMgr Endpoint Protection is not configured
+  - Added explicit warning when 0 MDE devices detected despite having Intune devices enrolled
+  - Explains that MDE connector must be enabled in Intune for `PartnerReportedThreatState` to be populated
+  - Provides specific path: "Intune > Endpoint Security > Microsoft Defender for Endpoint > Connection status"
+  - ConfigMgr Antivirus query now explains NotFound means Endpoint Protection role may not be installed
+
+
 ## [3.17.177] - 2026-02-12
 
 ### Added

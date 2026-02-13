@@ -2454,7 +2454,21 @@ $results | ConvertTo-Json -Compress
                 }
                 else
                 {
-                    Instance.Warning($"Antivirus query failed: {response.StatusCode}");
+                    // Provide actionable error messages based on status code
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        Instance.Warning($"Antivirus query failed: NotFound - SMS_G_System_AntimalwareHealthStatus class not available.");
+                        Instance.Warning($"   This typically means the Endpoint Protection site role is not installed in ConfigMgr.");
+                        Instance.Warning($"   The comparison tile will show ConfigMgr AV data as unavailable.");
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        Instance.Warning($"Antivirus query failed: Unauthorized - Check Admin Service permissions.");
+                    }
+                    else
+                    {
+                        Instance.Warning($"Antivirus query failed: {response.StatusCode}");
+                    }
                 }
 
                 Instance.Info($"[CONFIGMGR] Retrieved Antivirus status for {statuses.Count} devices");
