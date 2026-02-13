@@ -620,6 +620,30 @@ namespace ZeroTrustMigrationAddin.Models
         public bool CloudNativeHasFewerStale => IntuneStalePercentage < ConfigMgrStalePercentage;
         
         /// <summary>
+        /// Devices only visible via cloud (Intune sees more than ConfigMgr)
+        /// </summary>
+        public int DevicesOnlyVisibleViaCloud => Math.Max(0, IntuneDeviceCount - ConfigMgrDeviceCount);
+        
+        /// <summary>
+        /// Are we comparing different-sized populations? (Cloud sees more)
+        /// </summary>
+        public bool CloudSeesMoreDevices => IntuneDeviceCount > ConfigMgrDeviceCount;
+        
+        /// <summary>
+        /// Display text for Intune side - shows full context when cloud sees more
+        /// </summary>
+        public string IntuneCountDisplay => CloudSeesMoreDevices && IntuneStaleCount > 0
+            ? $"{IntuneStaleCount} of {IntuneDeviceCount} tracked"
+            : $"{IntuneStaleCount:N0} stale";
+        
+        /// <summary>
+        /// Display text for ConfigMgr side - shows limited scope when cloud sees more
+        /// </summary>
+        public string ConfigMgrCountDisplay => CloudSeesMoreDevices
+            ? $"{ConfigMgrStaleCount} of {ConfigMgrDeviceCount} visible"
+            : $"{ConfigMgrStaleCount:N0} stale";
+        
+        /// <summary>
         /// Security impact explanation for the stale devices
         /// </summary>
         public string SecurityImpact => IntuneStaleCount > 0
@@ -638,12 +662,18 @@ namespace ZeroTrustMigrationAddin.Models
                 if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage == 0)
                     return "All devices are actively communicating";
                 
-                // KEY INSIGHT: Intune detecting stale devices is CLOUD VISIBILITY in action
-                // ConfigMgr CANNOT see devices when they're off-network (no VPN, remote workers)
-                // Intune sees them because cloud = always connected over internet
+                // KEY INSIGHT: Cloud sees MORE devices than ConfigMgr
+                // If ConfigMgr has fewer devices, it simply cannot see those stale ones
+                if (CloudSeesMoreDevices && IntuneStaleCount > 0)
+                {
+                    if (DevicesOnlyVisibleViaCloud > 0)
+                        return $"{IntuneStaleCount} devices need attention - {DevicesOnlyVisibleViaCloud} only visible via cloud";
+                    return $"Cloud visibility reveals {IntuneStaleCount} devices needing attention";
+                }
+                
+                // Fallback for same-size populations
                 if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage > 0)
                 {
-                    // Emphasize security impact and cloud advantage
                     if (IntuneStaleCount > 0)
                         return $"{IntuneStaleCount} devices with policy gaps - visible only via cloud";
                     return "Cloud provides visibility ConfigMgr cannot";
@@ -670,7 +700,7 @@ namespace ZeroTrustMigrationAddin.Models
         
         // Icon reflects cloud visibility advantage - cloud is good even when detecting stale devices
         public string ComparisonIcon => ConfigMgrAllMissingData ? "❓" : 
-            (IntuneStalePercentage > ConfigMgrStalePercentage ? "☁️" : 
+            (CloudSeesMoreDevices || IntuneStalePercentage > ConfigMgrStalePercentage ? "☁️" : 
             (CloudNativeHasFewerStale ? "🔍" : "➡️"));
     }
 
