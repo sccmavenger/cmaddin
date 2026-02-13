@@ -526,7 +526,13 @@ namespace ZeroTrustMigrationAddin.Models
         
         // Data availability flags (0 days is valid - means synced today)
         public bool HasIntuneData => IntuneDeviceCount > 0;
-        public bool HasConfigMgrData => ConfigMgrDeviceCount > 0 && ConfigMgrScannedToday >= 0;
+        // ConfigMgr has data only if we have devices AND either some scanned today OR non-zero average
+        public bool HasConfigMgrData => ConfigMgrDeviceCount > 0 && 
+            (ConfigMgrScannedToday > 0 || ConfigMgrAvgDaysSinceScan > 0);
+        
+        // Detect when ConfigMgr shows 0.0 days but 0% scanned - likely no real data
+        public bool ConfigMgrDataSuspect => ConfigMgrDeviceCount > 0 && 
+            ConfigMgrAvgDaysSinceScan == 0 && ConfigMgrScannedTodayPercentage == 0;
         
         // Comparison
         public double SpeedMultiplier => HasConfigMgrData && HasIntuneData && IntuneAvgDaysSinceSync > 0
@@ -543,8 +549,8 @@ namespace ZeroTrustMigrationAddin.Models
                 // Handle missing data cases
                 if (!HasConfigMgrData && !HasIntuneData)
                     return "No sync data available from either source";
-                if (!HasConfigMgrData)
-                    return "No ConfigMgr scan data available for comparison";
+                if (!HasConfigMgrData || ConfigMgrDataSuspect)
+                    return "ConfigMgr scan data not available";
                 if (!HasIntuneData)
                     return "No Intune sync data available for comparison";
                 
@@ -560,18 +566,18 @@ namespace ZeroTrustMigrationAddin.Models
                 if (configMgrDays < intuneDays && intuneDays > 1)
                 {
                     if (configMgrDays < 1)
-                        return $"ConfigMgr devices synced today vs Intune avg {intuneDays:F0} days";
+                        return $"ConfigMgr avg today, Intune avg {intuneDays:F0} days";
                     var ratio = Math.Round(intuneDays / configMgrDays, 1);
-                    return $"ConfigMgr responds {ratio:F0}x faster ({configMgrDays:F0}d vs {intuneDays:F0}d)";
+                    return $"ConfigMgr {ratio:F0}x faster ({configMgrDays:F0}d vs {intuneDays:F0}d)";
                 }
                 
                 // If Intune is significantly better
                 if (intuneDays < configMgrDays && configMgrDays > 1)
                 {
                     if (intuneDays < 1)
-                        return $"Cloud-native synced today vs ConfigMgr avg {configMgrDays:F0} days";
+                        return $"Intune avg today, ConfigMgr avg {configMgrDays:F0} days";
                     var ratio = Math.Round(configMgrDays / intuneDays, 1);
-                    return $"Cloud-native responds {ratio:F0}x faster ({intuneDays:F0}d vs {configMgrDays:F0}d)";
+                    return $"Intune {ratio:F0}x faster ({intuneDays:F0}d vs {configMgrDays:F0}d)";
                 }
                 
                 return "Response times are comparable";
@@ -579,7 +585,7 @@ namespace ZeroTrustMigrationAddin.Models
         }
         
         // Icon: ⚡ = Cloud faster, ➖ = ConfigMgr faster, ➡️ = comparable, ❓ = no data
-        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData ? "❓" : 
+        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData || ConfigMgrDataSuspect ? "❓" : 
             (ConfigMgrIsFaster ? "➖" : (CloudNativeIsFaster ? "⚡" : "➡️"));
     }
 
@@ -617,9 +623,9 @@ namespace ZeroTrustMigrationAddin.Models
         {
             get
             {
-                // If all ConfigMgr devices have no data, show specific message
+                // If all ConfigMgr devices have no data, show simpler message
                 if (ConfigMgrAllMissingData)
-                    return "ConfigMgr not reporting LastPolicyRequest - data unavailable";
+                    return "ConfigMgr activity data not available";
                 
                 // Handle zero stale percentages (division by zero protection)
                 if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage == 0)

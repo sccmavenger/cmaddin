@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.181** | February 13, 2026
+**Version 3.17.182** | February 13, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -206,6 +206,25 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.181 (February 13, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Compliance Dashboard returning 0 devices**: Fixed inconsistent Windows workstation filtering
+  - `GetComplianceDashboardAsync`, `GetAlertsAsync`, and `DetectDevicesNotAADJoinedAsync` now use `IsWindowsWorkstation()` method
+  - Previous filter required "Windows 10" or "Windows 11" explicitly in OS string
+  - Some Graph API responses return just "Windows" without version number, causing devices to be incorrectly filtered out
+  - Root cause: Martin's environment showed 14 devices but GetComplianceDashboard returned 0 due to overly strict filter
+- **Improved MDE/Defender diagnostic logging**: Better messaging when MDE connector or Endpoint Protection role not configured
+  - Explicit warning when 0 MDE devices detected despite Intune devices enrolled
+  - ConfigMgr Antivirus query explains NotFound means Endpoint Protection role may not be installed
+
+---
+
 ### Version 3.17.178 (February 13, 2026)
 
 ### Added
@@ -293,16 +312,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - SMS_CombinedDeviceResources is officially documented with LastActiveTime, LastHardwareScan, etc.
   - Source: [Microsoft Learn - SMS_CombinedDeviceResources](https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/clients/collections/sms_combineddeviceresources-server-wmi-class)
   - Added ResourceType=5 filter to only include system resources (not users)
-
----
-
-### Version 3.17.163 (February 12, 2026)
-
-### Fixed
-- **SMS_CH_Summary datetime parsing**: Fixed CIM datetime conversion for PowerShell WMI
-  - CIM datetimes now converted to ISO 8601 format before JSON serialization
-  - Resolves "ConfigMgr not reporting LastActiveTime" showing 100% stale devices
-  - Added diagnostic logging for first parsed record (ResourceId, dates)
 
 ---
 
@@ -1523,5 +1532,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-13  
-**Version**: 3.17.181  
+**Version**: 3.17.182  
 **Maintainer:** Cloud Native Assessment Team

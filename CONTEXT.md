@@ -8,23 +8,28 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.181 |
-| **Last Updated** | 2026-02-10 |
+| **Version** | 3.17.182 |
+| **Last Updated** | 2026-02-13 |
 | **Branch** | main |
-| **Status** | Building - Ready to publish |
+| **Status** | Stable - UX fixes pending in [Unreleased] |
 
 ---
 
 ## Active Features
 
-### Cloud Value Comparison Tab - Security Visibility Enhancements (v3.17.130)
-- **Status**: Complete, ready to publish
-- **Major Changes**:
-  - Active Malware now uses REAL data (`windowsActiveMalwareCount`) via AdditionalData fallback
-  - Threat Detection uses REAL `partnerReportedThreatState` from MDE
-  - NEW: Microsoft Defender Integration card (THE KILLER FEATURE)
-  - Remote Actions comparison card added
-- **Technical Note**: Malware count properties are Beta API only; code uses AdditionalData fallback since v1.0 SDK doesn't have these properties
+### Comparison Tile UX Improvements (Unreleased)
+- **Status**: Built, pending publish
+- **Changes**:
+  - Simplified "data not available" messages (less technical jargon)
+  - Added ConfigMgrDataSuspect check for contradictory data (0 days avg with 0% scanned)
+  - Response Time and Security Blind Spots tiles now show cleaner messages
+
+### VP Dashboard & Workload Authority (v3.17.180)
+- **Status**: Published
+- **Features**:
+  - 4 new headline tiles: Co-Managed Opportunity, Identity Ready, Hardware Ready, Don't Waste Time
+  - WorkloadAuthoritySnapshot telemetry event
+  - Workload Authority Analysis section in Azure Workbook
 
 ### Alternate Credentials for ConfigMgr (v3.17.115)
 - **Status**: Complete, production-ready
