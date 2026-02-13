@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.182** | February 13, 2026
+**Version 3.17.183** | February 13, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -207,6 +207,21 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.182 (February 13, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Improved comparison tile messages**: Made Security Blind Spots and Response Time messages less technical
+  - "ConfigMgr not reporting LastPolicyRequest - data unavailable" → "ConfigMgr activity data not available"
+  - "ConfigMgr devices synced today vs Intune avg X days" → "ConfigMgr avg today, Intune avg X days"
+  - Added data quality check to detect when ConfigMgr shows 0.0 days with 0% scanned (suspect data)
+
+---
+
 ### Version 3.17.181 (February 13, 2026)
 
 ### Added
@@ -301,17 +316,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - With 0-second delay, MainWindow wasn't created yet causing update check to be silently skipped
   - Removed MainWindow null check since updates should run on startup regardless
   - Added conditional logging (only log delay message when delay > 0)
-
----
-
-### Version 3.17.165 (February 12, 2026)
-
-### Fixed
-- **Use SMS_CombinedDeviceResources instead of SMS_CH_Summary**: Fixed incorrect WMI class
-  - SMS_CH_Summary is undocumented and may not exist in all ConfigMgr versions
-  - SMS_CombinedDeviceResources is officially documented with LastActiveTime, LastHardwareScan, etc.
-  - Source: [Microsoft Learn - SMS_CombinedDeviceResources](https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/clients/collections/sms_combineddeviceresources-server-wmi-class)
-  - Added ResourceType=5 filter to only include system resources (not users)
 
 ---
 
@@ -1532,5 +1536,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-13  
-**Version**: 3.17.182  
+**Version**: 3.17.183  
 **Maintainer:** Cloud Native Assessment Team

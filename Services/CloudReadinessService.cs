@@ -2395,7 +2395,54 @@ namespace ZeroTrustMigrationAddin.Services
                 if (comparison.IntuneCompromisedCount > 0)
                 {
                     Instance.Warning($"   ⚠️ Intune: {comparison.IntuneCompromisedCount} devices with THREATS detected");
+                    
+                    // Log sample devices by severity for spot-checking (up to 10 each)
+                    var highSeverity = intuneDevices.Where(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.HighSeverity).Take(10).ToList();
+                    var mediumSeverity = intuneDevices.Where(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.MediumSeverity).Take(10).ToList();
+                    var lowSeverity = intuneDevices.Where(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.LowSeverity).Take(10).ToList();
+                    var compromised = intuneDevices.Where(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Compromised).Take(10).ToList();
+                    
+                    var totalHigh = intuneDevices.Count(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.HighSeverity);
+                    var totalMedium = intuneDevices.Count(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.MediumSeverity);
+                    var totalLow = intuneDevices.Count(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.LowSeverity);
+                    var totalCompromised = intuneDevices.Count(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Compromised);
+                    
+                    Instance.Warning($"   📊 THREAT BREAKDOWN: HighSeverity={totalHigh}, MediumSeverity={totalMedium}, LowSeverity={totalLow}, Compromised={totalCompromised}");
+                    
+                    if (highSeverity.Any())
+                    {
+                        Instance.Warning($"   🔴 HIGH SEVERITY ({totalHigh} total, showing up to 10):");
+                        foreach (var d in highSeverity)
+                            Instance.Warning($"      • {d.DeviceName ?? d.Id}");
+                    }
+                    if (mediumSeverity.Any())
+                    {
+                        Instance.Warning($"   🟠 MEDIUM SEVERITY ({totalMedium} total, showing up to 10):");
+                        foreach (var d in mediumSeverity)
+                            Instance.Warning($"      • {d.DeviceName ?? d.Id}");
+                    }
+                    if (lowSeverity.Any())
+                    {
+                        Instance.Warning($"   🟡 LOW SEVERITY ({totalLow} total, showing up to 10):");
+                        foreach (var d in lowSeverity)
+                            Instance.Warning($"      • {d.DeviceName ?? d.Id}");
+                    }
+                    if (compromised.Any())
+                    {
+                        Instance.Warning($"   ⚠️ COMPROMISED ({totalCompromised} total, showing up to 10):");
+                        foreach (var d in compromised)
+                            Instance.Warning($"      • {d.DeviceName ?? d.Id}");
+                    }
                 }
+                
+                if (comparison.IntuneMisconfiguredCount > 0)
+                {
+                    var misconfigured = intuneDevices.Where(d => d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Misconfigured).Take(10).ToList();
+                    Instance.Warning($"   ⚙️ MISCONFIGURED ({comparison.IntuneMisconfiguredCount} total, showing up to 10):");
+                    foreach (var d in misconfigured)
+                        Instance.Warning($"      • {d.DeviceName ?? d.Id}");
+                }
+                
                 Instance.Info($"   ✓ Intune: {comparison.IntuneSecuredCount} secured, {comparison.IntuneCompromisedCount} with threats, {comparison.IntuneMisconfiguredCount} misconfigured, {comparison.IntuneUnknownCount} unknown");
                 
                 // Get ConfigMgr AV status
