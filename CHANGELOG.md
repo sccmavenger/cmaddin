@@ -10,6 +10,20 @@
 - 
 
 
+## [3.17.190] - 2026-02-13
+
+### Added
+
+### Changed
+- **Security Blind Spots v4 - Crystal clear messaging**: Final clarity improvements
+  - Display: "62 stale (of 80)" and "0 stale (of 4)" - explicitly uses word "stale"
+  - Summary: "62 devices haven't synced in 14+ days - ConfigMgr only sees 4"
+  - Explains WHAT (devices haven't synced), WHY it matters (14+ days = outdated policies), and ConfigMgr limitation
+
+### Fixed
+- 
+
+
 ## [3.17.189] - 2026-02-13
 
 ### Added
