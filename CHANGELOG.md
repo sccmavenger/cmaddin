@@ -10,6 +10,23 @@
 - 
 
 
+## [3.17.186] - 2026-02-13
+
+### Added
+
+### Changed
+- **Security Blind Spots messaging v2**: Emphasizes security IMPACT and cloud-exclusive visibility
+  - Old: "Intune tracks 62 unreachable devices via cloud connectivity" (still vague)
+  - New: "62 devices with policy gaps - visible only via cloud"
+  - Key message: These devices have OUTDATED security policies (why you should care)
+  - Explains that ConfigMgr CANNOT see off-network devices (no VPN = invisible)
+  - Intune sees them because cloud = internet connectivity = always visible
+  - Added `SecurityImpact` property for future tooltip/detail expansion
+
+### Fixed
+- 
+
+
 ## [3.17.185] - 2026-02-13
 
 ### Added
