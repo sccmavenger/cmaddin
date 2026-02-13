@@ -1629,15 +1629,8 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 // ⚠️ CRITICAL: Filter to ONLY Windows 10/11 workstations (Intune-eligible devices)
                 // Excludes: Servers, MDE (msSense) devices
-                var devices = allDevices.Where(d => 
-                    d.OperatingSystem != null && 
-                    (
-                        d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
-                        d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
-                    ) &&
-                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase) &&
-                    d.ManagementAgent != Microsoft.Graph.Models.ManagementAgentType.MsSense // Exclude MDE
-                ).ToList();
+                // Uses the same IsWindowsWorkstation method for consistency across all device queries
+                var devices = allDevices.Where(IsWindowsWorkstation).ToList();
                 
                 Instance.LogGraphQuery("GetComplianceDashboard (Result)", "/deviceManagement/managedDevices", selectFields, 
                     "Windows 10/11 workstations only", devices.Count);
@@ -2307,14 +2300,8 @@ namespace ZeroTrustMigrationAddin.Services
                 var allDevices = await GetCachedManagedDevicesAsync();
 
                 // ⚠️ CRITICAL: Filter to ONLY Windows 10/11 workstations (Intune-eligible devices)
-                var devices = allDevices.Where(d => 
-                    d.OperatingSystem != null && 
-                    (
-                        d.OperatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
-                        d.OperatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)
-                    ) &&
-                    !d.OperatingSystem.Contains("Server", StringComparison.OrdinalIgnoreCase)
-                ).ToList();
+                // Uses IsWindowsWorkstation for consistency across all device queries
+                var devices = allDevices.Where(IsWindowsWorkstation).ToList();
 
                 // Critical: Devices not synced in 7+ days
                 var staleDevices = devices.Where(d => 
@@ -2624,10 +2611,10 @@ namespace ZeroTrustMigrationAddin.Services
                 // Use cached devices (now paginated)
                 var devices = await GetCachedManagedDevicesAsync();
 
-                // Filter to Windows 10/11 devices without Azure AD join
+                // Filter to Windows workstations without Azure AD join
+                // Uses IsWindowsWorkstation for consistency across all device queries
                 var notAADJoined = devices.Where(d =>
-                    d.OperatingSystem != null &&
-                    (d.OperatingSystem.Contains("Windows 10") || d.OperatingSystem.Contains("Windows 11")) &&
+                    IsWindowsWorkstation(d) &&
                     string.IsNullOrEmpty(d.AzureADDeviceId)
                 ).ToList();
 

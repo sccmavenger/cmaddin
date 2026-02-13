@@ -10,6 +10,23 @@
 - 
 
 
+## [3.17.181] - 2026-02-13
+
+### Added
+
+### Changed
+
+### Fixed
+- **Compliance Dashboard returning 0 devices**: Fixed inconsistent Windows workstation filtering
+  - `GetComplianceDashboardAsync`, `GetAlertsAsync`, and `DetectDevicesNotAADJoinedAsync` now use `IsWindowsWorkstation()` method
+  - Previous filter required "Windows 10" or "Windows 11" explicitly in OS string
+  - Some Graph API responses return just "Windows" without version number, causing devices to be incorrectly filtered out
+  - Root cause: Martin's environment showed 14 devices but GetComplianceDashboard returned 0 due to overly strict filter
+- **Improved MDE/Defender diagnostic logging**: Better messaging when MDE connector or Endpoint Protection role not configured
+  - Explicit warning when 0 MDE devices detected despite Intune devices enrolled
+  - ConfigMgr Antivirus query explains NotFound means Endpoint Protection role may not be installed
+
+
 ## [3.17.180] - 2026-02-13
 
 ### Added
