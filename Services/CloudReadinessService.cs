@@ -1976,6 +1976,13 @@ namespace ZeroTrustMigrationAddin.Services
                         Instance.Info($"      Old (30-90 days):   {synced30to90} devices");
                         Instance.Info($"      Abandoned (90+ days): {syncedOver90} devices ⚠️");
                         
+                        // Track sync freshness metrics for telemetry
+                        AzureTelemetryService.Instance.TrackSyncFreshnessMetrics(
+                            "Intune", 
+                            comparison.IntuneAvgDaysSinceSync,
+                            syncedToday,
+                            syncedToday, synced1to7, synced7to14, synced14to30 + synced30to90, syncedOver90);
+                        
                         // Show top 5 oldest devices dragging average up
                         if (comparison.IntuneAvgDaysSinceSync > 7)
                         {
@@ -2033,6 +2040,25 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 Instance.Info($"   ⚡ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+                
+                // Track comparison tile for telemetry
+                var winner = comparison.IntuneAvgDaysSinceSync < comparison.ConfigMgrAvgDaysSinceScan ? "Intune" : 
+                    (comparison.ConfigMgrAvgDaysSinceScan < comparison.IntuneAvgDaysSinceSync ? "ConfigMgr" : "Tie");
+                AzureTelemetryService.Instance.TrackComparisonTileViewed(
+                    "ResponseTime",
+                    comparison.IntuneAvgDaysSinceSync,
+                    comparison.ConfigMgrAvgDaysSinceScan,
+                    winner,
+                    comparison.ComparisonSummary);
+                
+                // Track data quality issues - like the 170 day average issue
+                if (comparison.IntuneAvgDaysSinceSync > 30 || comparison.ConfigMgrAvgDaysSinceScan > 30)
+                {
+                    AzureTelemetryService.Instance.TrackComparisonDataQuality(
+                        "ResponseTime", 
+                        "HighAverageAge",
+                        $"Intune avg={comparison.IntuneAvgDaysSinceSync} days, ConfigMgr avg={comparison.ConfigMgrAvgDaysSinceScan} days");
+                }
             }
             catch (Exception ex)
             {
@@ -2093,6 +2119,14 @@ namespace ZeroTrustMigrationAddin.Services
                         Instance.Info($"      Stale (14-30 days): {stale14to30} devices");
                         Instance.Info($"      Old (30-90 days):   {stale30to90} devices");
                         Instance.Info($"      Abandoned (90+ days): {staleOver90} devices ⚠️");
+                        
+                        // Track stale device metrics for telemetry
+                        AzureTelemetryService.Instance.TrackStaleDeviceMetrics(
+                            "Intune",
+                            comparison.IntuneDeviceCount,
+                            comparison.IntuneStaleCount,
+                            comparison.IntuneStalePercentage,
+                            noSyncDate, stale14to30, stale30to90, staleOver90);
                         
                         // Show top 5 worst offenders
                         var worstDevices = staleDevices
@@ -2157,6 +2191,14 @@ namespace ZeroTrustMigrationAddin.Services
                         Instance.Warning($"      • 30-90 days stale: {stale30to90} devices");
                         Instance.Warning($"      • 90+ days stale: {stale90plus} devices");
                         
+                        // Track ConfigMgr stale device metrics for telemetry
+                        AzureTelemetryService.Instance.TrackStaleDeviceMetrics(
+                            "ConfigMgr",
+                            comparison.ConfigMgrDeviceCount,
+                            comparison.ConfigMgrStaleCount,
+                            comparison.ConfigMgrStalePercentage,
+                            noActivityDevices.Count, stale14to30, stale30to90, stale90plus);
+                        
                         // Show top 5 worst offenders including those with no dates
                         var worstWithDates = staleWithDates
                             .OrderByDescending(d => d.DaysStale)
@@ -2183,6 +2225,25 @@ namespace ZeroTrustMigrationAddin.Services
                 }
 
                 Instance.Info($"   🔍 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+                
+                // Track comparison tile for telemetry
+                var winner = comparison.IntuneStalePercentage < comparison.ConfigMgrStalePercentage ? "Intune" : 
+                    (comparison.ConfigMgrStalePercentage < comparison.IntuneStalePercentage ? "ConfigMgr" : "Tie");
+                AzureTelemetryService.Instance.TrackComparisonTileViewed(
+                    "SecurityBlindSpots",
+                    comparison.IntuneStalePercentage,
+                    comparison.ConfigMgrStalePercentage,
+                    winner,
+                    comparison.ComparisonSummary);
+                
+                // Track data quality issues
+                if (comparison.ConfigMgrDevicesWithNoLastActiveTime > comparison.ConfigMgrDeviceCount / 2)
+                {
+                    AzureTelemetryService.Instance.TrackComparisonDataQuality(
+                        "SecurityBlindSpots", 
+                        "MostDevicesMissingActivityData",
+                        $"{comparison.ConfigMgrDevicesWithNoLastActiveTime} of {comparison.ConfigMgrDeviceCount} devices have no activity data");
+                }
             }
             catch (Exception ex)
             {

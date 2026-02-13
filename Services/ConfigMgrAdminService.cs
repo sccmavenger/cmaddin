@@ -616,6 +616,11 @@ namespace ZeroTrustMigrationAddin.Services
                     _lastConnectionError = $"Admin Service HTTP error: {httpEx.Message}";
                     System.Diagnostics.Debug.WriteLine($"❌ Admin Service HTTP error: {httpEx.Message}");
                     System.Diagnostics.Debug.WriteLine($"   This usually means: Admin Service not enabled, HTTPS not configured, or firewall blocking port 443");
+                    
+                    // Track failure for telemetry
+                    AzureTelemetryService.Instance.TrackAdminServiceConnectionFailed(
+                        "HttpRequestException", null, httpEx.GetType().Name, SiteVersion);
+                    
                     return await TryWmiFallbackAsync();
                 }
                 catch (TaskCanceledException timeoutEx)
@@ -623,6 +628,11 @@ namespace ZeroTrustMigrationAddin.Services
                     _lastConnectionError = $"Admin Service timeout: {timeoutEx.Message}";
                     System.Diagnostics.Debug.WriteLine($"❌ Admin Service timeout: {timeoutEx.Message}");
                     System.Diagnostics.Debug.WriteLine($"   This usually means: Site server unreachable or network issues");
+                    
+                    // Track failure for telemetry
+                    AzureTelemetryService.Instance.TrackAdminServiceConnectionFailed(
+                        "Timeout", null, timeoutEx.GetType().Name, SiteVersion);
+                    
                     return await TryWmiFallbackAsync();
                 }
                 
@@ -674,6 +684,10 @@ namespace ZeroTrustMigrationAddin.Services
                         System.Diagnostics.Debug.WriteLine($"   Hint: Access forbidden. Check RBAC permissions in ConfigMgr.");
                     }
                     
+                    // Track failure for telemetry
+                    AzureTelemetryService.Instance.TrackAdminServiceConnectionFailed(
+                        $"HttpStatus_{(int)response.StatusCode}", (int)response.StatusCode, null, SiteVersion);
+                    
                     return await TryWmiFallbackAsync();
                 }
             }
@@ -681,6 +695,11 @@ namespace ZeroTrustMigrationAddin.Services
             {
                 _lastConnectionError = $"Admin Service unexpected error: {ex.GetType().Name}: {ex.Message}";
                 System.Diagnostics.Debug.WriteLine($"❌ Admin Service unexpected error: {ex}");
+                
+                // Track failure for telemetry
+                AzureTelemetryService.Instance.TrackAdminServiceConnectionFailed(
+                    "UnexpectedException", null, ex.GetType().Name, SiteVersion);
+                
                 // Try WMI as fallback
                 return await TryWmiFallbackAsync();
             }
