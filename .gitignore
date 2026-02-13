@@ -147,6 +147,7 @@ Test-OctokitAPI.ps1
 DECISIONS.md
 DIAGNOSTIC_LOGGING.md
 RELEASE_NOTES_*.md
+telemetry/DECISION_QUERIES.md
 
 # Research folder - entire folder contains internal strategy docs
 research/
