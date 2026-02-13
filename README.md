@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.183** | February 13, 2026
+**Version 3.17.185** | February 13, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -208,6 +208,37 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.184 (February 13, 2026)
+
+### Changed
+- **Security Blind Spots messaging redesign**: Reframed to emphasize cloud visibility advantage
+  - Old: "ConfigMgr has zero security blind spots (62 stale in Intune)" - incorrectly favors ConfigMgr
+  - New: "Intune tracks 62 unreachable devices via cloud connectivity" - highlights Intune advantage
+  - Key insight: Intune detecting stale devices demonstrates cloud visibility, not a problem
+  - ConfigMgr showing 0 stale may indicate limited visibility (on-prem dependency), not better health
+  - All messaging now promotes cloud migration value proposition
+  - Added cloud icon (☁️) when Intune detects more stale devices (cloud tracking feature)
+
+### Fixed
+- Corrected messaging logic that was undermining cloud migration advocacy
+
+---
+
+### Version 3.17.183 (February 13, 2026)
+
+### Added
+- **Threat Detection device-level logging**: Logs sample devices (up to 10 each) by threat severity for spot-checking
+  - Breakdown by severity: High, Medium, Low, Compromised
+  - Misconfigured devices list with device names
+  - Enables security teams to verify threat data in log files at `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\`
+
+### Changed
+
+### Fixed
+
+---
+
 ### Version 3.17.182 (February 13, 2026)
 
 ### Added
@@ -290,32 +321,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Explains that MDE connector must be enabled in Intune for `PartnerReportedThreatState` to be populated
   - Provides specific path: "Intune > Endpoint Security > Microsoft Defender for Endpoint > Connection status"
   - ConfigMgr Antivirus query now explains NotFound means Endpoint Protection role may not be installed
-
----
-
-### Version 3.17.170 (February 12, 2026)
-
-### Changed
-- **ConfigMgr activity timestamp now uses LastPolicyRequest exclusively**: Changed from unreliable fallback chain to single reliable source
-  - LastPolicyRequest updates every 60 minutes (default policy polling interval)
-  - Most reliable indicator of device activity - always populated if client is functioning
-  - Removes dependency on optional Client Health feature (LastActiveTime)
-  - Source: https://learn.microsoft.com/en-us/mem/configmgr/core/clients/deploy/about-client-settings#client-policy-polling-interval-minutes
-
-### Fixed
-- **Security Blind Spots tile showing 100% stale**: Now uses LastPolicyRequest which is reliably populated
-- **Response Time tile showing 0.0 days**: Same fix - accurate data from LastPolicyRequest
-- Updated enrichment logging to reflect new LastPolicyRequest-focused approach
-
----
-
-### Version 3.17.168 (February 12, 2026)
-
-### Fixed
-- **Auto-update not running on startup**: Fixed MainWindow null check preventing update check
-  - With 0-second delay, MainWindow wasn't created yet causing update check to be silently skipped
-  - Removed MainWindow null check since updates should run on startup regardless
-  - Added conditional logging (only log delay message when delay > 0)
 
 ---
 
@@ -1536,5 +1541,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-13  
-**Version**: 3.17.183  
+**Version**: 3.17.185  
 **Maintainer:** Cloud Native Assessment Team
