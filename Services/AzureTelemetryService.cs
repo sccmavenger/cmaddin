@@ -1024,6 +1024,249 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
+        /// <summary>
+        /// Track Admin Service connection failures for WMI removal planning.
+        /// Captures why connections fail (HTTP error, timeout, etc.) without PII.
+        /// </summary>
+        public void TrackAdminServiceConnectionFailed(string failureReason, int? httpStatusCode, string? exceptionType, string? siteVersion)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["FailureReason"] = failureReason,
+                    ["ExceptionType"] = exceptionType ?? "Unknown",
+                    ["SiteVersion"] = siteVersion ?? "unknown",
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>();
+                if (httpStatusCode.HasValue)
+                {
+                    metrics["HttpStatusCode"] = httpStatusCode.Value;
+                }
+
+                _telemetryClient.TrackEvent("AdminServiceConnectionFailed", properties, metrics);
+                _telemetryClient.Flush(); // Important event - flush immediately
+                
+                FileLogger.Instance.Warning($"[TELEMETRY] AdminServiceConnectionFailed: {failureReason}, HTTP={httpStatusCode}, Exception={exceptionType}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track connection failure: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track individual Admin Service query failures.
+        /// </summary>
+        public void TrackAdminServiceQueryFailed(string queryName, string failureReason, int? httpStatusCode, double? durationMs)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["QueryName"] = queryName,
+                    ["FailureReason"] = failureReason,
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>();
+                if (httpStatusCode.HasValue) metrics["HttpStatusCode"] = httpStatusCode.Value;
+                if (durationMs.HasValue) metrics["DurationMs"] = durationMs.Value;
+
+                _telemetryClient.TrackEvent("AdminServiceQueryFailed", properties, metrics);
+                
+                FileLogger.Instance.Warning($"[TELEMETRY] AdminServiceQueryFailed: {queryName} - {failureReason}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track query failure: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track successful Admin Service queries with timing for performance analysis.
+        /// </summary>
+        public void TrackAdminServiceQuerySucceeded(string queryName, int recordCount, double durationMs)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["QueryName"] = queryName,
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["RecordCount"] = recordCount,
+                    ["DurationMs"] = durationMs
+                };
+
+                _telemetryClient.TrackEvent("AdminServiceQuerySucceeded", properties, metrics);
+                
+                // Only log slow queries (> 5 seconds) to avoid spam
+                if (durationMs > 5000)
+                {
+                    FileLogger.Instance.Info($"[TELEMETRY] Slow query: {queryName} took {durationMs:F0}ms");
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track query success: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Comparison Tile Telemetry
+
+        /// <summary>
+        /// Track Cloud Value Comparison tile metrics for debugging display issues.
+        /// Captures the values shown to users to understand confusing displays.
+        /// </summary>
+        public void TrackComparisonTileViewed(string tileName, double? intuneValue, double? configMgrValue, string winner, string comparisonSummary)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["TileName"] = tileName,
+                    ["Winner"] = winner,
+                    ["ComparisonSummary"] = SanitizeString(comparisonSummary),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>();
+                if (intuneValue.HasValue) metrics["IntuneValue"] = intuneValue.Value;
+                if (configMgrValue.HasValue) metrics["ConfigMgrValue"] = configMgrValue.Value;
+
+                _telemetryClient.TrackEvent("ComparisonTileViewed", properties, metrics);
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track comparison tile: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track stale device metrics for Security Blind Spots analysis.
+        /// </summary>
+        public void TrackStaleDeviceMetrics(string source, int totalDevices, int staleCount, double stalePercent, 
+            int noDataCount, int bucket14to30, int bucket30to90, int bucket90plus)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["Source"] = source, // "Intune" or "ConfigMgr"
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["TotalDevices"] = totalDevices,
+                    ["StaleCount"] = staleCount,
+                    ["StalePercent"] = stalePercent,
+                    ["NoDataCount"] = noDataCount,
+                    ["Bucket14to30"] = bucket14to30,
+                    ["Bucket30to90"] = bucket30to90,
+                    ["Bucket90plus"] = bucket90plus
+                };
+
+                _telemetryClient.TrackEvent("StaleDeviceMetrics", properties, metrics);
+                
+                // Log warning if stale percent is high
+                if (stalePercent > 25)
+                {
+                    FileLogger.Instance.Info($"[TELEMETRY] High stale rate: {source} has {stalePercent:F1}% stale devices");
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track stale metrics: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track sync freshness metrics for Response Time analysis.
+        /// </summary>
+        public void TrackSyncFreshnessMetrics(string source, double avgDays, int devicesScannedToday,
+            int bucket0to1d, int bucket1to7d, int bucket7to14d, int bucket14to30d, int bucket30plus)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["Source"] = source, // "Intune" or "ConfigMgr"
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["AvgDays"] = avgDays,
+                    ["DevicesScannedToday"] = devicesScannedToday,
+                    ["Bucket0to1d"] = bucket0to1d,
+                    ["Bucket1to7d"] = bucket1to7d,
+                    ["Bucket7to14d"] = bucket7to14d,
+                    ["Bucket14to30d"] = bucket14to30d,
+                    ["Bucket30plus"] = bucket30plus
+                };
+
+                _telemetryClient.TrackEvent("SyncFreshnessMetrics", properties, metrics);
+                
+                // Log warning if average is high (like the 170 day issue)
+                if (avgDays > 30)
+                {
+                    FileLogger.Instance.Info($"[TELEMETRY] High avg sync age: {source} avg={avgDays:F1} days");
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track sync freshness: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track data quality issues in comparison tiles (e.g., division by zero, missing data).
+        /// </summary>
+        public void TrackComparisonDataQuality(string tileName, string issue, string details)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["TileName"] = tileName,
+                    ["Issue"] = issue, // e.g., "DivisionByZero", "NoConfigMgrData", "ExtremeDifference"
+                    ["Details"] = SanitizeString(details),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                _telemetryClient.TrackEvent("ComparisonDataQuality", properties);
+                
+                FileLogger.Instance.Info($"[TELEMETRY] Data quality issue: {tileName} - {issue}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track data quality: {ex.Message}");
+            }
+        }
+
         #endregion
 
         public bool IsEnabled => _isEnabled;
