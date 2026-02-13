@@ -10,6 +10,51 @@
 - 
 
 
+## [3.17.173] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.172] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.171] - 2026-02-12
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.170] - 2026-02-12
+
+### Changed
+- **ConfigMgr activity timestamp now uses LastPolicyRequest exclusively**: Changed from unreliable fallback chain to single reliable source
+  - LastPolicyRequest updates every 60 minutes (default policy polling interval)
+  - Most reliable indicator of device activity - always populated if client is functioning
+  - Removes dependency on optional Client Health feature (LastActiveTime)
+  - Source: https://learn.microsoft.com/en-us/mem/configmgr/core/clients/deploy/about-client-settings#client-policy-polling-interval-minutes
+
+### Fixed
+- **Security Blind Spots tile showing 100% stale**: Now uses LastPolicyRequest which is reliably populated
+- **Response Time tile showing 0.0 days**: Same fix - accurate data from LastPolicyRequest
+- Updated enrichment logging to reflect new LastPolicyRequest-focused approach
+
+
 ## [3.17.169] - 2026-02-12
 
 ### Added
