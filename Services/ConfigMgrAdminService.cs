@@ -900,21 +900,23 @@ namespace ZeroTrustMigrationAddin.Services
         {
             if (devices.Count == 0) return devices;
             
-            var devicesWithPrimaryTime = devices.Count(d => d.LastActiveTime.HasValue);
-            var percentWithPrimary = devicesWithPrimaryTime * 100 / devices.Count;
+            // Check for LastPolicyRequest - the most reliable activity indicator
+            // Updates every 60 minutes per ConfigMgr default policy polling interval
+            var devicesWithPolicyTime = devices.Count(d => d.LastPolicyRequest.HasValue);
+            var percentWithPolicy = devicesWithPolicyTime * 100 / devices.Count;
             
             Instance.Info($"   📊 Activity Time Data Quality Check:");
-            Instance.Info($"      Primary (LastActiveTime from SMS_R_System): {devicesWithPrimaryTime}/{devices.Count} ({percentWithPrimary}%)");
+            Instance.Info($"      LastPolicyRequest (primary): {devicesWithPolicyTime}/{devices.Count} ({percentWithPolicy}%)");
             
-            // If >50% of devices have LastActiveTime, consider it sufficient
-            if (percentWithPrimary >= 50)
+            // If >50% of devices have LastPolicyRequest, consider it sufficient
+            if (percentWithPolicy >= 50)
             {
                 Instance.Info($"      ✅ Primary data sufficient - no enrichment needed");
                 return devices;
             }
             
-            // LastActiveTime is missing for >50% of devices, try to enrich from SMS_CH_Summary
-            Instance.Warning($"      ⚠️ Primary data insufficient - attempting enrichment from SMS_CH_Summary (Client Health)...");
+            // LastPolicyRequest is missing for >50% of devices, try to enrich from SMS_CombinedDeviceResources
+            Instance.Warning($"      ⚠️ LastPolicyRequest insufficient - attempting enrichment from SMS_CombinedDeviceResources...");
             
             try
             {
@@ -922,12 +924,12 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 if (clientHealth.Count == 0)
                 {
-                    Instance.Warning($"      ❌ SMS_CH_Summary returned 0 records - cannot enrich activity timestamps");
-                    Instance.Warning($"         MANUAL CHECK: Get-WmiObject -Namespace root\\sms\\site_{_siteCode} -Query 'SELECT * FROM SMS_CH_Summary WHERE ResourceID = <some-id>'");
+                    Instance.Warning($"      ❌ SMS_CombinedDeviceResources returned 0 records - cannot enrich activity timestamps");
+                    Instance.Warning($"         MANUAL CHECK: Get-CimInstance -Namespace root\\sms\\site_{_siteCode} -ClassName SMS_CombinedDeviceResources | Select Name, LastPolicyRequest -First 5");
                     return devices;
                 }
                 
-                Instance.Info($"      📥 Retrieved {clientHealth.Count} records from SMS_CH_Summary");
+                Instance.Info($"      📥 Retrieved {clientHealth.Count} records from SMS_CombinedDeviceResources");
                 
                 // Build lookup dictionary by ResourceID
                 var healthLookup = clientHealth.ToDictionary(h => h.ResourceId, h => h);
@@ -939,22 +941,22 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     if (healthLookup.TryGetValue(device.ResourceId, out var health))
                     {
-                        // If device doesn't have LastActiveTime from primary source, try to populate it
-                        if (!device.LastActiveTime.HasValue && health.LastActiveTime.HasValue)
+                        // Populate LastPolicyRequest (primary activity indicator)
+                        if (!device.LastPolicyRequest.HasValue && health.LastPolicyRequest.HasValue)
                         {
-                            device.LastActiveTime = health.LastActiveTime;
-                            device.ActivityTimeSource = "ClientHealth-LastActiveTime";
+                            device.LastPolicyRequest = health.LastPolicyRequest;
+                            device.ActivityTimeSource = "SMS_CombinedDeviceResources";
                             enrichedCount++;
                         }
                         
-                        // Always populate alternative timestamps for fallback
-                        device.LastPolicyRequest = health.LastPolicyRequest;
+                        // Also populate other timestamps for reference (not used in calculations)
+                        device.LastActiveTime = health.LastActiveTime;
                         device.LastDDR = health.LastDDR;
                         device.LastHardwareScan = health.LastHardwareScan;
                         device.LastSoftwareScan = health.LastSoftwareScan;
                         
-                        // Track if device now has any activity time
-                        if (device.GetBestActivityTime().HasValue)
+                        // Track if device now has LastPolicyRequest
+                        if (device.LastPolicyRequest.HasValue)
                         {
                             nowHasAnyTime++;
                         }
@@ -965,8 +967,8 @@ namespace ZeroTrustMigrationAddin.Services
                 var percentWithAny = devices.Count > 0 ? devicesWithAnyTime * 100 / devices.Count : 0;
                 
                 Instance.Info($"      ✅ Enrichment complete:");
-                Instance.Info($"         - Devices with LastActiveTime added from ClientHealth: {enrichedCount}");
-                Instance.Info($"         - Devices with ANY activity timestamp: {devicesWithAnyTime}/{devices.Count} ({percentWithAny}%)");
+                Instance.Info($"         - Devices with LastPolicyRequest added: {enrichedCount}");
+                Instance.Info($"         - Devices with LastPolicyRequest: {devicesWithAnyTime}/{devices.Count} ({percentWithAny}%)");
                 
                 // Log the breakdown of which timestamp fields are being used
                 var fieldUsage = devices.GroupBy(d => d.GetActivityTimeFieldName())
@@ -976,9 +978,9 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 if (percentWithAny < 50)
                 {
-                    Instance.Warning($"      ⚠️ WARNING: Still insufficient activity time data ({percentWithAny}%)");
-                    Instance.Warning($"         Response Time tile may show 'No data'");
-                    Instance.Warning($"         CHECK: Heartbeat Discovery enabled? Client health data populated?");
+                    Instance.Warning($"      ⚠️ WARNING: Still insufficient LastPolicyRequest data ({percentWithAny}%)");
+                    Instance.Warning($"         Security Blind Spots / Response Time tiles may show 'No data'");
+                    Instance.Warning($"         CHECK: Are clients polling for policy? Check SMS_CombinedDeviceResources.LastPolicyRequest in WMI");
                 }
             }
             catch (Exception ex)
@@ -3002,33 +3004,26 @@ $results | ConvertTo-Json -Compress
         public DateTime? LastHardwareScan { get; set; }
         /// <summary>Last software inventory scan from SMS_CH_Summary</summary>
         public DateTime? LastSoftwareScan { get; set; }
-        /// <summary>Source of activity time data: Primary (SMS_R_System), ClientHealth (SMS_CH_Summary), or None</summary>
+        /// <summary>Source of activity time data: Primary (SMS_CombinedDeviceResources.LastPolicyRequest) or None</summary>
         public string ActivityTimeSource { get; set; } = "Primary";
         
         /// <summary>
-        /// Gets the best available activity timestamp for the device.
-        /// Priority: LastActiveTime > LastPolicyRequest > LastDDR > LastHardwareScan > LastSoftwareScan
+        /// Gets the device activity timestamp using LastPolicyRequest exclusively.
+        /// LastPolicyRequest updates every 60 minutes (default ConfigMgr policy polling interval)
+        /// and is the most reliable indicator of device activity.
+        /// Source: https://learn.microsoft.com/en-us/mem/configmgr/core/clients/deploy/about-client-settings#client-policy-polling-interval-minutes
         /// </summary>
         public DateTime? GetBestActivityTime()
         {
-            return LastActiveTime 
-                ?? LastPolicyRequest 
-                ?? LastDDR 
-                ?? LastHardwareScan 
-                ?? LastSoftwareScan;
+            return LastPolicyRequest;
         }
         
         /// <summary>
-        /// Gets the name of the field used for the best activity time.
+        /// Gets the name of the field used for activity time (always LastPolicyRequest).
         /// </summary>
         public string GetActivityTimeFieldName()
         {
-            if (LastActiveTime.HasValue) return "LastActiveTime";
-            if (LastPolicyRequest.HasValue) return "LastPolicyRequest";
-            if (LastDDR.HasValue) return "LastDDR";
-            if (LastHardwareScan.HasValue) return "LastHardwareScan";
-            if (LastSoftwareScan.HasValue) return "LastSoftwareScan";
-            return "None";
+            return LastPolicyRequest.HasValue ? "LastPolicyRequest" : "None";
         }
     }
 

@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.169** | February 12, 2026
+**Version 3.17.173** | February 12, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -195,6 +195,25 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+### Version 3.17.170 (February 12, 2026)
+
+### Changed
+- **ConfigMgr activity timestamp now uses LastPolicyRequest exclusively**: Changed from unreliable fallback chain to single reliable source
+  - LastPolicyRequest updates every 60 minutes (default policy polling interval)
+  - Most reliable indicator of device activity - always populated if client is functioning
+  - Removes dependency on optional Client Health feature (LastActiveTime)
+  - Source: https://learn.microsoft.com/en-us/mem/configmgr/core/clients/deploy/about-client-settings#client-policy-polling-interval-minutes
+
+### Fixed
+- **Security Blind Spots tile showing 100% stale**: Now uses LastPolicyRequest which is reliably populated
+- **Response Time tile showing 0.0 days**: Same fix - accurate data from LastPolicyRequest
+- Updated enrichment logging to reflect new LastPolicyRequest-focused approach
+
+---
+
 ### Version 3.17.168 (February 12, 2026)
 
 ### Fixed
@@ -231,17 +250,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Changed
 - **Auto-update runs immediately on startup**: Removed 60-second delay, updates check instantly
   - PowerShell WMI implementation confirmed stable (no hangs), delay no longer needed
-
----
-
-### Version 3.17.159 (February 12, 2026)
-
-### Fixed
-- **PowerShell-based SMS_CH_Summary query**: Re-enabled client health enrichment via PowerShell instead of .NET WMI
-  - .NET WMI (ManagementObjectSearcher) was causing app hangs on some ConfigMgr versions
-  - PowerShell `Get-CimInstance` runs in separate process with 30-second timeout
-  - Falls back gracefully if PowerShell fails (REST API → PowerShell → empty list)
-  - Enables Response Time metrics without risking app hang
 
 ---
 
@@ -1462,5 +1470,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-12  
-**Version**: 3.17.169  
+**Version**: 3.17.173  
 **Maintainer:** Cloud Native Assessment Team
