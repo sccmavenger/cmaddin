@@ -10,6 +10,19 @@
 - 
 
 
+## [3.17.183] - 2026-02-13
+
+### Added
+- **Threat Detection device-level logging**: Logs sample devices (up to 10 each) by threat severity for spot-checking
+  - Breakdown by severity: High, Medium, Low, Compromised
+  - Misconfigured devices list with device names
+  - Enables security teams to verify threat data in log files at `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\`
+
+### Changed
+
+### Fixed 
+
+
 ## [3.17.182] - 2026-02-13
 
 ### Added
