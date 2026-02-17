@@ -57,17 +57,40 @@ namespace ZeroTrustMigrationAddin.Services
                     var json = File.ReadAllText(_tokenPath);
                     var tokenData = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
                     
-                    if (tokenData != null && 
-                        tokenData.TryGetValue("access_token", out var token) && 
-                        tokenData.TryGetValue("username", out var username))
+                    if (tokenData != null && tokenData.TryGetValue("username", out var username))
                     {
-                        _accessToken = token;
                         _authenticatedUser = username;
                         
-                        _authenticatedClient = new GitHubClient(new ProductHeaderValue("ZeroTrustMigrationAddin-Feedback"));
-                        _authenticatedClient.Credentials = new Credentials(_accessToken);
+                        // SECURITY: Token is now stored encrypted
+                        // Check for encrypted_token first, fall back to plaintext for migration
+                        string? token = null;
                         
-                        Instance.Info($"[FEEDBACK] Loaded saved GitHub token for user: {_authenticatedUser}");
+                        if (tokenData.TryGetValue("encrypted_token", out var encryptedToken) && !string.IsNullOrEmpty(encryptedToken))
+                        {
+                            // Decrypt stored token
+                            token = SecureCredentialManager.Decrypt(encryptedToken);
+                        }
+                        else if (tokenData.TryGetValue("access_token", out var plaintextToken) && !string.IsNullOrEmpty(plaintextToken))
+                        {
+                            // Migration: Found plaintext token, use it but will encrypt on next save
+                            token = plaintextToken;
+                            Instance.Info("[SECURITY] Found plaintext GitHub token - will encrypt on next save");
+                        }
+                        
+                        if (!string.IsNullOrEmpty(token))
+                        {
+                            _accessToken = token;
+                            _authenticatedClient = new GitHubClient(new ProductHeaderValue("ZeroTrustMigrationAddin-Feedback"));
+                            _authenticatedClient.Credentials = new Credentials(_accessToken);
+                            
+                            Instance.Info($"[FEEDBACK] Loaded saved GitHub token for user: {_authenticatedUser}");
+                            
+                            // Re-save to migrate plaintext to encrypted
+                            if (tokenData.ContainsKey("access_token") && !tokenData.ContainsKey("encrypted_token"))
+                            {
+                                SaveToken();
+                            }
+                        }
                     }
                 }
             }
@@ -85,14 +108,16 @@ namespace ZeroTrustMigrationAddin.Services
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
+                // SECURITY: Encrypt the access token using DPAPI
                 var tokenData = new Dictionary<string, string>
                 {
-                    ["access_token"] = _accessToken ?? "",
+                    ["encrypted_token"] = SecureCredentialManager.Encrypt(_accessToken ?? ""),
                     ["username"] = _authenticatedUser ?? ""
+                    // Note: We no longer store "access_token" in plaintext
                 };
 
                 File.WriteAllText(_tokenPath, JsonSerializer.Serialize(tokenData, new JsonSerializerOptions { WriteIndented = true }));
-                Instance.Info("[FEEDBACK] GitHub token saved");
+                Instance.Info("[FEEDBACK] GitHub token saved (encrypted)");
             }
             catch (Exception ex)
             {

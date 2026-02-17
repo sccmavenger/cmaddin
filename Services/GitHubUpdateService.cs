@@ -40,13 +40,14 @@ namespace ZeroTrustMigrationAddin.Services
             LoadSettings();
 
             // Priority: User's token > Embedded token > Anonymous
+            // SECURITY: Token is decrypted from DPAPI-protected storage
             string? tokenToUse = null;
             string authSource = "Anonymous (60 req/hr)";
             
-            if (!string.IsNullOrEmpty(_settings?.GitHubToken))
+            if (_settings?.HasGitHubToken == true)
             {
-                tokenToUse = _settings.GitHubToken;
-                authSource = "User-configured token";
+                tokenToUse = _settings.GetGitHubToken();
+                authSource = "User-configured token (encrypted)";
             }
             else if (!string.IsNullOrEmpty(EmbeddedToken))
             {
@@ -322,7 +323,7 @@ namespace ZeroTrustMigrationAddin.Services
                     if (asset.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                     {
                         // Use API URL for private repos (requires authentication), BrowserDownloadUrl for public
-                        result.DownloadUrl = !string.IsNullOrEmpty(_settings?.GitHubToken) 
+                        result.DownloadUrl = (_settings?.HasGitHubToken == true) 
                             ? asset.Url  // API endpoint (authenticated)
                             : asset.BrowserDownloadUrl;  // Direct download (public repos)
                         result.TotalSize = asset.Size;  // Store ZIP size for bandwidth savings calculation
@@ -331,7 +332,7 @@ namespace ZeroTrustMigrationAddin.Services
                     else if (asset.Name.Equals("manifest.json", StringComparison.OrdinalIgnoreCase))
                     {
                         // Use API URL for private repos (requires authentication), BrowserDownloadUrl for public
-                        result.ManifestUrl = !string.IsNullOrEmpty(_settings?.GitHubToken) 
+                        result.ManifestUrl = (_settings?.HasGitHubToken == true) 
                             ? asset.Url  // API endpoint (authenticated)
                             : asset.BrowserDownloadUrl;  // Direct download (public repos)
                         Instance.Info($"Found manifest asset: {asset.Name}");
@@ -404,9 +405,9 @@ namespace ZeroTrustMigrationAddin.Services
             SaveSettings();
 
             // Update GitHub client credentials if token changed
-            if (!string.IsNullOrEmpty(settings.GitHubToken))
+            if (settings.HasGitHubToken)
             {
-                _client.Credentials = new Credentials(settings.GitHubToken);
+                _client.Credentials = new Credentials(settings.GetGitHubToken());
                 Instance.Info("GitHub API credentials updated");
             }
         }

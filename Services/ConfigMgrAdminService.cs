@@ -5,7 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -85,6 +87,15 @@ namespace ZeroTrustMigrationAddin.Services
         public bool UseAlternateCredentials { get; set; } = false;
         public string? AlternateUsername { get; set; }
         public string? EncryptedPassword { get; set; }
+        
+        // SSL Certificate Trust - SHA256 thumbprint of trusted self-signed cert
+        // When set, only this specific certificate is trusted (prevents MITM)
+        public string? TrustedCertThumbprint { get; set; }
+        
+        /// <summary>
+        /// Gets whether a specific certificate thumbprint is trusted.
+        /// </summary>
+        public bool HasTrustedCertificate => !string.IsNullOrEmpty(TrustedCertThumbprint);
         
         /// <summary>
         /// Gets a value indicating whether alternate credentials are fully configured.
@@ -196,8 +207,9 @@ namespace ZeroTrustMigrationAddin.Services
             UseAlternateCredentials = false;
             AlternateUsername = null;
             EncryptedPassword = null;
+            TrustedCertThumbprint = null;
             Save();
-            Instance.Info("[CONFIGMGR] Settings cleared (including credentials)");
+            Instance.Info("[CONFIGMGR] Settings cleared (including credentials and trusted certificate)");
         }
         
         /// <summary>
@@ -269,6 +281,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// <summary>
         /// Creates an HttpClient configured for Admin Service authentication.
         /// Uses alternate credentials if configured, otherwise uses Windows integrated auth.
+        /// SECURITY: Uses thumbprint-based certificate validation to prevent MITM attacks.
         /// </summary>
         private static HttpClient CreateHttpClient()
         {
@@ -284,7 +297,7 @@ namespace ZeroTrustMigrationAddin.Services
                 handler = new HttpClientHandler
                 {
                     PreAuthenticate = true,
-                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true,
+                    ServerCertificateCustomValidationCallback = CreateCertificateValidationCallback(settings),
                     Credentials = new NetworkCredential(username, password, domain ?? string.Empty)
                 };
                 
@@ -297,7 +310,7 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     UseDefaultCredentials = true,
                     PreAuthenticate = true,
-                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+                    ServerCertificateCustomValidationCallback = CreateCertificateValidationCallback(settings)
                 };
                 
                 Instance.Info("[CONFIGMGR] Using Windows integrated authentication");
@@ -308,6 +321,104 @@ namespace ZeroTrustMigrationAddin.Services
             client.Timeout = TimeSpan.FromSeconds(30);
             
             return client;
+        }
+        
+        /// <summary>
+        /// Creates a certificate validation callback that:
+        /// 1. Accepts certificates with no SSL errors (properly signed by trusted CA)
+        /// 2. Accepts self-signed certificates that match the stored thumbprint
+        /// 3. Rejects all other certificates to prevent MITM attacks
+        /// 
+        /// SECURITY: This replaces the previous "accept all" callback that was vulnerable to MITM.
+        /// </summary>
+        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> CreateCertificateValidationCallback(ConfigMgrSettings settings)
+        {
+            return (message, cert, chain, errors) =>
+            {
+                // No SSL policy errors = certificate is properly signed by trusted CA
+                if (errors == SslPolicyErrors.None)
+                {
+                    Instance.Info("[SECURITY] Certificate validated by trusted CA");
+                    return true;
+                }
+                
+                // If we have a trusted thumbprint configured, check against it
+                if (settings.HasTrustedCertificate && cert != null)
+                {
+                    // Get SHA256 thumbprint of the presented certificate
+                    var certThumbprint = cert.GetCertHashString(HashAlgorithmName.SHA256);
+                    
+                    if (string.Equals(certThumbprint, settings.TrustedCertThumbprint, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Instance.Info($"[SECURITY] Certificate validated by trusted thumbprint: {certThumbprint?.Substring(0, 16)}...");
+                        return true;
+                    }
+                    else
+                    {
+                        Instance.Warning($"[SECURITY] Certificate thumbprint mismatch! Expected: {settings.TrustedCertThumbprint?.Substring(0, 16)}..., Got: {certThumbprint?.Substring(0, 16)}...");
+                        return false;
+                    }
+                }
+                
+                // No trusted thumbprint configured and certificate has errors
+                // Store the cert info for the user to review and trust
+                if (cert != null)
+                {
+                    var thumbprint = cert.GetCertHashString(HashAlgorithmName.SHA256);
+                    Instance.Warning($"[SECURITY] Untrusted certificate detected. Subject: {cert.Subject}, Thumbprint: {thumbprint}");
+                    Instance.Warning($"[SECURITY] SSL Errors: {errors}");
+                    Instance.Warning($"[SECURITY] To trust this certificate, add thumbprint to settings or use 'Trust Certificate' in connection dialog");
+                    
+                    // Store for potential user trust approval
+                    _pendingCertificateThumbprint = thumbprint;
+                    _pendingCertificateSubject = cert.Subject;
+                }
+                
+                // Reject untrusted certificates by default (secure behavior)
+                return false;
+            };
+        }
+        
+        // Temporary storage for certificate that failed validation (for user trust flow)
+        private static string? _pendingCertificateThumbprint;
+        private static string? _pendingCertificateSubject;
+        
+        /// <summary>
+        /// Gets information about the last certificate that failed validation.
+        /// Used by UI to offer the user a "Trust this certificate" option.
+        /// </summary>
+        public static (string? Thumbprint, string? Subject) GetPendingCertificateInfo()
+        {
+            return (_pendingCertificateThumbprint, _pendingCertificateSubject);
+        }
+        
+        /// <summary>
+        /// Trusts the pending certificate by storing its thumbprint.
+        /// Call this after user confirms they want to trust the certificate.
+        /// </summary>
+        public static void TrustPendingCertificate()
+        {
+            if (!string.IsNullOrEmpty(_pendingCertificateThumbprint))
+            {
+                var settings = SavedSettings;
+                settings.TrustedCertThumbprint = _pendingCertificateThumbprint;
+                settings.Save();
+                
+                Instance.Info($"[SECURITY] Certificate trusted: {_pendingCertificateSubject}");
+                Instance.Info($"[SECURITY] Thumbprint: {_pendingCertificateThumbprint}");
+                
+                _pendingCertificateThumbprint = null;
+                _pendingCertificateSubject = null;
+            }
+        }
+        
+        /// <summary>
+        /// Clears the pending certificate info.
+        /// </summary>
+        public static void ClearPendingCertificate()
+        {
+            _pendingCertificateThumbprint = null;
+            _pendingCertificateSubject = null;
         }
         
         /// <summary>
@@ -331,7 +442,7 @@ namespace ZeroTrustMigrationAddin.Services
             var settings = SavedSettings;
             var options = new ConnectionOptions
             {
-                Authentication = AuthenticationLevel.PacketPrivacy,
+                Authentication = System.Management.AuthenticationLevel.PacketPrivacy,
                 EnablePrivileges = true,
                 Timeout = TimeSpan.FromSeconds(30)
             };
