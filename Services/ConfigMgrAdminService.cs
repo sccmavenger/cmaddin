@@ -1006,6 +1006,25 @@ namespace ZeroTrustMigrationAddin.Services
             // Check LastActiveTime data quality and enrich from SMS_CH_Summary if needed
             devices = await EnrichDevicesWithActivityTimestampsAsync(devices);
             
+            // Track ConfigMgr query mode telemetry for diagnosing 0% values
+            var nullFieldsReport = new List<string>();
+            var lastActiveNullCount = devices.Count(d => !d.LastActiveTime.HasValue);
+            var policyRequestNullCount = devices.Count(d => !d.LastPolicyRequest.HasValue);
+            var anyActivityNullCount = devices.Count(d => !d.GetBestActivityTime().HasValue);
+            
+            if (devices.Count > 0)
+            {
+                if (lastActiveNullCount > 0) nullFieldsReport.Add($"LastActiveTime:{lastActiveNullCount * 100 / devices.Count}%null");
+                if (policyRequestNullCount > 0) nullFieldsReport.Add($"LastPolicyRequest:{policyRequestNullCount * 100 / devices.Count}%null");
+                if (anyActivityNullCount > 0) nullFieldsReport.Add($"AnyActivity:{anyActivityNullCount * 100 / devices.Count}%null");
+            }
+            
+            AzureTelemetryService.Instance.TrackConfigMgrQueryMode(
+                "GetWindows1011Devices",
+                _useWmiFallback ? "WMI" : "AdminService",
+                devices.Count,
+                string.Join(",", nullFieldsReport));
+            
             // Update cache
             _cachedDevices = devices;
             _deviceCacheExpiration = DateTime.Now.Add(_deviceCacheLifetime);

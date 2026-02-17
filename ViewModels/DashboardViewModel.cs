@@ -1744,19 +1744,21 @@ namespace ZeroTrustMigrationAddin.ViewModels
                             
                             if (!string.IsNullOrEmpty(pendingThumbprint) && (error.Contains("SSL") || error.Contains("certificate") || error.Contains("trust")))
                             {
-                                // SSL certificate error - offer to trust the certificate
+                                // SSL certificate error - offer to trust the certificate with friendlier UX
                                 var trustResult = System.Windows.MessageBox.Show(
-                                    $"The ConfigMgr server's SSL certificate is not trusted.\n\n" +
-                                    $"Server: {manualServer}\n" +
-                                    $"Certificate Subject: {pendingSubject}\n\n" +
-                                    $"⚠️ SECURITY WARNING:\n" +
-                                    $"Only trust this certificate if you are certain this is your legitimate ConfigMgr server.\n\n" +
-                                    $"Do you want to trust this certificate?\n\n" +
-                                    $"Click YES to trust and retry the connection.\n" +
-                                    $"Click NO to cancel.",
-                                    "Trust Server Certificate?",
+                                    $"Server Certificate Verification\n\n" +
+                                    $"The certificate for ConfigMgr server '{manualServer}' is not in the Windows trust store.\n\n" +
+                                    $"Certificate Details:\n" +
+                                    $"• Subject: {pendingSubject}\n" +
+                                    $"• Thumbprint: {pendingThumbprint}\n\n" +
+                                    $"This is common for enterprise servers using self-signed or internal CA certificates.\n\n" +
+                                    $"To verify this is your legitimate ConfigMgr server:\n" +
+                                    $"• Confirm the server name matches your ConfigMgr primary site\n" +
+                                    $"• Check with your IT team if unsure\n\n" +
+                                    $"Trust this certificate for future connections?",
+                                    "Server Certificate Verification",
                                     System.Windows.MessageBoxButton.YesNo,
-                                    System.Windows.MessageBoxImage.Warning);
+                                    System.Windows.MessageBoxImage.Question);
                                 
                                 if (trustResult == System.Windows.MessageBoxResult.Yes)
                                 {
@@ -2590,19 +2592,21 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     
                     if (!string.IsNullOrEmpty(pendingThumbprint) && (error.Contains("SSL") || error.Contains("certificate") || error.Contains("trust")))
                     {
-                        // SSL certificate error - offer to trust the certificate
+                        // SSL certificate error - offer to trust the certificate with friendlier UX
                         var trustResult = System.Windows.MessageBox.Show(
-                            $"The ConfigMgr server's SSL certificate is not trusted.\n\n" +
-                            $"Server: {siteServer}\n" +
-                            $"Certificate Subject: {pendingSubject}\n\n" +
-                            $"⚠️ SECURITY WARNING:\n" +
-                            $"Only trust this certificate if you are certain this is your legitimate ConfigMgr server.\n\n" +
-                            $"Do you want to trust this certificate?\n\n" +
-                            $"Click YES to trust and retry the connection.\n" +
-                            $"Click NO to cancel.",
-                            "Trust Server Certificate?",
+                            $"Server Certificate Verification\n\n" +
+                            $"The certificate for ConfigMgr server '{siteServer}' is not in the Windows trust store.\n\n" +
+                            $"Certificate Details:\n" +
+                            $"• Subject: {pendingSubject}\n" +
+                            $"• Thumbprint: {pendingThumbprint}\n\n" +
+                            $"This is common for enterprise servers using self-signed or internal CA certificates.\n\n" +
+                            $"To verify this is your legitimate ConfigMgr server:\n" +
+                            $"• Confirm the server name matches your ConfigMgr primary site\n" +
+                            $"• Check with your IT team if unsure\n\n" +
+                            $"Trust this certificate for future connections?",
+                            "Server Certificate Verification",
                             System.Windows.MessageBoxButton.YesNo,
-                            System.Windows.MessageBoxImage.Warning);
+                            System.Windows.MessageBoxImage.Question);
                         
                         if (trustResult == System.Windows.MessageBoxResult.Yes)
                         {

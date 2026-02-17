@@ -1316,6 +1316,85 @@ namespace ZeroTrustMigrationAddin.Services
             }
         }
 
+        /// <summary>
+        /// Track comprehensive comparison tile data for diagnosing 0% ConfigMgr values.
+        /// Tracks device counts, values, data source, and quality issues.
+        /// </summary>
+        public void TrackComparisonTileData(
+            string tileName,
+            int intuneDeviceCount,
+            int intuneValue,
+            int configMgrDeviceCount,
+            int configMgrValue,
+            string configMgrDataSource,
+            string dataQualityIssues)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["TileName"] = tileName,
+                    ["ConfigMgrDataSource"] = configMgrDataSource, // "AdminService", "WMI", "Mock", "None"
+                    ["DataQualityIssues"] = SanitizeString(dataQualityIssues),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["IntuneDeviceCount"] = intuneDeviceCount,
+                    ["IntuneValue"] = intuneValue,
+                    ["ConfigMgrDeviceCount"] = configMgrDeviceCount,
+                    ["ConfigMgrValue"] = configMgrValue,
+                    ["IntunePercentage"] = intuneDeviceCount > 0 ? (double)intuneValue / intuneDeviceCount * 100 : 0,
+                    ["ConfigMgrPercentage"] = configMgrDeviceCount > 0 ? (double)configMgrValue / configMgrDeviceCount * 100 : 0
+                };
+
+                _telemetryClient.TrackEvent("ComparisonTileData", properties, metrics);
+
+                // Log warning if ConfigMgr shows 0% when it has devices
+                if (configMgrDeviceCount > 0 && configMgrValue == 0)
+                {
+                    FileLogger.Instance.Info($"[TELEMETRY] ConfigMgr 0% alert: {tileName} has {configMgrDeviceCount} devices but value=0. Source: {configMgrDataSource}. Issues: {dataQualityIssues}");
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track comparison tile data: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track ConfigMgr Admin Service query mode for diagnosing connection issues.
+        /// </summary>
+        public void TrackConfigMgrQueryMode(string queryType, string queryMode, int recordCount, string nullFields)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["QueryType"] = queryType, // e.g., "GetWindows1011Devices", "GetBitLockerStatus"
+                    ["QueryMode"] = queryMode, // "NoSelect", "WithSelect", "NoFilter", "WMI"
+                    ["NullFields"] = SanitizeString(nullFields), // e.g., "LastActiveTime:85%,LastPolicyRequest:100%"
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["RecordCount"] = recordCount
+                };
+
+                _telemetryClient.TrackEvent("ConfigMgrQueryMode", properties, metrics);
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track ConfigMgr query mode: {ex.Message}");
+            }
+        }
+
         #endregion
 
         public bool IsEnabled => _isEnabled;
