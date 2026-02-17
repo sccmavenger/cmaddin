@@ -2342,6 +2342,20 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrCompliantCount}/{comparison.ConfigMgrDeviceCount} active ({comparison.ConfigMgrCompliancePercentage:F1}%)");;
                 Instance.Info($"   📊 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+                
+                // Track telemetry for diagnosing 0% values
+                var nullLastActiveCount = configMgrDevices.Count(d => !d.LastActiveTime.HasValue);
+                var dataQualityIssues = nullLastActiveCount > 0 
+                    ? $"LastActiveTime null: {nullLastActiveCount}/{configMgrDevices.Count} ({nullLastActiveCount * 100 / Math.Max(configMgrDevices.Count, 1)}%)"
+                    : "None";
+                AzureTelemetryService.Instance.TrackComparisonTileData(
+                    "DeviceCompliance",
+                    comparison.IntuneDeviceCount,
+                    comparison.IntuneCompliantCount,
+                    comparison.ConfigMgrDeviceCount,
+                    comparison.ConfigMgrCompliantCount,
+                    _configMgrService.ConnectionMethod ?? "Unknown",
+                    dataQualityIssues);
             }
             catch (Exception ex)
             {
@@ -2453,6 +2467,19 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrProtectionEnabledCount} protection enabled, {comparison.ConfigMgrProtectionDisabledCount} disabled (no threat state visibility)");
                 Instance.Info($"   🛡️ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+                
+                // Track telemetry for threat detection
+                var dataQualityIssues = avStatus.Count == 0 
+                    ? "No AV status data from ConfigMgr" 
+                    : "None";
+                AzureTelemetryService.Instance.TrackComparisonTileData(
+                    "ThreatDetection",
+                    comparison.IntuneDeviceCount,
+                    comparison.IntuneSecuredCount,
+                    comparison.ConfigMgrDeviceCount,
+                    comparison.ConfigMgrProtectionEnabledCount,
+                    _configMgrService.ConnectionMethod ?? "Unknown",
+                    dataQualityIssues);
             }
             catch (Exception ex)
             {
@@ -2583,6 +2610,19 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.Info($"      ⚠️ No BitLocker data from ConfigMgr - SMS_G_System_ENCRYPTABLE_VOLUME may not be inventoried");
                 }
                 Instance.Info($"   🔑 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+                
+                // Track telemetry for diagnosing 0% values
+                var dataQualityIssues = uniqueDevices.Count == 0 
+                    ? "SMS_G_System_ENCRYPTABLE_VOLUME not inventoried" 
+                    : "None";
+                AzureTelemetryService.Instance.TrackComparisonTileData(
+                    "BitLocker",
+                    comparison.IntuneDeviceCount,
+                    comparison.IntuneEncryptedCount,
+                    comparison.ConfigMgrDeviceCount,
+                    comparison.ConfigMgrEncryptedCount,
+                    _configMgrService.ConnectionMethod ?? "Unknown",
+                    dataQualityIssues);
             }
             catch (Exception ex)
             {
@@ -2630,6 +2670,16 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices with TPM data, but 0 can attest to cloud");
                 Instance.Info($"   🔒 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+                
+                // Track telemetry - ConfigMgr 0 is by design (architectural limitation)
+                AzureTelemetryService.Instance.TrackComparisonTileData(
+                    "DeviceHealthAttestation",
+                    comparison.IntuneDeviceCount,
+                    comparison.IntuneFullyAttestedCount,
+                    comparison.ConfigMgrDeviceCount,
+                    0, // Always 0 by design - ConfigMgr cannot attest to Azure AD
+                    _configMgrService.ConnectionMethod ?? "Unknown",
+                    "ConfigMgr 0 is architectural - cannot attest to Azure AD");
             }
             catch (Exception ex)
             {

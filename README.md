@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.193** | February 17, 2026
+**Version 3.17.194** | February 17, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -217,6 +217,21 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.193 (February 17, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Certificate Trust Dialog** - When connecting to ConfigMgr with a self-signed SSL certificate, users are now prompted to trust the certificate instead of getting a connection error
+  - Shows certificate subject and security warning
+  - Stores trusted thumbprint for future connections
+  - Automatic retry after trusting
+
+---
+
 ### Version 3.17.193 (February 16, 2026)
 
 ### Security
@@ -308,23 +323,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Display: "62 stale (of 80)" and "0 stale (of 4)" - explicitly uses word "stale"
   - Summary: "62 devices haven't synced in 14+ days - ConfigMgr only sees 4"
   - Explains WHAT (devices haven't synced), WHY it matters (14+ days = outdated policies), and ConfigMgr limitation
-
-### Fixed
-
----
-
-### Version 3.17.187 (February 13, 2026)
-
-### Added
-
-### Changed
-- **Security Blind Spots v3 - Show device scope context**: Makes cloud visibility advantage obvious
-  - Old display: "62 stale" vs "0 stale" (wrongly implies ConfigMgr is better)
-  - New display: "62 of 80 tracked" vs "0 of 4 visible" (shows ConfigMgr's limited scope)
-  - New summary: "62 devices need attention - 76 only visible via cloud"
-  - Added `DevicesOnlyVisibleViaCloud`, `CloudSeesMoreDevices`, `IntuneCountDisplay`, `ConfigMgrCountDisplay` properties
-  - Cloud icon (☁️) now shown when Intune manages more devices than ConfigMgr
-  - Key insight: ConfigMgr showing 0% isn't better - it just can't see most devices
 
 ### Fixed
 
@@ -1547,5 +1545,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-17  
-**Version**: 3.17.193  
+**Version**: 3.17.194  
 **Maintainer:** Cloud Native Assessment Team

@@ -10,6 +10,27 @@
 - 
 
 
+## [3.17.194] - 2026-02-17
+
+### Added
+- **Comprehensive Comparison Tile Telemetry** - Added telemetry to diagnose why ConfigMgr metrics show 0%
+  - New `TrackComparisonTileData()` method tracks device counts, values, data source, and quality issues
+  - New `TrackConfigMgrQueryMode()` tracks Admin Service vs WMI path and null field percentages
+  - Added telemetry to: BitLocker, Device Compliance, Device Health Attestation, Threat Detection tiles
+  - Tracks LastActiveTime, LastPolicyRequest null percentages for debugging Response Time 0% issues
+  - Kusto query: `customEvents | where name == "ComparisonTileData" | where customMeasurements.ConfigMgrValue == 0`
+
+### Changed
+- **Friendlier Certificate Trust Dialog** - Reduced anxiety-inducing language for SSL certificate prompts
+  - Changed from "⚠️ SECURITY WARNING" to "Server Certificate Verification" 
+  - Now shows certificate thumbprint for verification
+  - Explains self-signed certs are "common for enterprise servers"
+  - Provides clear verification steps (confirm server name, check with IT team)
+  - Uses Question icon instead of Warning icon
+
+### Fixed 
+
+
 ## [3.17.193] - 2026-02-17
 
 ### Added
