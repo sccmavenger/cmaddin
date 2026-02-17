@@ -1739,15 +1739,59 @@ namespace ZeroTrustMigrationAddin.ViewModels
                             var error = _graphDataService.ConfigMgrService.LastConnectionError;
                             LogConnection($"❌ Manual connection FAILED: {error}");
                             
-                            System.Windows.MessageBox.Show(
-                                $"Failed to connect to ConfigMgr.\n\n" +
-                                $"Site Server: {manualServer}\n" +
-                                $"Error: {error}\n\n" +
-                                $"⚠️ Dashboard will show MOCK DATA until all three connections are established.\n\n" +
-                                $"Use the 🔧 Diagnostics button to try again or configure Azure OpenAI (🤖 AI button).",
-                                "ConfigMgr Connection Failed",
-                                System.Windows.MessageBoxButton.OK,
-                                System.Windows.MessageBoxImage.Warning);
+                            // Check if this is a certificate trust issue
+                            var (pendingThumbprint, pendingSubject) = Services.ConfigMgrAdminService.GetPendingCertificateInfo();
+                            
+                            if (!string.IsNullOrEmpty(pendingThumbprint) && (error.Contains("SSL") || error.Contains("certificate") || error.Contains("trust")))
+                            {
+                                // SSL certificate error - offer to trust the certificate
+                                var trustResult = System.Windows.MessageBox.Show(
+                                    $"The ConfigMgr server's SSL certificate is not trusted.\n\n" +
+                                    $"Server: {manualServer}\n" +
+                                    $"Certificate Subject: {pendingSubject}\n\n" +
+                                    $"⚠️ SECURITY WARNING:\n" +
+                                    $"Only trust this certificate if you are certain this is your legitimate ConfigMgr server.\n\n" +
+                                    $"Do you want to trust this certificate?\n\n" +
+                                    $"Click YES to trust and retry the connection.\n" +
+                                    $"Click NO to cancel.",
+                                    "Trust Server Certificate?",
+                                    System.Windows.MessageBoxButton.YesNo,
+                                    System.Windows.MessageBoxImage.Warning);
+                                
+                                if (trustResult == System.Windows.MessageBoxResult.Yes)
+                                {
+                                    LogConnection($"[SECURITY] User chose to trust certificate");
+                                    Services.ConfigMgrAdminService.TrustPendingCertificate();
+                                    _graphDataService.ConfigMgrService.RefreshCredentials();
+                                    
+                                    // Retry connection
+                                    var retrySuccess = await _graphDataService.ConfigMgrService.ConfigureAsync($"https://{manualServer}/AdminService");
+                                    if (retrySuccess)
+                                    {
+                                        System.Windows.MessageBox.Show(
+                                            $"Certificate trusted. Connected to ConfigMgr successfully!",
+                                            "Connected",
+                                            System.Windows.MessageBoxButton.OK,
+                                            System.Windows.MessageBoxImage.Information);
+                                    }
+                                }
+                                else
+                                {
+                                    Services.ConfigMgrAdminService.ClearPendingCertificate();
+                                }
+                            }
+                            else
+                            {
+                                System.Windows.MessageBox.Show(
+                                    $"Failed to connect to ConfigMgr.\n\n" +
+                                    $"Site Server: {manualServer}\n" +
+                                    $"Error: {error}\n\n" +
+                                    $"⚠️ Dashboard will show MOCK DATA until all three connections are established.\n\n" +
+                                    $"Use the 🔧 Diagnostics button to try again or configure Azure OpenAI (🤖 AI button).",
+                                    "ConfigMgr Connection Failed",
+                                    System.Windows.MessageBoxButton.OK,
+                                    System.Windows.MessageBoxImage.Warning);
+                            }
                         }
                     }
                     else
@@ -2541,20 +2585,70 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     var error = _graphDataService.ConfigMgrService.LastConnectionError;
                     LogConnection($"❌ Manual connection FAILED: {error}");
                     
-                    System.Windows.MessageBox.Show(
-                        $"Failed to connect to ConfigMgr\n\n" +
-                        $"Site Server: {siteServer}\n" +
-                        $"URL Tried: {adminServiceUrl}\n\n" +
-                        $"Error Details:\n{error}\n\n" +
-                        $"Common Issues:\n" +
-                        $"• Admin Service not enabled (requires ConfigMgr 1810+)\n" +
-                        $"• WMI access denied (need SMS Provider permissions)\n" +
-                        $"• Firewall blocking ports 443 (HTTPS) or 135 (WMI)\n" +
-                        $"• Site server name incorrect or unreachable\n\n" +
-                        $"Check the Diagnostics window for detailed error information.",
-                        "ConfigMgr Connection Failed",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Error);
+                    // Check if this is a certificate trust issue
+                    var (pendingThumbprint, pendingSubject) = Services.ConfigMgrAdminService.GetPendingCertificateInfo();
+                    
+                    if (!string.IsNullOrEmpty(pendingThumbprint) && (error.Contains("SSL") || error.Contains("certificate") || error.Contains("trust")))
+                    {
+                        // SSL certificate error - offer to trust the certificate
+                        var trustResult = System.Windows.MessageBox.Show(
+                            $"The ConfigMgr server's SSL certificate is not trusted.\n\n" +
+                            $"Server: {siteServer}\n" +
+                            $"Certificate Subject: {pendingSubject}\n\n" +
+                            $"⚠️ SECURITY WARNING:\n" +
+                            $"Only trust this certificate if you are certain this is your legitimate ConfigMgr server.\n\n" +
+                            $"Do you want to trust this certificate?\n\n" +
+                            $"Click YES to trust and retry the connection.\n" +
+                            $"Click NO to cancel.",
+                            "Trust Server Certificate?",
+                            System.Windows.MessageBoxButton.YesNo,
+                            System.Windows.MessageBoxImage.Warning);
+                        
+                        if (trustResult == System.Windows.MessageBoxResult.Yes)
+                        {
+                            LogConnection($"[SECURITY] User chose to trust certificate");
+                            Services.ConfigMgrAdminService.TrustPendingCertificate();
+                            _graphDataService.ConfigMgrService.RefreshCredentials();
+                            
+                            // Retry connection
+                            var retrySuccess = await _graphDataService.ConfigMgrService.ConfigureAsync(adminServiceUrl);
+                            if (retrySuccess)
+                            {
+                                var method = _graphDataService.ConfigMgrService.ConnectionMethod;
+                                System.Windows.MessageBox.Show(
+                                    $"Certificate trusted. Connected to ConfigMgr successfully!\n\n" +
+                                    $"Site Server: {siteServer}\n" +
+                                    $"Connection Method: {method}\n\n" +
+                                    $"Refreshing dashboard data...",
+                                    "ConfigMgr Connected",
+                                    System.Windows.MessageBoxButton.OK,
+                                    System.Windows.MessageBoxImage.Information);
+                                
+                                await RefreshDataAsync();
+                            }
+                        }
+                        else
+                        {
+                            Services.ConfigMgrAdminService.ClearPendingCertificate();
+                        }
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            $"Failed to connect to ConfigMgr\n\n" +
+                            $"Site Server: {siteServer}\n" +
+                            $"URL Tried: {adminServiceUrl}\n\n" +
+                            $"Error Details:\n{error}\n\n" +
+                            $"Common Issues:\n" +
+                            $"• Admin Service not enabled (requires ConfigMgr 1810+)\n" +
+                            $"• WMI access denied (need SMS Provider permissions)\n" +
+                            $"• Firewall blocking ports 443 (HTTPS) or 135 (WMI)\n" +
+                            $"• Site server name incorrect or unreachable\n\n" +
+                            $"Check the Diagnostics window for detailed error information.",
+                            "ConfigMgr Connection Failed",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Error);
+                    }
                 }
             }
             catch (Exception ex)

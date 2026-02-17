@@ -10,14 +10,17 @@
 - 
 
 
-## [3.17.192] - 2026-02-17
+## [3.17.193] - 2026-02-17
 
 ### Added
 
 ### Changed
 
 ### Fixed
-- 
+- **Certificate Trust Dialog** - When connecting to ConfigMgr with a self-signed SSL certificate, users are now prompted to trust the certificate instead of getting a connection error
+  - Shows certificate subject and security warning
+  - Stores trusted thumbprint for future connections
+  - Automatic retry after trusting
 
 
 ## [3.17.193] - 2026-02-16
