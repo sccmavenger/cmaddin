@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ZeroTrustMigrationAddin.Services;
 
 namespace ZeroTrustMigrationAddin.Models
 {
@@ -64,13 +65,53 @@ namespace ZeroTrustMigrationAddin.Models
     /// <summary>
     /// User settings for auto-update behavior.
     /// Stored in %LocalAppData%\ZeroTrustMigrationAddin\update-settings.json
+    /// SECURITY: GitHub token is encrypted using Windows DPAPI.
     /// </summary>
     public class UpdateSettings
     {
         /// <summary>
-        /// Optional GitHub Personal Access Token for higher API rate limits (5,000 req/hr vs 60)
+        /// Encrypted GitHub Personal Access Token (DPAPI protected).
+        /// Use SetGitHubToken/GetGitHubToken methods for access.
         /// </summary>
-        public string? GitHubToken { get; set; }
+        public string? EncryptedGitHubToken { get; set; }
+        
+        /// <summary>
+        /// Legacy plaintext token property - for JSON deserialization migration only.
+        /// </summary>
+        [Obsolete("Use SetGitHubToken/GetGitHubToken instead. Exists only for migration.")]
+        public string? GitHubToken 
+        { 
+            get => null; // Never expose plaintext
+            set 
+            {
+                // If setting from JSON deserialization (migration), encrypt it
+                if (!string.IsNullOrEmpty(value) && string.IsNullOrEmpty(EncryptedGitHubToken))
+                {
+                    EncryptedGitHubToken = SecureCredentialManager.Encrypt(value);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Sets and encrypts the GitHub token using DPAPI.
+        /// </summary>
+        public void SetGitHubToken(string token)
+        {
+            EncryptedGitHubToken = SecureCredentialManager.Encrypt(token);
+        }
+        
+        /// <summary>
+        /// Gets the decrypted GitHub token.
+        /// </summary>
+        public string GetGitHubToken()
+        {
+            return SecureCredentialManager.Decrypt(EncryptedGitHubToken ?? string.Empty);
+        }
+        
+        /// <summary>
+        /// Gets whether a GitHub token is configured.
+        /// </summary>
+        public bool HasGitHubToken => !string.IsNullOrEmpty(EncryptedGitHubToken);
 
         /// <summary>
         /// Timestamp of last update check

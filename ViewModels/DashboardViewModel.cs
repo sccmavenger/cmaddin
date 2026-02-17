@@ -1529,9 +1529,14 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 {
                     IsEnabled = IsOpenAIEnabled,
                     Endpoint = OpenAIEndpoint?.Trim(),
-                    DeploymentName = OpenAIDeploymentName?.Trim(),
-                    ApiKey = OpenAIApiKey?.Trim()
+                    DeploymentName = OpenAIDeploymentName?.Trim()
                 };
+                
+                // SECURITY: Use SetApiKey to encrypt the API key with DPAPI
+                if (!string.IsNullOrEmpty(OpenAIApiKey))
+                {
+                    config.SetApiKey(OpenAIApiKey.Trim());
+                }
                 
                 config.Save();
                 

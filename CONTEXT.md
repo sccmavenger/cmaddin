@@ -8,14 +8,29 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.191 |
-| **Last Updated** | 2026-02-13 |
+| **Version** | 3.17.192 |
+| **Last Updated** | 2026-02-16 |
 | **Branch** | main |
-| **Status** | Stable - UX fixes pending in [Unreleased] |
+| **Status** | Stable - Security hardening complete |
 
 ---
 
 ## Active Features
+
+### Security Hardening (v3.17.193)
+- **Status**: Complete, ready for publish
+- **Changes**:
+  - **CRITICAL FIX**: SSL certificate validation now uses thumbprint-based trust (was bypassing ALL validation)
+  - All API keys and tokens now encrypted with Windows DPAPI
+  - Centralized `SecureCredentialManager.cs` for consistent credential handling
+  - Automatic migration from plaintext to encrypted storage on first load
+- **Files Modified**:
+  - Services/SecureCredentialManager.cs (NEW)
+  - Services/ConfigMgrAdminService.cs (SSL validation + cert trust)
+  - Services/AzureOpenAIService.cs (API key encryption)
+  - Services/FeedbackService.cs (OAuth token encryption)
+  - Services/GitHubUpdateService.cs (PAT encryption)
+  - Models/UpdateManifest.cs (UpdateSettings encryption)
 
 ### Comparison Tile UX Improvements (Unreleased)
 - **Status**: Built, pending publish

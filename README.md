@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.191** | February 13, 2026
+**Version 3.17.192** | February 17, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -215,6 +215,89 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.193 (February 16, 2026)
+
+### Security
+- **CRITICAL: Fixed SSL Certificate Validation Bypass** (ConfigMgrAdminService.cs)
+  - Previous: Accepted ALL certificates including hostile ones (MITM vulnerability)
+  - Now: Validates certificates against trusted CA or stored SHA256 thumbprint
+  - Added `TrustedCertThumbprint` to ConfigMgrSettings for self-signed cert support
+  - Added `GetPendingCertificateInfo()` and `TrustPendingCertificate()` methods for UI certificate trust flow
+  - References: OWASP A07:2021, NIST SC-8
+
+- **HIGH: Encrypted OpenAI API Key with DPAPI** (AzureOpenAIService.cs)
+  - API key now stored encrypted in openai-config.json as `EncryptedApiKey`
+  - Added `SetApiKey()` and `GetApiKey()` methods using Windows DPAPI
+  - Automatic migration from plaintext to encrypted on load
+  - References: OWASP A02:2021, NIST SC-28
+
+- **HIGH: Encrypted GitHub OAuth Token with DPAPI** (FeedbackService.cs)
+  - OAuth token now stored as `encrypted_token` in github-feedback-token.json
+  - Automatic migration from plaintext `access_token` to encrypted format
+  - References: OWASP A02:2021
+
+- **HIGH: Encrypted GitHub PAT with DPAPI** (UpdateManifest.cs, GitHubUpdateService.cs)
+  - GitHub Personal Access Token now stored as `EncryptedGitHubToken`
+  - Added `SetGitHubToken()`, `GetGitHubToken()`, and `HasGitHubToken` properties
+  - Automatic migration from plaintext on load
+  - References: OWASP A02:2021
+
+### Added
+- **SecureCredentialManager.cs**: Centralized DPAPI encryption/decryption service
+  - Used by all services storing sensitive credentials
+  - Includes `IsEncrypted()` helper for legacy plaintext detection
+  - User-scoped encryption tied to Windows login credentials
+
+### Changed
+- ConfigMgrSettings now includes certificate trust management
+- All credential storage now follows consistent DPAPI encryption pattern
+- Updated DashboardViewModel to use `SetApiKey()` for OpenAI configuration
+
+---
+
+### Version 3.17.192 (February 13, 2026)
+
+### Added
+- **Azure Workbook Telemetry Dashboard Enhancements**
+  - Added 90-day time range option to time filter dropdown
+  - Added "Why this matters" subtitles under each of the 8 Executive Headlines
+  - Added new **Application Readiness Analysis** section with:
+    - "Apps Blocking Migration" headline with complex/review breakdown
+    - "App Technology Distribution" pie chart (MSI, MSIX, AppV, etc.)
+    - "App Readiness Categories" bar chart (Easy, Moderate, NeedsReview, Complex, Unknown)
+    - "Application Portfolio Health" summary table (readiness %, orgs with AppV/scripts)
+  - Visualization of `ApplicationReadinessAssessed` telemetry data including `TopTechnologies`
+
+### Changed
+- Headlines now have explanatory context below each metric explaining business impact
+
+### Removed
+- **Migration Progress Over Time** chart from VP Migration Dashboard (awaiting realignment on what to measure)
+
+---
+
+### Version 3.17.191 (February 13, 2026)
+
+### Added
+- **Executive Headlines methodology documentation**: Added full reference in COMPARISON_METHODOLOGY.md
+  - Each headline explained: what it measures, data source, formula, why it matters
+  - Includes cloud-native capability comparison table
+  - Documents all 9 headlines with actionable context
+
+### Changed
+- **Azure Workbook Executive Headlines v2**: Clearer, more actionable one-liners
+  - "Devices At Risk": Now shows "no cloud remediation, no Conditional Access, no Autopilot recovery"
+  - "Cloud-Native Progress": Fixed 100.7% bug - now shows count + capped percentage with definition
+  - "Don't Waste Time": Now breaks down blockers: "X missing AAD ID + Y stale 14+ days"
+  - "Autopilot Opportunity": Now explains impact: "if rebuilt, require manual setup"
+  - All messages now answer "what?" and "so what?"
+
+### Fixed
+- **100.7% cloud-native bug**: Changed denominator from TotalDevices to CloudManagedDevices, capped at 100%
+
+---
+
 ### Version 3.17.190 (February 13, 2026)
 
 ### Added
@@ -241,53 +324,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Added `DevicesOnlyVisibleViaCloud`, `CloudSeesMoreDevices`, `IntuneCountDisplay`, `ConfigMgrCountDisplay` properties
   - Cloud icon (☁️) now shown when Intune manages more devices than ConfigMgr
   - Key insight: ConfigMgr showing 0% isn't better - it just can't see most devices
-
-### Fixed
-
----
-
-### Version 3.17.186 (February 13, 2026)
-
-### Added
-
-### Changed
-- **Security Blind Spots messaging v2**: Emphasizes security IMPACT and cloud-exclusive visibility
-  - Old: "Intune tracks 62 unreachable devices via cloud connectivity" (still vague)
-  - New: "62 devices with policy gaps - visible only via cloud"
-  - Key message: These devices have OUTDATED security policies (why you should care)
-  - Explains that ConfigMgr CANNOT see off-network devices (no VPN = invisible)
-  - Intune sees them because cloud = internet connectivity = always visible
-  - Added `SecurityImpact` property for future tooltip/detail expansion
-
-### Fixed
-
----
-
-### Version 3.17.184 (February 13, 2026)
-
-### Changed
-- **Security Blind Spots messaging redesign**: Reframed to emphasize cloud visibility advantage
-  - Old: "ConfigMgr has zero security blind spots (62 stale in Intune)" - incorrectly favors ConfigMgr
-  - New: "Intune tracks 62 unreachable devices via cloud connectivity" - highlights Intune advantage
-  - Key insight: Intune detecting stale devices demonstrates cloud visibility, not a problem
-  - ConfigMgr showing 0 stale may indicate limited visibility (on-prem dependency), not better health
-  - All messaging now promotes cloud migration value proposition
-  - Added cloud icon (☁️) when Intune detects more stale devices (cloud tracking feature)
-
-### Fixed
-- Corrected messaging logic that was undermining cloud migration advocacy
-
----
-
-### Version 3.17.183 (February 13, 2026)
-
-### Added
-- **Threat Detection device-level logging**: Logs sample devices (up to 10 each) by threat severity for spot-checking
-  - Breakdown by severity: High, Medium, Low, Compromised
-  - Misconfigured devices list with device names
-  - Enables security teams to verify threat data in log files at `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\`
-
-### Changed
 
 ### Fixed
 
@@ -1509,6 +1545,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-13  
-**Version**: 3.17.191  
+**Last Updated**: 2026-02-17  
+**Version**: 3.17.192  
 **Maintainer:** Cloud Native Assessment Team

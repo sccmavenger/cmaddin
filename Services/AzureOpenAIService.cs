@@ -33,43 +33,35 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Loads Azure OpenAI configuration from appsettings.json or environment variables.
+        /// Loads Azure OpenAI configuration from config file or environment variables.
+        /// SECURITY: API key is decrypted from DPAPI-protected storage.
         /// Use the AI Settings button in the UI to configure credentials.
         /// </summary>
         private void LoadConfiguration()
         {
             try
             {
-                // Load from configuration file
-                string configPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "ZeroTrustMigrationAddin",
-                    "openai-config.json");
-
-                if (File.Exists(configPath))
+                // Load using the secure config class (handles DPAPI decryption)
+                var config = AzureOpenAIConfig.Load();
+                
+                if (config.IsEnabled)
                 {
-                    var json = File.ReadAllText(configPath);
-                    var config = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
-                    
-                    if (config?.AzureOpenAI?.Enabled == true)
-                    {
-                        string endpoint = config.AzureOpenAI.Endpoint?.ToString();
-                        string deploymentName = config.AzureOpenAI.DeploymentName?.ToString();
-                        string apiKey = config.AzureOpenAI.ApiKey?.ToString();
+                    string? endpoint = config.Endpoint;
+                    string? deploymentName = config.DeploymentName;
+                    string apiKey = config.GetApiKey(); // SECURITY: Decrypts from DPAPI
 
-                        if (!string.IsNullOrEmpty(endpoint) && 
-                            !string.IsNullOrEmpty(deploymentName) && 
-                            !string.IsNullOrEmpty(apiKey))
-                        {
-                            _client = new OpenAIClient(
-                                new Uri(endpoint),
-                                new AzureKeyCredential(apiKey));
-                            _deploymentName = deploymentName;
-                            _isConfigured = true;
-                            
-                            Instance.Info($"Azure OpenAI configured from config file: {endpoint}, Deployment: {deploymentName}");
-                            return;
-                        }
+                    if (!string.IsNullOrEmpty(endpoint) && 
+                        !string.IsNullOrEmpty(deploymentName) && 
+                        !string.IsNullOrEmpty(apiKey))
+                    {
+                        _client = new OpenAIClient(
+                            new Uri(endpoint),
+                            new AzureKeyCredential(apiKey));
+                        _deploymentName = deploymentName;
+                        _isConfigured = true;
+                        
+                        Instance.Info($"Azure OpenAI configured from config file: {endpoint}, Deployment: {deploymentName}");
+                        return;
                     }
                 }
 
@@ -643,13 +635,54 @@ namespace ZeroTrustMigrationAddin.Services
     /// <summary>
     /// Configuration model for Azure OpenAI settings.
     /// Stored in %APPDATA%\ZeroTrustMigrationAddin\openai-config.json
+    /// SECURITY: API key is encrypted using Windows DPAPI.
     /// </summary>
     public class AzureOpenAIConfig
     {
         public bool IsEnabled { get; set; } = false;
         public string? Endpoint { get; set; }
         public string? DeploymentName { get; set; }
-        public string? ApiKey { get; set; } // Consider encrypting in production
+        
+        // SECURITY: API key is now encrypted with DPAPI
+        // Legacy 'ApiKey' field is handled in Load() for migration
+        public string? EncryptedApiKey { get; set; }
+        
+        // For backward compatibility during migration - marked obsolete
+        [Obsolete("Use SetApiKey/GetApiKey instead. This property exists only for JSON migration.")]
+        public string? ApiKey 
+        { 
+            get => null; // Never expose plaintext
+            set 
+            {
+                // If setting from JSON deserialization (migration), encrypt it
+                if (!string.IsNullOrEmpty(value) && string.IsNullOrEmpty(EncryptedApiKey))
+                {
+                    EncryptedApiKey = SecureCredentialManager.Encrypt(value);
+                    Instance.Info("[SECURITY] Migrated plaintext API key to encrypted storage");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Sets and encrypts the API key using DPAPI.
+        /// </summary>
+        public void SetApiKey(string apiKey)
+        {
+            EncryptedApiKey = SecureCredentialManager.Encrypt(apiKey);
+        }
+        
+        /// <summary>
+        /// Gets the decrypted API key.
+        /// </summary>
+        public string GetApiKey()
+        {
+            return SecureCredentialManager.Decrypt(EncryptedApiKey ?? string.Empty);
+        }
+        
+        /// <summary>
+        /// Gets whether a valid API key is configured.
+        /// </summary>
+        public bool HasApiKey => !string.IsNullOrEmpty(EncryptedApiKey);
 
         private static string ConfigPath => System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -663,7 +696,24 @@ namespace ZeroTrustMigrationAddin.Services
                 if (System.IO.File.Exists(ConfigPath))
                 {
                     var json = System.IO.File.ReadAllText(ConfigPath);
-                    return JsonConvert.DeserializeObject<AzureOpenAIConfig>(json) ?? new AzureOpenAIConfig();
+                    var config = JsonConvert.DeserializeObject<AzureOpenAIConfig>(json) ?? new AzureOpenAIConfig();
+                    
+                    // Migration: If we read a plaintext ApiKey (via obsolete property setter),
+                    // save immediately to persist the encrypted version
+                    if (!string.IsNullOrEmpty(config.EncryptedApiKey))
+                    {
+                        // Check if it's actually encrypted or still plaintext
+                        if (!SecureCredentialManager.IsEncrypted(config.EncryptedApiKey))
+                        {
+                            // It's plaintext, encrypt and save
+                            var plainKey = config.EncryptedApiKey;
+                            config.EncryptedApiKey = SecureCredentialManager.Encrypt(plainKey);
+                            config.Save();
+                            Instance.Info("[SECURITY] Migrated plaintext OpenAI API key to encrypted storage");
+                        }
+                    }
+                    
+                    return config;
                 }
             }
             catch (Exception ex)
