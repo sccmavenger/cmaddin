@@ -794,18 +794,15 @@
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.192 - February 17, 2026</strong>
+                <strong>🎉 Version 3.17.193 - February 17, 2026</strong>
                 <ul>
-                    <li><strong>Azure Workbook Telemetry Dashboard Enhancements</strong> </li>
-                    <li>Added 90-day time range option to time filter dropdown</li>
-                    <li>Added "Why this matters" subtitles under each of the 8 Executive Headlines</li>
-                    <li>Added new **Application Readiness Analysis** section with:</li>
-                    <li>"Apps Blocking Migration" headline with complex/review breakdown</li>
-                    <li>"App Technology Distribution" pie chart (MSI, MSIX, AppV, etc.)</li>
-                    <li>"App Readiness Categories" bar chart (Easy, Moderate, NeedsReview, Complex, Unknown)</li>
-                    <li>"Application Portfolio Health" summary table (readiness %, orgs with AppV/scripts)</li>
-                    <li>Visualization of `ApplicationReadinessAssessed` telemetry data including `TopTechnologies`</li>
-                    <li>Headlines now have explanatory context below each metric explaining business impact</li>
+                    <li><strong>SecureCredentialManager.cs</strong> : Centralized DPAPI encryption/decryption service</li>
+                    <li>Used by all services storing sensitive credentials</li>
+                    <li>Includes `IsEncrypted()` helper for legacy plaintext detection</li>
+                    <li>User-scoped encryption tied to Windows login credentials</li>
+                    <li>ConfigMgrSettings now includes certificate trust management</li>
+                    <li>All credential storage now follows consistent DPAPI encryption pattern</li>
+                    <li>Updated DashboardViewModel to use `SetApiKey()` for OpenAI configuration</li>
                 </ul>
             </div>
         </section>
@@ -1566,7 +1563,7 @@ CloudNative = IntuneDevices.Where(device =>
         </section>
 
         <footer>
-            <p>Cloud Native Assessment v3.17.192 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Cloud Native Assessment v3.17.193 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>
