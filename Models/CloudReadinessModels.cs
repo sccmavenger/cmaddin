@@ -508,15 +508,31 @@ namespace ZeroTrustMigrationAddin.Models
 
     /// <summary>
     /// Device Sync Freshness comparison - how quickly can devices receive policy updates?
-    /// Shows cloud-native responsiveness advantage.
+    /// Shows cloud-native responsiveness advantage via Push (Intune) vs Poll (ConfigMgr) architecture.
     /// </summary>
     public class SyncFreshnessComparison
     {
-        // Intune metrics
+        /// <summary>
+        /// Threshold for considering a device "abandoned" - devices not synced in this many days
+        /// are excluded from the filtered average to provide a fair comparison.
+        /// </summary>
+        public const int AbandonedThresholdDays = 30;
+        
+        // Intune metrics (ALL devices - includes abandoned)
         public int IntuneDeviceCount { get; set; }
         public double IntuneAvgDaysSinceSync { get; set; }
         public int IntuneSyncedToday { get; set; }
         public double IntuneSyncedTodayPercentage { get; set; }
+        
+        // Intune FILTERED metrics (active devices only - synced within 30 days)
+        /// <summary>Count of active Intune devices (synced within 30 days)</summary>
+        public int IntuneActiveDeviceCount { get; set; }
+        /// <summary>Average days since sync for ACTIVE devices only (fair comparison)</summary>
+        public double IntuneActiveAvgDaysSinceSync { get; set; }
+        /// <summary>Count of abandoned devices (not synced in 30+ days)</summary>
+        public int IntuneAbandonedDeviceCount { get; set; }
+        /// <summary>Percentage of devices that are abandoned</summary>
+        public double IntuneAbandonedPercentage { get; set; }
         
         // ConfigMgr metrics
         public int ConfigMgrDeviceCount { get; set; }
@@ -526,6 +542,7 @@ namespace ZeroTrustMigrationAddin.Models
         
         // Data availability flags (0 days is valid - means synced today)
         public bool HasIntuneData => IntuneDeviceCount > 0;
+        public bool HasIntuneActiveData => IntuneActiveDeviceCount > 0;
         // ConfigMgr has data only if we have devices AND either some scanned today OR non-zero average
         public bool HasConfigMgrData => ConfigMgrDeviceCount > 0 && 
             (ConfigMgrScannedToday > 0 || ConfigMgrAvgDaysSinceScan > 0);
@@ -534,14 +551,26 @@ namespace ZeroTrustMigrationAddin.Models
         public bool ConfigMgrDataSuspect => ConfigMgrDeviceCount > 0 && 
             ConfigMgrAvgDaysSinceScan == 0 && ConfigMgrScannedTodayPercentage == 0;
         
-        // Comparison
-        public double SpeedMultiplier => HasConfigMgrData && HasIntuneData && IntuneAvgDaysSinceSync > 0
-            ? Math.Round(ConfigMgrAvgDaysSinceScan / IntuneAvgDaysSinceSync, 1) 
+        /// <summary>True if there are significant abandoned devices skewing the raw average</summary>
+        public bool HasAbandonedDevicesSkewingAverage => IntuneAbandonedDeviceCount > 0 && 
+            IntuneAvgDaysSinceSync > IntuneActiveAvgDaysSinceSync + 5;
+        
+        // Comparison - use FILTERED Intune average for fair comparison
+        public double SpeedMultiplier => HasConfigMgrData && HasIntuneActiveData && IntuneActiveAvgDaysSinceSync > 0
+            ? Math.Round(ConfigMgrAvgDaysSinceScan / IntuneActiveAvgDaysSinceSync, 1) 
             : 0;
         
-        public bool CloudNativeIsFaster => HasIntuneData && HasConfigMgrData && IntuneAvgDaysSinceSync < ConfigMgrAvgDaysSinceScan;
-        public bool ConfigMgrIsFaster => HasIntuneData && HasConfigMgrData && ConfigMgrAvgDaysSinceScan < IntuneAvgDaysSinceSync;
+        // Use filtered averages for comparison (excludes abandoned devices)
+        public bool CloudNativeIsFaster => HasIntuneActiveData && HasConfigMgrData && 
+            IntuneActiveAvgDaysSinceSync < ConfigMgrAvgDaysSinceScan;
+        public bool ConfigMgrIsFaster => HasIntuneActiveData && HasConfigMgrData && 
+            ConfigMgrAvgDaysSinceScan < IntuneActiveAvgDaysSinceSync;
         
+        /// <summary>
+        /// Comparison summary emphasizing the architectural advantage:
+        /// - Intune: Push-based delivery via WNS (seconds to minutes)
+        /// - ConfigMgr: Poll-based, default 60-minute client policy interval
+        /// </summary>
         public string ComparisonSummary
         {
             get
@@ -554,39 +583,41 @@ namespace ZeroTrustMigrationAddin.Models
                 if (!HasIntuneData)
                     return "No Intune sync data available for comparison";
                 
-                // Compare average days since sync (lower is better)
-                var intuneDays = IntuneAvgDaysSinceSync;
+                // If there are abandoned devices, highlight the cleanup opportunity
+                if (HasAbandonedDevicesSkewingAverage)
+                {
+                    return $"Push delivery (Intune) vs 60-min poll (ConfigMgr) - {IntuneAbandonedDeviceCount} devices need cleanup";
+                }
+                
+                // Use FILTERED average for fair comparison
+                var intuneDays = IntuneActiveAvgDaysSinceSync;
                 var configMgrDays = ConfigMgrAvgDaysSinceScan;
                 
-                // If both are very recent (< 1 day), they're both good
+                // Both have excellent response - emphasize the architectural difference
                 if (intuneDays < 1 && configMgrDays < 1)
-                    return "Both platforms have excellent response times";
+                    return "Push (Intune) vs Poll (ConfigMgr) - both syncing regularly";
                 
-                // If ConfigMgr is significantly better (lower days)
-                if (configMgrDays < intuneDays && intuneDays > 1)
+                // Show the architectural advantage with context
+                if (intuneDays <= configMgrDays)
                 {
-                    if (configMgrDays < 1)
-                        return $"ConfigMgr avg today, Intune avg {intuneDays:F0} days";
-                    var ratio = Math.Round(intuneDays / configMgrDays, 1);
-                    return $"ConfigMgr {ratio:F0}x faster ({configMgrDays:F0}d vs {intuneDays:F0}d)";
+                    return "Intune push delivers in seconds; ConfigMgr polls every 60 min";
                 }
                 
-                // If Intune is significantly better
-                if (intuneDays < configMgrDays && configMgrDays > 1)
-                {
-                    if (intuneDays < 1)
-                        return $"Intune avg today, ConfigMgr avg {configMgrDays:F0} days";
-                    var ratio = Math.Round(configMgrDays / intuneDays, 1);
-                    return $"Intune {ratio:F0}x faster ({intuneDays:F0}d vs {configMgrDays:F0}d)";
-                }
-                
-                return "Response times are comparable";
+                // Edge case: ConfigMgr showing better numbers (rare, usually small sample)
+                return "Push (seconds) vs Poll (60 min) - verify device counts";
             }
         }
         
-        // Icon: ⚡ = Cloud faster, ➖ = ConfigMgr faster, ➡️ = comparable, ❓ = no data
-        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData || ConfigMgrDataSuspect ? "❓" : 
-            (ConfigMgrIsFaster ? "➖" : (CloudNativeIsFaster ? "⚡" : "➡️"));
+        /// <summary>
+        /// Secondary display text showing abandoned device cleanup opportunity
+        /// </summary>
+        public string AbandonedDeviceMessage => IntuneAbandonedDeviceCount > 0
+            ? $"{IntuneAbandonedDeviceCount} abandoned devices ({IntuneAbandonedPercentage:F0}%) skewing avg from {IntuneActiveAvgDaysSinceSync:F1}d to {IntuneAvgDaysSinceSync:F1}d"
+            : string.Empty;
+        
+        // Icon: ⚡ = Cloud advantage (push), ❓ = no data
+        // Always show ⚡ when we have data because push is architecturally superior
+        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData || ConfigMgrDataSuspect ? "❓" : "⚡";
     }
 
     /// <summary>
@@ -920,9 +951,23 @@ namespace ZeroTrustMigrationAddin.Models
         public string CloudBenefit => "TPM attested to Azure AD for Conditional Access";
         public string OnPremNote => "TPM data local only - cannot prove health remotely";
         
-        public string ComparisonSummary => IntuneTpmReadyCount > 0
-            ? $"{IntuneTpmReadyCount:N0} devices can attest TPM health to Azure AD"
-            : "Connect to Graph for TPM attestation data";
+        // Data availability
+        public bool HasConfigMgrData => ConfigMgrDeviceCount > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                // Handle missing ConfigMgr data
+                if (!HasConfigMgrData && IntuneDeviceCount > 0)
+                    return "No ConfigMgr TPM data - SMS_G_System_TPM not inventoried";
+                
+                if (IntuneTpmReadyCount > 0)
+                    return $"{IntuneTpmReadyCount:N0} devices can attest TPM health to Azure AD";
+                    
+                return "Connect to Graph for TPM attestation data";
+            }
+        }
         
         public string ComparisonIcon => "🔐";
     }

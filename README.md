@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.194** | February 17, 2026
+**Version 3.17.197** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -218,6 +218,55 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+### Version 3.17.195 (February 17, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **ConfigMgr TPM Query JSON Parsing** - Fixed "JSON value could not be converted to System.Boolean" error
+  - ConfigMgr Admin Service returns TPM boolean fields (IsEnabled_InitialValue, etc.) as strings "True"/"False" instead of actual booleans
+  - Updated `TpmResource` model to accept flexible types with safe parsing methods
+  - TPM queries now work correctly with Admin Service REST API
+
+- **PowerShell Fallback for TPM and BitLocker Queries** - Added robust fallback when REST API fails
+  - New `GetTpmStatusViaPowerShellAsync()` method spawns pwsh.exe with JSON output
+  - New `GetBitLockerStatusViaPowerShellAsync()` method for BitLocker inventory
+  - Same proven pattern as existing `GetClientHealthViaPowerShellAsync()` that successfully returned 7 devices
+  - Handles type conversion issues that break JSON deserialization in REST API
+
+- **TPM Comparison "Not Inventoried" Display** - TpmHealthComparison now shows helpful message when SMS_G_System_TPM class not enabled in hardware inventory
+  
+- **BitLocker UI Shows "--%" When Not Inventoried** - Instead of confusing "0%", shows "--%/Not inventoried" when SMS_G_System_ENCRYPTABLE_VOLUME class is not enabled in ConfigMgr hardware inventory
+
+---
+
+### Version 3.17.194 (February 17, 2026)
+
+### Added
+- **Comprehensive Comparison Tile Telemetry** - Added telemetry to diagnose why ConfigMgr metrics show 0%
+  - New `TrackComparisonTileData()` method tracks device counts, values, data source, and quality issues
+  - New `TrackConfigMgrQueryMode()` tracks Admin Service vs WMI path and null field percentages
+  - Added telemetry to: BitLocker, Device Compliance, Device Health Attestation, Threat Detection tiles
+  - Tracks LastActiveTime, LastPolicyRequest null percentages for debugging Response Time 0% issues
+  - Kusto query: `customEvents | where name == "ComparisonTileData" | where customMeasurements.ConfigMgrValue == 0`
+
+### Changed
+- **Friendlier Certificate Trust Dialog** - Reduced anxiety-inducing language for SSL certificate prompts
+  - Changed from "⚠️ SECURITY WARNING" to "Server Certificate Verification" 
+  - Now shows certificate thumbprint for verification
+  - Explains self-signed certs are "common for enterprise servers"
+  - Provides clear verification steps (confirm server name, check with IT team)
+  - Uses Question icon instead of Warning icon
+
+### Fixed
+
+---
+
 ### Version 3.17.193 (February 17, 2026)
 
 ### Added
@@ -290,41 +339,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Removed
 - **Migration Progress Over Time** chart from VP Migration Dashboard (awaiting realignment on what to measure)
-
----
-
-### Version 3.17.191 (February 13, 2026)
-
-### Added
-- **Executive Headlines methodology documentation**: Added full reference in COMPARISON_METHODOLOGY.md
-  - Each headline explained: what it measures, data source, formula, why it matters
-  - Includes cloud-native capability comparison table
-  - Documents all 9 headlines with actionable context
-
-### Changed
-- **Azure Workbook Executive Headlines v2**: Clearer, more actionable one-liners
-  - "Devices At Risk": Now shows "no cloud remediation, no Conditional Access, no Autopilot recovery"
-  - "Cloud-Native Progress": Fixed 100.7% bug - now shows count + capped percentage with definition
-  - "Don't Waste Time": Now breaks down blockers: "X missing AAD ID + Y stale 14+ days"
-  - "Autopilot Opportunity": Now explains impact: "if rebuilt, require manual setup"
-  - All messages now answer "what?" and "so what?"
-
-### Fixed
-- **100.7% cloud-native bug**: Changed denominator from TotalDevices to CloudManagedDevices, capped at 100%
-
----
-
-### Version 3.17.190 (February 13, 2026)
-
-### Added
-
-### Changed
-- **Security Blind Spots v4 - Crystal clear messaging**: Final clarity improvements
-  - Display: "62 stale (of 80)" and "0 stale (of 4)" - explicitly uses word "stale"
-  - Summary: "62 devices haven't synced in 14+ days - ConfigMgr only sees 4"
-  - Explains WHAT (devices haven't synced), WHY it matters (14+ days = outdated policies), and ConfigMgr limitation
-
-### Fixed
 
 ---
 
@@ -1544,6 +1558,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-17  
-**Version**: 3.17.194  
+**Last Updated**: 2026-02-18  
+**Version**: 3.17.197  
 **Maintainer:** Cloud Native Assessment Team

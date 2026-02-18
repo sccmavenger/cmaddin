@@ -292,10 +292,30 @@ namespace ZeroTrustMigrationAddin.Views
         {
             if (data == null) return;
             
-            IntuneAvgSyncDays.Text = $"{data.IntuneAvgDaysSinceSync:F1}";
-            IntuneSyncedTodayPercent.Text = $"{data.IntuneSyncedTodayPercentage:F0}% synced today";
+            // Show FILTERED average for Intune (active devices only) for fair comparison
+            // This excludes abandoned devices (30+ days without sync) that skew the raw average
+            if (data.HasIntuneActiveData)
+            {
+                IntuneAvgSyncDays.Text = $"{data.IntuneActiveAvgDaysSinceSync:F1}";
+                // Show abandoned device count if significant
+                if (data.IntuneAbandonedDeviceCount > 0)
+                {
+                    IntuneSyncedTodayPercent.Text = $"Push delivery • {data.IntuneAbandonedDeviceCount} abandoned";
+                }
+                else
+                {
+                    IntuneSyncedTodayPercent.Text = $"Push delivery (seconds)";
+                }
+            }
+            else
+            {
+                IntuneAvgSyncDays.Text = $"{data.IntuneAvgDaysSinceSync:F1}";
+                IntuneSyncedTodayPercent.Text = $"{data.IntuneSyncedTodayPercentage:F0}% synced today";
+            }
+            
             ConfigMgrAvgScanDays.Text = $"{data.ConfigMgrAvgDaysSinceScan:F1}";
-            ConfigMgrScannedTodayPercent.Text = $"{data.ConfigMgrScannedTodayPercentage:F0}% scanned today";
+            // Emphasize the architectural difference: poll-based model
+            ConfigMgrScannedTodayPercent.Text = $"Poll every 60 min";
             SyncComparisonIcon.Text = data.ComparisonIcon;
             SyncSummaryText.Text = data.ComparisonSummary;
         }
@@ -353,8 +373,18 @@ namespace ZeroTrustMigrationAddin.Views
             
             IntuneEncryptedPercent.Text = $"{data.IntuneEncryptedPercentage:F0}%";
             IntuneEncryptedCount.Text = $"{data.IntuneEncryptedCount:N0} devices";
-            ConfigMgrEncryptedPercent.Text = $"{data.ConfigMgrEncryptedPercentage:F0}%";
-            ConfigMgrEncryptedCount.Text = $"{data.ConfigMgrEncryptedCount:N0} devices";
+            
+            // Show "--%" when ConfigMgr data not available (class not inventoried)
+            if (data.HasConfigMgrData)
+            {
+                ConfigMgrEncryptedPercent.Text = $"{data.ConfigMgrEncryptedPercentage:F0}%";
+                ConfigMgrEncryptedCount.Text = $"{data.ConfigMgrEncryptedCount:N0} devices";
+            }
+            else
+            {
+                ConfigMgrEncryptedPercent.Text = "--%";
+                ConfigMgrEncryptedCount.Text = "Not inventoried";
+            }
             BitLockerSummaryText.Text = data.ComparisonSummary;
         }
 

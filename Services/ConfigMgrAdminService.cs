@@ -2299,6 +2299,7 @@ $results | ConvertTo-Json -Compress
         /// <summary>
         /// Get BitLocker encryption status for all devices.
         /// Uses SMS_G_System_ENCRYPTABLE_VOLUME for drive-level encryption info.
+        /// Falls back to PowerShell if REST API fails.
         /// </summary>
         public async Task<List<BitLockerStatus>> GetBitLockerStatusAsync()
         {
@@ -2313,9 +2314,26 @@ $results | ConvertTo-Json -Compress
             {
                 return await GetBitLockerStatusViaWmiAsync();
             }
-            else
+            
+            // Try REST first, fall back to PowerShell on failure
+            try
             {
                 return await GetBitLockerStatusViaRestApiAsync();
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[CONFIGMGR] SMS_G_System_ENCRYPTABLE_VOLUME REST API failed: {ex.Message}");
+                Instance.Info("[CONFIGMGR] Trying PowerShell fallback for SMS_G_System_ENCRYPTABLE_VOLUME...");
+                
+                try
+                {
+                    return await GetBitLockerStatusViaPowerShellAsync();
+                }
+                catch (Exception psEx)
+                {
+                    Instance.Warning($"[CONFIGMGR] PowerShell fallback also failed: {psEx.Message}");
+                    return new List<BitLockerStatus>();
+                }
             }
         }
 
@@ -2330,7 +2348,7 @@ $results | ConvertTo-Json -Compress
                 if (!response.IsSuccessStatusCode)
                 {
                     Instance.Warning($"BitLocker query failed: {response.StatusCode}. This class may not be inventoried.");
-                    return new List<BitLockerStatus>();
+                    throw new Exception($"BitLocker REST query failed: {response.StatusCode}");
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
@@ -2365,7 +2383,7 @@ $results | ConvertTo-Json -Compress
             catch (Exception ex)
             {
                 Instance.Warning($"Failed to get BitLocker status via REST: {ex.Message}");
-                return new List<BitLockerStatus>();
+                throw; // Rethrow to trigger PowerShell fallback
             }
         }
 
@@ -2411,6 +2429,113 @@ $results | ConvertTo-Json -Compress
                 {
                     Instance.Warning($"Failed to get BitLocker status via WMI: {ex.Message}");
                     return new List<BitLockerStatus>();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get BitLocker status via PowerShell (fallback when REST API fails).
+        /// </summary>
+        private async Task<List<BitLockerStatus>> GetBitLockerStatusViaPowerShellAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var statuses = new List<BitLockerStatus>();
+                
+                try
+                {
+                    Instance.Info("[CONFIGMGR] GetBitLockerStatus via PowerShell - spawning pwsh.exe process");
+                    var wmiNamespace = $"root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery($"\\\\{_siteServer}\\{wmiNamespace}", "SELECT ResourceID, DriveLetter, ProtectionStatus, ConversionStatus, EncryptionMethod FROM SMS_G_System_ENCRYPTABLE_VOLUME (via PowerShell)");
+
+                    // PowerShell script to query SMS_G_System_ENCRYPTABLE_VOLUME
+                    var psScript = $@"
+$results = Get-CimInstance -Namespace '{wmiNamespace}' -ClassName SMS_G_System_ENCRYPTABLE_VOLUME -ComputerName '{_siteServer}' -ErrorAction Stop |
+    Select-Object ResourceID, DriveLetter, ProtectionStatus, ConversionStatus, EncryptionMethod
+$results | ConvertTo-Json -Compress
+";
+
+                    var startInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "pwsh.exe",
+                        Arguments = $"-NoProfile -NonInteractive -Command \"{psScript.Replace("\"", "\\\"")}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var process = new System.Diagnostics.Process { StartInfo = startInfo };
+                    process.Start();
+
+                    var completed = process.WaitForExit(30000);
+                    
+                    if (!completed)
+                    {
+                        process.Kill();
+                        throw new TimeoutException("PowerShell query timed out after 30 seconds");
+                    }
+
+                    var output = process.StandardOutput.ReadToEnd();
+                    var error = process.StandardError.ReadToEnd();
+
+                    if (process.ExitCode != 0 || !string.IsNullOrEmpty(error))
+                    {
+                        throw new Exception($"PowerShell error (exit code {process.ExitCode}): {error}");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(output) || output.Trim() == "null")
+                    {
+                        Instance.Warning("[CONFIGMGR] PowerShell returned no data for SMS_G_System_ENCRYPTABLE_VOLUME - class may not be inventoried");
+                        return statuses;
+                    }
+
+                    // Parse JSON output
+                    var jsonArray = output.Trim().StartsWith("[") ? output : "[" + output + "]";
+                    var items = System.Text.Json.JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(jsonArray);
+                    
+                    if (items != null)
+                    {
+                        // Group by ResourceID, focus on OS drive (usually C:)
+                        var grouped = new Dictionary<int, BitLockerStatus>();
+                        
+                        foreach (var item in items)
+                        {
+                            var resourceId = item.TryGetProperty("ResourceID", out var rid) ? rid.GetInt32() : 0;
+                            var driveLetter = item.TryGetProperty("DriveLetter", out var dl) && dl.ValueKind != System.Text.Json.JsonValueKind.Null 
+                                ? dl.GetString() ?? "" : "";
+                            var protectionStatus = item.TryGetProperty("ProtectionStatus", out var ps) && ps.ValueKind == System.Text.Json.JsonValueKind.Number 
+                                ? ps.GetInt32() : 0;
+                            var conversionStatus = item.TryGetProperty("ConversionStatus", out var cs) && cs.ValueKind == System.Text.Json.JsonValueKind.Number 
+                                ? cs.GetInt32() : 0;
+                            var encryptionMethod = item.TryGetProperty("EncryptionMethod", out var em) && em.ValueKind != System.Text.Json.JsonValueKind.Null 
+                                ? em.GetString() : null;
+                            
+                            // Only take C: drive or first drive if C: not found
+                            if (!grouped.ContainsKey(resourceId) || driveLetter == "C:")
+                            {
+                                grouped[resourceId] = new BitLockerStatus
+                                {
+                                    ResourceId = resourceId,
+                                    DriveLetter = driveLetter,
+                                    ProtectionStatus = protectionStatus,
+                                    ConversionStatus = conversionStatus,
+                                    EncryptionMethod = encryptionMethod,
+                                    IsProtected = protectionStatus == 1 || protectionStatus == 2
+                                };
+                            }
+                        }
+                        
+                        statuses = grouped.Values.ToList();
+                    }
+
+                    Instance.Info($"[CONFIGMGR] GetBitLockerStatus via PowerShell - returned {statuses.Count} devices");
+                    return statuses;
+                }
+                catch (Exception ex)
+                {
+                    Instance.Error($"[CONFIGMGR] GetBitLockerStatus via PowerShell FAILED: {ex.Message}");
+                    throw;
                 }
             });
         }
@@ -2652,6 +2777,7 @@ $results | ConvertTo-Json -Compress
 
         /// <summary>
         /// Get TPM status for all devices.
+        /// Falls back to PowerShell if REST API fails due to type parsing issues.
         /// </summary>
         public async Task<List<TpmStatus>> GetTpmStatusAsync()
         {
@@ -2666,9 +2792,26 @@ $results | ConvertTo-Json -Compress
             {
                 return await GetTpmStatusViaWmiAsync();
             }
-            else
+            
+            // Try REST first, fall back to PowerShell on parsing errors
+            try
             {
                 return await GetTpmStatusViaRestApiAsync();
+            }
+            catch (Exception ex)
+            {
+                Instance.Warning($"[CONFIGMGR] SMS_G_System_TPM REST API failed: {ex.Message}");
+                Instance.Info("[CONFIGMGR] Trying PowerShell fallback for SMS_G_System_TPM...");
+                
+                try
+                {
+                    return await GetTpmStatusViaPowerShellAsync();
+                }
+                catch (Exception psEx)
+                {
+                    Instance.Warning($"[CONFIGMGR] PowerShell fallback also failed: {psEx.Message}");
+                    return new List<TpmStatus>();
+                }
             }
         }
 
@@ -2697,9 +2840,9 @@ $results | ConvertTo-Json -Compress
                             {
                                 ResourceId = tpm.ResourceID,
                                 IsPresent = true, // If we have a record, TPM is present
-                                IsEnabled = tpm.IsEnabled_InitialValue,
-                                IsActivated = tpm.IsActivated_InitialValue,
-                                IsOwned = tpm.IsOwned_InitialValue,
+                                IsEnabled = tpm.GetIsEnabled(),
+                                IsActivated = tpm.GetIsActivated(),
+                                IsOwned = tpm.GetIsOwned(),
                                 SpecVersion = tpm.SpecVersion
                             });
                         }
@@ -2754,6 +2897,113 @@ $results | ConvertTo-Json -Compress
                     return new List<TpmStatus>();
                 }
             });
+        }
+
+        /// <summary>
+        /// Get TPM status via PowerShell (fallback when REST API fails due to type parsing).
+        /// </summary>
+        private async Task<List<TpmStatus>> GetTpmStatusViaPowerShellAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var statuses = new List<TpmStatus>();
+                
+                try
+                {
+                    Instance.Info("[CONFIGMGR] GetTpmStatus via PowerShell - spawning pwsh.exe process");
+                    var wmiNamespace = $"root\\sms\\site_{_siteCode}";
+                    Instance.LogWmiQuery($"\\\\{_siteServer}\\{wmiNamespace}", "SELECT ResourceID, IsEnabled_InitialValue, IsActivated_InitialValue, IsOwned_InitialValue, SpecVersion FROM SMS_G_System_TPM (via PowerShell)");
+
+                    // PowerShell script to query SMS_G_System_TPM
+                    var psScript = $@"
+$results = Get-CimInstance -Namespace '{wmiNamespace}' -ClassName SMS_G_System_TPM -ComputerName '{_siteServer}' -ErrorAction Stop |
+    Select-Object ResourceID, IsEnabled_InitialValue, IsActivated_InitialValue, IsOwned_InitialValue, SpecVersion
+$results | ConvertTo-Json -Compress
+";
+
+                    var startInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "pwsh.exe",
+                        Arguments = $"-NoProfile -NonInteractive -Command \"{psScript.Replace("\"", "\\\"")}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var process = new System.Diagnostics.Process { StartInfo = startInfo };
+                    process.Start();
+
+                    var completed = process.WaitForExit(30000);
+                    
+                    if (!completed)
+                    {
+                        process.Kill();
+                        throw new TimeoutException("PowerShell query timed out after 30 seconds");
+                    }
+
+                    var output = process.StandardOutput.ReadToEnd();
+                    var error = process.StandardError.ReadToEnd();
+
+                    if (process.ExitCode != 0 || !string.IsNullOrEmpty(error))
+                    {
+                        throw new Exception($"PowerShell error (exit code {process.ExitCode}): {error}");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(output) || output.Trim() == "null")
+                    {
+                        Instance.Warning("[CONFIGMGR] PowerShell returned no data for SMS_G_System_TPM - class may not be inventoried");
+                        return statuses;
+                    }
+
+                    // Parse JSON output
+                    var jsonArray = output.Trim().StartsWith("[") ? output : "[" + output + "]";
+                    var items = System.Text.Json.JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(jsonArray);
+                    
+                    if (items != null)
+                    {
+                        foreach (var item in items)
+                        {
+                            var status = new TpmStatus
+                            {
+                                ResourceId = item.TryGetProperty("ResourceID", out var rid) ? rid.GetInt32() : 0,
+                                IsPresent = true,
+                                IsEnabled = ParseJsonBoolProperty(item, "IsEnabled_InitialValue"),
+                                IsActivated = ParseJsonBoolProperty(item, "IsActivated_InitialValue"),
+                                IsOwned = ParseJsonBoolProperty(item, "IsOwned_InitialValue"),
+                                SpecVersion = item.TryGetProperty("SpecVersion", out var sv) && sv.ValueKind != System.Text.Json.JsonValueKind.Null 
+                                    ? sv.GetString() : null
+                            };
+                            statuses.Add(status);
+                        }
+                    }
+
+                    Instance.Info($"[CONFIGMGR] GetTpmStatus via PowerShell - returned {statuses.Count} devices");
+                    return statuses;
+                }
+                catch (Exception ex)
+                {
+                    Instance.Error($"[CONFIGMGR] GetTpmStatus via PowerShell FAILED: {ex.Message}");
+                    throw;
+                }
+            });
+        }
+        
+        /// <summary>
+        /// Safely parse a boolean property from JSON that might be bool, string "True"/"False", or int 0/1.
+        /// </summary>
+        private static bool ParseJsonBoolProperty(System.Text.Json.JsonElement item, string propertyName)
+        {
+            if (!item.TryGetProperty(propertyName, out var prop)) return false;
+            
+            return prop.ValueKind switch
+            {
+                System.Text.Json.JsonValueKind.True => true,
+                System.Text.Json.JsonValueKind.False => false,
+                System.Text.Json.JsonValueKind.String => prop.GetString()?.Equals("True", StringComparison.OrdinalIgnoreCase) == true,
+                System.Text.Json.JsonValueKind.Number => prop.GetInt32() != 0,
+                _ => false
+            };
         }
 
         /// <summary>
@@ -3308,10 +3558,33 @@ $results | ConvertTo-Json -Compress
     public class TpmResource
     {
         public int ResourceID { get; set; }
-        public bool IsEnabled_InitialValue { get; set; }
-        public bool IsActivated_InitialValue { get; set; }
-        public bool IsOwned_InitialValue { get; set; }
+        // These come as strings "True"/"False" from ConfigMgr Admin Service, not actual booleans
+        public object? IsEnabled_InitialValue { get; set; }
+        public object? IsActivated_InitialValue { get; set; }
+        public object? IsOwned_InitialValue { get; set; }
         public string? SpecVersion { get; set; }
+        
+        // Helper methods to safely parse boolean values from strings or bools
+        public bool GetIsEnabled() => ParseBoolValue(IsEnabled_InitialValue);
+        public bool GetIsActivated() => ParseBoolValue(IsActivated_InitialValue);
+        public bool GetIsOwned() => ParseBoolValue(IsOwned_InitialValue);
+        
+        private static bool ParseBoolValue(object? value)
+        {
+            if (value == null) return false;
+            if (value is bool b) return b;
+            if (value is string s) return s.Equals("True", StringComparison.OrdinalIgnoreCase) || s == "1";
+            if (value is int i) return i != 0;
+            if (value is System.Text.Json.JsonElement je)
+            {
+                if (je.ValueKind == System.Text.Json.JsonValueKind.True) return true;
+                if (je.ValueKind == System.Text.Json.JsonValueKind.False) return false;
+                if (je.ValueKind == System.Text.Json.JsonValueKind.String) 
+                    return je.GetString()?.Equals("True", StringComparison.OrdinalIgnoreCase) == true;
+                if (je.ValueKind == System.Text.Json.JsonValueKind.Number) return je.GetInt32() != 0;
+            }
+            return false;
+        }
     }
 
     public class OSDetailsResponse

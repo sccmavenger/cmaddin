@@ -1950,6 +1950,7 @@ namespace ZeroTrustMigrationAddin.Services
                     var devicesWithSync = intuneDevices.Where(d => d.LastSyncDateTime != null).ToList();
                     if (devicesWithSync.Any())
                     {
+                        // Calculate RAW average (all devices including abandoned)
                         var totalDays = devicesWithSync.Sum(d => 
                             (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays);
                         comparison.IntuneAvgDaysSinceSync = Math.Round(totalDays / devicesWithSync.Count, 2);
@@ -1959,6 +1960,23 @@ namespace ZeroTrustMigrationAddin.Services
                             (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays < 1);
                         comparison.IntuneSyncedTodayPercentage = Math.Round(
                             (double)comparison.IntuneSyncedToday / intuneDevices.Count * 100, 1);
+                        
+                        // === FILTERED METRICS: Exclude abandoned devices (30+ days) for fair comparison ===
+                        var activeDevices = devicesWithSync.Where(d => 
+                            (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays < SyncFreshnessComparison.AbandonedThresholdDays).ToList();
+                        var abandonedDevices = devicesWithSync.Where(d => 
+                            (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays >= SyncFreshnessComparison.AbandonedThresholdDays).ToList();
+                        
+                        comparison.IntuneActiveDeviceCount = activeDevices.Count;
+                        comparison.IntuneAbandonedDeviceCount = abandonedDevices.Count;
+                        comparison.IntuneAbandonedPercentage = Math.Round((double)abandonedDevices.Count / devicesWithSync.Count * 100, 1);
+                        
+                        if (activeDevices.Any())
+                        {
+                            var activeTotalDays = activeDevices.Sum(d => 
+                                (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays);
+                            comparison.IntuneActiveAvgDaysSinceSync = Math.Round(activeTotalDays / activeDevices.Count, 2);
+                        }
                         
                         // === DIAGNOSTIC: Breakdown by sync age ===
                         var syncedToday = devicesWithSync.Count(d => (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays < 1);
@@ -1973,8 +1991,12 @@ namespace ZeroTrustMigrationAddin.Services
                         Instance.Info($"      Recent (1-7 days):  {synced1to7} devices");
                         Instance.Info($"      Week+ (7-14 days):  {synced7to14} devices");
                         Instance.Info($"      Stale (14-30 days): {synced14to30} devices");
-                        Instance.Info($"      Old (30-90 days):   {synced30to90} devices");
+                        Instance.Info($"      Old (30-90 days):   {synced30to90} devices ⚠️");
                         Instance.Info($"      Abandoned (90+ days): {syncedOver90} devices ⚠️");
+                        Instance.Info($"   📊 FILTERED METRICS (for fair comparison):");
+                        Instance.Info($"      Active devices (<{SyncFreshnessComparison.AbandonedThresholdDays}d): {comparison.IntuneActiveDeviceCount}");
+                        Instance.Info($"      Active avg days: {comparison.IntuneActiveAvgDaysSinceSync:F1}");
+                        Instance.Info($"      Abandoned devices: {comparison.IntuneAbandonedDeviceCount} ({comparison.IntuneAbandonedPercentage:F0}%)");
                         
                         // Track sync freshness metrics for telemetry
                         AzureTelemetryService.Instance.TrackSyncFreshnessMetrics(
@@ -1984,21 +2006,21 @@ namespace ZeroTrustMigrationAddin.Services
                             syncedToday, synced1to7, synced7to14, synced14to30 + synced30to90, syncedOver90);
                         
                         // Show top 5 oldest devices dragging average up
-                        if (comparison.IntuneAvgDaysSinceSync > 7)
+                        if (comparison.IntuneAbandonedDeviceCount > 0)
                         {
-                            var oldestDevices = devicesWithSync
+                            var oldestDevices = abandonedDevices
                                 .OrderByDescending(d => (DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays)
                                 .Take(5)
                                 .Select(d => $"{d.DeviceName ?? "Unknown"}: {(int)(DateTime.UtcNow - d.LastSyncDateTime!.Value.UtcDateTime).TotalDays} days");
-                            Instance.Warning($"   ⚠️ TOP 5 OLDEST DEVICES (dragging avg to {comparison.IntuneAvgDaysSinceSync} days):");
+                            Instance.Warning($"   ⚠️ TOP 5 ABANDONED DEVICES (dragging raw avg from {comparison.IntuneActiveAvgDaysSinceSync:F1}d to {comparison.IntuneAvgDaysSinceSync:F1}d):");
                             foreach (var device in oldestDevices)
                             {
                                 Instance.Warning($"      • {device}");
                             }
-                            Instance.Info($"   💡 RECOMMENDATION: Remove or remediate abandoned devices to improve Response Time metric");
+                            Instance.Info($"   💡 RECOMMENDATION: Remove {comparison.IntuneAbandonedDeviceCount} abandoned devices to clean up tenant");
                         }
                     }
-                    Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} devices, avg {comparison.IntuneAvgDaysSinceSync} days since sync, {comparison.IntuneSyncedTodayPercentage}% synced today");
+                    Instance.Info($"   ✓ Intune: {comparison.IntuneDeviceCount} total, {comparison.IntuneActiveDeviceCount} active (avg {comparison.IntuneActiveAvgDaysSinceSync:F1}d), {comparison.IntuneAbandonedDeviceCount} abandoned");
                 }
 
                 // Get ConfigMgr devices with LastActiveTime
