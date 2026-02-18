@@ -10,6 +10,22 @@
 - 
 
 
+## [3.17.198] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- **MSI Installer Version Mismatch** - Fixed MSI installing old version requiring auto-update on first launch
+  - **Problem**: MSI filename showed correct version (e.g., v3.17.197) but installed v3.16.14.0
+  - **Root cause**: Product.wxs had hardcoded `Version="3.16.14.0"` that was never updated
+  - **Solution**: Changed to WiX variable `$(var.ProductVersion)` injected at build time
+  - Build-Installer.ps1 now reads version from csproj and passes to `wix build` via `-d ProductVersion=x.y.z.0`
+  - Bundle.wxs also updated for bootstrapper builds
+  - MSI now installs the correct version, no auto-update needed on first launch 
+
+
 ## [3.17.197] - 2026-02-18
 
 ### Added

@@ -122,6 +122,27 @@ if (-not (Test-Path $publishPath)) {
 $fileCount = (Get-ChildItem -Path $publishPath -Recurse -File).Count
 Write-Success "Found $fileCount files in publish folder"
 
+# Read version from csproj file for MSI package version
+$csprojPath = "..\ZeroTrustMigrationAddin.csproj"
+if (Test-Path $csprojPath) {
+    $csprojContent = Get-Content $csprojPath -Raw
+    if ($csprojContent -match '<Version>([\d\.]+)</Version>') {
+        $productVersion = $matches[1]
+        # MSI version format requires 4 parts: Major.Minor.Build.Revision
+        $versionParts = $productVersion.Split('.')
+        if ($versionParts.Count -eq 3) {
+            $productVersion = "$productVersion.0"
+        }
+        Write-Success "Product version from csproj: $productVersion"
+    } else {
+        $productVersion = "1.0.0.0"
+        Write-Warning "Could not read version from csproj, using default: $productVersion"
+    }
+} else {
+    $productVersion = "1.0.0.0"
+    Write-Warning "csproj not found, using default version: $productVersion"
+}
+
 # Step 2: Generate Application Files Component (WiX 6 compatible)
 if (-not $SkipHeat) {
     Write-Header "Generating Application Files Component"
@@ -207,7 +228,7 @@ Set-Location ".."
 # Step 4: Build MSI
 Write-Header "Building MSI Package"
 
-Write-Host "Compiling MSI..."
+Write-Host "Compiling MSI with version $productVersion..."
 
 $wixBuildArgs = @(
     "build",
@@ -215,6 +236,7 @@ $wixBuildArgs = @(
     "ApplicationFiles.wxs",
     "-ext", "WixToolset.UI.wixext",
     "-d", "PublishDir=$publishPath",
+    "-d", "ProductVersion=$productVersion",
     "-out", "$OutputPath\ZeroTrustMigrationAddin.msi"
 )
 
@@ -238,13 +260,14 @@ if (Test-Path $msiPath) {
 if ($IncludeBundle) {
     Write-Header "Building Bootstrapper Bundle"
     
-    Write-Host "Compiling bootstrapper..."
+    Write-Host "Compiling bootstrapper with version $productVersion..."
     
     $bundleArgs = @(
         "build",
         "Bundle.wxs",
         "-ext", "WixToolset.Bal.wixext",
         "-ext", "WixToolset.Util.wixext",
+        "-d", "ProductVersion=$productVersion",
         "-out", "$OutputPath\ZeroTrustMigrationAddin-Setup.exe"
     )
     
