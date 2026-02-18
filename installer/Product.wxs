@@ -3,9 +3,10 @@
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   
   <!-- Package Configuration (WiX v4+ syntax) -->
+  <!-- Version is injected at build time via -d ProductVersion=x.y.z.0 -->
   <Package Name="Cloud Native Assessment"
            Language="1033"
-           Version="3.16.14.0"
+           Version="$(var.ProductVersion)"
            Manufacturer="Microsoft Configuration Manager"
            UpgradeCode="7B8C9D2E-4F5A-6B7C-8D9E-0F1A2B3C4D5E"
            InstallerVersion="500"

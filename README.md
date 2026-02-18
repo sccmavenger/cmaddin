@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.197** | February 18, 2026
+**Version 3.17.198** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -221,6 +221,35 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.197 (February 18, 2026)
+
+### Added
+
+### Changed
+- **Response Time Tile Reframe** - Complete overhaul to show cloud advantage accurately
+  - **Problem**: Tile was showing ConfigMgr as "faster" (0.0 days vs 172.4 days) which is misleading
+  - **Root cause**: Abandoned Intune devices (30+ days without sync) were skewing the raw average
+  - **Solution**: Added filtered metrics that exclude abandoned devices for fair comparison
+  - New properties in `SyncFreshnessComparison`:
+    - `IntuneActiveDeviceCount`: Devices synced within 30 days
+    - `IntuneActiveAvgDaysSinceSync`: Average for active devices only
+    - `IntuneAbandonedDeviceCount`: Devices not synced in 30+ days
+    - `IntuneAbandonedPercentage`: Percentage of abandoned devices
+  - UI now shows:
+    - Filtered average (active devices only) for Intune
+    - "Push delivery (seconds)" vs "Poll every 60 min" architectural context
+    - Abandoned device count as cleanup opportunity
+  - ComparisonSummary now emphasizes Push vs Poll architecture backed by MS Docs
+  - Icon always shows ⚡ when data available (push is architecturally superior)
+  - **Documentation**: All claims backed by official Microsoft documentation:
+    - Intune push via WNS: [WNS Overview](https://learn.microsoft.com/en-us/windows/apps/design/shell/tiles-and-notifications/windows-push-notification-services--wns--overview)
+    - ConfigMgr 60-min poll: [Client Settings](https://learn.microsoft.com/en-us/mem/configmgr/core/clients/deploy/about-client-settings#client-policy-polling-interval-minutes)
+
+### Fixed
+
+---
+
 ### Version 3.17.195 (February 17, 2026)
 
 ### Added
@@ -318,27 +347,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - ConfigMgrSettings now includes certificate trust management
 - All credential storage now follows consistent DPAPI encryption pattern
 - Updated DashboardViewModel to use `SetApiKey()` for OpenAI configuration
-
----
-
-### Version 3.17.192 (February 13, 2026)
-
-### Added
-- **Azure Workbook Telemetry Dashboard Enhancements**
-  - Added 90-day time range option to time filter dropdown
-  - Added "Why this matters" subtitles under each of the 8 Executive Headlines
-  - Added new **Application Readiness Analysis** section with:
-    - "Apps Blocking Migration" headline with complex/review breakdown
-    - "App Technology Distribution" pie chart (MSI, MSIX, AppV, etc.)
-    - "App Readiness Categories" bar chart (Easy, Moderate, NeedsReview, Complex, Unknown)
-    - "Application Portfolio Health" summary table (readiness %, orgs with AppV/scripts)
-  - Visualization of `ApplicationReadinessAssessed` telemetry data including `TopTechnologies`
-
-### Changed
-- Headlines now have explanatory context below each metric explaining business impact
-
-### Removed
-- **Migration Progress Over Time** chart from VP Migration Dashboard (awaiting realignment on what to measure)
 
 ---
 
@@ -1559,5 +1567,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.197  
+**Version**: 3.17.198  
 **Maintainer:** Cloud Native Assessment Team

@@ -4,8 +4,9 @@
      xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
 
   <!-- Bootstrapper Bundle -->
+  <!-- Version is injected at build time via -d ProductVersion=x.y.z.0 -->
   <Bundle Name="Cloud Native Assessment"
-          Version="3.16.9.0"
+          Version="$(var.ProductVersion)"
           Manufacturer="Microsoft Configuration Manager"
           UpgradeCode="8C9D0E1F-5A6B-7C8D-9E0F-1A2B3C4D5E6F"
           IconSourceFile="..\bin\Release\net8.0-windows\win-x64\publish\ZeroTrustMigrationAddin.exe"
