@@ -547,6 +547,8 @@ namespace ZeroTrustMigrationAddin.Models
         /// are excluded from the filtered average to provide a fair comparison.
         /// </summary>
         public const int AbandonedThresholdDays = 30;
+        /// <summary>Minimum devices required for meaningful comparison</summary>
+        public const int MinimumDevicesForComparison = 10;
         
         // Intune metrics (ALL devices - includes abandoned)
         public int IntuneDeviceCount { get; set; }
@@ -577,6 +579,12 @@ namespace ZeroTrustMigrationAddin.Models
         public bool HasConfigMgrData => ConfigMgrDeviceCount > 0 && 
             (ConfigMgrScannedToday > 0 || ConfigMgrAvgDaysSinceScan > 0);
         
+        /// <summary>True if ConfigMgr has enough devices for meaningful comparison</summary>
+        public bool HasMinimumConfigMgrData => ConfigMgrDeviceCount >= MinimumDevicesForComparison;
+        
+        /// <summary>True when Intune sees significantly more devices than ConfigMgr</summary>
+        public bool CloudSeesMoreDevices => IntuneDeviceCount > ConfigMgrDeviceCount * 2;
+        
         // Detect when ConfigMgr shows 0.0 days but 0% scanned - likely no real data
         public bool ConfigMgrDataSuspect => ConfigMgrDeviceCount > 0 && 
             ConfigMgrAvgDaysSinceScan == 0 && ConfigMgrScannedTodayPercentage == 0;
@@ -591,9 +599,9 @@ namespace ZeroTrustMigrationAddin.Models
             : 0;
         
         // Use filtered averages for comparison (excludes abandoned devices)
-        public bool CloudNativeIsFaster => HasIntuneActiveData && HasConfigMgrData && 
+        public bool CloudNativeIsFaster => HasIntuneActiveData && HasConfigMgrData && HasMinimumConfigMgrData &&
             IntuneActiveAvgDaysSinceSync < ConfigMgrAvgDaysSinceScan;
-        public bool ConfigMgrIsFaster => HasIntuneActiveData && HasConfigMgrData && 
+        public bool ConfigMgrIsFaster => HasIntuneActiveData && HasConfigMgrData && HasMinimumConfigMgrData &&
             ConfigMgrAvgDaysSinceScan < IntuneActiveAvgDaysSinceSync;
         
         /// <summary>
@@ -612,6 +620,14 @@ namespace ZeroTrustMigrationAddin.Models
                     return "ConfigMgr scan data not available";
                 if (!HasIntuneData)
                     return "No Intune sync data available for comparison";
+                
+                // ConfigMgr has insufficient data for meaningful comparison
+                if (!HasMinimumConfigMgrData)
+                {
+                    if (CloudSeesMoreDevices)
+                        return $"Cloud visibility: {IntuneDeviceCount} devices (ConfigMgr sees {ConfigMgrDeviceCount})";
+                    return $"Limited ConfigMgr data ({ConfigMgrDeviceCount} devices)";
+                }
                 
                 // If there are abandoned devices, highlight the cleanup opportunity
                 if (HasAbandonedDevicesSkewingAverage)
@@ -645,9 +661,9 @@ namespace ZeroTrustMigrationAddin.Models
             ? $"{IntuneAbandonedDeviceCount} abandoned devices ({IntuneAbandonedPercentage:F0}%) skewing avg from {IntuneActiveAvgDaysSinceSync:F1}d to {IntuneAvgDaysSinceSync:F1}d"
             : string.Empty;
         
-        // Icon: ⚡ = Cloud advantage (push), ❓ = no data
-        // Always show ⚡ when we have data because push is architecturally superior
-        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData || ConfigMgrDataSuspect ? "❓" : "⚡";
+        // Icon: ⚡ = Cloud advantage (push), ☁️ = limited data but cloud visibility, ❓ = no data
+        public string ComparisonIcon => !HasConfigMgrData || !HasIntuneData || ConfigMgrDataSuspect ? "❓" : 
+            (!HasMinimumConfigMgrData ? "☁️" : "⚡");
     }
 
     /// <summary>
@@ -657,6 +673,8 @@ namespace ZeroTrustMigrationAddin.Models
     public class StaleDeviceComparison
     {
         public const int StaleThresholdDays = 14;
+        /// <summary>Minimum devices required for meaningful comparison</summary>
+        public const int MinimumDevicesForComparison = 10;
         
         // Intune metrics
         public int IntuneDeviceCount { get; set; }
@@ -673,12 +691,17 @@ namespace ZeroTrustMigrationAddin.Models
         public bool ConfigMgrAllMissingData => ConfigMgrDeviceCount > 0 && 
             ConfigMgrDevicesWithNoLastActiveTime == ConfigMgrDeviceCount;
         
+        /// <summary>True if ConfigMgr has enough devices for meaningful comparison</summary>
+        public bool HasMinimumConfigMgrData => ConfigMgrDeviceCount >= MinimumDevicesForComparison;
+        
         // Comparison
         public double StaleRatioMultiplier => IntuneStalePercentage > 0 
             ? Math.Round(ConfigMgrStalePercentage / IntuneStalePercentage, 1) 
             : 0;
         
-        public bool CloudNativeHasFewerStale => IntuneStalePercentage < ConfigMgrStalePercentage;
+        /// <summary>Only claim advantages when we have sufficient data</summary>
+        public bool CloudNativeHasFewerStale => HasMinimumConfigMgrData && 
+            IntuneStalePercentage < ConfigMgrStalePercentage;
         
         /// <summary>
         /// Devices only visible via cloud (Intune sees more than ConfigMgr)
@@ -719,6 +742,14 @@ namespace ZeroTrustMigrationAddin.Models
                 if (ConfigMgrAllMissingData)
                     return "ConfigMgr activity data not available";
                 
+                // ConfigMgr has insufficient data for meaningful comparison
+                if (!HasMinimumConfigMgrData && ConfigMgrDeviceCount > 0)
+                {
+                    if (CloudSeesMoreDevices)
+                        return $"Cloud sees {DevicesOnlyVisibleViaCloud} devices ConfigMgr can't track";
+                    return $"Limited ConfigMgr data ({ConfigMgrDeviceCount} devices)";
+                }
+                
                 // Handle zero stale percentages
                 if (ConfigMgrStalePercentage == 0 && IntuneStalePercentage == 0)
                     return "All devices are actively communicating";
@@ -727,7 +758,7 @@ namespace ZeroTrustMigrationAddin.Models
                 // ConfigMgr cannot see these devices - they're remote/cloud-native
                 if (CloudSeesMoreDevices && IntuneStaleCount > 0)
                 {
-                    return $"{IntuneStaleCount} devices haven't synced in 14+ days - ConfigMgr only sees {ConfigMgrDeviceCount}";
+                    return $"Cloud visibility: {IntuneStaleCount} stale detected (ConfigMgr sees only {ConfigMgrDeviceCount})";
                 }
                 
                 // Fallback for same-size populations
@@ -739,7 +770,7 @@ namespace ZeroTrustMigrationAddin.Models
                 if (IntuneStalePercentage == 0 && ConfigMgrStalePercentage > 0)
                     return $"Cloud-native has zero blind spots ({ConfigMgrStaleCount} stale in ConfigMgr)";
                 
-                // Both have stale devices - compare
+                // Both have stale devices - compare (only with sufficient data)
                 if (CloudNativeHasFewerStale && StaleRatioMultiplier > 1)
                     return $"Cloud-native has {StaleRatioMultiplier:F0}x fewer security blind spots";
                 
@@ -756,7 +787,7 @@ namespace ZeroTrustMigrationAddin.Models
         }
         
         // Icon reflects cloud visibility advantage - cloud is good even when detecting stale devices
-        public string ComparisonIcon => ConfigMgrAllMissingData ? "❓" : 
+        public string ComparisonIcon => ConfigMgrAllMissingData || !HasMinimumConfigMgrData ? "☁️" : 
             (CloudSeesMoreDevices || IntuneStalePercentage > ConfigMgrStalePercentage ? "☁️" : 
             (CloudNativeHasFewerStale ? "🔍" : "➡️"));
     }
@@ -1076,6 +1107,9 @@ namespace ZeroTrustMigrationAddin.Models
     /// </summary>
     public class DeviceComplianceComparison
     {
+        /// <summary>Minimum devices required for meaningful comparison</summary>
+        public const int MinimumDevicesForComparison = 10;
+        
         // Intune metrics
         public int IntuneDeviceCount { get; set; }
         public int IntuneCompliantCount { get; set; }
@@ -1088,17 +1122,58 @@ namespace ZeroTrustMigrationAddin.Models
         public double ConfigMgrCompliancePercentage => ConfigMgrDeviceCount > 0 
             ? Math.Round((double)ConfigMgrCompliantCount / ConfigMgrDeviceCount * 100, 1) : 0;
         
+        /// <summary>True if ConfigMgr has enough devices for meaningful comparison</summary>
+        public bool HasMinimumConfigMgrData => ConfigMgrDeviceCount >= MinimumDevicesForComparison;
+        
+        /// <summary>True when Intune sees significantly more devices than ConfigMgr (potential cloud visibility benefit)</summary>
+        public bool CloudSeesMoreDevices => IntuneDeviceCount > ConfigMgrDeviceCount * 2;
+        
+        /// <summary>Additional devices visible only via cloud</summary>
+        public int AdditionalCloudVisibility => Math.Max(0, IntuneDeviceCount - ConfigMgrDeviceCount);
+        
         // Comparison
         public double ComplianceDifference => IntuneCompliancePercentage - ConfigMgrCompliancePercentage;
-        public bool CloudHasBetterCompliance => IntuneCompliancePercentage > ConfigMgrCompliancePercentage;
         
-        public string ComparisonSummary => CloudHasBetterCompliance && ComplianceDifference > 0
-            ? $"Cloud-native {ComplianceDifference:F0}% more compliant"
-            : Math.Abs(ComplianceDifference) < 5 
-                ? "Compliance rates comparable"
-                : $"Compliance rates within {Math.Abs(ComplianceDifference):F0}%";
+        /// <summary>Only claim cloud is better when we have sufficient data to compare</summary>
+        public bool CloudHasBetterCompliance => HasMinimumConfigMgrData && 
+            IntuneCompliancePercentage > ConfigMgrCompliancePercentage;
         
-        public string ComparisonIcon => CloudHasBetterCompliance ? "📈" : "📊";
+        /// <summary>Whether comparison is meaningful (sufficient data on both sides)</summary>
+        public bool IsComparisonMeaningful => HasMinimumConfigMgrData && IntuneDeviceCount >= MinimumDevicesForComparison;
+        
+        public string ComparisonSummary
+        {
+            get 
+            {
+                // No ConfigMgr devices at all
+                if (ConfigMgrDeviceCount == 0)
+                    return $"Intune: {IntuneCompliantCount:N0}/{IntuneDeviceCount:N0} compliant - no ConfigMgr data";
+                
+                // ConfigMgr has insufficient data for meaningful comparison
+                if (!HasMinimumConfigMgrData)
+                {
+                    if (CloudSeesMoreDevices)
+                        return $"Cloud sees {AdditionalCloudVisibility:N0} devices ConfigMgr can't track";
+                    return $"Limited ConfigMgr data ({ConfigMgrDeviceCount} devices)";
+                }
+                
+                // Cloud sees significantly more devices - reframe as visibility benefit
+                if (CloudSeesMoreDevices)
+                    return $"Cloud visibility: {IntuneDeviceCount:N0} vs ConfigMgr {ConfigMgrDeviceCount:N0}";
+                
+                // Meaningful comparison available
+                if (CloudHasBetterCompliance && ComplianceDifference > 0)
+                    return $"Cloud-native {ComplianceDifference:F0}% more compliant";
+                
+                if (Math.Abs(ComplianceDifference) < 5)
+                    return "Compliance rates comparable";
+                
+                return $"Compliance rates within {Math.Abs(ComplianceDifference):F0}%";
+            }
+        }
+        
+        public string ComparisonIcon => !IsComparisonMeaningful ? "☁️" : 
+            (CloudHasBetterCompliance ? "📈" : "📊");
     }
 
     /// <summary>

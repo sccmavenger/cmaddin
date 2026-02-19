@@ -10,6 +10,34 @@
 - 
 
 
+## [3.17.215] - 2026-02-19
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.214] - 2026-02-19
+
+### Added
+
+### Changed
+
+### Fixed
+- **Cloud Native Tab Comparison Accuracy**: Fixed misleading comparisons with small ConfigMgr populations
+  - Added minimum threshold (10 devices) before comparing percentages between platforms
+  - When ConfigMgr has <10 devices, shows "Limited ConfigMgr data" or "Cloud sees X devices ConfigMgr can't track"
+  - When Intune sees 2x+ more devices, reframes as cloud visibility benefit instead of percentage comparison
+  - Prevents "ConfigMgr is 74% more compliant" messages when comparing 4 vs 81 devices
+  - Updated DeviceComplianceComparison, StaleDeviceComparison, and SyncFreshnessComparison models
+- **AdminUserGuide.html**: Corrected co-management workload count from 8 to 7
+  - Removed incorrect "Inventory" workload from table (not a co-management workload)
+  - Fixed "all 8 workloads" → "all 7 workloads" in two places
+
+
 ## [3.17.213] - 2026-02-19
 
 ### Added

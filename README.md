@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.213** | February 19, 2026
+**Version 3.17.215** | February 19, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -237,6 +237,42 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.214 (February 19, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Cloud Native Tab Comparison Accuracy**: Fixed misleading comparisons with small ConfigMgr populations
+  - Added minimum threshold (10 devices) before comparing percentages between platforms
+  - When ConfigMgr has <10 devices, shows "Limited ConfigMgr data" or "Cloud sees X devices ConfigMgr can't track"
+  - When Intune sees 2x+ more devices, reframes as cloud visibility benefit instead of percentage comparison
+  - Prevents "ConfigMgr is 74% more compliant" messages when comparing 4 vs 81 devices
+  - Updated DeviceComplianceComparison, StaleDeviceComparison, and SyncFreshnessComparison models
+- **AdminUserGuide.html**: Corrected co-management workload count from 8 to 7
+  - Removed incorrect "Inventory" workload from table (not a co-management workload)
+  - Fixed "all 8 workloads" → "all 7 workloads" in two places
+
+---
+
+### Version 3.17.213 (February 19, 2026)
+
+### Added
+- **Autopilot Readiness**: Added Autopilot registration status check
+  - Shows devices that meet OS requirements AND are NOT yet registered in Autopilot
+  - "Ready" count = devices admin needs to go register with the Autopilot service
+  - Clear breakdown: Meeting OS requirements → Already registered vs Ready to register
+  - Diagnostic table shows devices ready for registration with OS version/edition
+
+### Changed
+
+### Fixed
+
+---
+
 ### Version 3.17.212 (February 18, 2026)
 
 ### Added
@@ -285,43 +321,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Dashboard is disabled while update downloads/applies
   - Dashboard re-enabled automatically if update fails
   - Prevents file locks and corruption during update process
-
----
-
-### Version 3.17.209 (February 18, 2026)
-
-### Added
-- **Telemetry**: Comprehensive update system telemetry to measure effectiveness
-  - `TrackUpdateCheckStarted`: When update checks begin
-  - `TrackUpdateAvailable`: Details about available updates (files to update, delta bytes, verification mode)
-  - `TrackUpdateDownload`: Download success/failure metrics with timing
-  - `TrackUpdateApplied`: Success/failure metrics with files updated and duration
-  - `TrackUpdateDeferred`: When users skip or remind-later on updates
-  - `TrackFullVerificationEffectiveness`: Key ROI metric showing mismatches/missing files caught by full verification
-
-### Changed
-
-### Fixed
-
----
-
-### Version 3.17.208 (February 18, 2026)
-
-### Added
-- **Update System**: Full file verification for users upgrading from old versions
-  - Users upgrading from versions before v3.17.207 get full disk verification
-  - Hashes all 280 application files to ensure they match the remote manifest
-  - Catches partial update failures, old MSI installs, and file corruption
-  - Automatic fallback to fast manifest comparison for newer versions
-- **Update UI**: Enhanced progress messaging during updates
-  - New `UpdatePhase` enum: Verifying, Downloading, Extracting, Validating, BackingUp, Applying, Restarting
-  - Status messages with emoji indicators (🔍 📥 📦 ✅ 💾 🔄 🚀 ❌)
-  - Detail line showing current file, bytes downloaded, or countdown timer
-  - Countdown timer before restart (3... 2... 1...)
-
-### Changed
-
-### Fixed
 
 ---
 
@@ -1542,5 +1541,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-19  
-**Version**: 3.17.213  
+**Version**: 3.17.215  
 **Maintainer:** Cloud Native Assessment Team
