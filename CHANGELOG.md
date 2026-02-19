@@ -10,6 +10,23 @@
 - 
 
 
+## [3.17.209] - 2026-02-18
+
+### Added
+- **Telemetry**: Comprehensive update system telemetry to measure effectiveness
+  - `TrackUpdateCheckStarted`: When update checks begin
+  - `TrackUpdateAvailable`: Details about available updates (files to update, delta bytes, verification mode)
+  - `TrackUpdateDownload`: Download success/failure metrics with timing
+  - `TrackUpdateApplied`: Success/failure metrics with files updated and duration
+  - `TrackUpdateDeferred`: When users skip or remind-later on updates
+  - `TrackFullVerificationEffectiveness`: Key ROI metric showing mismatches/missing files caught by full verification
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.208] - 2026-02-18
 
 ### Added

@@ -1397,6 +1397,238 @@ namespace ZeroTrustMigrationAddin.Services
 
         #endregion
 
+        #region Update System Telemetry
+
+        /// <summary>
+        /// Track when an update check is performed.
+        /// </summary>
+        public void TrackUpdateCheckStarted(string currentVersion)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["CurrentVersion"] = currentVersion,
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                _telemetryClient?.TrackEvent("UpdateCheckStarted", properties);
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update check: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track update availability and verification mode used.
+        /// </summary>
+        public void TrackUpdateAvailable(
+            string currentVersion,
+            string newVersion,
+            bool usedFullVerification,
+            int totalFilesChecked,
+            int filesMismatched,
+            int filesNew,
+            long deltaBytes)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["CurrentVersion"] = currentVersion,
+                    ["NewVersion"] = newVersion,
+                    ["VerificationMode"] = usedFullVerification ? "FullDiskVerification" : "ManifestComparison",
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["TotalFilesChecked"] = totalFilesChecked,
+                    ["FilesMismatched"] = filesMismatched,
+                    ["FilesNew"] = filesNew,
+                    ["DeltaBytes"] = deltaBytes
+                };
+
+                _telemetryClient?.TrackEvent("UpdateAvailable", properties, metrics);
+                
+                // Log prominent message if full verification found mismatches
+                if (usedFullVerification && filesMismatched > 0)
+                {
+                    FileLogger.Instance.Info($"[TELEMETRY] ✅ Full verification caught {filesMismatched} mismatched files!");
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update available: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track update download progress and outcome.
+        /// </summary>
+        public void TrackUpdateDownload(
+            string version,
+            bool success,
+            long bytesDownloaded,
+            double durationSeconds,
+            string? failureReason = null)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["Version"] = version,
+                    ["Success"] = success.ToString(),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                if (!string.IsNullOrEmpty(failureReason))
+                {
+                    properties["FailureReason"] = SanitizeString(failureReason);
+                }
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["BytesDownloaded"] = bytesDownloaded,
+                    ["DurationSeconds"] = durationSeconds,
+                    ["DownloadSpeedKBps"] = durationSeconds > 0 ? (bytesDownloaded / 1024.0) / durationSeconds : 0
+                };
+
+                _telemetryClient?.TrackEvent("UpdateDownload", properties, metrics);
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update download: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track when update is applied (files copied and app restarting).
+        /// </summary>
+        public void TrackUpdateApplied(
+            string fromVersion,
+            string toVersion,
+            bool success,
+            int filesUpdated,
+            int filesFailed,
+            double totalDurationSeconds,
+            string? failureReason = null)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["FromVersion"] = fromVersion,
+                    ["ToVersion"] = toVersion,
+                    ["Success"] = success.ToString(),
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                if (!string.IsNullOrEmpty(failureReason))
+                {
+                    properties["FailureReason"] = SanitizeString(failureReason);
+                }
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["FilesUpdated"] = filesUpdated,
+                    ["FilesFailed"] = filesFailed,
+                    ["TotalDurationSeconds"] = totalDurationSeconds
+                };
+
+                _telemetryClient?.TrackEvent("UpdateApplied", properties, metrics);
+                
+                // Immediately flush to ensure this critical event is sent before restart
+                _telemetryClient?.Flush();
+                _eventsSinceLastFlush = 0;
+                FileLogger.Instance.Debug($"[TELEMETRY] Immediate flush for UpdateApplied");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update applied: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track when user skips or defers an update.
+        /// </summary>
+        public void TrackUpdateDeferred(string currentVersion, string availableVersion, string action)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["CurrentVersion"] = currentVersion,
+                    ["AvailableVersion"] = availableVersion,
+                    ["Action"] = action, // "SkipVersion", "RemindLater"
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                _telemetryClient?.TrackEvent("UpdateDeferred", properties);
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update deferred: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Track full verification effectiveness - key metric for ROI.
+        /// This tells us if full verification is catching files that manifest comparison would miss.
+        /// </summary>
+        public void TrackFullVerificationEffectiveness(
+            string fromVersion,
+            int filesVerified,
+            int mismatchesCaught,
+            int missingFilesCaught,
+            double verificationDurationSeconds)
+        {
+            if (!_isEnabled) return;
+
+            try
+            {
+                var properties = new Dictionary<string, string>
+                {
+                    ["FromVersion"] = fromVersion,
+                    ["CaughtMismatches"] = mismatchesCaught > 0 ? "Yes" : "No",
+                    ["AppVersion"] = GetAppVersion()
+                };
+
+                var metrics = new Dictionary<string, double>
+                {
+                    ["FilesVerified"] = filesVerified,
+                    ["MismatchesCaught"] = mismatchesCaught,
+                    ["MissingFilesCaught"] = missingFilesCaught,
+                    ["VerificationDurationSeconds"] = verificationDurationSeconds,
+                    // Key metric: % of files that were wrong
+                    ["MismatchRate"] = filesVerified > 0 ? (mismatchesCaught * 100.0 / filesVerified) : 0
+                };
+
+                _telemetryClient?.TrackEvent("FullVerificationEffectiveness", properties, metrics);
+                
+                // Immediately flush this important event
+                _telemetryClient?.Flush();
+                _eventsSinceLastFlush = 0;
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track full verification effectiveness: {ex.Message}");
+            }
+        }
+
+        #endregion
+
         public bool IsEnabled => _isEnabled;
     }
 }

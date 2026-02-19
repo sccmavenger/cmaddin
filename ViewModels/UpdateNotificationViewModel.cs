@@ -79,6 +79,9 @@ namespace ZeroTrustMigrationAddin.ViewModels
             StatusMessage = "🔍 Preparing update...";
             DetailMessage = "Checking installed files...";
             
+            var downloadStartTime = DateTime.Now;
+            long bytesDownloaded = _updateInfo.DeltaSize;
+            
             try
             {
                 var deltaService = new Services.DeltaUpdateService();
@@ -140,13 +143,20 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     _updateInfo.ChangedFiles,
                     detailedProgress);
 
+                var downloadDuration = (DateTime.Now - downloadStartTime).TotalSeconds;
+
                 if (!success)
                 {
                     StatusMessage = "❌ Download failed";
                     DetailMessage = "Please check your connection and try again.";
+                    Services.AzureTelemetryService.Instance.TrackUpdateDownload(
+                        _updateInfo.LatestVersion, false, bytesDownloaded, downloadDuration, "Download failed");
                     IsDownloading = false;
                     return;
                 }
+
+                Services.AzureTelemetryService.Instance.TrackUpdateDownload(
+                    _updateInfo.LatestVersion, true, bytesDownloaded, downloadDuration, null);
 
                 StatusMessage = "💾 Creating backup...";
                 DetailMessage = "Preparing to apply update...";
@@ -160,13 +170,20 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     StatusMessage = "🔄 Applying update...";
                     DetailMessage = $"Updating {_updateInfo.ChangedFiles.Count} files...";
                     
+                    var applyStartTime = DateTime.Now;
                     success = await applier.ApplyUpdateAsync(
                         deltaService.GetTempDownloadPath(),
                         _updateInfo.ChangedFiles,
                         remoteManifest);
 
+                    var totalDuration = (DateTime.Now - downloadStartTime).TotalSeconds;
+
                     if (success)
                     {
+                        Services.AzureTelemetryService.Instance.TrackUpdateApplied(
+                            _updateInfo.CurrentVersion, _updateInfo.LatestVersion, true,
+                            _updateInfo.ChangedFiles.Count, 0, totalDuration, null);
+                        
                         // Countdown before restart
                         for (int i = 3; i >= 1; i--)
                         {
@@ -181,18 +198,29 @@ namespace ZeroTrustMigrationAddin.ViewModels
                     }
                     else
                     {
+                        Services.AzureTelemetryService.Instance.TrackUpdateApplied(
+                            _updateInfo.CurrentVersion, _updateInfo.LatestVersion, false,
+                            0, _updateInfo.ChangedFiles.Count, totalDuration, "Apply failed");
                         StatusMessage = "❌ Failed to apply update";
                         DetailMessage = "Check Update.log for details.";
                     }
                 }
                 else
                 {
+                    var totalDuration = (DateTime.Now - downloadStartTime).TotalSeconds;
+                    Services.AzureTelemetryService.Instance.TrackUpdateApplied(
+                        _updateInfo.CurrentVersion, _updateInfo.LatestVersion, false,
+                        0, 0, totalDuration, "Failed to download manifest");
                     StatusMessage = "❌ Failed to download manifest";
                     DetailMessage = "Could not verify update package.";
                 }
             }
             catch (System.Exception ex)
             {
+                var totalDuration = (DateTime.Now - downloadStartTime).TotalSeconds;
+                Services.AzureTelemetryService.Instance.TrackUpdateApplied(
+                    _updateInfo.CurrentVersion, _updateInfo.LatestVersion, false,
+                    0, 0, totalDuration, ex.Message);
                 StatusMessage = "❌ Update failed";
                 DetailMessage = ex.Message;
                 Services.FileLogger.Instance.Error($"Update download failed: {ex.Message}");
@@ -205,6 +233,8 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         private void SkipUpdate()
         {
+            Services.AzureTelemetryService.Instance.TrackUpdateDeferred(
+                _updateInfo.CurrentVersion, _updateInfo.LatestVersion, "skipped");
             var updateService = new Services.GitHubUpdateService();
             updateService.SkipVersion(_updateInfo.LatestVersion);
             DialogResult = false;
@@ -212,6 +242,8 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
         private void RemindLater()
         {
+            Services.AzureTelemetryService.Instance.TrackUpdateDeferred(
+                _updateInfo.CurrentVersion, _updateInfo.LatestVersion, "remind_later");
             DialogResult = false;
         }
 
