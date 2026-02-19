@@ -121,24 +121,27 @@ namespace ZeroTrustMigrationAddin.Services
         /// Assesses Autopilot Registration readiness based on Microsoft's official requirements.
         /// Source: https://learn.microsoft.com/en-us/autopilot/requirements
         /// 
-        /// BARE MINIMUM Requirements checked:
+        /// Requirements checked:
         /// 1. OS Version: Windows 10 1809+ or Windows 11
         /// 2. OS Edition: Pro, Enterprise, Education (NOT Home)
-        /// 3. Tenant has Intune license (informational)
+        /// 3. Not already registered in Autopilot (devices that need to be registered)
+        /// 
+        /// ReadyDevices = Devices meeting OS requirements that are NOT yet registered in Autopilot
+        /// (These are the devices the admin needs to register)
         /// 
         /// NOTE: TPM 2.0 is NOT required for Autopilot registration (only for Self-Deploying/Pre-Provisioning modes)
         /// </summary>
         public async Task<CloudReadinessSignal> GetAutopilotReadinessSignalAsync()
         {
             Instance.Info("┌─────────────────────────────────────────────────────────────────────────────────────────┐");
-            Instance.Info("│ 🚀 AUTOPILOT READINESS ASSESSMENT (OS Requirements)                                    │");
+            Instance.Info("│ 🚀 AUTOPILOT READINESS ASSESSMENT                                                       │");
             Instance.Info("└─────────────────────────────────────────────────────────────────────────────────────────┘");
             
             var signal = new CloudReadinessSignal
             {
                 Id = "autopilot",
                 Name = "Autopilot Readiness",
-                Description = "Devices meeting OS requirements for Windows Autopilot",
+                Description = "Devices ready for Autopilot registration",
                 Icon = "🚀",
                 RelatedWorkload = "Device Provisioning",
                 LearnMoreUrl = "https://learn.microsoft.com/mem/autopilot/requirements"
@@ -151,14 +154,25 @@ namespace ZeroTrustMigrationAddin.Services
                 var configMgrDevices = await _configMgrService.GetWindows1011DevicesAsync();
                 var osDetails = await _configMgrService.GetOSDetailsAsync();
                 
+                // Get Autopilot registered devices from Graph API
+                Instance.Info("   Fetching Autopilot registered devices from Graph API...");
+                var autopilotDevices = await _graphService.GetAutopilotDeviceStatusAsync();
+                
+                // Get Intune devices to cross-reference serial numbers with Autopilot
+                Instance.Info("   Fetching Intune devices for serial number matching...");
+                var intuneDevices = await _graphService.GetCachedManagedDevicesAsync();
+                
                 // Get tenant license info
                 Instance.Info("   Fetching tenant license information...");
                 var licenseInfo = await _graphService.GetTenantLicensesAsync();
 
                 var configMgrCount = configMgrDevices?.Count ?? 0;
+                var autopilotCount = autopilotDevices?.Count ?? 0;
                 
                 Instance.Info($"   📱 ConfigMgr Windows 10/11 devices: {configMgrCount}");
                 Instance.Info($"   📊 OS detail records retrieved: {osDetails?.Count ?? 0}");
+                Instance.Info($"   🚀 Autopilot registered devices: {autopilotCount}");
+                Instance.Info($"   💻 Intune managed devices: {intuneDevices?.Count ?? 0}");
                 Instance.Info($"   📜 Tenant has Intune license: {licenseInfo?.HasIntune ?? false}");
                 
                 signal.TotalDevices = configMgrCount;
@@ -206,10 +220,10 @@ namespace ZeroTrustMigrationAddin.Services
                 }
                 
                 // ===================================================================================
-                // CHECK 1/2: OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)
+                // CHECK 1/3: OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)
                 // ===================================================================================
                 Instance.Info("");
-                Instance.Info("   [CHECK 1/2] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");
+                Instance.Info("   [CHECK 1/3] OS VERSION REQUIREMENT (Windows 10 1809+ or Windows 11)");
                 
                 var devicesWithNoOsData = safeConfigMgrDevices.Where(d => !osLookup.ContainsKey(d.ResourceId) || string.IsNullOrEmpty(osLookup[d.ResourceId].BuildNumber)).ToList();
                 var devicesBelowMinBuild = safeConfigMgrDevices.Where(d => {
@@ -278,10 +292,10 @@ namespace ZeroTrustMigrationAddin.Services
                 }
                 
                 // ===================================================================================
-                // CHECK 2/2: OS EDITION REQUIREMENT (Pro/Enterprise/Education - NOT Home)
+                // CHECK 2/3: OS EDITION REQUIREMENT (Pro/Enterprise/Education - NOT Home)
                 // ===================================================================================
                 Instance.Info("");
-                Instance.Info("   [CHECK 2/2] OS EDITION REQUIREMENT (Pro/Enterprise/Education)");
+                Instance.Info("   [CHECK 2/3] OS EDITION REQUIREMENT (Pro/Enterprise/Education)");
                 
                 var devicesMeetingEditionReq = new List<ConfigMgrDevice>();
                 var devicesWithHomeEdition = new List<ConfigMgrDevice>();
@@ -365,61 +379,112 @@ namespace ZeroTrustMigrationAddin.Services
                         AffectedDevices = devicesWithHomeEdition
                     });
                 }
+                
+                // ===================================================================================
+                // CHECK 3/3: AUTOPILOT REGISTRATION STATUS
+                // ===================================================================================
+                Instance.Info("");
+                Instance.Info("   [CHECK 3/3] AUTOPILOT REGISTRATION STATUS");
+                
+                // Build a set of Autopilot serial numbers (case-insensitive)
+                var autopilotSerials = new HashSet<string>(
+                    autopilotDevices?.Select(a => a.SerialNumber?.ToUpperInvariant() ?? "").Where(s => !string.IsNullOrEmpty(s)) ?? new List<string>(),
+                    StringComparer.OrdinalIgnoreCase);
+                
+                Instance.Info($"      📋 Autopilot serial numbers in tenant: {autopilotSerials.Count}");
+                
+                // Find Intune devices whose serial numbers ARE in Autopilot (these are registered)
+                var intuneDevicesWithAutopilot = intuneDevices?
+                    .Where(d => !string.IsNullOrEmpty(d.SerialNumber) && autopilotSerials.Contains(d.SerialNumber.ToUpperInvariant()))
+                    .Select(d => d.DeviceName ?? "")
+                    .Where(n => !string.IsNullOrEmpty(n))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                
+                // Find ConfigMgr devices already registered in Autopilot (by name match)
+                var configMgrDevicesAlreadyRegistered = safeConfigMgrDevices
+                    .Where(d => !string.IsNullOrEmpty(d.Name) && intuneDevicesWithAutopilot.Contains(d.Name))
+                    .ToList();
+                
+                // Find ConfigMgr devices NOT in the Autopilot-registered set
+                var configMgrDevicesNotRegistered = safeConfigMgrDevices
+                    .Where(d => !string.IsNullOrEmpty(d.Name) && !intuneDevicesWithAutopilot.Contains(d.Name))
+                    .ToList();
+                
+                Instance.Info($"      ✅ Already registered in Autopilot: {configMgrDevicesAlreadyRegistered.Count} devices");
+                Instance.Info($"      ⚠️ Not yet registered: {configMgrDevicesNotRegistered.Count} devices");
+                
+                if (configMgrDevicesAlreadyRegistered.Count > 0)
+                {
+                    var sampleRegistered = configMgrDevicesAlreadyRegistered.Take(5).Select(d => d.Name);
+                    Instance.Info($"      📋 Sample already registered: {string.Join(", ", sampleRegistered)}");
+                }
+                if (configMgrDevicesNotRegistered.Count > 0)
+                {
+                    var sampleNotRegistered = configMgrDevicesNotRegistered.Take(5).Select(d => d.Name);
+                    Instance.Info($"      📋 Sample not registered: {string.Join(", ", sampleNotRegistered)}");
+                }
 
                 // ===================================================================================
-                // CALCULATE FINAL READINESS (OS Version + OS Edition)
+                // CALCULATE FINAL READINESS
                 // ===================================================================================
+                // ReadyDevices = Devices that:
+                //   1. Meet OS version requirement (Win10 1809+ / Win11)
+                //   2. Meet OS edition requirement (Pro/Enterprise/Education)
+                //   3. Are NOT yet registered in Autopilot (these need to be registered)
+                
                 var devicesPassingOsVersion = new HashSet<int>(devicesMeetingOsVersionReq.Select(d => d.ResourceId));
                 var devicesPassingEdition = new HashSet<int>(devicesMeetingEditionReq.Select(d => d.ResourceId));
+                var devicesAlreadyRegisteredIds = new HashSet<int>(configMgrDevicesAlreadyRegistered.Select(d => d.ResourceId));
                 
-                // Devices meeting BOTH OS requirements (version + edition)
-                var readyDevices = safeConfigMgrDevices
+                // Devices meeting OS requirements
+                var devicesMeetingOsRequirements = safeConfigMgrDevices
                     .Where(d => devicesPassingOsVersion.Contains(d.ResourceId) &&
                                 devicesPassingEdition.Contains(d.ResourceId))
                     .ToList();
                 
-                signal.ReadyDevices = readyDevices.Count;
+                // Ready = meets OS requirements AND not yet registered (admin needs to register these)
+                var devicesReadyForRegistration = devicesMeetingOsRequirements
+                    .Where(d => !devicesAlreadyRegisteredIds.Contains(d.ResourceId))
+                    .ToList();
+                
+                signal.ReadyDevices = devicesReadyForRegistration.Count;
                 signal.TopBlockers = blockers.OrderByDescending(b => b.Severity).ThenByDescending(b => b.AffectedDeviceCount).Take(5).ToList();
                 
                 signal.Recommendations = GenerateAutopilotRecommendations(signal, blockers);
 
                 // ===================================================================================
-                // PER-DEVICE DIAGNOSTIC SUMMARY (For troubleshooting)
+                // PER-DEVICE DIAGNOSTIC SUMMARY
                 // ===================================================================================
-                var devicesNotReady = safeConfigMgrDevices
-                    .Where(d => !readyDevices.Any(r => r.ResourceId == d.ResourceId))
-                    .ToList();
+                Instance.Info("");
+                Instance.Info("   [DIAGNOSTIC] DEVICES READY FOR AUTOPILOT REGISTRATION");
+                Instance.Info($"      📊 Devices ready to be registered: {devicesReadyForRegistration.Count}");
+                Instance.Info($"      📊 Devices already registered: {configMgrDevicesAlreadyRegistered.Count}");
+                Instance.Info($"      📊 Devices not meeting OS requirements: {signal.TotalDevices - devicesMeetingOsRequirements.Count}");
                 
-                if (devicesNotReady.Count > 0)
+                if (devicesReadyForRegistration.Count > 0)
                 {
-                    Instance.Info("");
-                    Instance.Info("   [DIAGNOSTIC] DEVICES NOT MEETING OS REQUIREMENTS");
-                    Instance.Info($"      📊 Devices not ready: {devicesNotReady.Count}");
                     Instance.Info("      ────────────────────────────────────────────────────────────────────────");
-                    Instance.Info("      Device Name                | OS Version | OS Edition      | Issue");
+                    Instance.Info("      DEVICES READY FOR REGISTRATION (meet OS requirements, not yet registered):");
+                    Instance.Info("      ────────────────────────────────────────────────────────────────────────");
+                    Instance.Info("      Device Name                | OS Version | OS Edition");
                     Instance.Info("      ────────────────────────────────────────────────────────────────────────");
                     
-                    foreach (var device in devicesNotReady.Take(20))
+                    foreach (var device in devicesReadyForRegistration.Take(20))
                     {
-                        var osVersionOk = devicesPassingOsVersion.Contains(device.ResourceId);
-                        var editionOk = devicesPassingEdition.Contains(device.ResourceId);
-                        
                         var build = osLookup.TryGetValue(device.ResourceId, out var os1) ? os1.BuildNumber ?? "?" : "?";
                         var caption = osLookup.TryGetValue(device.ResourceId, out var os2) ? os2.Caption ?? "?" : "?";
                         var editionShort = caption.Replace("Microsoft Windows ", "").Replace("Microsoft Windows", "");
-                        if (editionShort.Length > 15) editionShort = editionShort.Substring(0, 15);
-                        
-                        var issue = !osVersionOk ? "Old OS version" : !editionOk ? "Home edition" : "Unknown";
+                        if (editionShort.Length > 20) editionShort = editionShort.Substring(0, 20);
                         
                         var deviceNamePadded = (device.Name ?? "?").PadRight(24);
                         if (deviceNamePadded.Length > 24) deviceNamePadded = deviceNamePadded.Substring(0, 24);
                         
-                        Instance.Info($"      {deviceNamePadded} | {build.PadRight(10)} | {editionShort.PadRight(15)} | {issue}");
+                        Instance.Info($"      {deviceNamePadded} | {build.PadRight(10)} | {editionShort}");
                     }
                     
-                    if (devicesNotReady.Count > 20)
+                    if (devicesReadyForRegistration.Count > 20)
                     {
-                        Instance.Info($"      ... and {devicesNotReady.Count - 20} more devices not shown");
+                        Instance.Info($"      ... and {devicesReadyForRegistration.Count - 20} more devices ready for registration");
                     }
                     Instance.Info("      ────────────────────────────────────────────────────────────────────────");
                 }
@@ -427,10 +492,13 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info("");
                 Instance.Info($"   ═══════════════════════════════════════════════════════════════════════════════");
                 Instance.Info($"   🚀 AUTOPILOT READINESS RESULT: {signal.ReadinessPercentage}%");
-                Instance.Info($"      Devices meeting OS requirements: {signal.ReadyDevices} / {signal.TotalDevices}");
-                Instance.Info($"      Requirements checked:");
-                Instance.Info($"         1. OS Version (Win10 1809+/Win11): {devicesMeetingOsVersionReq.Count} pass");
-                Instance.Info($"         2. OS Edition (Pro/Enterprise/Edu): {devicesMeetingEditionReq.Count} pass");
+                Instance.Info($"      Devices ready for Autopilot registration: {signal.ReadyDevices} / {signal.TotalDevices}");
+                Instance.Info($"      ─────────────────────────────────────────────────────────────────────────");
+                Instance.Info($"      📊 Meeting OS requirements: {devicesMeetingOsRequirements.Count}");
+                Instance.Info($"         └─ Already registered in Autopilot: {configMgrDevicesAlreadyRegistered.Count}");
+                Instance.Info($"         └─ Ready to be registered: {devicesReadyForRegistration.Count} ← ACTION NEEDED");
+                Instance.Info($"      📊 Not meeting OS requirements: {signal.TotalDevices - devicesMeetingOsRequirements.Count}");
+                Instance.Info($"      ─────────────────────────────────────────────────────────────────────────");
                 Instance.Info($"      Tenant licensed for Intune: {(licenseInfo?.HasIntune ?? false ? "Yes" : "No")}");
                 Instance.Info($"      Blockers found: {blockers.Count}");
                 Instance.Info($"   ═══════════════════════════════════════════════════════════════════════════════");
