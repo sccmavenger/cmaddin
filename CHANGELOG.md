@@ -10,6 +10,20 @@
 - 
 
 
+## [3.17.210] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- **Update System**: Main window is now disabled during updates to prevent user interaction
+  - Update progress window stays on top (Topmost)
+  - Dashboard is disabled while update downloads/applies
+  - Dashboard re-enabled automatically if update fails
+  - Prevents file locks and corruption during update process
+
+
 ## [3.17.209] - 2026-02-18
 
 ### Added

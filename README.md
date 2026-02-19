@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.209** | February 18, 2026
+**Version 3.17.210** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -233,6 +233,24 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.209 (February 18, 2026)
+
+### Added
+- **Telemetry**: Comprehensive update system telemetry to measure effectiveness
+  - `TrackUpdateCheckStarted`: When update checks begin
+  - `TrackUpdateAvailable`: Details about available updates (files to update, delta bytes, verification mode)
+  - `TrackUpdateDownload`: Download success/failure metrics with timing
+  - `TrackUpdateApplied`: Success/failure metrics with files updated and duration
+  - `TrackUpdateDeferred`: When users skip or remind-later on updates
+  - `TrackFullVerificationEffectiveness`: Key ROI metric showing mismatches/missing files caught by full verification
+
+### Changed
+
+### Fixed
+
+---
+
 ### Version 3.17.208 (February 18, 2026)
 
 ### Added
@@ -303,21 +321,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ### Changed
 
 ### Fixed
-
----
-
-### Version 3.17.202 (February 18, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **EULA Acceptance Closes App** - Fixed app closing after accepting EULA instead of opening dashboard
-  - **Problem**: After clicking "Accept & Continue" on EULA dialog, the app would close instead of showing the dashboard
-  - **Root cause**: WPF default `ShutdownMode="OnLastWindowClose"` caused app shutdown when EulaWindow closed (before DashboardWindow opened)
-  - **Solution**: Added `ShutdownMode="OnExplicitShutdown"` to App.xaml so app only exits when `Shutdown()` is explicitly called
-  - Files modified: `App.xaml`
 
 ---
 
@@ -1538,5 +1541,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.209  
+**Version**: 3.17.210  
 **Maintainer:** Cloud Native Assessment Team
