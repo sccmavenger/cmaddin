@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.212** | February 18, 2026
+**Version 3.17.213** | February 19, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -236,6 +236,23 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.212 (February 18, 2026)
+
+### Added
+
+### Changed
+- **Autopilot Readiness**: Simplified to bare minimum requirements for initial assessment
+  - Now checks only: OS Version (Win10 1809+/Win11) + OS Edition (Pro/Enterprise/Education)
+  - Tenant Intune licensing shown as informational (not a per-device blocker)
+  - Removed Azure AD join status check (can be added back later)
+  - Removed Autopilot registration status check (can be added back later)
+  - Cleaner diagnostic table showing only OS-based blockers
+
+### Fixed
+
+---
+
 ### Version 3.17.211 (February 18, 2026)
 
 ### Added
@@ -303,19 +320,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Countdown timer before restart (3... 2... 1...)
 
 ### Changed
-
-### Fixed
-
----
-
-### Version 3.17.207 (February 18, 2026)
-
-### Added
-
-### Changed
-- **Build**: Added deterministic builds with PathMap to remove local developer paths from stack traces
-  - Customer logs now show `.\Services\ConfigMgrAdminService.cs:line 1332` instead of full build machine paths
-  - Improves privacy and makes stack traces cleaner for troubleshooting
 
 ### Fixed
 
@@ -1537,6 +1541,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-18  
-**Version**: 3.17.212  
+**Last Updated**: 2026-02-19  
+**Version**: 3.17.213  
 **Maintainer:** Cloud Native Assessment Team

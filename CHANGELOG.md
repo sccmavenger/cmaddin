@@ -10,6 +10,21 @@
 - 
 
 
+## [3.17.213] - 2026-02-19
+
+### Added
+- **Autopilot Readiness**: Added Autopilot registration status check
+  - Shows devices that meet OS requirements AND are NOT yet registered in Autopilot
+  - "Ready" count = devices admin needs to go register with the Autopilot service
+  - Clear breakdown: Meeting OS requirements → Already registered vs Ready to register
+  - Diagnostic table shows devices ready for registration with OS version/edition
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.212] - 2026-02-18
 
 ### Added
