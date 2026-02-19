@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.210** | February 18, 2026
+**Version 3.17.211** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -234,6 +234,22 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.210 (February 18, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Update System**: Main window is now disabled during updates to prevent user interaction
+  - Update progress window stays on top (Topmost)
+  - Dashboard is disabled while update downloads/applies
+  - Dashboard re-enabled automatically if update fails
+  - Prevents file locks and corruption during update process
+
+---
+
 ### Version 3.17.209 (February 18, 2026)
 
 ### Added
@@ -296,31 +312,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Graph-only connections continue to work, showing Intune data with "Graph Only" warning banner
   - Mock data only shown when no data sources are connected
   - Added `LoadConfigMgrOnlyDataAsync()` method for ConfigMgr-only scenarios
-
----
-
-### Version 3.17.203 (February 18, 2026)
-
-### Added
-- **Connection Status Warning Banner** - Prominent visual indicator when not fully connected
-  - Shows warning banner at top of dashboard when only Graph or only ConfigMgr is connected
-  - **Graph Only warning**: "ConfigMgr not connected - co-management status unavailable"
-  - **ConfigMgr Only warning**: "Graph not connected - Intune enrollment data unavailable"  
-  - **Mock Data warning**: "Not connected to any data source. Showing demonstration data."
-  - Includes "Connect" button to quickly open ConfigMgr settings
-  - Banner hidden when both data sources are connected
-  - Files modified: `Views/DashboardWindow.xaml`
-
-- **EnrollmentDataSource Tracking** - Track where device data came from
-  - New `EnrollmentDataSource` enum: Mock, GraphOnly, ConfigMgrOnly, BothSources
-  - `DeviceEnrollment.DataSource` property set when data is retrieved
-  - Helper properties: `IsGraphOnlyData`, `IsConfigMgrOnlyData`, `IsFullyConnected`, `IsMockData`
-  - `DataSourceWarning` computed property for UI binding
-  - Files modified: `Models/DashboardModels.cs`, `Services/GraphDataService.cs`, `Services/MockDataService.cs`
-
-### Changed
-
-### Fixed
 
 ---
 
@@ -1541,5 +1532,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.210  
+**Version**: 3.17.211  
 **Maintainer:** Cloud Native Assessment Team

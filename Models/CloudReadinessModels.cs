@@ -149,21 +149,51 @@ namespace ZeroTrustMigrationAddin.Models
 
     /// <summary>
     /// Autopilot-specific readiness details.
+    /// Per Microsoft Autopilot Requirements (https://learn.microsoft.com/en-us/autopilot/requirements):
+    /// - Software: Windows 10 1809+ or Windows 11 (Pro/Enterprise/Education edition)
+    /// - Networking: Access to Autopilot deployment service URLs
+    /// - Licensing: M365/EMS/Intune license
+    /// - Configuration: Device registered in Autopilot, Azure AD joined or Hybrid joined
+    /// NOTE: TPM 2.0 is NOT required for basic Autopilot registration (only for Self-Deploying/Pre-Provisioning modes)
     /// </summary>
     public class AutopilotReadinessDetails
     {
         public int TotalDevices { get; set; }
         
-        // Autopilot requirements
+        // OS Requirements (Windows 10 1809+ / Windows 11)
+        public int HasSupportedOs { get; set; }
+        public int HasUnsupportedOs { get; set; }
+        
+        // OS Edition Requirements (Pro/Enterprise/Education - NOT Home)
+        public int HasSupportedEdition { get; set; }
+        public int HasUnsupportedEdition { get; set; } // Home edition = BLOCKER
+        
+        // Azure AD Join Status (must have AAD identity for Autopilot)
+        public int IsAadJoinedOrHybrid { get; set; }
+        public int NotAadJoined { get; set; } // On-Prem only / Workgroup = BLOCKER
+        
+        // Join Type Breakdown
+        public int HybridJoinedDevices { get; set; }
+        public int EntraJoinedDevices { get; set; }
+        public int OnPremOnlyDevices { get; set; }
+        public int WorkgroupDevices { get; set; }
+        
+        // Autopilot Registration Status
+        public int RegisteredInAutopilot { get; set; }
+        public int NotRegisteredInAutopilot { get; set; }
+        
+        // Licensing (tenant-level)
+        public bool TenantHasIntuneLicense { get; set; }
+        
+        // Legacy fields for backwards compatibility
         public int HasTpm20 { get; set; }
         public int HasUefi { get; set; }
         public int HasSecureBoot { get; set; }
-        public int HasSupportedOs { get; set; } // Windows 10 1809+, Windows 11
-        public int IsAadJoinedOrHybrid { get; set; }
         
-        // Calculated readiness
-        public int FullyReady => Math.Min(Math.Min(Math.Min(Math.Min(
-            HasTpm20, HasUefi), HasSecureBoot), HasSupportedOs), IsAadJoinedOrHybrid);
+        // Calculated readiness: Must meet ALL requirements
+        // (OS version + OS edition + AAD joined + registered)
+        public int FullyReady => Math.Min(Math.Min(Math.Min(
+            HasSupportedOs, HasSupportedEdition), IsAadJoinedOrHybrid), RegisteredInAutopilot);
         
         public double ReadinessPercentage => TotalDevices > 0 
             ? Math.Min(100, Math.Round((double)FullyReady / TotalDevices * 100, 1)) 
