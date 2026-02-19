@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.207** | February 18, 2026
+**Version 3.17.208** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -231,6 +231,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.207 (February 18, 2026)
+
+### Added
+
+### Changed
+- **Build**: Added deterministic builds with PathMap to remove local developer paths from stack traces
+  - Customer logs now show `.\Services\ConfigMgrAdminService.cs:line 1332` instead of full build machine paths
+  - Improves privacy and makes stack traces cleaner for troubleshooting
+
+### Fixed
+
+---
+
 ### Version 3.17.206 (February 18, 2026)
 
 ### Added
@@ -302,23 +316,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
     - Only include MSI in release if build actually succeeded
     - Removed `-SkipHeat` flag to ensure ApplicationFiles.wxs is regenerated
   - Files modified: `Build-And-Distribute.ps1`
-
----
-
-### Version 3.17.199 (February 18, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **Enrollment Scoring Config Access Denied** - Fixed config save failing on MSI installs
-  - **Problem**: `enrollment-scoring-config.json` was saved to install directory (Program Files) which is read-only
-  - **Root cause**: `GetConfigPath()` defaulted to app directory for new files
-  - **Solution**: Config now saves to `%LOCALAPPDATA%\ZeroTrustMigrationAddin\` like all other user configs
-  - Added `GetWriteConfigPath()` that always returns writable LocalAppData location
-  - `GetConfigPath()` still checks app directory for bundled defaults (read-only fallback)
-  - Files modified: `Services/EnrollmentScoringOptions.cs`
 
 ---
 
@@ -1539,5 +1536,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.207  
+**Version**: 3.17.208  
 **Maintainer:** Cloud Native Assessment Team

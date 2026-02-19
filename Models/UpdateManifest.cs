@@ -194,4 +194,88 @@ namespace ZeroTrustMigrationAddin.Models
         /// </summary>
         public string? ErrorMessage { get; set; }
     }
+
+    /// <summary>
+    /// Phases of the update process for progress reporting.
+    /// </summary>
+    public enum UpdatePhase
+    {
+        /// <summary>Checking installed files against manifest</summary>
+        Verifying,
+        /// <summary>Downloading update package</summary>
+        Downloading,
+        /// <summary>Extracting files from ZIP</summary>
+        Extracting,
+        /// <summary>Validating downloaded files</summary>
+        Validating,
+        /// <summary>Creating backup of current files</summary>
+        BackingUp,
+        /// <summary>Copying new files to install directory</summary>
+        Applying,
+        /// <summary>Update complete, restarting application</summary>
+        Restarting,
+        /// <summary>Update failed</summary>
+        Failed
+    }
+
+    /// <summary>
+    /// Detailed progress information for update UI.
+    /// </summary>
+    public class UpdateProgress
+    {
+        /// <summary>Current phase of the update process</summary>
+        public UpdatePhase Phase { get; set; }
+        
+        /// <summary>Overall progress percentage (0-100)</summary>
+        public int PercentComplete { get; set; }
+        
+        /// <summary>Current file being processed</summary>
+        public string CurrentFile { get; set; } = string.Empty;
+        
+        /// <summary>Current file index (1-based)</summary>
+        public int CurrentFileIndex { get; set; }
+        
+        /// <summary>Total number of files to process in current phase</summary>
+        public int TotalFiles { get; set; }
+        
+        /// <summary>Bytes downloaded so far (for download phase)</summary>
+        public long BytesDownloaded { get; set; }
+        
+        /// <summary>Total bytes to download</summary>
+        public long TotalBytes { get; set; }
+        
+        /// <summary>Human-readable status message</summary>
+        public string StatusMessage { get; set; } = string.Empty;
+        
+        /// <summary>Error message if phase failed</summary>
+        public string? ErrorMessage { get; set; }
+        
+        /// <summary>Countdown seconds for restart phase</summary>
+        public int RestartCountdown { get; set; }
+
+        /// <summary>
+        /// Gets a formatted bytes string (e.g., "2.3 MB of 5.1 MB")
+        /// </summary>
+        public string BytesProgressFormatted
+        {
+            get
+            {
+                if (TotalBytes <= 0) return string.Empty;
+                return $"{FormatBytes(BytesDownloaded)} of {FormatBytes(TotalBytes)}";
+            }
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len /= 1024;
+            }
+            return $"{len:0.#} {sizes[order]}";
+        }
+    }
 }
