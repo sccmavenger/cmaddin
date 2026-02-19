@@ -10,6 +10,26 @@
 - 
 
 
+## [3.17.211] - 2026-02-18
+
+### Added
+- **Autopilot Readiness**: Comprehensive Microsoft requirements assessment per learn.microsoft.com
+  - **OS Edition Check**: Now validates Pro/Enterprise/Education (Home edition = BLOCKER)
+  - **Azure AD Join Status**: Detects Hybrid AAD, Azure AD Only, On-Prem Only, Workgroup devices
+  - **Tenant Licensing**: Displays Intune license availability at tenant level
+  - **4-Check System**: OS Version → OS Edition → Azure AD Status → Registration Status
+  - **Detailed Join Type Breakdown**: Shows device counts by join type with remediation URLs
+  - **Enhanced Diagnostic Logging**: Sample device names and raw data values for all blockers
+  - **Per-Device Readiness Table**: Shows each non-ready device with pass/fail status for all 4 requirements
+  - Source: https://learn.microsoft.com/en-us/autopilot/requirements
+
+### Changed
+- **Autopilot Readiness**: "Fully Ready" now requires meeting ALL 4 requirements, not just OS version + registration
+
+### Fixed
+- 
+
+
 ## [3.17.210] - 2026-02-18
 
 ### Added
