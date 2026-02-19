@@ -10,6 +10,24 @@
 - 
 
 
+## [3.17.201] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- **MSI Stale Cache Bug** - Fixed MSI installer uploading old cached version instead of freshly built one
+  - **Problem**: GitHub releases included stale MSI from previous builds, causing users to install old version
+  - **Root cause**: Build script found old `builds\ZeroTrustMigrationAddin.msi` without verifying it was newly built
+  - **Solution**: 
+    - Delete old cached MSI before running Build-Installer.ps1
+    - Verify MSI timestamp is newer than build start time
+    - Only include MSI in release if build actually succeeded
+    - Removed `-SkipHeat` flag to ensure ApplicationFiles.wxs is regenerated
+  - Files modified: `Build-And-Distribute.ps1` 
+
+
 ## [3.17.200] - 2026-02-18
 
 ### Added
