@@ -10,6 +10,20 @@
 - 
 
 
+## [3.17.206] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- **Connection Status**: Fixed single data source connections showing "Not Connected" instead of real data
+  - ConfigMgr-only connections now show real ConfigMgr device counts with "ConfigMgr Only" warning banner
+  - Graph-only connections continue to work, showing Intune data with "Graph Only" warning banner
+  - Mock data only shown when no data sources are connected
+  - Added `LoadConfigMgrOnlyDataAsync()` method for ConfigMgr-only scenarios
+
+
 ## [3.17.205] - 2026-02-18
 
 ### Added

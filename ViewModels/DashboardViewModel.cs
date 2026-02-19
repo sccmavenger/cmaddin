@@ -2034,17 +2034,35 @@ namespace ZeroTrustMigrationAddin.ViewModels
             {
                 // Check ConfigMgr connection status
                 IsConfigMgrConnected = _graphDataService.ConfigMgrService.IsConfigured;
+                var isGraphConnected = _graphDataService.IsAuthenticated;
                 
-                // Show real data when BOTH Graph AND ConfigMgr are connected (AI is optional)
-                if (IsDataSourceConnected)
+                // Handle 4 connection scenarios:
+                // 1. Both connected → Full real data with accurate co-management
+                // 2. Graph only → Real Intune data, co-management status unavailable
+                // 3. ConfigMgr only → Real ConfigMgr data, Intune/cloud data unavailable
+                // 4. Neither → Mock data for demonstration
+                
+                if (isGraphConnected && IsConfigMgrConnected)
                 {
-                    Instance.Info($"Both data sources connected - loading real data. Graph: {_graphDataService.IsAuthenticated}, ConfigMgr: {IsConfigMgrConnected}, AI: {_aiRecommendationService != null}");
+                    Instance.Info($"✅ Both data sources connected - loading full real data");
                     UseRealData = true;
                     await LoadRealDataAsync();
                 }
+                else if (isGraphConnected && !IsConfigMgrConnected)
+                {
+                    Instance.Info($"⚠️ Graph only connected - loading Intune data (co-management unavailable)");
+                    UseRealData = true;
+                    await LoadRealDataAsync(); // GraphDataService handles GraphOnly scenario internally
+                }
+                else if (!isGraphConnected && IsConfigMgrConnected)
+                {
+                    Instance.Info($"⚠️ ConfigMgr only connected - loading ConfigMgr data (Intune data unavailable)");
+                    UseRealData = true;
+                    await LoadConfigMgrOnlyDataAsync();
+                }
                 else
                 {
-                    Instance.Warning($"Data sources not fully connected - showing mock data. Graph: {_graphDataService.IsAuthenticated}, ConfigMgr: {IsConfigMgrConnected}");
+                    Instance.Warning($"❌ No data sources connected - showing demonstration data");
                     UseRealData = false;
                     await LoadMockDataAsync();
                 }
@@ -2257,6 +2275,140 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 Instance.LogException(ex, "LoadRealDataAsync");
                 System.Windows.MessageBox.Show(
                     $"Error loading real data: {ex.Message}\n\nFalling back to mock data.",
+                    "Data Load Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                
+                // Fall back to mock data
+                UseRealData = false;
+                await LoadMockDataAsync();
+            }
+        }
+
+        /// <summary>
+        /// Loads data when only ConfigMgr is connected (no Graph/Intune).
+        /// Shows real ConfigMgr device counts but marks Intune data as unavailable.
+        /// </summary>
+        private async Task LoadConfigMgrOnlyDataAsync()
+        {
+            try
+            {
+                Instance.Info("=== Starting LoadConfigMgrOnlyDataAsync ===");
+                Instance.Info("ConfigMgr connected, Graph NOT authenticated - loading ConfigMgr data only");
+                
+                // Query ConfigMgr for Windows 10/11 devices
+                var configMgrDevices = await _graphDataService.ConfigMgrService.GetWindows1011DevicesAsync();
+                int configMgrCount = configMgrDevices?.Count ?? 0;
+                
+                Instance.Info($"ConfigMgr returned {configMgrCount} Windows 10/11 devices");
+                
+                // Build DeviceEnrollment from ConfigMgr data only
+                // Intune/cloud data is marked as 0 since we can't query without Graph
+                DeviceEnrollment = new DeviceEnrollment
+                {
+                    TotalDevices = configMgrCount,
+                    IntuneEnrolledDevices = 0, // Cannot determine without Graph
+                    ConfigMgrOnlyDevices = configMgrCount, // All devices are ConfigMgr-only from this perspective
+                    CoManagedDevices = 0, // Cannot determine without Graph
+                    CloudNativeDevices = 0, // Cannot determine without Graph
+                    HybridJoinedDevices = 0, // Cannot determine without Graph
+                    AzureADOnlyDevices = 0, // Cannot determine without Graph
+                    OnPremDomainOnlyDevices = configMgrCount, // Assume all are on-prem since no Graph
+                    WorkgroupDevices = 0,
+                    UnknownJoinTypeDevices = 0,
+                    TrendData = Array.Empty<EnrollmentTrend>(), // No trend data without Graph
+                    HasSufficientTrendData = false,
+                    TrendDataUnavailableReason = "Trend data requires Microsoft Graph connection",
+                    DataSource = EnrollmentDataSource.ConfigMgrOnly
+                };
+                
+                OnPropertyChanged(nameof(EnrollmentProgressPercentage));
+                OnPropertyChanged(nameof(HasSufficientTrendData));
+                OnPropertyChanged(nameof(TrendDataUnavailableReason));
+                
+                // Use mock data for remaining dashboard elements
+                // (compliance, workloads, etc. require Graph)
+                var complianceScoreTask = _mockDataService.GetComplianceScoreAsync();
+                var enrollmentInsightTask = _mockDataService.GetEnrollmentAccelerationInsightAsync();
+                var savingsInsightTask = _mockDataService.GetSavingsUnlockInsightAsync();
+                var alertsTask = _mockDataService.GetAlertsAsync();
+                var blockersTask = _mockDataService.GetBlockersAsync();
+                var engagementOptionsTask = _mockDataService.GetEngagementOptionsAsync();
+                
+                await Task.WhenAll(
+                    complianceScoreTask,
+                    enrollmentInsightTask,
+                    savingsInsightTask,
+                    alertsTask,
+                    blockersTask,
+                    engagementOptionsTask
+                );
+                
+                ComplianceScore = await complianceScoreTask;
+                EnrollmentAccelerationInsight = await enrollmentInsightTask;
+                SavingsUnlockInsight = await savingsInsightTask;
+                
+                var alerts = await alertsTask;
+                Alerts.Clear();
+                foreach (var alert in alerts)
+                    Alerts.Add(alert);
+                
+                var blockers = await blockersTask;
+                Blockers.Clear();
+                foreach (var blocker in blockers)
+                    Blockers.Add(blocker);
+                
+                var engagementOptions = await engagementOptionsTask;
+                EngagementOptions.Clear();
+                foreach (var option in engagementOptions)
+                    EngagementOptions.Add(option);
+                
+                // Migration status based on ConfigMgr data
+                MigrationStatus = new MigrationStatus
+                {
+                    WorkloadsTransitioned = 0, // Cannot determine without Graph
+                    TotalWorkloads = 7,
+                    ProjectedFinishDate = DateTime.Now.AddMonths(12), // Estimate
+                    LastUpdateDate = DateTime.Now
+                };
+                
+                // Mock AI Action Summary
+                AIActionSummary = new AIActionSummary
+                {
+                    PrimaryEnrollmentAction = "Connect to Microsoft Graph to view Intune enrollment status",
+                    EnrollmentActionImpact = configMgrCount,
+                    PrimaryWorkloadAction = "Graph connection required to analyze workload transition status",
+                    WorkloadActionImpact = "Connect Graph to unlock migration insights",
+                    EnrollmentBlockers = new List<string>
+                    {
+                        "Microsoft Graph not connected - Intune enrollment data unavailable"
+                    },
+                    WorkloadBlockers = new List<string>
+                    {
+                        "Connect to Microsoft Graph to analyze workload status"
+                    },
+                    AIRecommendation = $"You have {configMgrCount:N0} Windows 10/11 devices in ConfigMgr. Connect to Microsoft Graph to see which devices are already enrolled in Intune and track your migration progress.",
+                    WeeksToNextMilestone = 0,
+                    IsAIPowered = false
+                };
+                OnPropertyChanged(nameof(AIActionSummary));
+                
+                // Clear progress targets and milestones
+                ProgressTargets.Clear();
+                Milestones.Clear();
+                
+                UpdateCharts();
+                
+                Instance.Info($"ConfigMgr-only data load complete: {configMgrCount} devices");
+                
+                // Notify UI
+                RealDataLoaded?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "LoadConfigMgrOnlyDataAsync");
+                System.Windows.MessageBox.Show(
+                    $"Error loading ConfigMgr data: {ex.Message}\n\nFalling back to mock data.",
                     "Data Load Error",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Warning);
