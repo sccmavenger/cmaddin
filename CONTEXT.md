@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.201 |
+| **Version** | 3.17.202 |
 | **Last Updated** | 2026-02-16 |
 | **Branch** | main |
 | **Status** | Stable - Security hardening complete |

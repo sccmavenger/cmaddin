@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.201** | February 18, 2026
+**Version 3.17.202** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -225,6 +225,26 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.201 (February 18, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **MSI Stale Cache Bug** - Fixed MSI installer uploading old cached version instead of freshly built one
+  - **Problem**: GitHub releases included stale MSI from previous builds, causing users to install old version
+  - **Root cause**: Build script found old `builds\ZeroTrustMigrationAddin.msi` without verifying it was newly built
+  - **Solution**: 
+    - Delete old cached MSI before running Build-Installer.ps1
+    - Verify MSI timestamp is newer than build start time
+    - Only include MSI in release if build actually succeeded
+    - Removed `-SkipHeat` flag to ensure ApplicationFiles.wxs is regenerated
+  - Files modified: `Build-And-Distribute.ps1`
+
+---
+
 ### Version 3.17.199 (February 18, 2026)
 
 ### Added
@@ -308,28 +328,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - **TPM Comparison "Not Inventoried" Display** - TpmHealthComparison now shows helpful message when SMS_G_System_TPM class not enabled in hardware inventory
   
 - **BitLocker UI Shows "--%" When Not Inventoried** - Instead of confusing "0%", shows "--%/Not inventoried" when SMS_G_System_ENCRYPTABLE_VOLUME class is not enabled in ConfigMgr hardware inventory
-
----
-
-### Version 3.17.194 (February 17, 2026)
-
-### Added
-- **Comprehensive Comparison Tile Telemetry** - Added telemetry to diagnose why ConfigMgr metrics show 0%
-  - New `TrackComparisonTileData()` method tracks device counts, values, data source, and quality issues
-  - New `TrackConfigMgrQueryMode()` tracks Admin Service vs WMI path and null field percentages
-  - Added telemetry to: BitLocker, Device Compliance, Device Health Attestation, Threat Detection tiles
-  - Tracks LastActiveTime, LastPolicyRequest null percentages for debugging Response Time 0% issues
-  - Kusto query: `customEvents | where name == "ComparisonTileData" | where customMeasurements.ConfigMgrValue == 0`
-
-### Changed
-- **Friendlier Certificate Trust Dialog** - Reduced anxiety-inducing language for SSL certificate prompts
-  - Changed from "⚠️ SECURITY WARNING" to "Server Certificate Verification" 
-  - Now shows certificate thumbprint for verification
-  - Explains self-signed certs are "common for enterprise servers"
-  - Provides clear verification steps (confirm server name, check with IT team)
-  - Uses Question icon instead of Warning icon
-
-### Fixed
 
 ---
 
@@ -1550,5 +1548,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.201  
+**Version**: 3.17.202  
 **Maintainer:** Cloud Native Assessment Team
