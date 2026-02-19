@@ -1250,10 +1250,17 @@ namespace ZeroTrustMigrationAddin.Services
                     totalDevices = intuneWindowsCount;
                     configMgrOnlyCount = 0;
                     cloudManagedCount = intuneWindowsEnrolledCount; // All Windows devices managed by Intune
-                    Instance.Info($"✅ Using Intune-only (no ConfigMgr): {totalDevices} total Windows devices");
+                    Instance.Info($"⚠️ Using Intune-only (no ConfigMgr): {totalDevices} total Windows devices");
                     Instance.Info($"   All devices are Intune-managed (cloud progress): {cloudManagedCount}");
+                    Instance.Info($"   ⚠️ Co-management status unavailable - ConfigMgr not connected");
                     System.Diagnostics.Debug.WriteLine($"✅ Intune-only scenario: {totalDevices} total, {cloudManagedCount} cloud-managed");
                 }
+
+                // Determine data source for UI warnings
+                var dataSource = configMgrCount > 0 
+                    ? EnrollmentDataSource.BothSources 
+                    : EnrollmentDataSource.GraphOnly;
+                Instance.Info($"📊 Data source: {dataSource}");
 
                 // STEP 4: DETECT DEVICE JOIN TYPES for enrollment readiness
                 Instance.Info("=== DEVICE JOIN TYPE DETECTION ===");
@@ -1558,6 +1565,7 @@ namespace ZeroTrustMigrationAddin.Services
                     TrendData = trendData,
                     HasSufficientTrendData = hasSufficientData,
                     TrendDataUnavailableReason = insufficientDataReason,
+                    DataSource = dataSource, // Track where data came from for UI warnings
                     // Device join type categorization
                     HybridJoinedDevices = hybridJoinedCount,
                     AzureADOnlyDevices = azureADOnlyCount,
@@ -1577,13 +1585,14 @@ namespace ZeroTrustMigrationAddin.Services
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Warning);
                 
-                // Return empty data
+                // Return empty data with Mock source (indicates error/no connection)
                 return new DeviceEnrollment
                 {
                     TotalDevices = 0,
                     IntuneEnrolledDevices = 0,
                     ConfigMgrOnlyDevices = 0,
-                    TrendData = Array.Empty<EnrollmentTrend>()
+                    TrendData = Array.Empty<EnrollmentTrend>(),
+                    DataSource = EnrollmentDataSource.Mock
                 };
             }
         }
