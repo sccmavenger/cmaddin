@@ -6,13 +6,16 @@
     <Nullable>enable</Nullable>
     <AssemblyName>ZeroTrustMigrationAddin</AssemblyName>
     <!-- Version Information -->
-    <Version>3.17.206</Version>
-    <AssemblyVersion>3.17.206.0</AssemblyVersion>
-    <FileVersion>3.17.206.0</FileVersion>
+    <Version>3.17.207</Version>
+    <AssemblyVersion>3.17.207.0</AssemblyVersion>
+    <FileVersion>3.17.207.0</FileVersion>
     <Product>Cloud Native Assessment</Product>
     <Company>Microsoft Configuration Manager</Company>
     <Copyright>Copyright © 2025</Copyright>
     <Description>Cloud native readiness assessment and migration progress dashboard</Description>
+    <!-- Deterministic builds - removes local paths from stack traces -->
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
     <!-- Self-contained deployment settings -->
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

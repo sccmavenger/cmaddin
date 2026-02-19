@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.206** | February 18, 2026
+**Version 3.17.207** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -230,6 +230,22 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.206 (February 18, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Connection Status**: Fixed single data source connections showing "Not Connected" instead of real data
+  - ConfigMgr-only connections now show real ConfigMgr device counts with "ConfigMgr Only" warning banner
+  - Graph-only connections continue to work, showing Intune data with "Graph Only" warning banner
+  - Mock data only shown when no data sources are connected
+  - Added `LoadConfigMgrOnlyDataAsync()` method for ConfigMgr-only scenarios
+
+---
+
 ### Version 3.17.203 (February 18, 2026)
 
 ### Added
@@ -303,23 +319,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Added `GetWriteConfigPath()` that always returns writable LocalAppData location
   - `GetConfigPath()` still checks app directory for bundled defaults (read-only fallback)
   - Files modified: `Services/EnrollmentScoringOptions.cs`
-
----
-
-### Version 3.17.198 (February 18, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **MSI Installer Version Mismatch** - Fixed MSI installing old version requiring auto-update on first launch
-  - **Problem**: MSI filename showed correct version (e.g., v3.17.197) but installed v3.16.14.0
-  - **Root cause**: Product.wxs had hardcoded `Version="3.16.14.0"` that was never updated
-  - **Solution**: Changed to WiX variable `$(var.ProductVersion)` injected at build time
-  - Build-Installer.ps1 now reads version from csproj and passes to `wix build` via `-d ProductVersion=x.y.z.0`
-  - Bundle.wxs also updated for bootstrapper builds
-  - MSI now installs the correct version, no auto-update needed on first launch
 
 ---
 
@@ -1540,5 +1539,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.206  
+**Version**: 3.17.207  
 **Maintainer:** Cloud Native Assessment Team
