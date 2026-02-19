@@ -54,6 +54,7 @@ namespace ZeroTrustMigrationAddin.Services
                 CoManagedDevices = 55900, // Devices in both ConfigMgr + Intune
                 CloudNativeDevices = 8500, // Entra joined + Intune only, no ConfigMgr record
                 TrendData = trendData.ToArray(),
+                DataSource = EnrollmentDataSource.Mock, // Explicitly mark as mock data
                 // Mock join type data for visualization
                 HybridJoinedDevices = 78000,  // 68% - Most enterprise devices
                 AzureADOnlyDevices = 22000,   // 19% - Cloud-native devices

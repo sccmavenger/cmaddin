@@ -4,6 +4,22 @@ using System.Linq;
 
 namespace ZeroTrustMigrationAddin.Models
 {
+    /// <summary>
+    /// Indicates which data sources contributed to enrollment data.
+    /// Used to show appropriate warnings when not fully connected.
+    /// </summary>
+    public enum EnrollmentDataSource
+    {
+        /// <summary>Mock/demo data - no live connections</summary>
+        Mock,
+        /// <summary>Graph API only - ConfigMgr not connected</summary>
+        GraphOnly,
+        /// <summary>ConfigMgr only - Graph not connected (rare)</summary>
+        ConfigMgrOnly,
+        /// <summary>Both Graph and ConfigMgr connected - full co-management visibility</summary>
+        BothSources
+    }
+
     public class MigrationStatus
     {
         public int WorkloadsTransitioned { get; set; }
@@ -44,6 +60,30 @@ namespace ZeroTrustMigrationAddin.Models
         // Cloud Native Devices: Entra/AAD joined + Intune managed, NO ConfigMgr record
         public int CloudNativeDevices { get; set; }
         public double CloudNativePercentage => TotalDevices > 0 ? (double)CloudNativeDevices / TotalDevices * 100 : 0;
+        
+        // Data source tracking - indicates which connections provided this data
+        public EnrollmentDataSource DataSource { get; set; } = EnrollmentDataSource.Mock;
+        
+        /// <summary>True when showing Graph-only data without ConfigMgr connection</summary>
+        public bool IsGraphOnlyData => DataSource == EnrollmentDataSource.GraphOnly;
+        
+        /// <summary>True when showing ConfigMgr-only data without Graph connection</summary>
+        public bool IsConfigMgrOnlyData => DataSource == EnrollmentDataSource.ConfigMgrOnly;
+        
+        /// <summary>True when both sources are connected (accurate co-management data)</summary>
+        public bool IsFullyConnected => DataSource == EnrollmentDataSource.BothSources;
+        
+        /// <summary>True when showing mock/demo data</summary>
+        public bool IsMockData => DataSource == EnrollmentDataSource.Mock;
+        
+        /// <summary>Warning message for partial connection scenarios</summary>
+        public string? DataSourceWarning => DataSource switch
+        {
+            EnrollmentDataSource.GraphOnly => "Connected to Graph only. ConfigMgr not connected - co-management status unavailable.",
+            EnrollmentDataSource.ConfigMgrOnly => "Connected to ConfigMgr only. Graph not connected - Intune enrollment data unavailable.",
+            EnrollmentDataSource.Mock => "Not connected to any data source. Showing demonstration data.",
+            _ => null
+        };
         
         // Computed properties for join type visualization
         public int ReadyForEnrollmentCount => HybridJoinedDevices + AzureADOnlyDevices;

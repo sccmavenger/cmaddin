@@ -10,6 +10,51 @@
 - 
 
 
+## [3.17.205] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.204] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.203] - 2026-02-18
+
+### Added
+- **Connection Status Warning Banner** - Prominent visual indicator when not fully connected
+  - Shows warning banner at top of dashboard when only Graph or only ConfigMgr is connected
+  - **Graph Only warning**: "ConfigMgr not connected - co-management status unavailable"
+  - **ConfigMgr Only warning**: "Graph not connected - Intune enrollment data unavailable"  
+  - **Mock Data warning**: "Not connected to any data source. Showing demonstration data."
+  - Includes "Connect" button to quickly open ConfigMgr settings
+  - Banner hidden when both data sources are connected
+  - Files modified: `Views/DashboardWindow.xaml`
+
+- **EnrollmentDataSource Tracking** - Track where device data came from
+  - New `EnrollmentDataSource` enum: Mock, GraphOnly, ConfigMgrOnly, BothSources
+  - `DeviceEnrollment.DataSource` property set when data is retrieved
+  - Helper properties: `IsGraphOnlyData`, `IsConfigMgrOnlyData`, `IsFullyConnected`, `IsMockData`
+  - `DataSourceWarning` computed property for UI binding
+  - Files modified: `Models/DashboardModels.cs`, `Services/GraphDataService.cs`, `Services/MockDataService.cs`
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.202] - 2026-02-18
 
 ### Added

@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.202** | February 18, 2026
+**Version 3.17.205** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -226,6 +226,49 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+### Version 3.17.203 (February 18, 2026)
+
+### Added
+- **Connection Status Warning Banner** - Prominent visual indicator when not fully connected
+  - Shows warning banner at top of dashboard when only Graph or only ConfigMgr is connected
+  - **Graph Only warning**: "ConfigMgr not connected - co-management status unavailable"
+  - **ConfigMgr Only warning**: "Graph not connected - Intune enrollment data unavailable"  
+  - **Mock Data warning**: "Not connected to any data source. Showing demonstration data."
+  - Includes "Connect" button to quickly open ConfigMgr settings
+  - Banner hidden when both data sources are connected
+  - Files modified: `Views/DashboardWindow.xaml`
+
+- **EnrollmentDataSource Tracking** - Track where device data came from
+  - New `EnrollmentDataSource` enum: Mock, GraphOnly, ConfigMgrOnly, BothSources
+  - `DeviceEnrollment.DataSource` property set when data is retrieved
+  - Helper properties: `IsGraphOnlyData`, `IsConfigMgrOnlyData`, `IsFullyConnected`, `IsMockData`
+  - `DataSourceWarning` computed property for UI binding
+  - Files modified: `Models/DashboardModels.cs`, `Services/GraphDataService.cs`, `Services/MockDataService.cs`
+
+### Changed
+
+### Fixed
+
+---
+
+### Version 3.17.202 (February 18, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **EULA Acceptance Closes App** - Fixed app closing after accepting EULA instead of opening dashboard
+  - **Problem**: After clicking "Accept & Continue" on EULA dialog, the app would close instead of showing the dashboard
+  - **Root cause**: WPF default `ShutdownMode="OnLastWindowClose"` caused app shutdown when EulaWindow closed (before DashboardWindow opened)
+  - **Solution**: Added `ShutdownMode="OnExplicitShutdown"` to App.xaml so app only exits when `Shutdown()` is explicitly called
+  - Files modified: `App.xaml`
+
+---
+
 ### Version 3.17.201 (February 18, 2026)
 
 ### Added
@@ -276,58 +319,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Build-Installer.ps1 now reads version from csproj and passes to `wix build` via `-d ProductVersion=x.y.z.0`
   - Bundle.wxs also updated for bootstrapper builds
   - MSI now installs the correct version, no auto-update needed on first launch
-
----
-
-### Version 3.17.197 (February 18, 2026)
-
-### Added
-
-### Changed
-- **Response Time Tile Reframe** - Complete overhaul to show cloud advantage accurately
-  - **Problem**: Tile was showing ConfigMgr as "faster" (0.0 days vs 172.4 days) which is misleading
-  - **Root cause**: Abandoned Intune devices (30+ days without sync) were skewing the raw average
-  - **Solution**: Added filtered metrics that exclude abandoned devices for fair comparison
-  - New properties in `SyncFreshnessComparison`:
-    - `IntuneActiveDeviceCount`: Devices synced within 30 days
-    - `IntuneActiveAvgDaysSinceSync`: Average for active devices only
-    - `IntuneAbandonedDeviceCount`: Devices not synced in 30+ days
-    - `IntuneAbandonedPercentage`: Percentage of abandoned devices
-  - UI now shows:
-    - Filtered average (active devices only) for Intune
-    - "Push delivery (seconds)" vs "Poll every 60 min" architectural context
-    - Abandoned device count as cleanup opportunity
-  - ComparisonSummary now emphasizes Push vs Poll architecture backed by MS Docs
-  - Icon always shows ⚡ when data available (push is architecturally superior)
-  - **Documentation**: All claims backed by official Microsoft documentation:
-    - Intune push via WNS: [WNS Overview](https://learn.microsoft.com/en-us/windows/apps/design/shell/tiles-and-notifications/windows-push-notification-services--wns--overview)
-    - ConfigMgr 60-min poll: [Client Settings](https://learn.microsoft.com/en-us/mem/configmgr/core/clients/deploy/about-client-settings#client-policy-polling-interval-minutes)
-
-### Fixed
-
----
-
-### Version 3.17.195 (February 17, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **ConfigMgr TPM Query JSON Parsing** - Fixed "JSON value could not be converted to System.Boolean" error
-  - ConfigMgr Admin Service returns TPM boolean fields (IsEnabled_InitialValue, etc.) as strings "True"/"False" instead of actual booleans
-  - Updated `TpmResource` model to accept flexible types with safe parsing methods
-  - TPM queries now work correctly with Admin Service REST API
-
-- **PowerShell Fallback for TPM and BitLocker Queries** - Added robust fallback when REST API fails
-  - New `GetTpmStatusViaPowerShellAsync()` method spawns pwsh.exe with JSON output
-  - New `GetBitLockerStatusViaPowerShellAsync()` method for BitLocker inventory
-  - Same proven pattern as existing `GetClientHealthViaPowerShellAsync()` that successfully returned 7 devices
-  - Handles type conversion issues that break JSON deserialization in REST API
-
-- **TPM Comparison "Not Inventoried" Display** - TpmHealthComparison now shows helpful message when SMS_G_System_TPM class not enabled in hardware inventory
-  
-- **BitLocker UI Shows "--%" When Not Inventoried** - Instead of confusing "0%", shows "--%/Not inventoried" when SMS_G_System_ENCRYPTABLE_VOLUME class is not enabled in ConfigMgr hardware inventory
 
 ---
 
@@ -1548,5 +1539,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.202  
+**Version**: 3.17.205  
 **Maintainer:** Cloud Native Assessment Team
