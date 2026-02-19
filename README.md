@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.211** | February 18, 2026
+**Version 3.17.212** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -235,6 +235,27 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.211 (February 18, 2026)
+
+### Added
+- **Autopilot Readiness**: Comprehensive Microsoft requirements assessment per learn.microsoft.com
+  - **OS Edition Check**: Now validates Pro/Enterprise/Education (Home edition = BLOCKER)
+  - **Azure AD Join Status**: Detects Hybrid AAD, Azure AD Only, On-Prem Only, Workgroup devices
+  - **Tenant Licensing**: Displays Intune license availability at tenant level
+  - **4-Check System**: OS Version → OS Edition → Azure AD Status → Registration Status
+  - **Detailed Join Type Breakdown**: Shows device counts by join type with remediation URLs
+  - **Enhanced Diagnostic Logging**: Sample device names and raw data values for all blockers
+  - **Per-Device Readiness Table**: Shows each non-ready device with pass/fail status for all 4 requirements
+  - Source: https://learn.microsoft.com/en-us/autopilot/requirements
+
+### Changed
+- **Autopilot Readiness**: "Fully Ready" now requires meeting ALL 4 requirements, not just OS version + registration
+
+### Fixed
+
+---
+
 ### Version 3.17.210 (February 18, 2026)
 
 ### Added
@@ -297,21 +318,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Improves privacy and makes stack traces cleaner for troubleshooting
 
 ### Fixed
-
----
-
-### Version 3.17.206 (February 18, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **Connection Status**: Fixed single data source connections showing "Not Connected" instead of real data
-  - ConfigMgr-only connections now show real ConfigMgr device counts with "ConfigMgr Only" warning banner
-  - Graph-only connections continue to work, showing Intune data with "Graph Only" warning banner
-  - Mock data only shown when no data sources are connected
-  - Added `LoadConfigMgrOnlyDataAsync()` method for ConfigMgr-only scenarios
 
 ---
 
@@ -1532,5 +1538,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.211  
+**Version**: 3.17.212  
 **Maintainer:** Cloud Native Assessment Team

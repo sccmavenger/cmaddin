@@ -10,6 +10,22 @@
 - 
 
 
+## [3.17.212] - 2026-02-18
+
+### Added
+
+### Changed
+- **Autopilot Readiness**: Simplified to bare minimum requirements for initial assessment
+  - Now checks only: OS Version (Win10 1809+/Win11) + OS Edition (Pro/Enterprise/Education)
+  - Tenant Intune licensing shown as informational (not a per-device blocker)
+  - Removed Azure AD join status check (can be added back later)
+  - Removed Autopilot registration status check (can be added back later)
+  - Cleaner diagnostic table showing only OS-based blockers
+
+### Fixed
+- 
+
+
 ## [3.17.211] - 2026-02-18
 
 ### Added
