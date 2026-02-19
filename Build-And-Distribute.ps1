@@ -1198,6 +1198,7 @@ if (Test-Path $previousPackage) {
 # ============================================
 
 $msiPath = $null
+$msiBuildSuccess = $false
 $installerScript = Join-Path $scriptDir "installer\Build-Installer.ps1"
 if (Test-Path $installerScript) {
     Write-Host "📦 MSI INSTALLER BUILD" -ForegroundColor Magenta
@@ -1208,35 +1209,54 @@ if (Test-Path $installerScript) {
         # Check if WiX is installed
         $wixCheck = & wix --version 2>&1
         if ($LASTEXITCODE -eq 0) {
+            # Delete old cached MSI to ensure we only use freshly built one
+            $oldMsiPath = Join-Path $scriptDir "builds\ZeroTrustMigrationAddin.msi"
+            if (Test-Path $oldMsiPath) {
+                Remove-Item $oldMsiPath -Force
+                Write-Host "   🗑️  Deleted old cached MSI" -ForegroundColor Gray
+            }
+            
+            # Record build start time to verify fresh build
+            $buildStartTime = Get-Date
+            
             Write-Host "[STEP 1/2] Building MSI installer..." -ForegroundColor Yellow
             
             Push-Location (Join-Path $scriptDir "installer")
             
-            # Run the installer build script (skip app build since we already built)
-            & .\Build-Installer.ps1 -SkipHeat -OutputPath "..\builds"
+            # Run the installer build script (regenerate file list for fresh build)
+            & .\Build-Installer.ps1 -OutputPath "..\builds"
+            $msiBuildExitCode = $LASTEXITCODE
             
             Pop-Location
             
-            # Find the MSI file
-            $msiFile = Get-ChildItem -Path (Join-Path $scriptDir "builds") -Filter "ZeroTrustMigrationAddin.msi" | Select-Object -First 1
+            # Find the MSI file and verify it was freshly built
+            $msiFile = Get-ChildItem -Path (Join-Path $scriptDir "builds") -Filter "ZeroTrustMigrationAddin.msi" -ErrorAction SilentlyContinue | Select-Object -First 1
             
-            if ($msiFile) {
-                # Rename with version
-                $versionedMsiName = "ZeroTrustMigrationAddin-v$newVersion.msi"
-                $msiPath = Join-Path $scriptDir $versionedMsiName
-                Copy-Item $msiFile.FullName -Destination $msiPath -Force
-                
-                $msiSize = [math]::Round((Get-Item $msiPath).Length / 1MB, 2)
-                Write-Host "   ✅ MSI created: $versionedMsiName ($msiSize MB)" -ForegroundColor Green
-                
-                Write-Host ""
-                Write-Host "[STEP 2/2] Copying MSI to distribution..." -ForegroundColor Yellow
-                if ($DistributionPath -and (Test-Path $DistributionPath)) {
-                    Copy-Item $msiPath -Destination $DistributionPath -Force
-                    Write-Host "   ✅ MSI copied to: $DistributionPath" -ForegroundColor Green
+            if ($msiFile -and $msiBuildExitCode -eq 0) {
+                # Verify this MSI was created after our build started
+                if ($msiFile.LastWriteTime -gt $buildStartTime) {
+                    # Rename with version
+                    $versionedMsiName = "ZeroTrustMigrationAddin-v$newVersion.msi"
+                    $msiPath = Join-Path $scriptDir $versionedMsiName
+                    Copy-Item $msiFile.FullName -Destination $msiPath -Force
+                    
+                    $msiSize = [math]::Round((Get-Item $msiPath).Length / 1MB, 2)
+                    Write-Host "   ✅ MSI created: $versionedMsiName ($msiSize MB)" -ForegroundColor Green
+                    $msiBuildSuccess = $true
+                    
+                    Write-Host ""
+                    Write-Host "[STEP 2/2] Copying MSI to distribution..." -ForegroundColor Yellow
+                    if ($DistributionPath -and (Test-Path $DistributionPath)) {
+                        Copy-Item $msiPath -Destination $DistributionPath -Force
+                        Write-Host "   ✅ MSI copied to: $DistributionPath" -ForegroundColor Green
+                    }
+                } else {
+                    Write-Host "   ⚠️ MSI file exists but was not rebuilt (stale cache)" -ForegroundColor Yellow
+                    Write-Host "   MSI will NOT be included in release" -ForegroundColor Yellow
                 }
             } else {
-                Write-Host "   ⚠️ MSI file not found after build" -ForegroundColor Yellow
+                Write-Host "   ⚠️ MSI build failed or file not created" -ForegroundColor Yellow
+                Write-Host "   MSI will NOT be included in release" -ForegroundColor Yellow
             }
         } else {
             Write-Host "   ⚠️ WiX Toolset not installed - skipping MSI build" -ForegroundColor Yellow
@@ -1319,8 +1339,8 @@ Package Size: $packageSize MB
             $manifestPath
         )
         
-        # Add MSI to release if it exists
-        if ($msiPath -and (Test-Path $msiPath)) {
+        # Add MSI to release ONLY if it was freshly built this run
+        if ($msiBuildSuccess -and $msiPath -and (Test-Path $msiPath)) {
             $releaseArgs += $msiPath
             Write-Host "   📦 Including MSI installer in release" -ForegroundColor Cyan
         }
