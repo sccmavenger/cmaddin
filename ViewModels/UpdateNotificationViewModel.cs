@@ -15,6 +15,8 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private bool _isDownloading;
         private int _downloadProgress;
         private string _statusMessage = string.Empty;
+        private string _detailMessage = string.Empty;
+        private UpdatePhase _currentPhase = UpdatePhase.Downloading;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -53,6 +55,18 @@ namespace ZeroTrustMigrationAddin.ViewModels
             set => SetProperty(ref _statusMessage, value);
         }
 
+        public string DetailMessage
+        {
+            get => _detailMessage;
+            set => SetProperty(ref _detailMessage, value);
+        }
+
+        public UpdatePhase CurrentPhase
+        {
+            get => _currentPhase;
+            set => SetProperty(ref _currentPhase, value);
+        }
+
         public ICommand DownloadCommand { get; }
         public ICommand SkipCommand { get; }
         public ICommand RemindLaterCommand { get; }
@@ -62,31 +76,80 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private async System.Threading.Tasks.Task DownloadUpdate()
         {
             IsDownloading = true;
-            StatusMessage = "Downloading update...";
+            StatusMessage = "🔍 Preparing update...";
+            DetailMessage = "Checking installed files...";
             
             try
             {
                 var deltaService = new Services.DeltaUpdateService();
-                var progress = new Progress<int>(percent =>
+                
+                // Create detailed progress handler
+                var detailedProgress = new Progress<UpdateProgress>(p =>
                 {
-                    DownloadProgress = percent;
-                    StatusMessage = $"Downloading... {percent}%";
+                    CurrentPhase = p.Phase;
+                    DownloadProgress = p.PercentComplete;
+                    
+                    // Set emoji and message based on phase
+                    switch (p.Phase)
+                    {
+                        case UpdatePhase.Verifying:
+                            StatusMessage = $"🔍 Verifying files... ({p.CurrentFileIndex} of {p.TotalFiles})";
+                            DetailMessage = p.CurrentFile;
+                            break;
+                            
+                        case UpdatePhase.Downloading:
+                            StatusMessage = $"📥 Downloading... {p.PercentComplete}%";
+                            DetailMessage = p.BytesProgressFormatted;
+                            break;
+                            
+                        case UpdatePhase.Extracting:
+                            StatusMessage = "📦 Extracting files...";
+                            DetailMessage = $"{p.TotalFiles} files";
+                            break;
+                            
+                        case UpdatePhase.Validating:
+                            StatusMessage = $"✅ Validating... ({p.CurrentFileIndex} of {p.TotalFiles})";
+                            DetailMessage = p.CurrentFile;
+                            break;
+                            
+                        case UpdatePhase.BackingUp:
+                            StatusMessage = "💾 Creating backup...";
+                            DetailMessage = p.CurrentFile;
+                            break;
+                            
+                        case UpdatePhase.Applying:
+                            StatusMessage = $"🔄 Applying update... ({p.CurrentFileIndex} of {p.TotalFiles})";
+                            DetailMessage = p.CurrentFile;
+                            break;
+                            
+                        case UpdatePhase.Restarting:
+                            StatusMessage = $"🚀 Restarting in {p.RestartCountdown}...";
+                            DetailMessage = "Update complete!";
+                            break;
+                            
+                        case UpdatePhase.Failed:
+                            StatusMessage = $"❌ {p.StatusMessage}";
+                            DetailMessage = p.ErrorMessage ?? "Unknown error";
+                            break;
+                    }
                 });
 
-                // Download the files
+                // Download the files with detailed progress
                 var success = await deltaService.DownloadDeltaFilesAsync(
                     _updateInfo.DownloadUrl!,
                     _updateInfo.ChangedFiles,
-                    progress);
+                    detailedProgress);
 
                 if (!success)
                 {
-                    StatusMessage = "Download failed. Please try again.";
+                    StatusMessage = "❌ Download failed";
+                    DetailMessage = "Please check your connection and try again.";
                     IsDownloading = false;
                     return;
                 }
 
-                StatusMessage = "Applying update...";
+                StatusMessage = "💾 Creating backup...";
+                DetailMessage = "Preparing to apply update...";
 
                 // Apply the update
                 var applier = new Services.UpdateApplier();
@@ -94,6 +157,9 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 
                 if (remoteManifest != null)
                 {
+                    StatusMessage = "🔄 Applying update...";
+                    DetailMessage = $"Updating {_updateInfo.ChangedFiles.Count} files...";
+                    
                     success = await applier.ApplyUpdateAsync(
                         deltaService.GetTempDownloadPath(),
                         _updateInfo.ChangedFiles,
@@ -101,25 +167,34 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
                     if (success)
                     {
-                        StatusMessage = "Update ready! Application will restart...";
-                        DialogResult = true;
-                        await System.Threading.Tasks.Task.Delay(2000);
+                        // Countdown before restart
+                        for (int i = 3; i >= 1; i--)
+                        {
+                            StatusMessage = $"🚀 Restarting in {i}...";
+                            DetailMessage = "Update complete!";
+                            DownloadProgress = 100;
+                            await System.Threading.Tasks.Task.Delay(1000);
+                        }
                         
+                        DialogResult = true;
                         // Close will be handled by the window
                     }
                     else
                     {
-                        StatusMessage = "Failed to apply update.";
+                        StatusMessage = "❌ Failed to apply update";
+                        DetailMessage = "Check Update.log for details.";
                     }
                 }
                 else
                 {
-                    StatusMessage = "Failed to download manifest.";
+                    StatusMessage = "❌ Failed to download manifest";
+                    DetailMessage = "Could not verify update package.";
                 }
             }
             catch (System.Exception ex)
             {
-                StatusMessage = $"Error: {ex.Message}";
+                StatusMessage = "❌ Update failed";
+                DetailMessage = ex.Message;
                 Services.FileLogger.Instance.Error($"Update download failed: {ex.Message}");
             }
             finally

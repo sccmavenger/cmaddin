@@ -190,10 +190,21 @@ namespace ZeroTrustMigrationAddin.Services
         /// Compares local and remote manifests to identify changed files.
         /// Returns list of files that need to be downloaded.
         /// Only includes files with valid RelativePath values.
+        /// Uses full disk verification for users upgrading from old versions.
         /// </summary>
-        public List<FileEntry> GetChangedFiles(UpdateManifest remoteManifest)
+        public List<FileEntry> GetChangedFiles(UpdateManifest remoteManifest, IProgress<UpdateProgress>? progress = null)
         {
             var localManifest = LoadLocalManifest();
+            
+            // Check if full verification is required (old version or no manifest)
+            if (RequiresFullVerification(localManifest))
+            {
+                Instance.Info("🔍 Using FULL FILE VERIFICATION mode (upgrading from old version)");
+                return VerifyAllFilesOnDisk(remoteManifest, progress);
+            }
+
+            // Fast path: manifest-to-manifest comparison
+            Instance.Info("⚡ Using FAST COMPARISON mode (manifest-to-manifest)");
             var changedFiles = new List<FileEntry>();
 
             // Filter out any invalid entries from remote manifest
@@ -300,8 +311,9 @@ namespace ZeroTrustMigrationAddin.Services
 
         /// <summary>
         /// Downloads the full ZIP package and extracts only the changed files to temp folder.
+        /// Reports detailed progress including phase, file count, and bytes.
         /// </summary>
-        public async Task<bool> DownloadDeltaFilesAsync(string zipUrl, List<FileEntry> changedFiles, IProgress<int>? progress = null)
+        public async Task<bool> DownloadDeltaFilesAsync(string zipUrl, List<FileEntry> changedFiles, IProgress<UpdateProgress>? detailedProgress)
         {
             try
             {
@@ -314,7 +326,7 @@ namespace ZeroTrustMigrationAddin.Services
                 Instance.Info($"Downloading ZIP package: {zipUrl}");
                 var zipPath = Path.Combine(_tempDownloadPath, "update.zip");
 
-                // Download ZIP with progress
+                // Download ZIP with detailed progress
                 using (var response = await _httpClient.GetAsync(zipUrl, HttpCompletionOption.ResponseHeadersRead))
                 {
                     response.EnsureSuccessStatusCode();
@@ -335,24 +347,50 @@ namespace ZeroTrustMigrationAddin.Services
                         if (totalBytes > 0)
                         {
                             var percentComplete = (int)((totalRead * 100) / totalBytes);
-                            progress?.Report(percentComplete);
+                            detailedProgress?.Report(new UpdateProgress
+                            {
+                                Phase = UpdatePhase.Downloading,
+                                PercentComplete = percentComplete,
+                                BytesDownloaded = totalRead,
+                                TotalBytes = totalBytes,
+                                StatusMessage = $"Downloading update... {percentComplete}%"
+                            });
                         }
                     }
                 }
 
                 Instance.Info($"ZIP downloaded: {new FileInfo(zipPath).Length:N0} bytes");
 
-                // Extract only changed files
+                // Extract files
+                detailedProgress?.Report(new UpdateProgress
+                {
+                    Phase = UpdatePhase.Extracting,
+                    PercentComplete = 0,
+                    TotalFiles = changedFiles.Count,
+                    StatusMessage = "Extracting files..."
+                });
+                
                 Instance.Info($"Extracting {changedFiles.Count} changed files from ZIP...");
                 System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, _tempDownloadPath, overwriteFiles: true);
 
                 // Verify extracted files
+                detailedProgress?.Report(new UpdateProgress
+                {
+                    Phase = UpdatePhase.Validating,
+                    PercentComplete = 0,
+                    TotalFiles = changedFiles.Count,
+                    StatusMessage = "Validating downloaded files..."
+                });
+                
                 int verifiedCount = 0;
                 int missingCount = 0;
                 int invalidCount = 0;
+                int processed = 0;
                 
                 foreach (var file in changedFiles)
                 {
+                    processed++;
+                    
                     // Skip invalid entries
                     if (string.IsNullOrWhiteSpace(file.RelativePath))
                     {
@@ -360,6 +398,16 @@ namespace ZeroTrustMigrationAddin.Services
                         Instance.Warning($"Skipping invalid entry with empty RelativePath (hash: {file.SHA256Hash?.Substring(0, 8) ?? "N/A"}...)");
                         continue;
                     }
+                    
+                    detailedProgress?.Report(new UpdateProgress
+                    {
+                        Phase = UpdatePhase.Validating,
+                        PercentComplete = (processed * 100) / changedFiles.Count,
+                        CurrentFile = file.RelativePath,
+                        CurrentFileIndex = processed,
+                        TotalFiles = changedFiles.Count,
+                        StatusMessage = $"Validating {file.RelativePath}..."
+                    });
                     
                     var extractedPath = Path.Combine(_tempDownloadPath, file.RelativePath);
                     
@@ -372,6 +420,12 @@ namespace ZeroTrustMigrationAddin.Services
                         if (missingCount > changedFiles.Count / 2)
                         {
                             Instance.Error($"Too many files missing ({missingCount}/{changedFiles.Count}) - aborting update to prevent corruption");
+                            detailedProgress?.Report(new UpdateProgress
+                            {
+                                Phase = UpdatePhase.Failed,
+                                StatusMessage = "Update failed: too many files missing from package",
+                                ErrorMessage = $"Missing {missingCount} of {changedFiles.Count} files"
+                            });
                             return false;
                         }
                         continue;
@@ -402,8 +456,28 @@ namespace ZeroTrustMigrationAddin.Services
             catch (Exception ex)
             {
                 Instance.Error($"Failed to download delta files: {ex.Message}");
+                detailedProgress?.Report(new UpdateProgress
+                {
+                    Phase = UpdatePhase.Failed,
+                    StatusMessage = "Download failed",
+                    ErrorMessage = ex.Message
+                });
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Downloads the full ZIP package and extracts only the changed files to temp folder.
+        /// </summary>
+        public async Task<bool> DownloadDeltaFilesAsync(string zipUrl, List<FileEntry> changedFiles, IProgress<int>? progress = null)
+        {
+            // Convert simple progress to detailed progress
+            IProgress<UpdateProgress>? detailedProgress = null;
+            if (progress != null)
+            {
+                detailedProgress = new Progress<UpdateProgress>(p => progress.Report(p.PercentComplete));
+            }
+            return await DownloadDeltaFilesAsync(zipUrl, changedFiles, detailedProgress);
         }
 
         /// <summary>
@@ -445,6 +519,102 @@ namespace ZeroTrustMigrationAddin.Services
         /// Gets the path where delta files are downloaded.
         /// </summary>
         public string GetTempDownloadPath() => _tempDownloadPath;
+
+        /// <summary>
+        /// Version threshold for full file verification.
+        /// Users upgrading FROM versions before this will get full disk verification.
+        /// This catches old MSI installs or partial update failures.
+        /// </summary>
+        private const string FullVerificationThreshold = "3.17.207";
+
+        /// <summary>
+        /// Verifies all files on disk against the remote manifest by hashing each file.
+        /// Returns list of files that are missing or have mismatched hashes.
+        /// Used for users upgrading from old versions to ensure all files are correct.
+        /// </summary>
+        public List<FileEntry> VerifyAllFilesOnDisk(UpdateManifest remoteManifest, IProgress<UpdateProgress>? progress = null)
+        {
+            var mismatchedFiles = new List<FileEntry>();
+            var validRemoteFiles = remoteManifest.Files
+                .Where(f => !string.IsNullOrWhiteSpace(f.RelativePath))
+                .ToList();
+
+            Instance.Info($"🔍 Full verification mode: checking {validRemoteFiles.Count} files on disk");
+
+            int processed = 0;
+            foreach (var remoteFile in validRemoteFiles)
+            {
+                processed++;
+                var localPath = Path.Combine(_installPath, remoteFile.RelativePath);
+
+                // Report progress
+                progress?.Report(new UpdateProgress
+                {
+                    Phase = UpdatePhase.Verifying,
+                    PercentComplete = (processed * 100) / validRemoteFiles.Count,
+                    CurrentFile = remoteFile.RelativePath,
+                    CurrentFileIndex = processed,
+                    TotalFiles = validRemoteFiles.Count,
+                    StatusMessage = $"Verifying {remoteFile.RelativePath}..."
+                });
+
+                // Check if file exists
+                if (!File.Exists(localPath))
+                {
+                    Instance.Info($"  ❌ MISSING: {remoteFile.RelativePath}");
+                    mismatchedFiles.Add(remoteFile);
+                    continue;
+                }
+
+                // Calculate hash and compare
+                try
+                {
+                    var localHash = CalculateFileHash(localPath);
+                    if (!localHash.Equals(remoteFile.SHA256Hash, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Instance.Info($"  ≠ MISMATCH: {remoteFile.RelativePath} (local: {localHash.Substring(0, 8)}... vs remote: {remoteFile.SHA256Hash.Substring(0, 8)}...)");
+                        mismatchedFiles.Add(remoteFile);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Instance.Warning($"  ⚠️ Cannot verify {remoteFile.RelativePath}: {ex.Message}");
+                    // If we can't read the file, it needs to be replaced
+                    mismatchedFiles.Add(remoteFile);
+                }
+            }
+
+            var totalSize = mismatchedFiles.Sum(f => f.FileSize);
+            Instance.Info($"✅ Full verification complete: {mismatchedFiles.Count} files need updating ({totalSize:N0} bytes)");
+
+            return mismatchedFiles;
+        }
+
+        /// <summary>
+        /// Determines if full file verification is required based on local version.
+        /// </summary>
+        public bool RequiresFullVerification(UpdateManifest? localManifest)
+        {
+            if (localManifest == null)
+            {
+                Instance.Info("📋 No local manifest - will use full verification for first update");
+                return true;
+            }
+
+            // Compare versions
+            if (Version.TryParse(localManifest.Version, out var localVersion) &&
+                Version.TryParse(FullVerificationThreshold, out var thresholdVersion))
+            {
+                if (localVersion < thresholdVersion)
+                {
+                    Instance.Info($"📋 Local version {localManifest.Version} < threshold {FullVerificationThreshold} - using full verification");
+                    return true;
+                }
+            }
+
+            Instance.Info($"📋 Local version {localManifest.Version} >= threshold {FullVerificationThreshold} - using fast comparison");
+            return false;
+        }
 
         /// <summary>
         /// Cleans up temporary download files.

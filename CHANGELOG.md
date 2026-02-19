@@ -10,6 +10,26 @@
 - 
 
 
+## [3.17.208] - 2026-02-18
+
+### Added
+- **Update System**: Full file verification for users upgrading from old versions
+  - Users upgrading from versions before v3.17.207 get full disk verification
+  - Hashes all 280 application files to ensure they match the remote manifest
+  - Catches partial update failures, old MSI installs, and file corruption
+  - Automatic fallback to fast manifest comparison for newer versions
+- **Update UI**: Enhanced progress messaging during updates
+  - New `UpdatePhase` enum: Verifying, Downloading, Extracting, Validating, BackingUp, Applying, Restarting
+  - Status messages with emoji indicators (🔍 📥 📦 ✅ 💾 🔄 🚀 ❌)
+  - Detail line showing current file, bytes downloaded, or countdown timer
+  - Countdown timer before restart (3... 2... 1...)
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.207] - 2026-02-18
 
 ### Added
