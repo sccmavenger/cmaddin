@@ -173,18 +173,28 @@ namespace ZeroTrustMigrationAddin.Services
 
         private static string GetConfigPath()
         {
-            // Try app directory first
-            var appDir = AppDomain.CurrentDomain.BaseDirectory;
-            var appPath = Path.Combine(appDir, ConfigFileName);
-            if (File.Exists(appPath)) return appPath;
-            
-            // Try local app data
+            // Check user's LocalAppData first (where saves go)
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var dataPath = Path.Combine(localAppData, "ZeroTrustMigrationAddin", ConfigFileName);
             if (File.Exists(dataPath)) return dataPath;
             
-            // Return app directory path (will create default there)
-            return appPath;
+            // Fall back to app directory for bundled defaults (read-only)
+            var appDir = AppDomain.CurrentDomain.BaseDirectory;
+            var appPath = Path.Combine(appDir, ConfigFileName);
+            if (File.Exists(appPath)) return appPath;
+            
+            // Return LocalAppData path (writable location for new installs)
+            return dataPath;
+        }
+        
+        /// <summary>
+        /// Gets the writable config path in LocalAppData.
+        /// Always returns the LocalAppData path regardless of where config was read from.
+        /// </summary>
+        private static string GetWriteConfigPath()
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return Path.Combine(localAppData, "ZeroTrustMigrationAddin", ConfigFileName);
         }
 
         private static EnrollmentScoringOptions LoadFromFile(string configPath)
@@ -213,10 +223,10 @@ namespace ZeroTrustMigrationAddin.Services
             var defaults = new EnrollmentScoringOptions();
             Instance.Info("[SCORING] Using default scoring options");
             
-            // Save defaults for future editing
+            // Save defaults to LocalAppData for future editing
             try
             {
-                SaveToFile(defaults, configPath);
+                SaveToFile(defaults); // Uses GetWriteConfigPath() - always writable location
             }
             catch { /* Ignore save errors */ }
             
@@ -224,11 +234,12 @@ namespace ZeroTrustMigrationAddin.Services
         }
 
         /// <summary>
-        /// Saves the current options to the config file.
+        /// Saves the current options to the config file in LocalAppData.
         /// </summary>
         public static void SaveToFile(EnrollmentScoringOptions options, string? path = null)
         {
-            var configPath = path ?? GetConfigPath();
+            // Always save to LocalAppData (writable location) unless explicit path given
+            var configPath = path ?? GetWriteConfigPath();
             
             try
             {
