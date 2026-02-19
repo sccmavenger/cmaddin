@@ -10,6 +10,19 @@
 - 
 
 
+## [3.17.207] - 2026-02-18
+
+### Added
+
+### Changed
+- **Build**: Added deterministic builds with PathMap to remove local developer paths from stack traces
+  - Customer logs now show `.\Services\ConfigMgrAdminService.cs:line 1332` instead of full build machine paths
+  - Improves privacy and makes stack traces cleaner for troubleshooting
+
+### Fixed
+- 
+
+
 ## [3.17.206] - 2026-02-18
 
 ### Added
