@@ -794,7 +794,7 @@
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.213 - February 19, 2026</strong>
+                <strong>🎉 Version 3.17.215 - February 19, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -900,7 +900,7 @@
                 <li>✅ <strong>Co-Managed with ALL workloads moved to Microsoft Intune</strong></li>
             </ul>
             
-            <p>This means all 8 co-management workload sliders are set to Intune, allowing the ConfigMgr client to be safely removed.</p>
+            <p>This means all 7 co-management workload sliders are set to Intune, allowing the ConfigMgr client to be safely removed.</p>
 
             <h4>Workload Device Drill-Down</h4>
             <p>Click the <strong>"X devices"</strong> link next to the "Co-Managed with Workloads on ConfigMgr" blocker to see a detailed view of which workloads are on ConfigMgr vs. Intune for each device. The dialog shows:</p>
@@ -911,7 +911,7 @@
             <p>Use this to identify which workload sliders need to be moved in the ConfigMgr console.</p>
 
             <h4>Co-Management Workload Authority</h4>
-            <p>For co-managed devices, the dashboard queries the Graph API to determine which workloads are managed by ConfigMgr vs. Intune. A device with ALL 8 workloads on Intune is considered "cloud-native ready" because the ConfigMgr agent can be safely removed.</p>
+            <p>For co-managed devices, the dashboard queries the Graph API to determine which workloads are managed by ConfigMgr vs. Intune. A device with ALL 7 co-management workloads on Intune is considered "cloud-native ready" because the ConfigMgr agent can be safely removed.</p>
 
             <table>
                 <thead>
@@ -946,12 +946,8 @@
                         <td>Microsoft 365 Apps deployment and updates</td>
                     </tr>
                     <tr>
-                        <td><strong>Modern Apps</strong></td>
+                        <td><strong>Modern Apps (Client Apps)</strong></td>
                         <td>Win32 and LOB application deployment</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Inventory</strong></td>
-                        <td>Hardware and software inventory collection</td>
                     </tr>
                 </tbody>
             </table>
@@ -1557,7 +1553,7 @@ CloudNative = IntuneDevices.Where(device =>
         </section>
 
         <footer>
-            <p>Cloud Native Assessment v3.17.213 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Cloud Native Assessment v3.17.215 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>
