@@ -10,6 +10,32 @@
 - 
 
 
+## [3.17.200] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.199] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- **Enrollment Scoring Config Access Denied** - Fixed config save failing on MSI installs
+  - **Problem**: `enrollment-scoring-config.json` was saved to install directory (Program Files) which is read-only
+  - **Root cause**: `GetConfigPath()` defaulted to app directory for new files
+  - **Solution**: Config now saves to `%LOCALAPPDATA%\ZeroTrustMigrationAddin\` like all other user configs
+  - Added `GetWriteConfigPath()` that always returns writable LocalAppData location
+  - `GetConfigPath()` still checks app directory for bundled defaults (read-only fallback)
+  - Files modified: `Services/EnrollmentScoringOptions.cs` 
+
+
 ## [3.17.198] - 2026-02-18
 
 ### Added

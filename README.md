@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.198** | February 18, 2026
+**Version 3.17.200** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -222,6 +222,42 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.199 (February 18, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Enrollment Scoring Config Access Denied** - Fixed config save failing on MSI installs
+  - **Problem**: `enrollment-scoring-config.json` was saved to install directory (Program Files) which is read-only
+  - **Root cause**: `GetConfigPath()` defaulted to app directory for new files
+  - **Solution**: Config now saves to `%LOCALAPPDATA%\ZeroTrustMigrationAddin\` like all other user configs
+  - Added `GetWriteConfigPath()` that always returns writable LocalAppData location
+  - `GetConfigPath()` still checks app directory for bundled defaults (read-only fallback)
+  - Files modified: `Services/EnrollmentScoringOptions.cs`
+
+---
+
+### Version 3.17.198 (February 18, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **MSI Installer Version Mismatch** - Fixed MSI installing old version requiring auto-update on first launch
+  - **Problem**: MSI filename showed correct version (e.g., v3.17.197) but installed v3.16.14.0
+  - **Root cause**: Product.wxs had hardcoded `Version="3.16.14.0"` that was never updated
+  - **Solution**: Changed to WiX variable `$(var.ProductVersion)` injected at build time
+  - Build-Installer.ps1 now reads version from csproj and passes to `wix build` via `-d ProductVersion=x.y.z.0`
+  - Bundle.wxs also updated for bootstrapper builds
+  - MSI now installs the correct version, no auto-update needed on first launch
+
+---
+
 ### Version 3.17.197 (February 18, 2026)
 
 ### Added
@@ -293,60 +329,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Uses Question icon instead of Warning icon
 
 ### Fixed
-
----
-
-### Version 3.17.193 (February 17, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **Certificate Trust Dialog** - When connecting to ConfigMgr with a self-signed SSL certificate, users are now prompted to trust the certificate instead of getting a connection error
-  - Shows certificate subject and security warning
-  - Stores trusted thumbprint for future connections
-  - Automatic retry after trusting
-
----
-
-### Version 3.17.193 (February 16, 2026)
-
-### Security
-- **CRITICAL: Fixed SSL Certificate Validation Bypass** (ConfigMgrAdminService.cs)
-  - Previous: Accepted ALL certificates including hostile ones (MITM vulnerability)
-  - Now: Validates certificates against trusted CA or stored SHA256 thumbprint
-  - Added `TrustedCertThumbprint` to ConfigMgrSettings for self-signed cert support
-  - Added `GetPendingCertificateInfo()` and `TrustPendingCertificate()` methods for UI certificate trust flow
-  - References: OWASP A07:2021, NIST SC-8
-
-- **HIGH: Encrypted OpenAI API Key with DPAPI** (AzureOpenAIService.cs)
-  - API key now stored encrypted in openai-config.json as `EncryptedApiKey`
-  - Added `SetApiKey()` and `GetApiKey()` methods using Windows DPAPI
-  - Automatic migration from plaintext to encrypted on load
-  - References: OWASP A02:2021, NIST SC-28
-
-- **HIGH: Encrypted GitHub OAuth Token with DPAPI** (FeedbackService.cs)
-  - OAuth token now stored as `encrypted_token` in github-feedback-token.json
-  - Automatic migration from plaintext `access_token` to encrypted format
-  - References: OWASP A02:2021
-
-- **HIGH: Encrypted GitHub PAT with DPAPI** (UpdateManifest.cs, GitHubUpdateService.cs)
-  - GitHub Personal Access Token now stored as `EncryptedGitHubToken`
-  - Added `SetGitHubToken()`, `GetGitHubToken()`, and `HasGitHubToken` properties
-  - Automatic migration from plaintext on load
-  - References: OWASP A02:2021
-
-### Added
-- **SecureCredentialManager.cs**: Centralized DPAPI encryption/decryption service
-  - Used by all services storing sensitive credentials
-  - Includes `IsEncrypted()` helper for legacy plaintext detection
-  - User-scoped encryption tied to Windows login credentials
-
-### Changed
-- ConfigMgrSettings now includes certificate trust management
-- All credential storage now follows consistent DPAPI encryption pattern
-- Updated DashboardViewModel to use `SetApiKey()` for OpenAI configuration
 
 ---
 
@@ -1567,5 +1549,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.198  
+**Version**: 3.17.200  
 **Maintainer:** Cloud Native Assessment Team
