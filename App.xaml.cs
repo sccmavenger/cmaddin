@@ -281,7 +281,18 @@ namespace ZeroTrustMigrationAddin
                     // Show progress notification on UI thread
                     await Dispatcher.InvokeAsync(async () =>
                     {
+                        // Disable main window to prevent user interaction during update
+                        var mainWindow = Application.Current.MainWindow;
+                        if (mainWindow != null)
+                        {
+                            mainWindow.IsEnabled = false;
+                        }
+                        
                         var progressWindow = new Views.UpdateProgressWindow(updateResult);
+                        if (mainWindow != null)
+                        {
+                            progressWindow.Owner = mainWindow;
+                        }
                         progressWindow.Show();
                         
                         // Download and apply update automatically
@@ -333,6 +344,12 @@ namespace ZeroTrustMigrationAddin
                                 progressWindow.UpdateProgress(0, "Update failed. Please try again.");
                                 await System.Threading.Tasks.Task.Delay(3000);
                                 progressWindow.Close();
+                                
+                                // Re-enable main window after failure
+                                if (mainWindow != null)
+                                {
+                                    mainWindow.IsEnabled = true;
+                                }
                             }
                         }
                         else
@@ -348,6 +365,12 @@ namespace ZeroTrustMigrationAddin
                             progressWindow.UpdateProgress(0, "Download failed. Please check your connection.");
                             await System.Threading.Tasks.Task.Delay(3000);
                             progressWindow.Close();
+                            
+                            // Re-enable main window after failure
+                            if (mainWindow != null)
+                            {
+                                mainWindow.IsEnabled = true;
+                            }
                         }
                     });
                 }
