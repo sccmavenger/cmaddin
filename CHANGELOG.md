@@ -10,6 +10,20 @@
 - 
 
 
+## [3.17.202] - 2026-02-18
+
+### Added
+
+### Changed
+
+### Fixed
+- **EULA Acceptance Closes App** - Fixed app closing after accepting EULA instead of opening dashboard
+  - **Problem**: After clicking "Accept & Continue" on EULA dialog, the app would close instead of showing the dashboard
+  - **Root cause**: WPF default `ShutdownMode="OnLastWindowClose"` caused app shutdown when EulaWindow closed (before DashboardWindow opened)
+  - **Solution**: Added `ShutdownMode="OnExplicitShutdown"` to App.xaml so app only exits when `Shutdown()` is explicitly called
+  - Files modified: `App.xaml` 
+
+
 ## [3.17.201] - 2026-02-18
 
 ### Added
