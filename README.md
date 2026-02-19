@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.208** | February 18, 2026
+**Version 3.17.209** | February 18, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -232,6 +232,27 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.208 (February 18, 2026)
+
+### Added
+- **Update System**: Full file verification for users upgrading from old versions
+  - Users upgrading from versions before v3.17.207 get full disk verification
+  - Hashes all 280 application files to ensure they match the remote manifest
+  - Catches partial update failures, old MSI installs, and file corruption
+  - Automatic fallback to fast manifest comparison for newer versions
+- **Update UI**: Enhanced progress messaging during updates
+  - New `UpdatePhase` enum: Verifying, Downloading, Extracting, Validating, BackingUp, Applying, Restarting
+  - Status messages with emoji indicators (🔍 📥 📦 ✅ 💾 🔄 🚀 ❌)
+  - Detail line showing current file, bytes downloaded, or countdown timer
+  - Countdown timer before restart (3... 2... 1...)
+
+### Changed
+
+### Fixed
+
+---
+
 ### Version 3.17.207 (February 18, 2026)
 
 ### Added
@@ -297,25 +318,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - **Root cause**: WPF default `ShutdownMode="OnLastWindowClose"` caused app shutdown when EulaWindow closed (before DashboardWindow opened)
   - **Solution**: Added `ShutdownMode="OnExplicitShutdown"` to App.xaml so app only exits when `Shutdown()` is explicitly called
   - Files modified: `App.xaml`
-
----
-
-### Version 3.17.201 (February 18, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **MSI Stale Cache Bug** - Fixed MSI installer uploading old cached version instead of freshly built one
-  - **Problem**: GitHub releases included stale MSI from previous builds, causing users to install old version
-  - **Root cause**: Build script found old `builds\ZeroTrustMigrationAddin.msi` without verifying it was newly built
-  - **Solution**: 
-    - Delete old cached MSI before running Build-Installer.ps1
-    - Verify MSI timestamp is newer than build start time
-    - Only include MSI in release if build actually succeeded
-    - Removed `-SkipHeat` flag to ensure ApplicationFiles.wxs is regenerated
-  - Files modified: `Build-And-Distribute.ps1`
 
 ---
 
@@ -1536,5 +1538,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-02-18  
-**Version**: 3.17.208  
+**Version**: 3.17.209  
 **Maintainer:** Cloud Native Assessment Team

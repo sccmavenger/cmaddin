@@ -534,7 +534,11 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public List<FileEntry> VerifyAllFilesOnDisk(UpdateManifest remoteManifest, IProgress<UpdateProgress>? progress = null)
         {
+            var startTime = DateTime.Now;
             var mismatchedFiles = new List<FileEntry>();
+            int missingCount = 0;
+            int hashMismatchCount = 0;
+            
             var validRemoteFiles = remoteManifest.Files
                 .Where(f => !string.IsNullOrWhiteSpace(f.RelativePath))
                 .ToList();
@@ -563,6 +567,7 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     Instance.Info($"  ❌ MISSING: {remoteFile.RelativePath}");
                     mismatchedFiles.Add(remoteFile);
+                    missingCount++;
                     continue;
                 }
 
@@ -574,6 +579,7 @@ namespace ZeroTrustMigrationAddin.Services
                     {
                         Instance.Info($"  ≠ MISMATCH: {remoteFile.RelativePath} (local: {localHash.Substring(0, 8)}... vs remote: {remoteFile.SHA256Hash.Substring(0, 8)}...)");
                         mismatchedFiles.Add(remoteFile);
+                        hashMismatchCount++;
                     }
                 }
                 catch (Exception ex)
@@ -581,11 +587,22 @@ namespace ZeroTrustMigrationAddin.Services
                     Instance.Warning($"  ⚠️ Cannot verify {remoteFile.RelativePath}: {ex.Message}");
                     // If we can't read the file, it needs to be replaced
                     mismatchedFiles.Add(remoteFile);
+                    hashMismatchCount++;
                 }
             }
 
             var totalSize = mismatchedFiles.Sum(f => f.FileSize);
-            Instance.Info($"✅ Full verification complete: {mismatchedFiles.Count} files need updating ({totalSize:N0} bytes)");
+            var duration = (DateTime.Now - startTime).TotalSeconds;
+            Instance.Info($"✅ Full verification complete: {mismatchedFiles.Count} files need updating ({totalSize:N0} bytes) in {duration:F1}s");
+
+            // Track telemetry for full verification effectiveness
+            var localManifest = LoadLocalManifest();
+            AzureTelemetryService.Instance.TrackFullVerificationEffectiveness(
+                fromVersion: localManifest?.Version ?? "unknown",
+                filesVerified: validRemoteFiles.Count,
+                mismatchesCaught: hashMismatchCount,
+                missingFilesCaught: missingCount,
+                verificationDurationSeconds: duration);
 
             return mismatchedFiles;
         }

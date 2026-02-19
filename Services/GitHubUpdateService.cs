@@ -269,6 +269,9 @@ namespace ZeroTrustMigrationAddin.Services
                 CurrentVersion = GetCurrentVersion()
             };
 
+            // Track that update check started
+            AzureTelemetryService.Instance.TrackUpdateCheckStarted(result.CurrentVersion);
+
             try
             {
                 // Update last check timestamp

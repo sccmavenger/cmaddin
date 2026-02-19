@@ -256,16 +256,15 @@ namespace ZeroTrustMigrationAddin
                     Services.FileLogger.Instance.Info($"Update available: {updateResult.CurrentVersion} → {updateResult.LatestVersion}");
                     Services.FileLogger.Instance.Info($"Delta: {changedFiles.Count} files, {updateResult.DeltaSize:N0} bytes");
                     
-                    // Track update detection in telemetry
-                    Services.AzureTelemetryService.Instance.TrackEvent("UpdateDetected", new System.Collections.Generic.Dictionary<string, string>
-                    {
-                        { "CurrentVersion", updateResult.CurrentVersion },
-                        { "LatestVersion", updateResult.LatestVersion },
-                        { "ChangedFilesCount", changedFiles.Count.ToString() },
-                        { "DeltaSize", updateResult.DeltaSize.ToString() },
-                        { "TotalSize", updateResult.TotalSize.ToString() },
-                        { "BandwidthSavings", updateResult.TotalSize > 0 ? $"{(1 - (double)updateResult.DeltaSize / updateResult.TotalSize) * 100:F1}%" : "N/A" }
-                    });
+                    // Track update available in telemetry with detailed metrics
+                    Services.AzureTelemetryService.Instance.TrackUpdateAvailable(
+                        updateResult.CurrentVersion,
+                        updateResult.LatestVersion,
+                        usedFullVerification: deltaService.RequiresFullVerification(deltaService.LoadLocalManifest()),
+                        totalFilesChecked: remoteManifest.Files.Count,
+                        filesMismatched: changedFiles.Count,
+                        filesNew: 0, // Not tracked separately in this context
+                        deltaBytes: updateResult.DeltaSize);
                     
                     // Skip update if no files changed (already on latest version)
                     if (changedFiles.Count == 0)
