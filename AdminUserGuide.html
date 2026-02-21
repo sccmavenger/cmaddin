@@ -794,7 +794,7 @@
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.215 - February 19, 2026</strong>
+                <strong>🎉 Version 3.17.219 - February 20, 2026</strong>
                 <ul>
                     <li>Version update</li>
                 </ul>
@@ -1516,7 +1516,23 @@ CloudNative = IntuneDevices.Where(device =>
             <p><strong>A:</strong> No, this is a community tool built to help IT teams manage their ConfigMgr to Intune migrations. It uses official Microsoft Graph APIs to pull data.</p>
 
             <h4>Q: What data does telemetry collect?</h4>
-            <p><strong>A:</strong> We collect anonymous usage analytics (which buttons you click, errors that occur) to improve the tool. We DO NOT collect usernames, device names, tenant IDs, emails, IPs, or any identifiable information. All PII is automatically sanitized before sending to Azure.</p>
+            <p><strong>A:</strong> We collect <strong>anonymous usage analytics</strong> to improve the tool:</p>
+            <ul>
+                <li><strong>Feature usage</strong> - Which buttons and views you use most</li>
+                <li><strong>Error rates</strong> - When things break (to fix bugs faster)</li>
+                <li><strong>Performance metrics</strong> - How long operations take</li>
+                <li><strong>Adoption milestones</strong> - Aggregate migration progress (10%, 25%, etc.)</li>
+            </ul>
+            <p><strong>We DO NOT collect:</strong> Usernames, device names, tenant IDs, emails, IP addresses, or any personally identifiable information. All data is SHA-256 hashed and anonymized before transmission.</p>
+            
+            <h5>Opt-out</h5>
+            <p>You can disable telemetry at any time from <strong>Diagnostics → Anonymous Usage Analytics</strong> (uncheck the toggle). When disabled, a final "telemetry disabled" event is sent, then no further data is transmitted.</p>
+            
+            <h5>First Launch</h5>
+            <p>On first launch, you'll see a notice explaining telemetry. Click OK to continue with telemetry enabled, or Cancel to disable it immediately.</p>
+            
+            <h5>Where is telemetry logged?</h5>
+            <p>All telemetry events are logged locally to <code>%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\TelemetryLog_YYYYMMDD.log</code> for your review before transmission.</p>
 
             <h4>Q: Can I use this in production?</h4>
             <p><strong>A:</strong> Yes! The tool reads data only by default - it doesn't modify your Intune or ConfigMgr environment. The Autonomous Enrollment Agent can make changes, but only when explicitly enabled.</p>
@@ -1553,7 +1569,7 @@ CloudNative = IntuneDevices.Where(device =>
         </section>
 
         <footer>
-            <p>Cloud Native Assessment v3.17.215 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Cloud Native Assessment v3.17.219 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>

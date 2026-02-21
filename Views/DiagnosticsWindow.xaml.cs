@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Media;
 using ZeroTrustMigrationAddin.Services;
 
 namespace ZeroTrustMigrationAddin.Views
@@ -14,12 +15,38 @@ namespace ZeroTrustMigrationAddin.Views
             InitializeComponent();
             LoadQueryLog();
             
+            // Initialize telemetry toggle state
+            TelemetryToggle.IsChecked = AzureTelemetryService.Instance.IsTelemetryEnabled;
+            UpdateTelemetryStatusText();
+            
             // Track window opened for telemetry
             AzureTelemetryService.Instance.TrackEvent("WindowOpened", new Dictionary<string, string>
             {
                 { "WindowName", "DiagnosticsWindow" },
                 { "QueryCount", FileLogger.Instance.GetRecentQueries().Count.ToString() }
             });
+        }
+
+        private void TelemetryToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            AzureTelemetryService.Instance.SetTelemetryEnabled(true);
+            UpdateTelemetryStatusText();
+        }
+
+        private void TelemetryToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            AzureTelemetryService.Instance.SetTelemetryEnabled(false);
+            UpdateTelemetryStatusText();
+        }
+
+        private void UpdateTelemetryStatusText()
+        {
+            TelemetryStatusText.Text = TelemetryToggle.IsChecked == true 
+                ? "Telemetry Enabled" 
+                : "Telemetry Disabled";
+            TelemetryStatusText.Foreground = TelemetryToggle.IsChecked == true
+                ? new SolidColorBrush(Color.FromRgb(0, 120, 212))
+                : new SolidColorBrush(Color.FromRgb(102, 102, 102));
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)

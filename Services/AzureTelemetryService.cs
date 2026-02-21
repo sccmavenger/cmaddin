@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
+using ZeroTrustMigrationAddin.Models;
 
 namespace ZeroTrustMigrationAddin.Services
 {
@@ -61,16 +62,16 @@ namespace ZeroTrustMigrationAddin.Services
                 _flushTimer.AutoReset = true;
                 _flushTimer.Start();
 
-                FileLogger.Instance.Info("[TELEMETRY] Azure Application Insights initialized successfully");
-                FileLogger.Instance.Info($"[TELEMETRY] Anonymous User ID: {_anonymousUserId}");
-                FileLogger.Instance.Info($"[TELEMETRY] Session ID: {_telemetryClient.Context.Session.Id}");
-                FileLogger.Instance.Info("[TELEMETRY] Auto-flush timer started (every 2 minutes)");
+                FileLogger.Instance.LogTelemetry("Azure Application Insights initialized successfully");
+                FileLogger.Instance.LogTelemetry($"Anonymous User ID: {_anonymousUserId}");
+                FileLogger.Instance.LogTelemetry($"Session ID: {_telemetryClient.Context.Session.Id}");
+                FileLogger.Instance.LogTelemetry("Auto-flush timer started (every 2 minutes)");
             }
             catch (Exception ex)
             {
                 _isEnabled = false;
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to initialize: {ex.Message}");
-                FileLogger.Instance.Info("[TELEMETRY] Application will continue without telemetry");
+                FileLogger.Instance.LogTelemetry($"Failed to initialize: {ex.Message}");
+                FileLogger.Instance.LogTelemetry("Application will continue without telemetry");
             }
         }
 
@@ -81,7 +82,7 @@ namespace ZeroTrustMigrationAddin.Services
         {
             if (_eventsSinceLastFlush > 0)
             {
-                FileLogger.Instance.Debug($"[TELEMETRY] Auto-flushing {_eventsSinceLastFlush} events...");
+                FileLogger.Instance.LogTelemetry($"Auto-flushing {_eventsSinceLastFlush} events...");
                 _telemetryClient?.Flush();
                 _eventsSinceLastFlush = 0;
             }
@@ -92,10 +93,15 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public void TrackEvent(string eventName, Dictionary<string, string>? properties = null, Dictionary<string, double>? metrics = null)
         {
-            if (!_isEnabled || _telemetryClient == null) return;
+            // Check both initialization success AND user preference
+            if (!_isEnabled || _telemetryClient == null || !TelemetrySettings.Instance.IsEnabled) return;
 
             try
             {
+                // Log to separate telemetry file for transparency
+                var propsString = properties != null ? string.Join(", ", properties.Select(p => $"{p.Key}={p.Value}")) : "";
+                FileLogger.Instance.LogTelemetry(eventName, propsString);
+
                 var sanitizedProperties = properties != null 
                     ? SanitizeProperties(properties) 
                     : new Dictionary<string, string>();
@@ -112,14 +118,14 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     _telemetryClient.Flush();
                     _eventsSinceLastFlush = 0;
-                    FileLogger.Instance.Debug($"[TELEMETRY] Immediate flush for {eventName}");
+                    FileLogger.Instance.LogTelemetry($"Immediate flush for {eventName}");
                 }
                 
-                FileLogger.Instance.Debug($"[TELEMETRY] Event: {eventName} (pending: {_eventsSinceLastFlush})");
+                FileLogger.Instance.LogTelemetry($"Event: {eventName} (pending: {_eventsSinceLastFlush})");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track event '{eventName}': {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track event '{eventName}': {ex.Message}");
             }
         }
 
@@ -128,7 +134,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public void TrackMetric(string metricName, double value, Dictionary<string, string>? properties = null)
         {
-            if (!_isEnabled || _telemetryClient == null) return;
+            if (!_isEnabled || _telemetryClient == null || !TelemetrySettings.Instance.IsEnabled) return;
 
             try
             {
@@ -138,11 +144,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackMetric(metricName, value, sanitizedProperties);
                 
-                FileLogger.Instance.Debug($"[TELEMETRY] Metric: {metricName} = {value}");
+                FileLogger.Instance.LogTelemetry($"Metric: {metricName} = {value}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track metric '{metricName}': {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track metric '{metricName}': {ex.Message}");
             }
         }
 
@@ -151,7 +157,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public void TrackException(Exception exception, Dictionary<string, string>? properties = null, Dictionary<string, double>? metrics = null)
         {
-            if (!_isEnabled || _telemetryClient == null) return;
+            if (!_isEnabled || _telemetryClient == null || !TelemetrySettings.Instance.IsEnabled) return;
 
             try
             {
@@ -185,11 +191,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackException(telemetry);
                 
-                FileLogger.Instance.Debug($"[TELEMETRY] Exception: {exception.GetType().Name}");
+                FileLogger.Instance.LogTelemetry($"Exception: {exception.GetType().Name}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track exception: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track exception: {ex.Message}");
             }
         }
 
@@ -198,7 +204,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public void TrackDependency(string dependencyTypeName, string dependencyName, string data, DateTimeOffset startTime, TimeSpan duration, bool success)
         {
-            if (!_isEnabled || _telemetryClient == null) return;
+            if (!_isEnabled || _telemetryClient == null || !TelemetrySettings.Instance.IsEnabled) return;
 
             try
             {
@@ -206,11 +212,11 @@ namespace ZeroTrustMigrationAddin.Services
                 
                 _telemetryClient.TrackDependency(dependencyTypeName, dependencyName, sanitizedData, startTime, duration, success);
                 
-                FileLogger.Instance.Debug($"[TELEMETRY] Dependency: {dependencyTypeName}/{dependencyName} - {duration.TotalMilliseconds}ms, success={success}");
+                FileLogger.Instance.LogTelemetry($"Dependency: {dependencyTypeName}/{dependencyName} - {duration.TotalMilliseconds}ms, success={success}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track dependency '{dependencyName}': {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track dependency '{dependencyName}': {ex.Message}");
             }
         }
 
@@ -219,7 +225,7 @@ namespace ZeroTrustMigrationAddin.Services
         /// </summary>
         public void TrackPageView(string pageName, Dictionary<string, string>? properties = null, Dictionary<string, double>? metrics = null)
         {
-            if (!_isEnabled || _telemetryClient == null) return;
+            if (!_isEnabled || _telemetryClient == null || !TelemetrySettings.Instance.IsEnabled) return;
 
             try
             {
@@ -247,11 +253,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackPageView(telemetry);
                 
-                FileLogger.Instance.Debug($"[TELEMETRY] PageView: {pageName}");
+                FileLogger.Instance.LogTelemetry($"PageView: {pageName}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track page view '{pageName}': {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track page view '{pageName}': {ex.Message}");
             }
         }
 
@@ -296,11 +302,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("StrategicMetrics", properties, metrics);
                 
-                FileLogger.Instance.Info($"[TELEMETRY] StrategicMetrics: Estate={estateSizeBand}, Enrollment={enrollmentPercentage:F1}%, Velocity={dailyVelocity:F2}/day, Trend={trendDirection}");
+                FileLogger.Instance.LogTelemetry($"StrategicMetrics: Estate={estateSizeBand}, Enrollment={enrollmentPercentage:F1}%, Velocity={dailyVelocity:F2}/day, Trend={trendDirection}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track strategic metrics: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track strategic metrics: {ex.Message}");
             }
         }
 
@@ -336,11 +342,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("EstateSnapshot", properties, metrics);
                 
-                FileLogger.Instance.Debug($"[TELEMETRY] EstateSnapshot: Total={totalDevices}, CloudManaged={cloudManagedDevices}, ConfigMgrOnly={configMgrOnlyDevices}, CloudNative={cloudNativeDevices}");
+                FileLogger.Instance.LogTelemetry($"EstateSnapshot: Total={totalDevices}, CloudManaged={cloudManagedDevices}, ConfigMgrOnly={configMgrOnlyDevices}, CloudNative={cloudNativeDevices}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track estate snapshot: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track estate snapshot: {ex.Message}");
             }
         }
 
@@ -369,11 +375,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("MigrationMilestone", properties, metrics);
                 
-                FileLogger.Instance.Info($"[TELEMETRY] 🎉 MigrationMilestone: {milestonePercentage}% reached! ({cloudManagedDevices}/{totalDevices} devices)");
+                FileLogger.Instance.LogTelemetry($"🎉 MigrationMilestone: {milestonePercentage}% reached! ({cloudManagedDevices}/{totalDevices} devices)");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track migration milestone: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track migration milestone: {ex.Message}");
             }
         }
 
@@ -400,11 +406,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("BlockerResolution", properties, metrics);
                 
-                FileLogger.Instance.Info($"[TELEMETRY] BlockerResolution: {blockerType} resolved via {resolution}, {affectedDevices} devices unblocked");
+                FileLogger.Instance.LogTelemetry($"BlockerResolution: {blockerType} resolved via {resolution}, {affectedDevices} devices unblocked");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track blocker resolution: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track blocker resolution: {ex.Message}");
             }
         }
 
@@ -432,11 +438,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("WorkloadTransition", properties, metrics);
                 
-                FileLogger.Instance.Info($"[TELEMETRY] WorkloadTransition: {workloadName} changed from {fromState} to {toState}, {affectedDevices} devices affected");
+                FileLogger.Instance.LogTelemetry($"WorkloadTransition: {workloadName} changed from {fromState} to {toState}, {affectedDevices} devices affected");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track workload transition: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track workload transition: {ex.Message}");
             }
         }
 
@@ -497,11 +503,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("ApplicationReadinessAssessed", properties, metrics);
                 
-                FileLogger.Instance.Info($"[TELEMETRY] ApplicationReadinessAssessed: {deployedApps} deployed apps, {readinessPercentage:F1}% ready (Easy:{easyApps}, Moderate:{moderateApps}, Review:{needsReviewApps}, Complex:{complexApps})");
+                FileLogger.Instance.LogTelemetry($"ApplicationReadinessAssessed: {deployedApps} deployed apps, {readinessPercentage:F1}% ready (Easy:{easyApps}, Moderate:{moderateApps}, Review:{needsReviewApps}, Complex:{complexApps})");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track application readiness: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track application readiness: {ex.Message}");
             }
         }
 
@@ -550,11 +556,11 @@ namespace ZeroTrustMigrationAddin.Services
                 _telemetryClient.TrackEvent("MigrationBlockers", properties, metrics);
                 _eventsSinceLastFlush++;
                 
-                FileLogger.Instance.Info($"[TELEMETRY] MigrationBlockers: NoAADDeviceId={noAADDeviceId}, Stale={staleDevices14Days}, HardwareIssues={hardwareIssues}, NotAutopilot={notInAutopilot}");
+                FileLogger.Instance.LogTelemetry($"MigrationBlockers: NoAADDeviceId={noAADDeviceId}, Stale={staleDevices14Days}, HardwareIssues={hardwareIssues}, NotAutopilot={notInAutopilot}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track migration blockers: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track migration blockers: {ex.Message}");
             }
         }
 
@@ -599,11 +605,11 @@ namespace ZeroTrustMigrationAddin.Services
                 _telemetryClient.TrackEvent("SecurityPostureComparison", properties, metrics);
                 _eventsSinceLastFlush++;
                 
-                FileLogger.Instance.Info($"[TELEMETRY] SecurityPostureComparison: Compliance Delta={intuneCompliancePct - configMgrCompliancePct:+0.0;-0.0}%, CA Delta={intuneCAReadyPct - configMgrCAReadyPct:+0.0;-0.0}%");
+                FileLogger.Instance.LogTelemetry($"SecurityPostureComparison: Compliance Delta={intuneCompliancePct - configMgrCompliancePct:+0.0;-0.0}%, CA Delta={intuneCAReadyPct - configMgrCAReadyPct:+0.0;-0.0}%");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track security posture: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track security posture: {ex.Message}");
             }
         }
 
@@ -644,11 +650,11 @@ namespace ZeroTrustMigrationAddin.Services
                 _telemetryClient.TrackEvent("DeviceOrphans", properties, metrics);
                 _eventsSinceLastFlush++;
                 
-                FileLogger.Instance.Info($"[TELEMETRY] DeviceOrphans: CM-only={inConfigMgrNotIntune}, Intune-only={inIntuneNotConfigMgr}, Co-managed={coManagedDevices}, CloudNative={cloudNativeDevices}");
+                FileLogger.Instance.LogTelemetry($"DeviceOrphans: CM-only={inConfigMgrNotIntune}, Intune-only={inIntuneNotConfigMgr}, Co-managed={coManagedDevices}, CloudNative={cloudNativeDevices}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track device orphans: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track device orphans: {ex.Message}");
             }
         }
 
@@ -688,11 +694,11 @@ namespace ZeroTrustMigrationAddin.Services
                 _telemetryClient.TrackEvent("AutopilotReadiness", properties, metrics);
                 _eventsSinceLastFlush++;
                 
-                FileLogger.Instance.Info($"[TELEMETRY] AutopilotReadiness: Registered={registeredInAutopilot}/{totalDevices}, HybridJoined={hasAADDeviceId}, TPM2.0={hasTpm20}");
+                FileLogger.Instance.LogTelemetry($"AutopilotReadiness: Registered={registeredInAutopilot}/{totalDevices}, HybridJoined={hasAADDeviceId}, TPM2.0={hasTpm20}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track Autopilot readiness: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track Autopilot readiness: {ex.Message}");
             }
         }
 
@@ -737,11 +743,11 @@ namespace ZeroTrustMigrationAddin.Services
                 _telemetryClient.TrackEvent("WorkloadAuthoritySnapshot", properties, metrics);
                 _eventsSinceLastFlush++;
 
-                FileLogger.Instance.Info($"[TELEMETRY] WorkloadAuthoritySnapshot: CoManaged={totalCoManagedDevices}, CloudNativeReady={devicesReadyForCloudNative}, Workloads={workloadIntuneAdoptionCounts.Count}");
+                FileLogger.Instance.LogTelemetry($"WorkloadAuthoritySnapshot: CoManaged={totalCoManagedDevices}, CloudNativeReady={devicesReadyForCloudNative}, Workloads={workloadIntuneAdoptionCounts.Count}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track workload authority: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track workload authority: {ex.Message}");
             }
         }
 
@@ -789,11 +795,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("SessionSummary", properties, metrics);
                 
-                FileLogger.Instance.Info($"[TELEMETRY] SessionSummary: Duration={sessionDuration.TotalMinutes:F1}min, Tabs={tabsViewed.Count}, Actions={actionsPerformed}");
+                FileLogger.Instance.LogTelemetry($"SessionSummary: Duration={sessionDuration.TotalMinutes:F1}min, Tabs={tabsViewed.Count}, Actions={actionsPerformed}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track session summary: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track session summary: {ex.Message}");
             }
         }
 
@@ -864,13 +870,81 @@ namespace ZeroTrustMigrationAddin.Services
                 _telemetryClient.Flush();
                 System.Threading.Thread.Sleep(1000); // Wait for flush to complete
                 
-                FileLogger.Instance.Info("[TELEMETRY] Telemetry flushed to Azure");
+                FileLogger.Instance.LogTelemetry("Telemetry flushed to Azure");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to flush telemetry: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to flush telemetry: {ex.Message}");
             }
         }
+
+        #region Telemetry Settings Management
+
+        /// <summary>
+        /// Enable or disable telemetry. Sends a final event when disabled.
+        /// </summary>
+        public void SetTelemetryEnabled(bool enabled)
+        {
+            var wasEnabled = TelemetrySettings.Instance.IsEnabled;
+            
+            if (wasEnabled && !enabled)
+            {
+                // Send "telemetry disabled" event before turning off
+                TrackEventInternal("TelemetryDisabled", new Dictionary<string, string>
+                {
+                    { "DisabledAt", DateTime.UtcNow.ToString("o") }
+                });
+                _telemetryClient?.Flush();
+            }
+            
+            TelemetrySettings.Instance.IsEnabled = enabled;
+            TelemetrySettings.Instance.Save();
+            
+            if (!wasEnabled && enabled)
+            {
+                // Send "telemetry enabled" event
+                TrackEventInternal("TelemetryEnabled", new Dictionary<string, string>
+                {
+                    { "EnabledAt", DateTime.UtcNow.ToString("o") }
+                });
+            }
+            
+            FileLogger.Instance.LogTelemetry($"Telemetry {(enabled ? "ENABLED" : "DISABLED")} by user");
+        }
+
+        /// <summary>
+        /// Internal method that bypasses the user setting check (for enable/disable events only)
+        /// </summary>
+        private void TrackEventInternal(string eventName, Dictionary<string, string>? properties = null)
+        {
+            if (!_isEnabled || _telemetryClient == null) return;
+            
+            try
+            {
+                var propsString = properties != null ? string.Join(", ", properties.Select(p => $"{p.Key}={p.Value}")) : "";
+                FileLogger.Instance.LogTelemetry(eventName, propsString);
+                
+                var sanitizedProperties = properties != null ? SanitizeProperties(properties) : null;
+                _telemetryClient.TrackEvent(eventName, sanitizedProperties);
+                _eventsSinceLastFlush++;
+            }
+            catch { }
+        }
+
+        /// <summary>Check if telemetry is currently enabled</summary>
+        public bool IsTelemetryEnabled => _isEnabled && TelemetrySettings.Instance.IsEnabled;
+
+        /// <summary>Check if user has seen first-run telemetry notice</summary>
+        public bool HasAcknowledgedTelemetryNotice => TelemetrySettings.Instance.HasAcknowledgedNotice;
+
+        /// <summary>Mark that user has acknowledged telemetry notice</summary>
+        public void AcknowledgeTelemetryNotice()
+        {
+            TelemetrySettings.Instance.HasAcknowledgedNotice = true;
+            TelemetrySettings.Instance.Save();
+        }
+
+        #endregion
 
         public void Dispose()
         {
@@ -1028,11 +1102,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("ConfigMgrConnected", properties);
                 
-                FileLogger.Instance.Info($"[TELEMETRY] ConfigMgrConnected: Version={siteVersion}, Method={connectionMethod}");
+                FileLogger.Instance.LogTelemetry($"ConfigMgrConnected: Version={siteVersion}, Method={connectionMethod}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track ConfigMgr connection: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track ConfigMgr connection: {ex.Message}");
             }
         }
 
@@ -1064,12 +1138,12 @@ namespace ZeroTrustMigrationAddin.Services
                 // Only log non-success or empty results to avoid log spam
                 if (statusCode != 200 || resultCount == 0)
                 {
-                    FileLogger.Instance.Info($"[TELEMETRY] ApiQueryResult: {queryType} Status={statusCode}, Count={resultCount}, Version={siteVersion}");
+                    FileLogger.Instance.LogTelemetry($"ApiQueryResult: {queryType} Status={statusCode}, Count={resultCount}, Version={siteVersion}");
                 }
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track API query result: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track API query result: {ex.Message}");
             }
         }
 
@@ -1100,11 +1174,11 @@ namespace ZeroTrustMigrationAddin.Services
                 _telemetryClient.TrackEvent("AdminServiceConnectionFailed", properties, metrics);
                 _telemetryClient.Flush(); // Important event - flush immediately
                 
-                FileLogger.Instance.Warning($"[TELEMETRY] AdminServiceConnectionFailed: {failureReason}, HTTP={httpStatusCode}, Exception={exceptionType}");
+                FileLogger.Instance.LogTelemetry($"AdminServiceConnectionFailed: {failureReason}, HTTP={httpStatusCode}, Exception={exceptionType}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track connection failure: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track connection failure: {ex.Message}");
             }
         }
 
@@ -1130,11 +1204,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("AdminServiceQueryFailed", properties, metrics);
                 
-                FileLogger.Instance.Warning($"[TELEMETRY] AdminServiceQueryFailed: {queryName} - {failureReason}");
+                FileLogger.Instance.LogTelemetry($"AdminServiceQueryFailed: {queryName} - {failureReason}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track query failure: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track query failure: {ex.Message}");
             }
         }
 
@@ -1164,12 +1238,12 @@ namespace ZeroTrustMigrationAddin.Services
                 // Only log slow queries (> 5 seconds) to avoid spam
                 if (durationMs > 5000)
                 {
-                    FileLogger.Instance.Info($"[TELEMETRY] Slow query: {queryName} took {durationMs:F0}ms");
+                    FileLogger.Instance.LogTelemetry($"Slow query: {queryName} took {durationMs:F0}ms");
                 }
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track query success: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track query success: {ex.Message}");
             }
         }
 
@@ -1203,7 +1277,7 @@ namespace ZeroTrustMigrationAddin.Services
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track comparison tile: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track comparison tile: {ex.Message}");
             }
         }
 
@@ -1239,12 +1313,12 @@ namespace ZeroTrustMigrationAddin.Services
                 // Log warning if stale percent is high
                 if (stalePercent > 25)
                 {
-                    FileLogger.Instance.Info($"[TELEMETRY] High stale rate: {source} has {stalePercent:F1}% stale devices");
+                    FileLogger.Instance.LogTelemetry($"High stale rate: {source} has {stalePercent:F1}% stale devices");
                 }
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track stale metrics: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track stale metrics: {ex.Message}");
             }
         }
 
@@ -1280,12 +1354,12 @@ namespace ZeroTrustMigrationAddin.Services
                 // Log warning if average is high (like the 170 day issue)
                 if (avgDays > 30)
                 {
-                    FileLogger.Instance.Info($"[TELEMETRY] High avg sync age: {source} avg={avgDays:F1} days");
+                    FileLogger.Instance.LogTelemetry($"High avg sync age: {source} avg={avgDays:F1} days");
                 }
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track sync freshness: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track sync freshness: {ex.Message}");
             }
         }
 
@@ -1308,11 +1382,11 @@ namespace ZeroTrustMigrationAddin.Services
 
                 _telemetryClient.TrackEvent("ComparisonDataQuality", properties);
                 
-                FileLogger.Instance.Info($"[TELEMETRY] Data quality issue: {tileName} - {issue}");
+                FileLogger.Instance.LogTelemetry($"Data quality issue: {tileName} - {issue}");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track data quality: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track data quality: {ex.Message}");
             }
         }
 
@@ -1356,12 +1430,12 @@ namespace ZeroTrustMigrationAddin.Services
                 // Log warning if ConfigMgr shows 0% when it has devices
                 if (configMgrDeviceCount > 0 && configMgrValue == 0)
                 {
-                    FileLogger.Instance.Info($"[TELEMETRY] ConfigMgr 0% alert: {tileName} has {configMgrDeviceCount} devices but value=0. Source: {configMgrDataSource}. Issues: {dataQualityIssues}");
+                    FileLogger.Instance.LogTelemetry($"ConfigMgr 0% alert: {tileName} has {configMgrDeviceCount} devices but value=0. Source: {configMgrDataSource}. Issues: {dataQualityIssues}");
                 }
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track comparison tile data: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track comparison tile data: {ex.Message}");
             }
         }
 
@@ -1391,7 +1465,7 @@ namespace ZeroTrustMigrationAddin.Services
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track ConfigMgr query mode: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track ConfigMgr query mode: {ex.Message}");
             }
         }
 
@@ -1418,7 +1492,7 @@ namespace ZeroTrustMigrationAddin.Services
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update check: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track update check: {ex.Message}");
             }
         }
 
@@ -1459,12 +1533,12 @@ namespace ZeroTrustMigrationAddin.Services
                 // Log prominent message if full verification found mismatches
                 if (usedFullVerification && filesMismatched > 0)
                 {
-                    FileLogger.Instance.Info($"[TELEMETRY] ✅ Full verification caught {filesMismatched} mismatched files!");
+                    FileLogger.Instance.LogTelemetry($"✅ Full verification caught {filesMismatched} mismatched files!");
                 }
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update available: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track update available: {ex.Message}");
             }
         }
 
@@ -1505,7 +1579,7 @@ namespace ZeroTrustMigrationAddin.Services
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update download: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track update download: {ex.Message}");
             }
         }
 
@@ -1550,11 +1624,11 @@ namespace ZeroTrustMigrationAddin.Services
                 // Immediately flush to ensure this critical event is sent before restart
                 _telemetryClient?.Flush();
                 _eventsSinceLastFlush = 0;
-                FileLogger.Instance.Debug($"[TELEMETRY] Immediate flush for UpdateApplied");
+                FileLogger.Instance.LogTelemetry($"Immediate flush for UpdateApplied");
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update applied: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track update applied: {ex.Message}");
             }
         }
 
@@ -1579,7 +1653,7 @@ namespace ZeroTrustMigrationAddin.Services
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track update deferred: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track update deferred: {ex.Message}");
             }
         }
 
@@ -1623,7 +1697,7 @@ namespace ZeroTrustMigrationAddin.Services
             }
             catch (Exception ex)
             {
-                FileLogger.Instance.Warning($"[TELEMETRY] Failed to track full verification effectiveness: {ex.Message}");
+                FileLogger.Instance.LogTelemetry($"Failed to track full verification effectiveness: {ex.Message}");
             }
         }
 

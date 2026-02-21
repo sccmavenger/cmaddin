@@ -589,8 +589,6 @@ namespace ZeroTrustMigrationAddin.Services
                 FileLogger.Instance.Info($"   Admin Service URL: {_adminServiceUrl ?? "(not set)"}");
                 FileLogger.Instance.Info($"   Connection Method: {_connectionMethod}");
                 FileLogger.Instance.Info($"   Using WMI Fallback: {_useWmiFallback}");
-                FileLogger.Instance.Info($"   Current User: {Environment.UserName}");
-                FileLogger.Instance.Info($"   Domain: {Environment.UserDomainName}");
                 FileLogger.Instance.Info($"   Machine: {Environment.MachineName}");
                 
                 // Try to get ConfigMgr build version from registry

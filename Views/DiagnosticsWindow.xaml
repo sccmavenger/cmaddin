@@ -68,6 +68,29 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Telemetry Settings -->
+                <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="📊" FontSize="20" FontWeight="Bold" Margin="0,0,10,0"/>
+                            <TextBlock Text="Anonymous Usage Analytics" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,15" Foreground="#666">
+                            Help improve this tool by sharing anonymous usage data. No device names, usernames, or identifiable information is ever collected. Events are logged locally for your review.
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="TelemetryToggle" 
+                                      Checked="TelemetryToggle_Checked"
+                                      Unchecked="TelemetryToggle_Unchecked"
+                                      VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TelemetryStatusText" 
+                                       Text="Telemetry Enabled" 
+                                       FontSize="14" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- Data Sections Status -->
                 <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">
                     <StackPanel>

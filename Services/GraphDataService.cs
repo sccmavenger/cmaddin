@@ -91,10 +91,7 @@ namespace ZeroTrustMigrationAddin.Services
                 if (me != null)
                 {
                     Instance.Info("=== MICROSOFT GRAPH CONNECTION SUCCESS ===");
-                    Instance.Info($"✅ User: {me.UserPrincipalName ?? me.DisplayName ?? "Unknown"}");
-                    Instance.Info($"   User ID: {me.Id}");
-                    Instance.Info($"   Mail: {me.Mail ?? "(none)"}");
-                    Instance.Info($"   Job Title: {me.JobTitle ?? "(none)"}");
+                    Instance.Info($"✅ Graph connection authenticated successfully");
                     
                     // Get and store tenant/organization information
                     await UpdateTenantInfoAsync();

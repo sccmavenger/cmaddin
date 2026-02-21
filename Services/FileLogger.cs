@@ -28,6 +28,7 @@ namespace ZeroTrustMigrationAddin.Services
         private static readonly object _lock = new object();
         private readonly string _logFilePath;
         private readonly string _queryLogFilePath;
+        private readonly string _telemetryLogFilePath;
         private readonly string _logDirectory;
         private const string ComponentName = "CloudJourneyAddin";
         
@@ -70,6 +71,10 @@ namespace ZeroTrustMigrationAddin.Services
             var queryLogFileName = $"QueryLog_{DateTime.Now:yyyyMMdd}.log";
             _queryLogFilePath = Path.Combine(_logDirectory, queryLogFileName);
 
+            // Separate telemetry log file for transparency
+            var telemetryLogFileName = $"TelemetryLog_{DateTime.Now:yyyyMMdd}.log";
+            _telemetryLogFilePath = Path.Combine(_logDirectory, telemetryLogFileName);
+
             // Write startup header (CMTrace will display these as info entries)
             Log(LogLevel.Info, "========== CloudJourney Add-in Session Started ==========");
             Log(LogLevel.Info, $"Session Start: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
@@ -81,7 +86,44 @@ namespace ZeroTrustMigrationAddin.Services
 
         public string LogFilePath => _logFilePath;
         public string QueryLogFilePath => _queryLogFilePath;
+        public string TelemetryLogFilePath => _telemetryLogFilePath;
         public string LogDirectory => _logDirectory;
+
+        /// <summary>
+        /// Log telemetry event to separate telemetry log file for transparency
+        /// </summary>
+        public void LogTelemetry(string eventName, string details)
+        {
+            try
+            {
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                var entry = $"[{timestamp}] {eventName}: {details}";
+                
+                lock (_lock)
+                {
+                    File.AppendAllText(_telemetryLogFilePath, entry + Environment.NewLine);
+                }
+            }
+            catch { /* Ignore telemetry logging errors */ }
+        }
+
+        /// <summary>
+        /// Log a telemetry message to separate telemetry log file (simpler overload)
+        /// </summary>
+        public void LogTelemetry(string message)
+        {
+            try
+            {
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                var entry = $"[{timestamp}] {message}";
+                
+                lock (_lock)
+                {
+                    File.AppendAllText(_telemetryLogFilePath, entry + Environment.NewLine);
+                }
+            }
+            catch { /* Ignore telemetry logging errors */ }
+        }
         
         /// <summary>
         /// Get recent queries for UI display
@@ -387,6 +429,18 @@ namespace ZeroTrustMigrationAddin.Services
                     {
                         File.Delete(file);
                         Log(LogLevel.Info, $"Deleted old log file: {fileInfo.Name}");
+                    }
+                }
+
+                // Also clean up old telemetry logs
+                var telemetryLogs = Directory.GetFiles(_logDirectory, "TelemetryLog_*.log");
+                foreach (var file in telemetryLogs)
+                {
+                    var fileInfo = new FileInfo(file);
+                    if (fileInfo.LastWriteTime < cutoffDate)
+                    {
+                        File.Delete(file);
+                        Log(LogLevel.Info, $"Deleted old telemetry log: {fileInfo.Name}");
                     }
                 }
             }
