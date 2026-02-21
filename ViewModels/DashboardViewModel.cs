@@ -172,7 +172,6 @@ namespace ZeroTrustMigrationAddin.ViewModels
             Instance.Info("======== CloudJourney Dashboard Starting ========");
             var assemblyVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
             Instance.Info($"Version: {assemblyVersion} - Enrollment Agent (Production Build)");
-            Instance.Info($"User: {Environment.UserName}");
             Instance.Info($"Machine: {Environment.MachineName}");
             Instance.CleanupOldLogs(7); // Keep last 7 days
             LogConnection("Dashboard initialized with MOCK data");

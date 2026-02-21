@@ -20,7 +20,10 @@ namespace ZeroTrustMigrationAddin.Views
                 
                 // Set window title with current version
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                Title = $"Cloud Native Assessment v{version?.Major}.{version?.Minor}.{version?.Build}";
+                Title = $"Preview - Cloud Native Assessment Tool v{version?.Major}.{version?.Minor}.{version?.Build}";
+                
+                // Initialize zoom from saved preferences
+                ApplyZoomLevel();
                 
                 var mockDataService = new MockDataService();
                 var viewModel = new DashboardViewModel(mockDataService, tabVisibilityOptions);
@@ -319,7 +322,72 @@ namespace ZeroTrustMigrationAddin.Views
         {
             // Set window size proportional to screen resolution
             SetAdaptiveWindowSize();
+            
+            // Show first-run telemetry notice if needed
+            ShowTelemetryNoticeIfNeeded();
         }
+
+        /// <summary>
+        /// Show first-run telemetry notice to give user option to opt-out
+        /// </summary>
+        private void ShowTelemetryNoticeIfNeeded()
+        {
+            if (!AzureTelemetryService.Instance.HasAcknowledgedTelemetryNotice)
+            {
+                var result = MessageBox.Show(
+                    "This tool collects anonymous usage data to help improve the product.\n\n" +
+                    "We DO NOT collect: device names, usernames, tenant IDs, or any identifiable information.\n\n" +
+                    "You can disable this anytime in Diagnostics → Anonymous Usage Analytics.\n\n" +
+                    "Click OK to continue with telemetry enabled, or Cancel to disable.",
+                    "Anonymous Usage Analytics",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Information);
+
+                if (result == MessageBoxResult.Cancel)
+                {
+                    AzureTelemetryService.Instance.SetTelemetryEnabled(false);
+                }
+                
+                AzureTelemetryService.Instance.AcknowledgeTelemetryNotice();
+            }
+        }
+
+        #region Zoom Controls
+
+        /// <summary>
+        /// Apply the saved zoom level to the UI
+        /// </summary>
+        private void ApplyZoomLevel()
+        {
+            var scale = UserPreferencesSettings.Instance.ScaleFactor;
+            ContentScaleTransform.ScaleX = scale;
+            ContentScaleTransform.ScaleY = scale;
+            ZoomLevelText.Text = $"{UserPreferencesSettings.Instance.UIScalePercent}%";
+        }
+
+        private void ZoomInButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (UserPreferencesSettings.Instance.ZoomIn())
+            {
+                ApplyZoomLevel();
+            }
+        }
+
+        private void ZoomOutButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (UserPreferencesSettings.Instance.ZoomOut())
+            {
+                ApplyZoomLevel();
+            }
+        }
+
+        private void ZoomResetButton_Click(object sender, RoutedEventArgs e)
+        {
+            UserPreferencesSettings.Instance.ResetZoom();
+            ApplyZoomLevel();
+        }
+
+        #endregion
 
         private void TargetDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {

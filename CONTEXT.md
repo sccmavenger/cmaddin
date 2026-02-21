@@ -8,36 +8,48 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.215 |
-| **Last Updated** | 2026-02-16 |
+| **Version** | 3.17.218 (pending 3.17.219) |
+| **Last Updated** | 2026-02-20 |
 | **Branch** | main |
-| **Status** | Stable - Security hardening complete |
+| **Status** | Stable - Privacy/telemetry features complete |
 
 ---
 
 ## Active Features
 
-### Security Hardening (v3.17.193)
+### Telemetry Transparency & Privacy (v3.17.216-218)
 - **Status**: Complete, ready for publish
 - **Changes**:
-  - **CRITICAL FIX**: SSL certificate validation now uses thumbprint-based trust (was bypassing ALL validation)
-  - All API keys and tokens now encrypted with Windows DPAPI
-  - Centralized `SecureCredentialManager.cs` for consistent credential handling
-  - Automatic migration from plaintext to encrypted storage on first load
+  - **Telemetry Opt-Out Toggle**: New toggle in Diagnostics window to enable/disable anonymous usage analytics
+  - **First-Run Notice**: Telemetry notice popup on first launch with opt-out option
+  - **Separate Telemetry Log**: All telemetry events logged to `TelemetryLog_*.log` (not main log)
+  - **PII Removal**: Username, UPN, email, job title redacted from local logs (Microsoft Privacy compliance)
 - **Files Modified**:
-  - Services/SecureCredentialManager.cs (NEW)
-  - Services/ConfigMgrAdminService.cs (SSL validation + cert trust)
-  - Services/AzureOpenAIService.cs (API key encryption)
-  - Services/FeedbackService.cs (OAuth token encryption)
-  - Services/GitHubUpdateService.cs (PAT encryption)
-  - Models/UpdateManifest.cs (UpdateSettings encryption)
+  - Views/DiagnosticsWindow.xaml/.cs (toggle UI)
+  - Views/TelemetryNoticeWindow.xaml/.cs (NEW - first-run popup)
+  - Models/TelemetrySettings.cs (NEW - settings model)
+  - Services/AzureTelemetryService.cs (opt-out logic, log separation)
+  - Services/FileLogger.cs (LogTelemetry method, PII redaction)
 
-### Comparison Tile UX Improvements (Unreleased)
-- **Status**: Built, pending publish
+### UI Zoom / Accessibility (v3.17.216)
+- **Status**: Complete
 - **Changes**:
-  - Simplified "data not available" messages (less technical jargon)
-  - Added ConfigMgrDataSuspect check for contradictory data (0 days avg with 0% scanned)
-  - Response Time and Security Blind Spots tiles now show cleaner messages
+  - Zoom slider in title bar (80%-150% range)
+  - Keyboard shortcuts: Ctrl+Plus, Ctrl+Minus, Ctrl+0
+  - Persisted via ZoomLevel in settings
+- **Files Modified**:
+  - Views/MainWindow.xaml/.cs (ScaleTransform, slider UI)
+
+### Preview Title Bar (v3.17.216)
+- **Status**: Complete
+- **Changes**: "Preview" prefix added to application title
+
+### Security Hardening (v3.17.193)
+- **Status**: Published
+- **Changes**:
+  - SSL certificate validation uses thumbprint-based trust
+  - All API keys/tokens encrypted with Windows DPAPI
+  - Centralized `SecureCredentialManager.cs`
 
 ### VP Dashboard & Workload Authority (v3.17.180)
 - **Status**: Published
