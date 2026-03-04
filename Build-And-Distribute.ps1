@@ -1306,10 +1306,14 @@ if ($PublishToGitHub) {
 ### Changes
 - See CHANGELOG.md for detailed changes
 
-### Installation
-1. Download ZeroTrustMigrationAddin-v$newVersion-COMPLETE.zip
-2. Extract all files to installation directory
-3. Run ZeroTrustMigrationAddin.exe
+### Installation (MSI Installer - Recommended)
+1. Download **ZeroTrustMigrationAddin-v$newVersion.msi**
+2. Run the MSI installer and follow the wizard
+3. Launch from Start Menu, Desktop shortcut, or ConfigMgr Console ribbon
+
+**Silent install:** ``msiexec /i ZeroTrustMigrationAddin-v$newVersion.msi /qn``
+
+> **Note:** .NET 8.0 Desktop Runtime is required. Download from [Microsoft](https://dotnet.microsoft.com/download/dotnet/8.0) if not already installed.
 
 ### Auto-Update
 Existing users on v$oldVersion will receive automatic update prompt.
