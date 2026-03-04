@@ -180,196 +180,11 @@
                 </StackPanel>
             </Border>
 
-            <!-- SECTION: SECURITY -->
-            <TextBlock Text="🔐 SECURITY" FontSize="16" FontWeight="Bold" Foreground="{StaticResource InfoBlue}" Margin="0,0,0,15"/>
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- HIGH-IMPACT COMPARISON CARDS (focused view) -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
             
-            <!-- Row 1: Threat Detection + Active Malware -->
-            <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="15"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <!-- Card: Threat Detection Status -->
-                <Border Grid.Column="0" Style="{StaticResource ComparisonCard}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="🛡️" FontSize="20" Margin="0,0,8,0"/>
-                            <StackPanel>
-                                <TextBlock Text="Threat Detection Status" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                <TextBlock Text="Real-time threat visibility" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource IntuneSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="☁️ Intune" FontSize="11" Foreground="{StaticResource SuccessGreenDark}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="IntuneThreatSecured" Text="--" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="secured" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-                                        <TextBlock x:Name="IntuneThreatCompromised" Text="0" FontSize="11" Foreground="{StaticResource ErrorRed}"/>
-                                        <TextBlock Text=" 🔴 " FontSize="9"/>
-                                        <TextBlock x:Name="IntuneThreatMisconfigured" Text="0" FontSize="11" Foreground="{StaticResource WarningOrange}"/>
-                                        <TextBlock Text=" 🟡" FontSize="9"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Grid.Column="1" x:Name="ThreatComparisonIcon" Text="🛡️" FontSize="14" VerticalAlignment="Center" Margin="6,0"/>
-                            <Border Grid.Column="2" Style="{StaticResource ConfigMgrSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="🏢 ConfigMgr" FontSize="11" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="ConfigMgrProtectionEnabled" Text="--" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="enabled" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Status unknown" FontSize="9" Foreground="{StaticResource TextLight}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                        <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="ThreatSummaryText" Text="Intune shows threat STATUS, ConfigMgr shows AV is ON" FontSize="12" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" TextAlignment="Center"/>
-                        </Border>
-                    </StackPanel>
-                </Border>
-                
-                <!-- Card: Active Malware -->
-                <Border Grid.Column="2" Style="{StaticResource ComparisonCard}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="🦠" FontSize="20" Margin="0,0,8,0"/>
-                            <StackPanel>
-                                <TextBlock Text="Active Malware Detection" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                <TextBlock Text="Real-time threat count" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource IntuneSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="☁️ Intune" FontSize="11" Foreground="{StaticResource SuccessGreenDark}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="IntuneMalwareCount" Text="0" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="active threats" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="IntuneMalwareDevices" Text="on 0 devices" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Grid.Column="1" x:Name="MalwareComparisonIcon" Text="✅" FontSize="14" VerticalAlignment="Center" Margin="6,0"/>
-                            <Border Grid.Column="2" Style="{StaticResource ConfigMgrSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="🏢 ConfigMgr" FontSize="11" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="???" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextLight}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="no visibility" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="(hope users report)" FontSize="9" Foreground="{StaticResource TextLight}" HorizontalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                        <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="MalwareSummaryText" Text="How many on-prem devices have malware right now? You don't know." FontSize="12" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" TextAlignment="Center"/>
-                        </Border>
-                    </StackPanel>
-                </Border>
-            </Grid>
-            
-            <!-- Row 2: BitLocker + TPM Health -->
-            <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="15"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <!-- Card: BitLocker Encryption -->
-                <Border Grid.Column="0" Style="{StaticResource ComparisonCard}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="🔑" FontSize="20" Margin="0,0,8,0"/>
-                            <StackPanel>
-                                <TextBlock Text="BitLocker Encryption" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                <TextBlock Text="Drive encryption + key recovery" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource IntuneSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="☁️ Intune" FontSize="11" Foreground="{StaticResource SuccessGreenDark}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="IntuneEncryptedPercent" Text="--%" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="IntuneEncryptedCount" Text="0 devices" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="🌐 Keys in Azure AD" FontSize="9" Foreground="{StaticResource PrimaryBlue}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Grid.Column="1" x:Name="BitLockerComparisonIcon" Text="🔑" FontSize="14" VerticalAlignment="Center" Margin="6,0"/>
-                            <Border Grid.Column="2" Style="{StaticResource ConfigMgrSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="🏢 ConfigMgr" FontSize="11" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="ConfigMgrEncryptedPercent" Text="--%" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="ConfigMgrEncryptedCount" Text="0 devices" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="🏢 Keys in MBAM" FontSize="9" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                        <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="BitLockerSummaryText" Text="Lost laptop? Cloud admin recovers from phone. On-prem needs VPN + MBAM console." FontSize="12" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" TextAlignment="Center"/>
-                        </Border>
-                    </StackPanel>
-                </Border>
-                
-                <!-- Card: Device Health Attestation -->
-                <Border Grid.Column="2" Style="{StaticResource ComparisonCard}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="🔒" FontSize="20" Margin="0,0,8,0"/>
-                            <StackPanel>
-                                <TextBlock Text="Device Health Attestation" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                <TextBlock Text="Hardware-verified trust (Zero Trust)" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource IntuneSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="☁️ Intune" FontSize="11" Foreground="{StaticResource SuccessGreenDark}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="IntuneAttestedCount" Text="--" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="attested" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="✓ Verified by Azure AD" FontSize="9" Foreground="{StaticResource PrimaryBlue}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Grid.Column="1" x:Name="AttestationComparisonIcon" Text="🔒" FontSize="14" VerticalAlignment="Center" Margin="6,0"/>
-                            <Border Grid.Column="2" Background="{StaticResource ErrorRedLight}" CornerRadius="6" Padding="12">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="🏢 ConfigMgr" FontSize="11" Foreground="{StaticResource ErrorRedDark}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="0" FontSize="20" FontWeight="Bold" Foreground="{StaticResource ErrorRed}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="can attest" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="❌ Cannot prove to cloud" FontSize="9" Foreground="{StaticResource ErrorRed}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                        <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="AttestationSummaryText" Text="Zero Trust asks 'is the device healthy?' Only cloud devices can prove it." FontSize="12" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" TextAlignment="Center"/>
-                        </Border>
-                    </StackPanel>
-                </Border>
-            </Grid>
-            
-            <!-- SECTION: VISIBILITY & CONTROL -->
-            <TextBlock Text="👁️ VISIBILITY &amp; CONTROL" FontSize="16" FontWeight="Bold" Foreground="{StaticResource InfoBlue}" Margin="0,20,0,15"/>
-            
-            <!-- Row 3: Compliance + Sync Freshness -->
+            <!-- Row 1: Device Compliance + Security Blind Spots -->
             <Grid Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -384,7 +199,7 @@
                             <TextBlock Text="📊" FontSize="20" Margin="0,0,8,0"/>
                             <StackPanel>
                                 <TextBlock Text="Device Compliance" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                <TextBlock Text="Policy compliance rate" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Text="Intune: policy compliance | ConfigMgr: client activity" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
                         </StackPanel>
                         <Grid Margin="0,0,0,8">
@@ -415,61 +230,8 @@
                     </StackPanel>
                 </Border>
                 
-                <!-- Card: Sync Freshness -->
+                <!-- Card: Security Blind Spots (Stale Devices) -->
                 <Border Grid.Column="2" Style="{StaticResource ComparisonCard}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="⚡" FontSize="20" Margin="0,0,8,0"/>
-                            <StackPanel>
-                                <TextBlock Text="Response Time" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                <TextBlock Text="Policy update speed" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource IntuneSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="☁️ Intune" FontSize="11" Foreground="{StaticResource SuccessGreenDark}" HorizontalAlignment="Center"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock x:Name="IntuneAvgSyncDays" Text="--" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}"/>
-                                        <TextBlock Text=" days" FontSize="10" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
-                                    </StackPanel>
-                                    <TextBlock x:Name="IntuneSyncedTodayPercent" Text="--% synced today" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Grid.Column="1" x:Name="SyncComparisonIcon" Text="⚡" FontSize="14" VerticalAlignment="Center" Margin="6,0"/>
-                            <Border Grid.Column="2" Style="{StaticResource ConfigMgrSide}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="🏢 ConfigMgr" FontSize="11" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock x:Name="ConfigMgrAvgScanDays" Text="--" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarningOrange}"/>
-                                        <TextBlock Text=" days" FontSize="10" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
-                                    </StackPanel>
-                                    <TextBlock x:Name="ConfigMgrScannedTodayPercent" Text="--% scanned today" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                        <Border Style="{StaticResource SummaryFooter}">
-                            <TextBlock x:Name="SyncSummaryText" Text="Cloud-native devices respond faster to security updates" FontSize="12" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" TextAlignment="Center"/>
-                        </Border>
-                    </StackPanel>
-                </Border>
-            </Grid>
-            
-            <!-- Row 4: Stale Devices + Conditional Access -->
-            <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="15"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <!-- Card: Stale Devices -->
-                <Border Grid.Column="0" Style="{StaticResource ComparisonCard}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🔍" FontSize="20" Margin="0,0,8,0"/>
@@ -505,9 +267,18 @@
                         </Border>
                     </StackPanel>
                 </Border>
+            </Grid>
+            
+            <!-- Row 2: Zero Trust Ready + Enrollment Velocity -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="15"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
                 
-                <!-- Card: Conditional Access -->
-                <Border Grid.Column="2" Style="{StaticResource ComparisonCard}">
+                <!-- Card: Zero Trust Ready (Conditional Access) -->
+                <Border Grid.Column="0" Style="{StaticResource ComparisonCard}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🛡️" FontSize="20" Margin="0,0,8,0"/>
@@ -543,225 +314,47 @@
                         </Border>
                     </StackPanel>
                 </Border>
-            </Grid>
-            
-            <!-- SECTION: OPERATIONS -->
-            <TextBlock Text="🎮 REMOTE OPERATIONS" FontSize="16" FontWeight="Bold" Foreground="{StaticResource InfoBlue}" Margin="0,20,0,15"/>
-            
-            <!-- Row 5: Remote Actions (full width) -->
-            <Border Style="{StaticResource ComparisonCard}">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                        <TextBlock Text="🎮" FontSize="20" Margin="0,0,8,0"/>
-                        <StackPanel>
-                            <TextBlock Text="Remote Actions Available" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                            <TextBlock Text="What you can do right now, from anywhere" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                
+                <!-- Card: Enrollment Velocity -->
+                <Border Grid.Column="2" Style="{StaticResource ComparisonCard}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="📈" FontSize="20" Margin="0,0,8,0"/>
+                            <StackPanel>
+                                <TextBlock Text="Enrollment Velocity" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                <TextBlock Text="Weekly enrollment trend" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
                         </StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource IntuneSide}">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="☁️ This Week" FontSize="11" Foreground="{StaticResource SuccessGreenDark}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="EnrollmentThisWeek" Text="--" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="new enrollments" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="EnrollmentTrendArrow" Text="" FontSize="11" Foreground="{StaticResource PrimaryBlue}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Grid.Column="1" x:Name="VelocityComparisonIcon" Text="📈" FontSize="14" VerticalAlignment="Center" Margin="6,0"/>
+                            <Border Grid.Column="2" Style="{StaticResource ConfigMgrSide}">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="🏢 Provisioning" FontSize="11" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="ConfigMgrProvisionEstimate" Text="~4 hrs" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="IT hands-on (imaging)" FontSize="9" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="AutopilotProvisionEstimate" Text="vs ~30 min self-service" FontSize="9" Foreground="{StaticResource PrimaryBlue}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <Border Style="{StaticResource SummaryFooter}">
+                            <TextBlock x:Name="VelocitySummaryText" Text="Cloud enrollment is accelerating week over week" FontSize="12" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" TextAlignment="Center"/>
+                        </Border>
                     </StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="30"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <!-- Intune Actions -->
-                        <Border Grid.Column="0" Style="{StaticResource IntuneSide}">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
-                                    <TextBlock Text="☁️ Intune: " FontSize="12" Foreground="{StaticResource SuccessGreenDark}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="15 actions" FontSize="12" Foreground="{StaticResource SuccessGreen}" FontWeight="Bold"/>
-                                </StackPanel>
-                                <WrapPanel HorizontalAlignment="Center">
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Wipe" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Retire" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Lock" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Restart" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Fresh Start" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Locate" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Sync" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Rotate Keys" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Defender Scan" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource SuccessGreenMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="+6 more" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                </WrapPanel>
-                                <TextBlock Text="✓ Works from any browser, any device" FontSize="10" Foreground="{StaticResource SuccessGreenDark}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                            </StackPanel>
-                        </Border>
-                        
-                        <TextBlock Grid.Column="1" Text="vs" FontSize="14" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        
-                        <!-- ConfigMgr Actions -->
-                        <Border Grid.Column="2" Style="{StaticResource ConfigMgrSide}">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
-                                    <TextBlock Text="🏢 ConfigMgr: " FontSize="12" Foreground="{StaticResource WarningOrange}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="3 actions" FontSize="12" Foreground="{StaticResource WarningOrange}" FontWeight="Bold"/>
-                                </StackPanel>
-                                <WrapPanel HorizontalAlignment="Center">
-                                    <Border Background="{StaticResource WarningOrangeMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Sync Policy" FontSize="10" Foreground="{StaticResource WarningOrange}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource WarningOrangeMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Run Script" FontSize="10" Foreground="{StaticResource WarningOrange}"/>
-                                    </Border>
-                                    <Border Background="{StaticResource WarningOrangeMedium}" CornerRadius="3" Padding="6,3" Margin="2">
-                                        <TextBlock Text="Client Notification" FontSize="10" Foreground="{StaticResource WarningOrange}"/>
-                                    </Border>
-                                </WrapPanel>
-                                <TextBlock Text="⚠️ Only works when device checks in" FontSize="10" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                    <Border Style="{StaticResource SummaryFooter}">
-                        <TextBlock Text="Lost laptop on hotel WiFi? Cloud admin wipes in 30 seconds. On-prem admin waits for VPN." FontSize="12" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" TextAlignment="Center"/>
-                    </Border>
-                </StackPanel>
-            </Border>
-            
-            <!-- Row 6: Defender Integration (full width) - THE KILLER FEATURE -->
-            <Border Style="{StaticResource ComparisonCard}" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="2">
-                <StackPanel>
-                    <!-- Header with License Status -->
-                    <Grid Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <StackPanel Orientation="Horizontal" Grid.Column="0">
-                            <TextBlock Text="🛡️" FontSize="20" Margin="0,0,8,0"/>
-                            <StackPanel>
-                                <TextBlock Text="Microsoft Defender Integration" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                <TextBlock Text="Real-time threat visibility - the cloud advantage" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                        </StackPanel>
-                        
-                        <!-- License Status Badge -->
-                        <Border x:Name="DefenderLicenseBadge" Grid.Column="1" Style="{StaticResource LicenseStatusLicensed}" VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock x:Name="DefenderLicenseIcon" Text="🟢" FontSize="10" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="DefenderLicenseText" Text="MDE Licensed" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SuccessGreen}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                    
-                    <!-- License Warning Banner (shown when not licensed) -->
-                    <Border x:Name="DefenderNotLicensedBanner" Background="{StaticResource ErrorRedLight}" 
-                            BorderBrush="{StaticResource ErrorRed}" BorderThickness="1" CornerRadius="6" 
-                            Padding="12" Margin="0,0,0,12" Visibility="Collapsed">
-                        <StackPanel>
-                            <TextBlock Text="⚠️ Microsoft Defender for Endpoint Not Licensed" FontSize="13" FontWeight="Bold" 
-                                       Foreground="{StaticResource ErrorRedDark}" Margin="0,0,0,8"/>
-                            <TextBlock Text="You're missing real-time threat visibility. With MDE, you can see:" FontSize="11" 
-                                       Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                            <StackPanel Margin="12,0,0,0">
-                                <TextBlock Text="• Which devices have active malware infections" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                <TextBlock Text="• Real-time threat state (compromised, misconfigured, at risk)" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                <TextBlock Text="• Automatic threat remediation tracking" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                            <TextBlock x:Name="DefenderNotLicensedHint" Text="" FontSize="11" FontStyle="Italic" 
-                                       Foreground="{StaticResource TextSecondary}" Margin="0,8,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Main Comparison Grid -->
-                    <Grid x:Name="DefenderComparisonGrid">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="30"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <!-- Intune + MDE Side -->
-                        <Border Grid.Column="0" Style="{StaticResource IntuneSidePanel}">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
-                                    <TextBlock Text="☁️ Intune + Defender" FontSize="12" Foreground="{StaticResource SuccessGreenDark}" FontWeight="SemiBold"/>
-                                </StackPanel>
-                                
-                                <!-- Data Panel (shown when has data) -->
-                                <StackPanel x:Name="DefenderDataPanel" HorizontalAlignment="Center" Margin="0,0,0,8">
-                                    <TextBlock x:Name="DefenderMDEOnboarded" Text="-- devices with MDE visibility" 
-                                               FontSize="14" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="DefenderRealTimeProtection" Text="-- with real-time malware reporting" 
-                                               FontSize="11" Foreground="{StaticResource SuccessGreenDark}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                    <TextBlock x:Name="DefenderRemediatedCount" Text="" 
-                                               FontSize="11" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                                
-                                <!-- Onboarding Hint (shown when 0 devices) -->
-                                <Border x:Name="DefenderOnboardingHint" Background="{StaticResource WarningOrangeLight}" 
-                                        CornerRadius="4" Padding="8,6" Margin="0,0,0,8" Visibility="Collapsed">
-                                    <TextBlock Text="Devices need MDE sensor deployed to report threat data" 
-                                               FontSize="10" Foreground="{StaticResource WarningOrangeDark}" TextWrapping="Wrap" TextAlignment="Center"/>
-                                </Border>
-                                
-                                <!-- Capability Tags -->
-                                <WrapPanel x:Name="DefenderCapabilityTags" HorizontalAlignment="Center" Margin="0,8,0,0">
-                                    <Border Style="{StaticResource FeatureTagBadge}">
-                                        <TextBlock Text="Threat State" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Style="{StaticResource FeatureTagBadge}">
-                                        <TextBlock Text="Malware Count" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                    <Border Style="{StaticResource FeatureTagBadge}">
-                                        <TextBlock Text="Auto-Remediate" FontSize="10" Foreground="{StaticResource SuccessGreenDark}"/>
-                                    </Border>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Border>
-                        
-                        <TextBlock Grid.Column="1" Text="vs" FontSize="14" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        
-                        <!-- ConfigMgr Side -->
-                        <Border Grid.Column="2" Style="{StaticResource ConfigMgrSidePanel}">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
-                                    <TextBlock Text="🏢 ConfigMgr" FontSize="12" Foreground="{StaticResource WarningOrange}" FontWeight="SemiBold"/>
-                                </StackPanel>
-                                <StackPanel HorizontalAlignment="Center" Margin="0,0,0,8">
-                                    <TextBlock x:Name="DefenderConfigMgrEnabled" Text="-- devices with 'AV enabled'" 
-                                               FontSize="14" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="No real-time threat visibility" 
-                                               FontSize="11" Foreground="{StaticResource WarningOrangeDark}" HorizontalAlignment="Center" Margin="0,4,0,0" FontStyle="Italic"/>
-                                </StackPanel>
-                                <Border Style="{StaticResource WarningBadge}">
-                                    <TextBlock Text="⚠️ ConfigMgr can tell you AV is installed, but NOT if a device is actively infected." 
-                                               FontSize="10" Foreground="{StaticResource ErrorRedDark}" TextWrapping="Wrap" TextAlignment="Center"/>
-                                </Border>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                    
-                    <!-- Dynamic Summary Footer -->
-                    <Border x:Name="DefenderSummaryBorder" Style="{StaticResource SummaryFooterPanel}" Background="{StaticResource SuccessGreenLight}">
-                        <TextBlock x:Name="DefenderSummaryText" 
-                                   Text="Connect to see your threat visibility comparison" 
-                                   FontSize="12" Foreground="{StaticResource SuccessGreen}" 
-                                   TextWrapping="Wrap" TextAlignment="Center" FontWeight="SemiBold"/>
-                    </Border>
-                </StackPanel>
-            </Border>
+                </Border>
+            </Grid>
             
             <!-- Call to Action -->
             <Border Background="White" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="2" 

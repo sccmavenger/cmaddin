@@ -2791,6 +2791,11 @@
                     <views:CloudValueComparisonTab x:Name="CloudValueComparisonTab"/>
                 </TabItem>
 
+                <!-- CLOUD COMPARISON DETAILS TAB (hidden by default) -->
+                <TabItem Header="📊 Cloud Comparison Details" Visibility="{Binding ShowCloudComparisonDetailsTab}">
+                    <views:CloudComparisonDetailsTab x:Name="CloudComparisonDetailsTab"/>
+                </TabItem>
+
                 <!-- WORKLOAD MOMENTUM TAB -->
                 <TabItem Header="🔄 Workloads" Visibility="{Binding ShowWorkloadsTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">

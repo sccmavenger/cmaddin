@@ -138,6 +138,27 @@ if ($DryRun) {
 }
 
 # ============================================
+# PRE-BUILD: Close running instance
+# ============================================
+$runningProcess = Get-Process -Name "ZeroTrustMigrationAddin" -ErrorAction SilentlyContinue
+if ($runningProcess) {
+    Write-Host "⚠️  ZeroTrustMigrationAddin is running — closing before build..." -ForegroundColor Yellow
+    try {
+        $runningProcess | Stop-Process -Force
+        Start-Sleep -Seconds 2
+        Write-Host "✅ Application closed successfully" -ForegroundColor Green
+    } catch {
+        Write-Host "❌ Failed to close application: $_" -ForegroundColor Red
+        Write-Host "   Please close it manually and re-run the build." -ForegroundColor Yellow
+        Stop-Transcript
+        exit 1
+    }
+} else {
+    Write-Host "✅ No running instance detected — proceeding with build" -ForegroundColor Green
+}
+Write-Host ""
+
+# ============================================
 # HELPER FUNCTIONS
 # ============================================
 

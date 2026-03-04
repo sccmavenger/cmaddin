@@ -10,6 +10,67 @@
 - 
 
 
+## [3.17.223] - 2026-03-04
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.223] - 2026-03-04
+
+### Changed
+- **Cloud Native Tab Refocus**: Slimmed main Cloud Native tab from 20 cards to 4 high-impact cards + hero section
+  - Kept: Device Compliance, Security Blind Spots (stale devices), Zero Trust Ready, Cloud Native Progress hero with trend chart
+  - Added: NEW Enrollment Velocity card showing devices/week trend + Autopilot vs ConfigMgr provisioning time comparison
+  - Deleted: OS Currency and "5 Questions ConfigMgr Can't Answer" cards (low value)
+  - Moved 15 remaining cards to new hidden "Cloud Comparison Details" tab
+  - Files: `Views/CloudValueComparisonTab.xaml`, `Views/CloudValueComparisonTab.xaml.cs`
+
+### Added
+- **Cloud Comparison Details Tab**: New hidden tab containing 15 comparison cards moved from main tab
+  - Default hidden (Collapsed), reveal via `/showtabs:cloudcomparisondetails` CLI arg
+  - Organized into 4 sections: Security, Visibility & Control, Migration Readiness, Infrastructure
+  - Files: `Views/CloudComparisonDetailsTab.xaml`, `Views/CloudComparisonDetailsTab.xaml.cs`
+- **Enrollment Velocity Model & Service**: New `EnrollmentVelocityComparison` model with weekly enrollment counts, trend detection (accelerating/steady/slowing), and provisioning time estimates
+  - Files: `Models/CloudReadinessModels.cs`, `Services/CloudReadinessService.cs`
+- **Tab Visibility for Cloud Comparison Details**: Added `ShowCloudComparisonDetailsTab` property with Collapsed default
+  - Files: `Models/TabVisibilityOptions.cs`, `ViewModels/DashboardViewModel.cs`, `Views/DashboardWindow.xaml`, `Views/DashboardWindow.xaml.cs`
+
+
+## [3.17.222] - 2026-03-03
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.221] - 2026-03-02
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.220] - 2026-03-02
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.219] - 2026-02-20
 
 ### Added

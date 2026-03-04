@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -95,39 +96,24 @@ namespace ZeroTrustMigrationAddin.Views
                 Instance.Info("[COMPARISON TAB] Loading comparison data from real sources...");
                 LoadingOverlay.Visibility = Visibility.Visible;
                 
-                // Load all comparison data in parallel
+                // Load HIGH-IMPACT comparison data in parallel (focused view)
                 var complianceTask = _readinessService.GetDeviceComplianceComparisonAsync();
-                var syncTask = _readinessService.GetSyncFreshnessComparisonAsync();
                 var staleTask = _readinessService.GetStaleDeviceComparisonAsync();
                 var caTask = _readinessService.GetConditionalAccessComparisonAsync();
-                var threatTask = _readinessService.GetThreatDetectionComparisonAsync();
-                var malwareTask = _readinessService.GetActiveMalwareComparisonAsync();
-                var bitlockerTask = _readinessService.GetBitLockerComparisonAsync();
-                var attestationTask = _readinessService.GetDeviceHealthAttestationComparisonAsync();
-                var defenderTask = _readinessService.GetDefenderIntegrationComparisonAsync();
+                var velocityTask = _readinessService.GetEnrollmentVelocityComparisonAsync();
                 
-                await Task.WhenAll(complianceTask, syncTask, staleTask, caTask, threatTask, malwareTask, bitlockerTask, attestationTask, defenderTask);
+                await Task.WhenAll(complianceTask, staleTask, caTask, velocityTask);
                 
                 // Update UI with real data
                 var compliance = await complianceTask;
-                var sync = await syncTask;
                 var stale = await staleTask;
                 var ca = await caTask;
-                var threat = await threatTask;
-                var malware = await malwareTask;
-                var bitlocker = await bitlockerTask;
-                var attestation = await attestationTask;
-                var defender = await defenderTask;
+                var velocity = await velocityTask;
                 
                 UpdateComplianceCard(compliance);
-                UpdateSyncFreshnessCard(sync);
                 UpdateStaleDevicesCard(stale);
                 UpdateConditionalAccessCard(ca);
-                UpdateThreatDetectionCard(threat);
-                UpdateActiveMalwareCard(malware);
-                UpdateBitLockerCard(bitlocker);
-                UpdateDeviceHealthAttestationCard(attestation);
-                UpdateDefenderIntegrationCard(defender);
+                UpdateEnrollmentVelocityCard(velocity);
                 
                 // Load Cloud Native data from enrollment
                 var enrollment = await _graphService.GetDeviceEnrollmentAsync();
@@ -140,18 +126,6 @@ namespace ZeroTrustMigrationAddin.Views
                     { "ConfigMgrDevices", compliance?.ConfigMgrDeviceCount.ToString() ?? "0" },
                     { "UsedMockData", "false" }
                 });
-                
-                // NEW: Track security posture comparison for VP dashboards
-                // This is UNIQUE data only this tool can provide - comparing security across both platforms
-                AzureTelemetryService.Instance.TrackSecurityPostureComparison(
-                    compliance?.IntuneCompliancePercentage ?? 0,
-                    compliance?.ConfigMgrCompliancePercentage ?? 0,
-                    ca?.IntuneCAReadyPercentage ?? 0,
-                    0, // ConfigMgr-only devices cannot participate in CA (always 0%)
-                    bitlocker?.IntuneEncryptedPercentage ?? 0,
-                    bitlocker?.ConfigMgrEncryptedPercentage ?? 0,
-                    compliance?.IntuneDeviceCount ?? 0,
-                    compliance?.ConfigMgrDeviceCount ?? 0);
                 
                 Instance.Info("[COMPARISON TAB] Comparison data loaded successfully");
             }
@@ -174,31 +148,7 @@ namespace ZeroTrustMigrationAddin.Views
         {
             Instance.Info("[COMPARISON TAB] Loading mock comparison data for demonstration");
             
-            // Card 1: Threat Detection
-            IntuneThreatSecured.Text = "841";
-            IntuneThreatCompromised.Text = "2";
-            IntuneThreatMisconfigured.Text = "4";
-            ConfigMgrProtectionEnabled.Text = "1,203";
-            ThreatSummaryText.Text = "Intune shows SECURED/COMPROMISED status. ConfigMgr shows 'enabled'. (Demo)";
-            
-            // Card 2: Active Malware
-            IntuneMalwareCount.Text = "3";
-            IntuneMalwareDevices.Text = "on 2 devices";
-            MalwareComparisonIcon.Text = "🦠";
-            MalwareSummaryText.Text = "ConfigMgr: How many devices have malware? You don't know. (Demo)";
-            
-            // Card 3: BitLocker
-            IntuneEncryptedPercent.Text = "94%";
-            IntuneEncryptedCount.Text = "796 devices";
-            ConfigMgrEncryptedPercent.Text = "87%";
-            ConfigMgrEncryptedCount.Text = "1,089 devices";
-            BitLockerSummaryText.Text = "Cloud keys accessible from any browser. MBAM needs VPN. (Demo)";
-            
-            // Card 4: Device Health Attestation
-            IntuneAttestedCount.Text = "789";
-            AttestationSummaryText.Text = "Only cloud devices can prove hardware health to Zero Trust policies. (Demo)";
-            
-            // Card 5: Compliance
+            // Card 1: Compliance
             IntuneCompliancePercent.Text = "94%";
             IntuneComplianceDevices.Text = "847 devices";
             ConfigMgrCompliancePercent.Text = "78%";
@@ -206,15 +156,7 @@ namespace ZeroTrustMigrationAddin.Views
             ComplianceComparisonIcon.Text = "📈";
             ComplianceSummaryText.Text = "Cloud-native 16% more compliant (Demo)";
             
-            // Card 6: Sync Freshness
-            IntuneAvgSyncDays.Text = "0.3";
-            IntuneSyncedTodayPercent.Text = "89% synced today";
-            ConfigMgrAvgScanDays.Text = "2.8";
-            ConfigMgrScannedTodayPercent.Text = "34% scanned today";
-            SyncComparisonIcon.Text = "⚡";
-            SyncSummaryText.Text = "Cloud-native responds 9x faster to policy changes (Demo)";
-            
-            // Card 7: Stale Devices
+            // Card 2: Stale Devices
             IntuneStalePercent.Text = "2.1%";
             IntuneStaleCount.Text = "18 stale";
             ConfigMgrStalePercent.Text = "11.4%";
@@ -222,7 +164,7 @@ namespace ZeroTrustMigrationAddin.Views
             StaleComparisonIcon.Text = "🔍";
             StaleSummaryText.Text = "5x fewer security blind spots with cloud-native (Demo)";
             
-            // Card 8: Conditional Access
+            // Card 3: Conditional Access (Zero Trust Ready)
             IntuneCAPercent.Text = "94%";
             IntuneCACount.Text = "796 CA-ready";
             ConfigMgrCAPercent.Text = "0%";
@@ -230,26 +172,13 @@ namespace ZeroTrustMigrationAddin.Views
             CAComparisonIcon.Text = "🛡️";
             CASummaryText.Text = "403 ConfigMgr-only devices cannot use Zero Trust (Demo)";
             
-            // Card 9: Defender Integration - Demo showing VALUE of the feature
-            DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
-            DefenderOnboardingHint.Visibility = Visibility.Collapsed;
-            DefenderDataPanel.Visibility = Visibility.Visible;
-            DefenderCapabilityTags.Opacity = 1.0;
-            
-            // Show demo as if MDE is working with real data
-            DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusLicensed");
-            DefenderLicenseIcon.Text = "🟢";
-            DefenderLicenseText.Text = "Demo Data";
-            DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
-            
-            DefenderMDEOnboarded.Text = "847 devices with MDE visibility";
-            DefenderRealTimeProtection.Text = "812 with real-time malware reporting";
-            DefenderRemediatedCount.Text = "✓ 47 threats auto-remediated this month";
-            DefenderConfigMgrEnabled.Text = "1,203 devices with 'AV enabled'";
-            
-            DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("SuccessGreenLight");
-            DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
-            DefenderSummaryText.Text = "🛡️ Intune sees 3 active threats on 2 devices. ConfigMgr only knows 'AV is enabled'. (Demo)";
+            // Card 4: Enrollment Velocity
+            EnrollmentThisWeek.Text = "24";
+            EnrollmentTrendArrow.Text = "📈 Accelerating (+38% vs last week)";
+            ConfigMgrProvisionEstimate.Text = "~4 hrs";
+            AutopilotProvisionEstimate.Text = "vs ~30 min self-service";
+            VelocityComparisonIcon.Text = "📈";
+            VelocitySummaryText.Text = "24 enrolled this week — up from 17 last week. Autopilot: ~30 min vs ~4 hrs imaging. (Demo)";
             
             // Cloud Native Section (Hero)
             CloudNativeCount.Text = "201";
@@ -288,38 +217,6 @@ namespace ZeroTrustMigrationAddin.Views
             ComplianceSummaryText.Text = data.ComparisonSummary;
         }
 
-        private void UpdateSyncFreshnessCard(SyncFreshnessComparison? data)
-        {
-            if (data == null) return;
-            
-            // Show FILTERED average for Intune (active devices only) for fair comparison
-            // This excludes abandoned devices (30+ days without sync) that skew the raw average
-            if (data.HasIntuneActiveData)
-            {
-                IntuneAvgSyncDays.Text = $"{data.IntuneActiveAvgDaysSinceSync:F1}";
-                // Show abandoned device count if significant
-                if (data.IntuneAbandonedDeviceCount > 0)
-                {
-                    IntuneSyncedTodayPercent.Text = $"Push delivery • {data.IntuneAbandonedDeviceCount} abandoned";
-                }
-                else
-                {
-                    IntuneSyncedTodayPercent.Text = $"Push delivery (seconds)";
-                }
-            }
-            else
-            {
-                IntuneAvgSyncDays.Text = $"{data.IntuneAvgDaysSinceSync:F1}";
-                IntuneSyncedTodayPercent.Text = $"{data.IntuneSyncedTodayPercentage:F0}% synced today";
-            }
-            
-            ConfigMgrAvgScanDays.Text = $"{data.ConfigMgrAvgDaysSinceScan:F1}";
-            // Emphasize the architectural difference: poll-based model
-            ConfigMgrScannedTodayPercent.Text = $"Poll every 60 min";
-            SyncComparisonIcon.Text = data.ComparisonIcon;
-            SyncSummaryText.Text = data.ComparisonSummary;
-        }
-
         private void UpdateStaleDevicesCard(StaleDeviceComparison? data)
         {
             if (data == null) return;
@@ -345,55 +242,39 @@ namespace ZeroTrustMigrationAddin.Views
             CASummaryText.Text = data.ComparisonSummary;
         }
 
-        private void UpdateThreatDetectionCard(ThreatDetectionComparison? data)
+        private void UpdateEnrollmentVelocityCard(EnrollmentVelocityComparison? data)
         {
             if (data == null) return;
             
-            IntuneThreatSecured.Text = $"{data.IntuneSecuredCount:N0}";
-            IntuneThreatCompromised.Text = $"{data.IntuneCompromisedCount}";
-            IntuneThreatMisconfigured.Text = $"{data.IntuneMisconfiguredCount}";
-            ConfigMgrProtectionEnabled.Text = $"{data.ConfigMgrProtectionEnabledCount:N0}";
-            ThreatComparisonIcon.Text = data.ComparisonIcon;
-            ThreatSummaryText.Text = data.ComparisonSummary;
-        }
-
-        private void UpdateActiveMalwareCard(ActiveMalwareComparison? data)
-        {
-            if (data == null) return;
+            EnrollmentThisWeek.Text = $"{data.EnrolledThisWeek}";
             
-            IntuneMalwareCount.Text = $"{data.TotalActiveMalwareCount}";
-            IntuneMalwareDevices.Text = $"on {data.DevicesWithMalwareCount} devices";
-            MalwareComparisonIcon.Text = data.ComparisonIcon;
-            MalwareSummaryText.Text = data.ComparisonSummary;
-        }
-
-        private void UpdateBitLockerCard(BitLockerComparison? data)
-        {
-            if (data == null) return;
-            
-            IntuneEncryptedPercent.Text = $"{data.IntuneEncryptedPercentage:F0}%";
-            IntuneEncryptedCount.Text = $"{data.IntuneEncryptedCount:N0} devices";
-            
-            // Show "--%" when ConfigMgr data not available (class not inventoried)
-            if (data.HasConfigMgrData)
+            var trend = data.WeeklyTrend;
+            if (trend == "accelerating")
             {
-                ConfigMgrEncryptedPercent.Text = $"{data.ConfigMgrEncryptedPercentage:F0}%";
-                ConfigMgrEncryptedCount.Text = $"{data.ConfigMgrEncryptedCount:N0} devices";
+                var pctChange = data.EnrolledPreviousWeek > 0 
+                    ? ((double)(data.EnrolledThisWeek - data.EnrolledPreviousWeek) / data.EnrolledPreviousWeek * 100) 
+                    : 0;
+                EnrollmentTrendArrow.Text = $"{data.TrendArrow} Accelerating (+{pctChange:F0}% vs last week)";
+            }
+            else if (trend == "slowing")
+            {
+                EnrollmentTrendArrow.Text = $"{data.TrendArrow} Slowing (was {data.EnrolledPreviousWeek} last week)";
+            }
+            else if (trend == "new")
+            {
+                EnrollmentTrendArrow.Text = $"{data.TrendArrow} First enrollments this week!";
             }
             else
             {
-                ConfigMgrEncryptedPercent.Text = "--%";
-                ConfigMgrEncryptedCount.Text = "Not inventoried";
+                EnrollmentTrendArrow.Text = data.EnrolledPreviousWeek > 0 
+                    ? $"{data.TrendArrow} Steady ({data.EnrolledPreviousWeek} last week)" 
+                    : "";
             }
-            BitLockerSummaryText.Text = data.ComparisonSummary;
-        }
-
-        private void UpdateDeviceHealthAttestationCard(DeviceHealthAttestationComparison? data)
-        {
-            if (data == null) return;
             
-            IntuneAttestedCount.Text = $"{data.IntuneFullyAttestedCount:N0}";
-            AttestationSummaryText.Text = data.ComparisonSummary;
+            ConfigMgrProvisionEstimate.Text = data.ConfigMgrImagingEstimate;
+            AutopilotProvisionEstimate.Text = $"vs {data.AutopilotEstimate}";
+            VelocityComparisonIcon.Text = data.ComparisonIcon;
+            VelocitySummaryText.Text = data.ComparisonSummary;
         }
 
         private void UpdateCloudNativeSection(DeviceEnrollment? enrollment)
@@ -460,117 +341,6 @@ namespace ZeroTrustMigrationAddin.Views
             catch (Exception ex)
             {
                 Instance.Warning($"[COMPARISON TAB] Failed to show no trend data message: {ex.Message}");
-            }
-        }
-
-        private void UpdateDefenderIntegrationCard(DefenderIntegrationComparison? data)
-        {
-            if (data == null) return;
-            
-            Instance.Info($"[COMPARISON TAB] Updating Defender card: Licensed={data.IsMDELicensed}, P2={data.IsMDEP2Licensed}, Onboarded={data.IntuneMDEOnboardedCount}");
-            
-            // Update license status badge
-            UpdateDefenderLicenseBadge(data);
-            
-            // Scenario 1: Not licensed - show the warning banner
-            if (!data.IsMDELicensed && data.IntuneDeviceCount > 0)
-            {
-                DefenderNotLicensedBanner.Visibility = Visibility.Visible;
-                DefenderNotLicensedHint.Text = $"Your {data.IntuneDeviceCount:N0} Intune devices could have real-time threat visibility with MDE.";
-                DefenderCapabilityTags.Opacity = 0.5; // Dim the capability tags
-                DefenderDataPanel.Visibility = Visibility.Collapsed;
-                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
-                
-                // Summary shows the gap
-                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("ErrorRedLight");
-                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("ErrorRedDark");
-                DefenderSummaryText.Text = "⚠️ You have NO visibility into active threats. ConfigMgr only knows if AV is installed.";
-            }
-            // Scenario 2: Licensed but no devices onboarded
-            else if (data.IsMDELicensed && data.IntuneMDEOnboardedCount == 0 && data.IntuneDeviceCount > 0)
-            {
-                DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
-                DefenderCapabilityTags.Opacity = 1.0;
-                DefenderDataPanel.Visibility = Visibility.Visible;
-                DefenderOnboardingHint.Visibility = Visibility.Visible;
-                
-                DefenderMDEOnboarded.Text = $"0 of {data.IntuneDeviceCount:N0} devices reporting";
-                DefenderRealTimeProtection.Text = "Deploy MDE sensor to enable visibility";
-                DefenderRemediatedCount.Text = "";
-                
-                // Summary shows onboarding needed
-                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("WarningOrangeLight");
-                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("WarningOrange");
-                DefenderSummaryText.Text = "⚠️ MDE is licensed but devices need the sensor deployed to report threat data.";
-            }
-            // Scenario 3: Working - show real data
-            else if (data.IntuneMDEOnboardedCount > 0)
-            {
-                DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
-                DefenderCapabilityTags.Opacity = 1.0;
-                DefenderDataPanel.Visibility = Visibility.Visible;
-                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
-                
-                DefenderMDEOnboarded.Text = $"{data.IntuneMDEOnboardedCount:N0} devices with MDE visibility";
-                DefenderRealTimeProtection.Text = $"{data.IntuneRealTimeProtectionCount:N0} with real-time malware reporting";
-                
-                if (data.IntuneRemediatedMalwareCount > 0)
-                {
-                    DefenderRemediatedCount.Text = $"✓ {data.IntuneRemediatedMalwareCount:N0} threats auto-remediated";
-                }
-                else
-                {
-                    DefenderRemediatedCount.Text = "";
-                }
-                
-                // Summary shows the value
-                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("SuccessGreenLight");
-                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
-                DefenderSummaryText.Text = data.ComparisonSummary;
-            }
-            // Scenario 4: No Intune devices yet
-            else
-            {
-                DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
-                DefenderDataPanel.Visibility = Visibility.Visible;
-                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
-                DefenderCapabilityTags.Opacity = 0.5;
-                
-                DefenderMDEOnboarded.Text = "No Intune devices yet";
-                DefenderRealTimeProtection.Text = "Connect to Intune to see threat visibility";
-                DefenderRemediatedCount.Text = "";
-                
-                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("BackgroundSubtle");
-                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondary");
-                DefenderSummaryText.Text = "Enroll devices to Intune to enable real-time threat visibility with MDE.";
-            }
-            
-            // ConfigMgr side is always the same - they only have AV status
-            DefenderConfigMgrEnabled.Text = $"{data.ConfigMgrProtectionEnabledCount:N0} devices with 'AV enabled'";
-        }
-        
-        private void UpdateDefenderLicenseBadge(DefenderIntegrationComparison data)
-        {
-            if (!data.IsMDELicensed)
-            {
-                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusNotLicensed");
-                DefenderLicenseIcon.Text = "🔴";
-                DefenderLicenseText.Text = "MDE Not Licensed";
-                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("ErrorRed");
-            }
-            else if (!data.IsMDEP2Licensed)
-            {
-                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusPartial");
-                DefenderLicenseIcon.Text = "🟡";
-                DefenderLicenseText.Text = "MDE P1 (Limited)";
-                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("WarningOrange");
-            }
-            else
-            {
-                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusLicensed");
-                DefenderLicenseIcon.Text = "🟢";
-                DefenderLicenseText.Text = "MDE Licensed";
-                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
             }
         }
 

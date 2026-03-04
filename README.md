@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.219** | February 20, 2026
+**Version 3.17.223** | March 4, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -243,6 +243,46 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+
+### Version 3.17.223 (March 4, 2026)
+
+### Changed
+- **Cloud Native Tab Refocus**: Slimmed main Cloud Native tab from 20 cards to 4 high-impact cards + hero section
+  - Kept: Device Compliance, Security Blind Spots (stale devices), Zero Trust Ready, Cloud Native Progress hero with trend chart
+  - Added: NEW Enrollment Velocity card showing devices/week trend + Autopilot vs ConfigMgr provisioning time comparison
+  - Deleted: OS Currency and "5 Questions ConfigMgr Can't Answer" cards (low value)
+  - Moved 15 remaining cards to new hidden "Cloud Comparison Details" tab
+  - Files: `Views/CloudValueComparisonTab.xaml`, `Views/CloudValueComparisonTab.xaml.cs`
+
+### Added
+- **Cloud Comparison Details Tab**: New hidden tab containing 15 comparison cards moved from main tab
+  - Default hidden (Collapsed), reveal via `/showtabs:cloudcomparisondetails` CLI arg
+  - Organized into 4 sections: Security, Visibility & Control, Migration Readiness, Infrastructure
+  - Files: `Views/CloudComparisonDetailsTab.xaml`, `Views/CloudComparisonDetailsTab.xaml.cs`
+- **Enrollment Velocity Model & Service**: New `EnrollmentVelocityComparison` model with weekly enrollment counts, trend detection (accelerating/steady/slowing), and provisioning time estimates
+  - Files: `Models/CloudReadinessModels.cs`, `Services/CloudReadinessService.cs`
+- **Tab Visibility for Cloud Comparison Details**: Added `ShowCloudComparisonDetailsTab` property with Collapsed default
+  - Files: `Models/TabVisibilityOptions.cs`, `ViewModels/DashboardViewModel.cs`, `Views/DashboardWindow.xaml`, `Views/DashboardWindow.xaml.cs`
+
+---
+
+### Version 3.17.219 (February 20, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- **Telemetry Log Separation**: All telemetry logging now writes to separate `TelemetryLog_*.log` file instead of main log
+  - Converted 50+ telemetry log calls from `Info/Warning/Debug("[TELEMETRY]...")` to `LogTelemetry(...)`
+  - Telemetry events no longer clutter main diagnostic log
+  - Files: `Services/AzureTelemetryService.cs`, `Services/FileLogger.cs`
+
+---
+
 ### Version 3.17.216 (February 20, 2026)
 
 ### Added
@@ -306,42 +346,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Diagnostic table shows devices ready for registration with OS version/edition
 
 ### Changed
-
-### Fixed
-
----
-
-### Version 3.17.212 (February 18, 2026)
-
-### Added
-
-### Changed
-- **Autopilot Readiness**: Simplified to bare minimum requirements for initial assessment
-  - Now checks only: OS Version (Win10 1809+/Win11) + OS Edition (Pro/Enterprise/Education)
-  - Tenant Intune licensing shown as informational (not a per-device blocker)
-  - Removed Azure AD join status check (can be added back later)
-  - Removed Autopilot registration status check (can be added back later)
-  - Cleaner diagnostic table showing only OS-based blockers
-
-### Fixed
-
----
-
-### Version 3.17.211 (February 18, 2026)
-
-### Added
-- **Autopilot Readiness**: Comprehensive Microsoft requirements assessment per learn.microsoft.com
-  - **OS Edition Check**: Now validates Pro/Enterprise/Education (Home edition = BLOCKER)
-  - **Azure AD Join Status**: Detects Hybrid AAD, Azure AD Only, On-Prem Only, Workgroup devices
-  - **Tenant Licensing**: Displays Intune license availability at tenant level
-  - **4-Check System**: OS Version → OS Edition → Azure AD Status → Registration Status
-  - **Detailed Join Type Breakdown**: Shows device counts by join type with remediation URLs
-  - **Enhanced Diagnostic Logging**: Sample device names and raw data values for all blockers
-  - **Per-Device Readiness Table**: Shows each non-ready device with pass/fail status for all 4 requirements
-  - Source: https://learn.microsoft.com/en-us/autopilot/requirements
-
-### Changed
-- **Autopilot Readiness**: "Fully Ready" now requires meeting ALL 4 requirements, not just OS version + registration
 
 ### Fixed
 
@@ -1563,6 +1567,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-02-20  
-**Version**: 3.17.219  
+**Last Updated**: 2026-03-04  
+**Version**: 3.17.223  
 **Maintainer:** Cloud Native Assessment Team

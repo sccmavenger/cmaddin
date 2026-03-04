@@ -96,6 +96,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private Visibility _showAIActionsTab = Visibility.Visible;
         private Visibility _showCloudReadinessTab = Visibility.Visible;
         private Visibility _showCloudValueComparisonTab = Visibility.Collapsed;
+        private Visibility _showCloudComparisonDetailsTab = Visibility.Collapsed;
 
         public DashboardViewModel(MockDataService mockDataService, TabVisibilityOptions? tabVisibilityOptions = null)
         {
@@ -112,6 +113,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 _showAIActionsTab = tabVisibilityOptions.ShowAIActionsTab;
                 _showCloudReadinessTab = tabVisibilityOptions.ShowCloudReadinessTab;
                 _showCloudValueComparisonTab = tabVisibilityOptions.ShowCloudValueComparisonTab;
+                _showCloudComparisonDetailsTab = tabVisibilityOptions.ShowCloudComparisonDetailsTab;
             }
             
             // Initialize AI Recommendation Service - Azure OpenAI is now required
@@ -454,6 +456,12 @@ namespace ZeroTrustMigrationAddin.ViewModels
         {
             get => _showCloudValueComparisonTab;
             set => SetProperty(ref _showCloudValueComparisonTab, value);
+        }
+
+        public Visibility ShowCloudComparisonDetailsTab
+        {
+            get => _showCloudComparisonDetailsTab;
+            set => SetProperty(ref _showCloudComparisonDetailsTab, value);
         }
 
         // Phase 1 AI Enhancement Properties

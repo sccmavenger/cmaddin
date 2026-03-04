@@ -9,9 +9,9 @@
 | Property | Value |
 |----------|-------|
 | **Version** | 3.17.218 (pending 3.17.219) |
-| **Last Updated** | 2026-02-20 |
+| **Last Updated** | 2026-03-02 |
 | **Branch** | main |
-| **Status** | Stable - Privacy/telemetry features complete |
+| **Status** | Stable - Cloud Readiness tab reviewed, no code changes |
 
 ---
 
@@ -78,32 +78,18 @@ All hidden tabs can be enabled via command-line:
 
 ---
 
-## Recent Session Summary (2026-02-05)
+## Recent Session Summary (2026-03-02)
 
 ### Completed
-- **Alternate Credentials for ConfigMgr** - Users can now connect with different credentials than their Windows login
-  - DPAPI-encrypted password storage
-  - Supports DOMAIN\user and UPN formats
-  - Test Connection button for validation
-- **Comparison Methodology Documentation** - Complete documentation for admins explaining the math/logic behind each comparison card
-  - Created `docs/COMPARISON_METHODOLOGY.md` for developers
-  - Added "Comparison Methodology" section to `AdminUserGuide.html` for admins
-- Created CloudValueComparisonTab with 10 comparison cards
-- Implemented real data integration from Graph API and ConfigMgr
-- Published v3.17.110-116 with successive fixes
-- Fixed auto-update manifest.json issue
-- Fixed ConfigMgrServerDialog not resizing when credentials panel expanded
-- Deleted redundant scripts (Publish-ToGitHub.ps1, Build-And-Distribute-v1-backup.ps1)
-- Updated copilot-instructions.md with command system and file organization rules
-- Moved 22 markdown files to `docs/`, 8 scripts to `scripts/`
-- Updated INTERNAL_HIDDEN_FEATURES.md with comparison tab info
+- **Cloud Readiness tab deep-dive review** — mapped architecture across View, code-behind, models, and service layers
+- Documented 2 active signals (Autopilot Readiness, Cloud-Native Readiness) with data sources and assessment logic
+- Identified 6 hidden signals disabled per stakeholder feedback
+- No code changes — planning/review session
 
 ### Key Decisions
-- **ADR-008**: Single build script policy - only `Build-And-Distribute.ps1` at root
-- **ADR-009**: File organization - docs in `docs/`, scripts in `scripts/`
-- **ADR-010**: Context preservation via CONTEXT.md + SESSION_LOG.md
-- **ADR-011**: DPAPI for credential encryption (user-scoped, machine-bound)
-- **ADR-012**: Comparison methodology documented in both markdown and HTML for different audiences
+- Cloud-Native signal scopes to migration targets only (excludes born-in-cloud devices)
+- Hybrid Entra ID Join is not a blocker (expected intermediate state)
+- 6 signals hidden per Rob's feedback — may revisit later
 
 ---
 
@@ -115,8 +101,9 @@ All hidden tabs can be enabled via command-line:
 
 ## Immediate Next Steps
 
-1. Test alternate credentials feature with customer environment
-2. Consider adding Build-And-Distribute.ps1 validation for documentation files
+1. Decide on Cloud Readiness tab changes (re-enable signals? adjust logic? UI tweaks?)
+2. Consider whether hidden signals (Win 11, Identity, WUfB, Endpoint Security, Autopatch, App Readiness) should be revisited or removed
+3. Test alternate credentials feature with customer environment
 
 ---
 
