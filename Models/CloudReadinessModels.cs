@@ -1259,5 +1259,452 @@ namespace ZeroTrustMigrationAddin.Models
             "Cloud-delivered protection"
         };
     }
-}
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // NEW COMPARISON MODELS (v3.17.220) - Cloud Native Tab enhancements
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Compliance Policy Enforcement Depth — shows WHAT Intune actually enforces vs ConfigMgr baseline coverage.
+    /// Data source: GetCompliancePolicySettingsAsync() → /deviceManagement/deviceCompliancePolicies
+    /// </summary>
+    public class CompliancePolicyDepthComparison
+    {
+        // Intune metrics (from deviceCompliancePolicies)
+        public int IntunePolicyCount { get; set; }
+        public List<string> IntuneEnforcedSettings { get; set; } = new();
+        public int IntuneAssignedDeviceCount { get; set; }
+        public List<CompliancePolicySummary> IntunePolicies { get; set; } = new();
+        
+        // ConfigMgr side — architectural framing
+        public int ConfigMgrDeviceCount { get; set; }
+        
+        public bool HasIntunePolicies => IntunePolicyCount > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (!HasIntunePolicies)
+                    return "No Intune compliance policies configured yet";
+                
+                return $"{IntunePolicyCount} policies enforcing {IntuneEnforcedSettings.Count} security requirements";
+            }
+        }
+        
+        public string ConfigMgrSummary => ConfigMgrDeviceCount > 0
+            ? $"{ConfigMgrDeviceCount:N0} devices — compliance is a report, not enforcement"
+            : "No ConfigMgr data";
+        
+        public string ComparisonIcon => HasIntunePolicies ? "📋" : "⚠️";
+    }
+
+    /// <summary>
+    /// Summary of a single compliance policy for display.
+    /// </summary>
+    public class CompliancePolicySummary
+    {
+        public string Name { get; set; } = string.Empty;
+        public List<string> Requirements { get; set; } = new();
+        public string AssignmentScope { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Co-Management Workload Authority comparison — shows which of the 7 workloads are on Intune vs ConfigMgr.
+    /// Data source: GetCoManagedWorkloadAuthorityAsync() → /deviceManagement/managedDevices (configurationManagerClientEnabledFeatures)
+    /// </summary>
+    public class WorkloadAuthorityComparison
+    {
+        public int TotalCoManagedDevices { get; set; }
+        public List<WorkloadSliderStatus> Workloads { get; set; } = new();
+        
+        // Summary
+        public int WorkloadsFullyOnIntune => Workloads.Count(w => w.IntunePercentage >= 90);
+        public int WorkloadsFullyOnConfigMgr => Workloads.Count(w => w.ConfigMgrPercentage >= 90);
+        public int WorkloadsMixed => Workloads.Count(w => w.IntunePercentage > 10 && w.IntunePercentage < 90);
+        
+        public bool HasData => TotalCoManagedDevices > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (!HasData) return "No co-managed devices found";
+                if (WorkloadsFullyOnIntune == 7) return "All 7 workloads fully transitioned to Intune!";
+                return $"{WorkloadsFullyOnIntune}/7 workloads on Intune, {WorkloadsMixed} in transition";
+            }
+        }
+        
+        public string ComparisonIcon => WorkloadsFullyOnIntune >= 5 ? "🚀" : WorkloadsFullyOnIntune >= 3 ? "📈" : "🔄";
+    }
+
+    /// <summary>
+    /// Status of a single co-management workload slider.
+    /// </summary>
+    public class WorkloadSliderStatus
+    {
+        public string WorkloadName { get; set; } = string.Empty;
+        public string Icon { get; set; } = "⚙️";
+        public int IntuneCount { get; set; }
+        public int ConfigMgrCount { get; set; }
+        public int TotalDevices => IntuneCount + ConfigMgrCount;
+        public double IntunePercentage => TotalDevices > 0 ? Math.Round((double)IntuneCount / TotalDevices * 100, 1) : 0;
+        public double ConfigMgrPercentage => TotalDevices > 0 ? Math.Round((double)ConfigMgrCount / TotalDevices * 100, 1) : 0;
+    }
+
+    /// <summary>
+    /// Client Health / Agent Reliability comparison — ConfigMgr inactive clients vs Intune always-connected.
+    /// Intune: lastSyncDateTime within 7 days. ConfigMgr: SMS_CombinedDeviceResources.ClientActiveStatus
+    /// </summary>
+    public class ClientHealthComparison
+    {
+        // Intune metrics
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneHealthyCount { get; set; } // Synced within 7 days
+        public double IntuneHealthyPercentage => IntuneDeviceCount > 0
+            ? Math.Round((double)IntuneHealthyCount / IntuneDeviceCount * 100, 1) : 0;
+        
+        // ConfigMgr metrics (from ClientActiveStatus)
+        public int ConfigMgrDeviceCount { get; set; }
+        public int ConfigMgrActiveCount { get; set; } // ClientActiveStatus == 1
+        public int ConfigMgrInactiveCount => ConfigMgrDeviceCount - ConfigMgrActiveCount;
+        public double ConfigMgrActivePercentage => ConfigMgrDeviceCount > 0
+            ? Math.Round((double)ConfigMgrActiveCount / ConfigMgrDeviceCount * 100, 1) : 0;
+        
+        public bool HasData => IntuneDeviceCount > 0 || ConfigMgrDeviceCount > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (ConfigMgrInactiveCount > 0)
+                    return $"{ConfigMgrInactiveCount:N0} ConfigMgr clients inactive — cloud management works over any internet connection";
+                if (HasData)
+                    return "Both platforms showing healthy client communication";
+                return "No data available";
+            }
+        }
+        
+        public string ConfigMgrSummary => ConfigMgrInactiveCount > 0
+            ? $"{ConfigMgrInactiveCount:N0} inactive — likely off-network or VPN"
+            : $"{ConfigMgrActiveCount:N0} active";
+        
+        public string ComparisonIcon => ConfigMgrInactiveCount > 10 ? "⚠️" : "✅";
+    }
+
+    /// <summary>
+    /// AV Signature Freshness comparison — cloud-delivered protection vs ConfigMgr signature distribution.
+    /// Intune: partnerReportedThreatState. ConfigMgr: SMS_G_System_AntimalwareHealthStatus.SignatureAge
+    /// </summary>
+    public class AVSignatureComparison
+    {
+        // Intune metrics (from partnerReportedThreatState)
+        public int IntuneDeviceCount { get; set; }
+        public int IntuneSecuredCount { get; set; } // threat state = Secured (up-to-date)
+        public double IntuneSecuredPercentage => IntuneDeviceCount > 0
+            ? Math.Round((double)IntuneSecuredCount / IntuneDeviceCount * 100, 1) : 0;
+        
+        // ConfigMgr metrics (from SMS_G_System_AntimalwareHealthStatus)
+        public int ConfigMgrDeviceCount { get; set; }
+        public int ConfigMgrUpToDateCount { get; set; } // SignatureUpToDate == true
+        public double ConfigMgrAvgSignatureAgeDays { get; set; }
+        public double ConfigMgrUpToDatePercentage => ConfigMgrDeviceCount > 0
+            ? Math.Round((double)ConfigMgrUpToDateCount / ConfigMgrDeviceCount * 100, 1) : 0;
+        
+        public bool HasConfigMgrData => ConfigMgrDeviceCount > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (HasConfigMgrData && ConfigMgrAvgSignatureAgeDays > 1)
+                    return $"ConfigMgr signatures average {ConfigMgrAvgSignatureAgeDays:F1} days old — each day is an attack window";
+                if (IntuneSecuredCount > 0)
+                    return $"{IntuneSecuredCount:N0} cloud devices confirmed secured — signatures delivered instantly from Microsoft CDN";
+                return "Connect to see AV signature comparison";
+            }
+        }
+        
+        public string ComparisonIcon => HasConfigMgrData && ConfigMgrAvgSignatureAgeDays > 2 ? "⚠️" : "🛡️";
+    }
+
+    /// <summary>
+    /// App Portfolio Readiness comparison — shows app migration feasibility by technology type.
+    /// Intune: /deviceAppManagement/mobileApps. ConfigMgr: SMS_Application + SMS_DeploymentType
+    /// </summary>
+    public class AppPortfolioComparison
+    {
+        // Intune metrics
+        public int IntuneAppCount { get; set; }
+        
+        // ConfigMgr metrics (from SMS_Application + SMS_DeploymentType)
+        public int ConfigMgrAppCount { get; set; }
+        public int ConfigMgrDeployedCount { get; set; }
+        public Dictionary<string, int> TechnologyBreakdown { get; set; } = new();
+        
+        // Migration readiness
+        public int MsiAppsCount => TechnologyBreakdown.GetValueOrDefault("MSI", 0);
+        public int MsixAppsCount => TechnologyBreakdown.GetValueOrDefault("MSIX", 0);
+        public int ScriptAppsCount => TechnologyBreakdown.GetValueOrDefault("Script", 0);
+        public int AppVAppsCount => TechnologyBreakdown.GetValueOrDefault("App-V", 0);
+        
+        /// <summary>MSI + MSIX apps can migrate directly to Intune</summary>
+        public int ReadyToMigrateCount => MsiAppsCount + MsixAppsCount;
+        public double ReadyToMigratePercentage => ConfigMgrAppCount > 0
+            ? Math.Round((double)ReadyToMigrateCount / ConfigMgrAppCount * 100, 1) : 0;
+        
+        public bool HasConfigMgrData => ConfigMgrAppCount > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (!HasConfigMgrData) return "No ConfigMgr application data available";
+                if (ReadyToMigrateCount > 0)
+                    return $"{ReadyToMigrateCount} apps ({ReadyToMigratePercentage:F0}%) use MSI/MSIX — ready for Intune migration today";
+                return $"{ConfigMgrAppCount} ConfigMgr apps — review deployment types for migration readiness";
+            }
+        }
+        
+        public string ComparisonIcon => ReadyToMigratePercentage > 60 ? "✅" : ReadyToMigratePercentage > 30 ? "📦" : "⚠️";
+    }
+
+    /// <summary>
+    /// WUfB Ring Coverage comparison — Intune update rings vs WSUS/SUP infrastructure.
+    /// Intune: /deviceManagement/deviceConfigurations (WUfB type). ConfigMgr: SMS_UpdateComplianceStatus
+    /// </summary>
+    public class UpdateRingComparison
+    {
+        // Intune WUfB metrics
+        public int IntuneRingCount { get; set; }
+        public int IntuneDevicesInRings { get; set; }
+        public double IntuneRingSuccessRate { get; set; }
+        public List<UpdateRingSummary> IntuneRings { get; set; } = new();
+        
+        // ConfigMgr metrics
+        public int ConfigMgrDeviceCount { get; set; }
+        public double ConfigMgrUpdateComplianceRate { get; set; }
+        
+        public bool HasIntuneRings => IntuneRingCount > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (!HasIntuneRings)
+                    return "No WUfB update rings configured — updates still coming through WSUS/SUP";
+                return $"{IntuneRingCount} WUfB rings covering {IntuneDevicesInRings:N0} devices — updates from Microsoft CDN, no WSUS infrastructure";
+            }
+        }
+        
+        public string ConfigMgrSummary => ConfigMgrDeviceCount > 0
+            ? $"{ConfigMgrDeviceCount:N0} devices managed through WSUS/SUP — requires on-prem infrastructure"
+            : "No ConfigMgr update data";
+        
+        public string ComparisonIcon => HasIntuneRings ? "🔄" : "⚙️";
+    }
+
+    /// <summary>
+    /// Summary of a WUfB update ring.
+    /// </summary>
+    public class UpdateRingSummary
+    {
+        public string RingName { get; set; } = string.Empty;
+        public int DeviceCount { get; set; }
+        public int SuccessCount { get; set; }
+        public int ErrorCount { get; set; }
+    }
+
+    /// <summary>
+    /// Autopilot vs Imaging comparison — cloud provisioning vs on-prem task sequences.
+    /// Intune: /deviceManagement/windowsAutopilotDeviceIdentities. ConfigMgr: device count
+    /// </summary>
+    public class AutopilotComparison
+    {
+        // Intune Autopilot metrics
+        public int AutopilotRegisteredCount { get; set; }
+        public int AutopilotProfileAssignedCount { get; set; }
+        public int AutopilotNotRegisteredCount { get; set; }
+        
+        // ConfigMgr metrics (limited — task sequences not queryable via Admin Service)
+        public int ConfigMgrDeviceCount { get; set; }
+        
+        public bool HasAutopilotDevices => AutopilotRegisteredCount > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (!HasAutopilotDevices)
+                    return "No devices registered in Autopilot — still dependent on imaging/task sequences";
+                return $"{AutopilotRegisteredCount:N0} devices registered for Autopilot — self-provision from anywhere, no imaging required";
+            }
+        }
+        
+        public string ComparisonIcon => HasAutopilotDevices ? "🚀" : "⚙️";
+    }
+
+    /// <summary>
+    /// Security Blind Spots aggregate — combines the 5 questions ConfigMgr can't answer.
+    /// All data sourced from existing comparison cards (no new API calls).
+    /// </summary>
+    public class SecurityBlindSpotsComparison
+    {
+        public int CompromisedDeviceCount { get; set; } // from ThreatDetection
+        public int ActiveMalwareCount { get; set; } // from ActiveMalware
+        public int AutoRemediatedCount { get; set; } // from Defender
+        public int CAGatedDeviceCount { get; set; } // from ConditionalAccess (Intune side)
+        public int HealthAttestedCount { get; set; } // from HealthAttestation
+        
+        public int ConfigMgrDeviceCount { get; set; }
+        public int BlindSpotCount => 5; // Always 5 questions
+        
+        public string ComparisonSummary => ConfigMgrDeviceCount > 0
+            ? $"Your CISO will ask these 5 questions. ConfigMgr can answer 0 of them for {ConfigMgrDeviceCount:N0} devices."
+            : "Connect to see security blind spot analysis";
+        
+        public string ComparisonIcon => "🔴";
+    }
+
+    /// <summary>
+    /// Work-from-Anywhere management — shows devices online for Intune but dark for ConfigMgr.
+    /// Cross-references Intune lastSyncDateTime with ConfigMgr LastPolicyRequest.
+    /// </summary>
+    public class WorkFromAnywhereComparison
+    {
+        // Intune freshness
+        public int IntuneSyncedLast24h { get; set; }
+        public int IntuneTotalDevices { get; set; }
+        
+        // ConfigMgr freshness
+        public int ConfigMgrActiveLast24h { get; set; }
+        public int ConfigMgrTotalDevices { get; set; }
+        
+        // The killer metric: devices online for Intune but dark for ConfigMgr
+        public int OnlineForIntuneButDarkForConfigMgr { get; set; }
+        
+        // ConfigMgr inactive (stale 14+ days)
+        public int ConfigMgrInactiveCount { get; set; }
+        
+        public bool HasData => IntuneTotalDevices > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (OnlineForIntuneButDarkForConfigMgr > 0)
+                    return $"{OnlineForIntuneButDarkForConfigMgr:N0} devices are managed by Intune right now but invisible to ConfigMgr — working from home, hotels, coffee shops";
+                if (HasData)
+                    return $"Intune reached {IntuneSyncedLast24h:N0} devices in the last 24h — no VPN required";
+                return "Connect to see work-from-anywhere analysis";
+            }
+        }
+        
+        public string ComparisonIcon => OnlineForIntuneButDarkForConfigMgr > 0 ? "🌍" : "☁️";
+    }
+
+    /// <summary>
+    /// Compliance Enforcement Loop — shows what happens when devices go non-compliant.
+    /// Intune: compliance state + CA enforcement. ConfigMgr: compliance is just a report.
+    /// </summary>
+    public class ComplianceEnforcementComparison
+    {
+        // Intune compliance states
+        public int IntuneCompliantCount { get; set; }
+        public int IntuneNonCompliantCount { get; set; }
+        public int IntuneInGracePeriodCount { get; set; }
+        public int IntuneTotalDevices { get; set; }
+        
+        // ConfigMgr
+        public int ConfigMgrDeviceCount { get; set; }
+        
+        public bool HasData => IntuneTotalDevices > 0;
+        
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (IntuneNonCompliantCount > 0 || IntuneInGracePeriodCount > 0)
+                {
+                    var parts = new List<string>();
+                    if (IntuneNonCompliantCount > 0) parts.Add($"{IntuneNonCompliantCount:N0} blocked");
+                    if (IntuneInGracePeriodCount > 0) parts.Add($"{IntuneInGracePeriodCount:N0} in grace period");
+                    return $"{string.Join(", ", parts)} — non-compliant devices lose access to M365. On ConfigMgr? Non-compliance is just a report.";
+                }
+                if (HasData)
+                    return $"{IntuneCompliantCount:N0} devices compliant and accessing corporate resources. Non-compliant = access revoked automatically.";
+                return "Connect to see compliance enforcement data";
+            }
+        }
+        
+        public string ComparisonIcon => IntuneNonCompliantCount > 0 ? "🚫" : "✅";
+    }
+
+    /// <summary>
+    /// Enrollment Velocity comparison — shows how fast devices are enrolling to Intune
+    /// vs ConfigMgr imaging/deployment speed.
+    /// </summary>
+    public class EnrollmentVelocityComparison
+    {
+        // Intune enrollment velocity
+        public int EnrolledThisWeek { get; set; }
+        public int EnrolledPreviousWeek { get; set; }
+        public int AutopilotRegisteredCount { get; set; }
+        public double PeerAverageRate { get; set; }
+        public string OrganizationCategory { get; set; } = string.Empty;
+
+        // Provisioning time estimates (industry standard)
+        public string AutopilotEstimate { get; set; } = "~30 min self-service";
+        public string ConfigMgrImagingEstimate { get; set; } = "~4 hrs IT hands-on";
+
+        public bool HasData => EnrolledThisWeek > 0 || EnrolledPreviousWeek > 0;
+
+        public string WeeklyTrend
+        {
+            get
+            {
+                if (EnrolledPreviousWeek == 0) return EnrolledThisWeek > 0 ? "new" : "none";
+                double change = ((double)EnrolledThisWeek - EnrolledPreviousWeek) / EnrolledPreviousWeek * 100;
+                if (change > 10) return "accelerating";
+                if (change < -10) return "slowing";
+                return "steady";
+            }
+        }
+
+        public string TrendArrow
+        {
+            get => WeeklyTrend switch
+            {
+                "accelerating" => "📈",
+                "slowing" => "📉",
+                "new" => "🆕",
+                _ => "➡️"
+            };
+        }
+
+        public string ComparisonSummary
+        {
+            get
+            {
+                if (!HasData)
+                    return "Connect to see enrollment velocity data";
+
+                var trend = WeeklyTrend switch
+                {
+                    "accelerating" => $"Enrollment accelerating — {EnrolledThisWeek} this week vs {EnrolledPreviousWeek} last week.",
+                    "slowing" => $"Enrollment slowing — {EnrolledThisWeek} this week vs {EnrolledPreviousWeek} last week. Push Autopilot adoption.",
+                    "new" => $"{EnrolledThisWeek} devices enrolled this week — momentum building!",
+                    "steady" => $"Steady at {EnrolledThisWeek} devices/week.",
+                    _ => $"{EnrolledThisWeek} devices enrolled this week."
+                };
+
+                if (PeerAverageRate > 0 && EnrolledThisWeek < PeerAverageRate)
+                    trend += $" Peer avg: {PeerAverageRate:F0}/week.";
+
+                return trend;
+            }
+        }
+
+        public string ComparisonIcon => WeeklyTrend == "accelerating" ? "🚀" : WeeklyTrend == "slowing" ? "📉" : "⚡";
+    }
+}

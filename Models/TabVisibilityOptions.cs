@@ -47,6 +47,11 @@ namespace ZeroTrustMigrationAddin.Models
         public Visibility ShowCloudValueComparisonTab { get; set; } = Visibility.Visible;
 
         /// <summary>
+        /// Shows or hides the Cloud Comparison Details tab (hidden by default)
+        /// </summary>
+        public Visibility ShowCloudComparisonDetailsTab { get; set; } = Visibility.Collapsed;
+
+        /// <summary>
         /// Parse command-line arguments to determine tab visibility.
         /// 
         /// Usage examples:
@@ -97,6 +102,11 @@ namespace ZeroTrustMigrationAddin.Models
                             case "cloudnative":
                                 options.ShowCloudValueComparisonTab = Visibility.Collapsed;
                                 break;
+                            case "cloudcomparisondetails":
+                            case "comparisondetails":
+                            case "clouddetails":
+                                options.ShowCloudComparisonDetailsTab = Visibility.Collapsed;
+                                break;
                         }
                     }
                 }
@@ -112,6 +122,7 @@ namespace ZeroTrustMigrationAddin.Models
                     options.ShowAIActionsTab = Visibility.Collapsed;
                     options.ShowCloudReadinessTab = Visibility.Collapsed;
                     options.ShowCloudValueComparisonTab = Visibility.Collapsed;
+                    options.ShowCloudComparisonDetailsTab = Visibility.Collapsed;
 
                     // Then show only specified tabs
                     var tabsToShow = lowerArg.Substring(lowerArg.IndexOf(':') + 1).Split(',');
@@ -145,6 +156,11 @@ namespace ZeroTrustMigrationAddin.Models
                             case "comparison":
                             case "cloudnative":
                                 options.ShowCloudValueComparisonTab = Visibility.Visible;
+                                break;
+                            case "cloudcomparisondetails":
+                            case "comparisondetails":
+                            case "clouddetails":
+                                options.ShowCloudComparisonDetailsTab = Visibility.Visible;
                                 break;
                         }
                     }

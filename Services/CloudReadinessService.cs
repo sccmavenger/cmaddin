@@ -3045,6 +3045,558 @@ namespace ZeroTrustMigrationAddin.Services
             return comparison;
         }
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // NEW COMPARISON METHODS (v3.17.220) - Cloud Native Tab enhancements
+        // ═══════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Gets Compliance Policy Depth comparison — what Intune ENFORCES vs ConfigMgr reporting.
+        /// Uses: GetCompliancePolicySettingsAsync() → /deviceManagement/deviceCompliancePolicies
+        /// </summary>
+        public async Task<CompliancePolicyDepthComparison> GetCompliancePolicyDepthComparisonAsync()
+        {
+            var comparison = new CompliancePolicyDepthComparison();
+
+            try
+            {
+                Instance.Info("📋 Fetching Compliance Policy Depth Comparison...");
+
+                // Get Intune compliance policies with their enforced settings
+                var policies = await _graphService.GetCompliancePolicySettingsAsync();
+                comparison.IntunePolicyCount = policies.Count;
+
+                var allSettings = new List<string>();
+                foreach (var policy in policies)
+                {
+                    var summary = new CompliancePolicySummary
+                    {
+                        Name = policy.PolicyName,
+                        AssignmentScope = policy.AssignmentSummary
+                    };
+
+                    // Extract enforced requirements
+                    var reqs = new List<string>();
+                    if (policy.RequiresBitLocker) reqs.Add("BitLocker");
+                    if (policy.RequiresSecureBoot) reqs.Add("Secure Boot");
+                    if (policy.RequiresTpm) reqs.Add("TPM");
+                    if (!string.IsNullOrEmpty(policy.MinimumOSVersion)) reqs.Add($"OS ≥ {policy.MinimumOSVersion}");
+                    summary.Requirements = reqs;
+                    allSettings.AddRange(reqs);
+
+                    comparison.IntunePolicies.Add(summary);
+                }
+                comparison.IntuneEnforcedSettings = allSettings.Distinct().ToList();
+
+                // Get Intune device count for assigned scope
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneAssignedDeviceCount = intuneDevices.Count;
+
+                // Get ConfigMgr device count
+                var configMgrHealth = await _configMgrService.GetClientHealthMetricsAsync();
+                comparison.ConfigMgrDeviceCount = configMgrHealth.Count;
+
+                Instance.Info($"   ✓ Intune: {comparison.IntunePolicyCount} policies enforcing {comparison.IntuneEnforcedSettings.Count} unique settings");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices — compliance baselines report only");
+                Instance.Info($"   📋 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Compliance Policy Depth Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets Co-Management Workload Authority comparison — which workloads are Intune vs ConfigMgr.
+        /// Uses: GetCoManagedWorkloadAuthorityAsync() → /deviceManagement/managedDevices (configurationManagerClientEnabledFeatures)
+        /// </summary>
+        public async Task<WorkloadAuthorityComparison> GetWorkloadAuthorityComparisonAsync()
+        {
+            var comparison = new WorkloadAuthorityComparison();
+
+            try
+            {
+                Instance.Info("🔄 Fetching Co-Management Workload Authority Comparison...");
+
+                var workloadData = await _graphService.GetCoManagedWorkloadAuthorityAsync();
+                comparison.TotalCoManagedDevices = workloadData.TotalCoManagedDevices;
+
+                // Map workload adoption counts to slider status objects
+                if (workloadData.WorkloadIntuneAdoptionCounts != null)
+                {
+                    var icons = new Dictionary<string, string>
+                    {
+                        ["Compliance Policy"] = "📋",
+                        ["Device Configuration"] = "⚙️",
+                        ["Windows Update"] = "🔄",
+                        ["Endpoint Protection"] = "🛡️",
+                        ["Resource Access"] = "🔑",
+                        ["Modern Apps"] = "📱",
+                        ["Office Apps"] = "📄"
+                    };
+
+                    foreach (var kvp in workloadData.WorkloadIntuneAdoptionCounts)
+                    {
+                        comparison.Workloads.Add(new WorkloadSliderStatus
+                        {
+                            WorkloadName = kvp.Key,
+                            Icon = icons.GetValueOrDefault(kvp.Key, "⚙️"),
+                            IntuneCount = kvp.Value,
+                            ConfigMgrCount = comparison.TotalCoManagedDevices - kvp.Value
+                        });
+                    }
+                }
+
+                Instance.Info($"   ✓ {comparison.TotalCoManagedDevices} co-managed devices");
+                Instance.Info($"   ✓ {comparison.WorkloadsFullyOnIntune}/7 workloads fully on Intune");
+                Instance.Info($"   🔄 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Workload Authority Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets Client Health comparison — Intune always-connected vs ConfigMgr inactive clients.
+        /// Uses: GetWindowsWorkstationsAsync() + GetClientHealthMetricsAsync()
+        /// </summary>
+        public async Task<ClientHealthComparison> GetClientHealthComparisonAsync()
+        {
+            var comparison = new ClientHealthComparison();
+
+            try
+            {
+                Instance.Info("💚 Fetching Client Health Comparison...");
+
+                // Intune: check lastSyncDateTime within 7 days
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+                comparison.IntuneHealthyCount = intuneDevices.Count(d =>
+                    d.LastSyncDateTime.HasValue &&
+                    (DateTimeOffset.UtcNow - d.LastSyncDateTime.Value).TotalDays <= 7);
+
+                // ConfigMgr: ClientActiveStatus from SMS_CombinedDeviceResources
+                var configMgrHealth = await _configMgrService.GetClientHealthMetricsAsync();
+                comparison.ConfigMgrDeviceCount = configMgrHealth.Count;
+                comparison.ConfigMgrActiveCount = configMgrHealth.Count(h => h.ClientActiveStatus == 1);
+
+                Instance.Info($"   ✓ Intune: {comparison.IntuneHealthyCount}/{comparison.IntuneDeviceCount} healthy (synced within 7 days)");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrActiveCount}/{comparison.ConfigMgrDeviceCount} active clients");
+                if (comparison.ConfigMgrInactiveCount > 0)
+                    Instance.Warning($"   ⚠️ {comparison.ConfigMgrInactiveCount} ConfigMgr clients inactive — likely off-network");
+                Instance.Info($"   💚 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Client Health Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets AV Signature Freshness comparison — cloud-delivered vs ConfigMgr signature distribution.
+        /// Uses: GetWindowsWorkstationsAsync() + GetAntivirusStatusAsync()
+        /// </summary>
+        public async Task<AVSignatureComparison> GetAVSignatureComparisonAsync()
+        {
+            var comparison = new AVSignatureComparison();
+
+            try
+            {
+                Instance.Info("🦠 Fetching AV Signature Freshness Comparison...");
+
+                // Intune: partnerReportedThreatState == Secured means fully up-to-date
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneDeviceCount = intuneDevices.Count;
+                comparison.IntuneSecuredCount = intuneDevices.Count(d =>
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Secured ||
+                    d.PartnerReportedThreatState == Microsoft.Graph.Models.ManagedDevicePartnerReportedHealthState.Activated);
+
+                // ConfigMgr: SMS_G_System_AntimalwareHealthStatus — SignatureUpToDate and SignatureAge
+                var avStatus = await _configMgrService.GetAntivirusStatusAsync();
+                comparison.ConfigMgrDeviceCount = avStatus.Count;
+                comparison.ConfigMgrUpToDateCount = avStatus.Count(av => av.SignaturesUpToDate);
+
+                if (avStatus.Any(av => av.SignatureAgeDays.HasValue))
+                {
+                    comparison.ConfigMgrAvgSignatureAgeDays = avStatus
+                        .Where(av => av.SignatureAgeDays.HasValue)
+                        .Average(av => (double)av.SignatureAgeDays!.Value);
+                }
+
+                Instance.Info($"   ✓ Intune: {comparison.IntuneSecuredCount}/{comparison.IntuneDeviceCount} secured (cloud-delivered protection)");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrUpToDateCount}/{comparison.ConfigMgrDeviceCount} signatures up-to-date");
+                if (comparison.ConfigMgrAvgSignatureAgeDays > 0)
+                    Instance.Info($"   ✓ ConfigMgr avg signature age: {comparison.ConfigMgrAvgSignatureAgeDays:F1} days");
+                Instance.Info($"   🦠 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"AV Signature Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets App Portfolio Readiness comparison — migration feasibility by technology type.
+        /// Uses: GetAppDeploymentStatusAsync() + GetApplicationsAsync() + GetDeploymentTypesAsync()
+        /// </summary>
+        public async Task<AppPortfolioComparison> GetAppPortfolioComparisonAsync()
+        {
+            var comparison = new AppPortfolioComparison();
+
+            try
+            {
+                Instance.Info("📦 Fetching App Portfolio Readiness Comparison...");
+
+                // Intune apps (count of managed apps in tenant)
+                var intuneApps = await _graphService.GetAppDeploymentStatusAsync();
+                comparison.IntuneAppCount = intuneApps.Count;
+
+                // ConfigMgr apps + deployment types for technology breakdown
+                var configMgrApps = await _configMgrService.GetApplicationsAsync();
+                comparison.ConfigMgrAppCount = configMgrApps.Count;
+                comparison.ConfigMgrDeployedCount = configMgrApps.Count(a => a.IsDeployed);
+
+                var deploymentTypes = await _configMgrService.GetDeploymentTypesAsync();
+
+                // Build technology breakdown
+                var techBreakdown = new Dictionary<string, int>();
+                foreach (var dt in deploymentTypes)
+                {
+                    var tech = dt.Technology switch
+                    {
+                        "MSI" => "MSI",
+                        "MSIX" or "Windows8AppInstaller" => "MSIX",
+                        "Script" => "Script",
+                        "AppV5X" => "App-V",
+                        _ => "Other"
+                    };
+                    techBreakdown[tech] = techBreakdown.GetValueOrDefault(tech, 0) + 1;
+                }
+                comparison.TechnologyBreakdown = techBreakdown;
+
+                Instance.Info($"   ✓ Intune: {comparison.IntuneAppCount} apps in tenant");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrAppCount} apps ({comparison.ConfigMgrDeployedCount} deployed)");
+                foreach (var kvp in techBreakdown)
+                    Instance.Info($"     - {kvp.Key}: {kvp.Value}");
+                Instance.Info($"   📦 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"App Portfolio Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets WUfB Ring Coverage comparison — Intune update rings vs WSUS/SUP infrastructure.
+        /// Uses: GetUpdateRingAssignmentsAsync() + GetSoftwareUpdateComplianceAsync()
+        /// </summary>
+        public async Task<UpdateRingComparison> GetUpdateRingComparisonAsync()
+        {
+            var comparison = new UpdateRingComparison();
+
+            try
+            {
+                Instance.Info("🔄 Fetching WUfB Ring Coverage Comparison...");
+
+                // Intune WUfB update rings
+                var updateRings = await _graphService.GetUpdateRingAssignmentsAsync();
+
+                // Group by ring policy
+                var ringGroups = updateRings.GroupBy(r => r.PolicyName).ToList();
+                comparison.IntuneRingCount = ringGroups.Count;
+                comparison.IntuneDevicesInRings = updateRings.Select(r => r.DeviceName).Distinct().Count();
+
+                foreach (var ring in ringGroups)
+                {
+                    comparison.IntuneRings.Add(new UpdateRingSummary
+                    {
+                        RingName = ring.Key,
+                        DeviceCount = ring.Count(),
+                        SuccessCount = ring.Count(r => r.Status.Contains("Succeeded", StringComparison.OrdinalIgnoreCase)
+                            || r.Status.Contains("NotApplicable", StringComparison.OrdinalIgnoreCase)),
+                        ErrorCount = ring.Count(r => r.Status.Contains("Error", StringComparison.OrdinalIgnoreCase)
+                            || r.Status.Contains("Conflict", StringComparison.OrdinalIgnoreCase))
+                    });
+                }
+
+                if (comparison.IntuneDevicesInRings > 0)
+                {
+                    var totalSuccess = comparison.IntuneRings.Sum(r => r.SuccessCount);
+                    var totalDevices = comparison.IntuneRings.Sum(r => r.DeviceCount);
+                    comparison.IntuneRingSuccessRate = totalDevices > 0 ? Math.Round((double)totalSuccess / totalDevices * 100, 1) : 0;
+                }
+
+                // ConfigMgr: update compliance via SMS_UpdateComplianceStatus
+                var configMgrUpdates = await _configMgrService.GetSoftwareUpdateComplianceAsync();
+                comparison.ConfigMgrDeviceCount = configMgrUpdates.Select(u => u.ResourceId).Distinct().Count();
+                if (configMgrUpdates.Any())
+                {
+                    var compliant = configMgrUpdates.Count(u => u.ComplianceStatus == 1);
+                    comparison.ConfigMgrUpdateComplianceRate = Math.Round((double)compliant / configMgrUpdates.Count * 100, 1);
+                }
+
+                Instance.Info($"   ✓ Intune: {comparison.IntuneRingCount} WUfB rings covering {comparison.IntuneDevicesInRings} devices");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices via WSUS/SUP ({comparison.ConfigMgrUpdateComplianceRate:F0}% compliant)");
+                Instance.Info($"   🔄 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Update Ring Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets Autopilot vs imaging comparison.
+        /// Uses: GetAutopilotDeviceStatusAsync() + ConfigMgr device count
+        /// </summary>
+        public async Task<AutopilotComparison> GetAutopilotComparisonAsync()
+        {
+            var comparison = new AutopilotComparison();
+
+            try
+            {
+                Instance.Info("🚀 Fetching Autopilot Comparison...");
+
+                var autopilotDevices = await _graphService.GetAutopilotDeviceStatusAsync();
+                comparison.AutopilotRegisteredCount = autopilotDevices.Count;
+                comparison.AutopilotProfileAssignedCount = autopilotDevices.Count(d => d.DeploymentProfileAssigned);
+                comparison.AutopilotNotRegisteredCount = autopilotDevices.Count(d =>
+                    d.EnrollmentState == "NotContacted" || d.EnrollmentState == "Unknown");
+
+                // ConfigMgr device count for context
+                var configMgrHealth = await _configMgrService.GetClientHealthMetricsAsync();
+                comparison.ConfigMgrDeviceCount = configMgrHealth.Count;
+
+                Instance.Info($"   ✓ Autopilot: {comparison.AutopilotRegisteredCount} registered, {comparison.AutopilotProfileAssignedCount} with profiles");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices (imaging/task sequences)");
+                Instance.Info($"   🚀 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Autopilot Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets Security Blind Spots aggregate — the 5 questions ConfigMgr can't answer.
+        /// Aggregates data from existing comparisons (no new API calls needed).
+        /// </summary>
+        public async Task<SecurityBlindSpotsComparison> GetSecurityBlindSpotsComparisonAsync()
+        {
+            var comparison = new SecurityBlindSpotsComparison();
+
+            try
+            {
+                Instance.Info("🔴 Fetching Security Blind Spots Comparison...");
+
+                // Get the underlying data from existing service methods
+                var threatTask = GetThreatDetectionComparisonAsync();
+                var malwareTask = GetActiveMalwareComparisonAsync();
+                var defenderTask = GetDefenderIntegrationComparisonAsync();
+                var caTask = GetConditionalAccessComparisonAsync();
+                var attestationTask = GetDeviceHealthAttestationComparisonAsync();
+
+                await Task.WhenAll(threatTask, malwareTask, defenderTask, caTask, attestationTask);
+
+                var threat = await threatTask;
+                var malware = await malwareTask;
+                var defender = await defenderTask;
+                var ca = await caTask;
+                var attestation = await attestationTask;
+
+                comparison.CompromisedDeviceCount = threat.IntuneCompromisedCount;
+                comparison.ActiveMalwareCount = malware.TotalActiveMalwareCount;
+                comparison.AutoRemediatedCount = defender.IntuneRemediatedMalwareCount;
+                comparison.CAGatedDeviceCount = ca.IntuneCAReadyCount;
+                comparison.HealthAttestedCount = attestation.IntuneFullyAttestedCount;
+
+                // ConfigMgr count from any of the comparisons
+                comparison.ConfigMgrDeviceCount = threat.ConfigMgrDeviceCount > 0
+                    ? threat.ConfigMgrDeviceCount
+                    : ca.ConfigMgrOnlyDeviceCount;
+
+                Instance.Info($"   🔴 5 Questions ConfigMgr Can't Answer:");
+                Instance.Info($"      1. How many devices are compromised right now? Intune: {comparison.CompromisedDeviceCount}");
+                Instance.Info($"      2. How many active malware infections? Intune: {comparison.ActiveMalwareCount}");
+                Instance.Info($"      3. How many threats were auto-remediated? Intune: {comparison.AutoRemediatedCount}");
+                Instance.Info($"      4. How many devices meet Zero Trust requirements? Intune: {comparison.CAGatedDeviceCount}");
+                Instance.Info($"      5. How many devices pass hardware health attestation? Intune: {comparison.HealthAttestedCount}");
+                Instance.Info($"   🔴 RESULT: {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Security Blind Spots Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets Work-from-Anywhere comparison — devices managed by Intune but dark for ConfigMgr.
+        /// Cross-references Intune lastSyncDateTime with ConfigMgr LastActiveTime.
+        /// </summary>
+        public async Task<WorkFromAnywhereComparison> GetWorkFromAnywhereComparisonAsync()
+        {
+            var comparison = new WorkFromAnywhereComparison();
+
+            try
+            {
+                Instance.Info("🌍 Fetching Work-from-Anywhere Comparison...");
+
+                // Intune: devices that synced in the last 24 hours
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneTotalDevices = intuneDevices.Count;
+                comparison.IntuneSyncedLast24h = intuneDevices.Count(d =>
+                    d.LastSyncDateTime.HasValue &&
+                    (DateTimeOffset.UtcNow - d.LastSyncDateTime.Value).TotalHours <= 24);
+
+                // ConfigMgr: devices active in last 24 hours
+                var configMgrHealth = await _configMgrService.GetClientHealthMetricsAsync();
+                comparison.ConfigMgrTotalDevices = configMgrHealth.Count;
+                comparison.ConfigMgrActiveLast24h = configMgrHealth.Count(h =>
+                    h.LastActiveTime.HasValue &&
+                    (DateTime.UtcNow - h.LastActiveTime.Value).TotalHours <= 24);
+
+                // The killer metric: estimate devices online for Intune but dark for ConfigMgr
+                // If Intune reaches more devices in 24h than ConfigMgr, the delta = remote workers
+                comparison.OnlineForIntuneButDarkForConfigMgr = Math.Max(0,
+                    comparison.IntuneSyncedLast24h - comparison.ConfigMgrActiveLast24h);
+
+                comparison.ConfigMgrInactiveCount = configMgrHealth.Count(h =>
+                    !h.LastActiveTime.HasValue ||
+                    (DateTime.UtcNow - h.LastActiveTime.Value).TotalDays > 14);
+
+                Instance.Info($"   ✓ Intune: {comparison.IntuneSyncedLast24h}/{comparison.IntuneTotalDevices} synced in last 24h");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrActiveLast24h}/{comparison.ConfigMgrTotalDevices} active in last 24h");
+                Instance.Info($"   🌍 Delta: {comparison.OnlineForIntuneButDarkForConfigMgr} devices online for Intune but dark for ConfigMgr");
+                Instance.Info($"   🌍 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Work-from-Anywhere Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets Compliance Enforcement Loop comparison — what happens when devices are non-compliant.
+        /// Uses: Intune compliance states from GetWindowsWorkstationsAsync() + ConfigMgr device count.
+        /// </summary>
+        public async Task<ComplianceEnforcementComparison> GetComplianceEnforcementComparisonAsync()
+        {
+            var comparison = new ComplianceEnforcementComparison();
+
+            try
+            {
+                Instance.Info("🚫 Fetching Compliance Enforcement Loop Comparison...");
+
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                comparison.IntuneTotalDevices = intuneDevices.Count;
+
+                // Compliance states from Graph: compliant, noncompliant, inGracePeriod, configManager, unknown
+                comparison.IntuneCompliantCount = intuneDevices.Count(d =>
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Compliant);
+                comparison.IntuneNonCompliantCount = intuneDevices.Count(d =>
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.Noncompliant);
+                comparison.IntuneInGracePeriodCount = intuneDevices.Count(d =>
+                    d.ComplianceState == Microsoft.Graph.Models.ComplianceState.InGracePeriod);
+
+                // ConfigMgr device count
+                var configMgrHealth = await _configMgrService.GetClientHealthMetricsAsync();
+                comparison.ConfigMgrDeviceCount = configMgrHealth.Count;
+
+                Instance.Info($"   ✓ Intune: {comparison.IntuneCompliantCount} compliant, {comparison.IntuneNonCompliantCount} blocked, {comparison.IntuneInGracePeriodCount} in grace period");
+                Instance.Info($"   ✓ ConfigMgr: {comparison.ConfigMgrDeviceCount} devices — non-compliance = report only, no enforcement");
+                Instance.Info($"   🚫 RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Compliance Enforcement Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
+        /// <summary>
+        /// Gets enrollment velocity data — devices enrolled per week with trend comparison.
+        /// Leverages existing GetEnrollmentAccelerationInsightAsync and autopilot data.
+        /// </summary>
+        public async Task<EnrollmentVelocityComparison> GetEnrollmentVelocityComparisonAsync()
+        {
+            var comparison = new EnrollmentVelocityComparison();
+
+            try
+            {
+                Instance.Info("⚡ Fetching Enrollment Velocity Comparison...");
+
+                // Get all managed devices to calculate weekly enrollment velocity
+                var intuneDevices = await _graphService.GetWindowsWorkstationsAsync();
+                var now = DateTimeOffset.UtcNow;
+
+                // Count devices enrolled in last 7 days vs previous 7 days
+                comparison.EnrolledThisWeek = intuneDevices.Count(d =>
+                    d.EnrolledDateTime.HasValue &&
+                    (now - d.EnrolledDateTime.Value).TotalDays <= 7);
+
+                comparison.EnrolledPreviousWeek = intuneDevices.Count(d =>
+                    d.EnrolledDateTime.HasValue &&
+                    (now - d.EnrolledDateTime.Value).TotalDays > 7 &&
+                    (now - d.EnrolledDateTime.Value).TotalDays <= 14);
+
+                // Get Autopilot registration count
+                try
+                {
+                    var autopilotDevices = await _graphService.GetAutopilotDeviceStatusAsync();
+                    comparison.AutopilotRegisteredCount = autopilotDevices?.Count ?? 0;
+                }
+                catch
+                {
+                    comparison.AutopilotRegisteredCount = 0;
+                }
+
+                // Get peer benchmarks from existing acceleration insight
+                try
+                {
+                    var insight = await _graphService.GetEnrollmentAccelerationInsightAsync();
+                    if (insight != null)
+                    {
+                        comparison.PeerAverageRate = insight.PeerAverageRate;
+                        comparison.OrganizationCategory = insight.OrganizationCategory;
+                    }
+                }
+                catch
+                {
+                    // Peer data optional
+                }
+
+                Instance.Info($"   ✓ Enrolled this week: {comparison.EnrolledThisWeek}, last week: {comparison.EnrolledPreviousWeek}");
+                Instance.Info($"   ✓ Trend: {comparison.WeeklyTrend} {comparison.TrendArrow}");
+                Instance.Info($"   ✓ Autopilot registered: {comparison.AutopilotRegisteredCount}");
+                Instance.Info($"   ⚡ RESULT: {comparison.ComparisonIcon} {comparison.ComparisonSummary}");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"Enrollment Velocity Comparison failed: {ex.Message}");
+            }
+
+            return comparison;
+        }
+
         #endregion
     }
 }
