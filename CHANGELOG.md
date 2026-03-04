@@ -10,6 +10,22 @@
 - 
 
 
+## [3.17.224] - 2026-03-04
+
+### Added
+
+### Changed
+- **Installation Docs: MSI-First**: Updated all installation instructions across AdminUserGuide.html, README.md, Alpha-Tester-Guide.md, AUTO_UPDATE_GUIDE.md, and QUICK_TEST_INSTRUCTIONS.md to use MSI installer as the primary (and recommended) install method
+  - Removed ZIP extraction + PowerShell script install references from user-facing docs
+  - Added silent install command (`msiexec /i ... /qn`) for enterprise deployment
+  - Updated uninstall instructions to use Add/Remove Programs
+  - Updated offline install to use MSI + .NET runtime
+  - Files: `AdminUserGuide.html`, `README.md`, `docs/Alpha-Tester-Guide.md`, `docs/AUTO_UPDATE_GUIDE.md`, `docs/QUICK_TEST_INSTRUCTIONS.md`
+
+### Fixed
+- 
+
+
 ## [3.17.223] - 2026-03-04
 
 ### Added

@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.223** | March 4, 2026
+**Version 3.17.224** | March 4, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -55,19 +55,13 @@
 
 > **Note:** .NET 8.0 Desktop Runtime is required. Download from [Microsoft](https://dotnet.microsoft.com/download/dotnet/8.0) if not already installed.
 
-### Alternative: PowerShell Script Installation
+### Silent Install (Enterprise Deployment)
 
-If you prefer the PowerShell installer (auto-downloads .NET runtime):
+For automated deployment via SCCM, Intune, or GPO:
 
-1. **Extract the ZIP** to any folder
-2. **Right-click** `Install-ZeroTrustMigrationAddin.ps1` → **Run with PowerShell**
-3. **Launch ConfigMgr Console**
-
-The PowerShell installer:
-- ✅ Checks and elevates to admin if needed
-- ✅ Downloads and installs .NET 8.0 Runtime if missing (~55MB)
-- ✅ Validates the installation
-- ✅ Creates an uninstaller script
+```powershell
+msiexec /i ZeroTrustMigrationAddin.msi /qn
+```
 
 ### What Gets Installed
 
@@ -78,7 +72,7 @@ The PowerShell installer:
 - Microsoft Graph SDK
 - All supporting assemblies
 
-**Total Deployment Size:** ~72MB (MSI) or 233MB (ZIP with dependencies)
+**Total Deployment Size:** ~72MB (MSI installer)
 
 **Installation Location:**
 ```
@@ -93,6 +87,7 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 ---
 
 ## 🆕 What's New
+
 
 
 
@@ -412,8 +407,8 @@ Cloud Native Assessment requires outbound HTTPS (port 443) access to the followi
 | **ConfigMgr Admin Service** | `https://<your-site-server>/AdminService/*` | ConfigMgr data (internal network) |
 
 **If auto-updates are blocked by firewall:**
-1. Download the latest release manually from: https://github.com/sccmavenger/cmaddin/releases/latest
-2. Extract and run `Install-ZeroTrustMigrationAddin.ps1` or the MSI installer
+1. Download the latest MSI installer manually from: https://github.com/sccmavenger/cmaddin/releases/latest
+2. Run the MSI installer to update
 3. The app will continue to function normally without auto-update
 
 ### No Pre-Installation Required
@@ -510,8 +505,8 @@ Replace `{tenant-id}` with your actual tenant ID.
 
 **"Can't find the dashboard in ConfigMgr Console":**
 - The installation might not have worked
-- Try running `Install-ZeroTrustMigrationAddin.ps1` again
-- Or ask whoever installed it to check
+- Try reinstalling via the MSI installer from [GitHub Releases](https://github.com/sccmavenger/cmaddin/releases/latest)
+- Or uninstall via **Add/Remove Programs** and reinstall
 
 ---
 
@@ -993,24 +988,27 @@ A: Click the **📖 Guide** button in the top toolbar - opens full documentation
 
 ---
 
-## 📦 Automated Installation (Recommended)
+## 📦 Installation (Recommended: MSI Installer)
 
-### One-Command Install
+### Download and Install
+
+1. Download the latest `.msi` from [GitHub Releases](https://github.com/sccmavenger/cmaddin/releases/latest)
+2. Run the MSI installer and follow the wizard
+3. Launch from Start Menu, Desktop shortcut, or ConfigMgr Console ribbon
+
+The MSI installer handles everything:
+- ✅ Installs to the correct ConfigMgr Console location
+- ✅ Registers the add-in with ConfigMgr
+- ✅ Creates Start Menu and Desktop shortcuts
+- ✅ Supports standard **Add/Remove Programs** uninstall
+
+**Expected Time:** Under 1 minute
+
+### Silent Install (Enterprise Deployment)
 
 ```powershell
-.\Install-ZeroTrustMigrationAddin.ps1
+msiexec /i ZeroTrustMigrationAddin.msi /qn
 ```
-
-The automated installer handles everything:
-- ✓ Checks for administrator privileges (elevates if needed)
-- ✓ Detects ConfigMgr Console installation
-- ✓ Downloads and installs .NET 8.0 Runtime if missing
-- ✓ Builds application with all dependencies
-- ✓ Deploys to ConfigMgr Console
-- ✓ Validates installation
-- ✓ Creates uninstaller
-
-**Expected Time:** 2-5 minutes
 
 ### Installation Verification
 
@@ -1058,32 +1056,34 @@ For machines without internet access:
 
 ### Step 1: Download Prerequisites (on connected machine)
 
-```powershell
-# Download .NET Runtime installer
-$url = "https://download.visualstudio.microsoft.com/download/pr/6224f00f-08da-4e7f-85b1-00d42c2bb3d3/b775de636b91e023574a0bbc291f705a/windowsdesktop-runtime-8.0.11-win-x64.exe"
-Invoke-WebRequest -Uri $url -OutFile "windowsdesktop-runtime-8.0.11-win-x64.exe"
-```
+1. Download the MSI installer from [GitHub Releases](https://github.com/sccmavenger/cmaddin/releases/latest)
+2. Download the .NET 8.0 Desktop Runtime installer from [Microsoft](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ### Step 2: On offline machine
 
-1. Copy application folder and .NET Runtime installer
-2. Install .NET Runtime manually:
+1. Copy the MSI installer and .NET Runtime installer to the machine
+2. Install .NET Runtime:
    ```powershell
    .\windowsdesktop-runtime-8.0.11-win-x64.exe /install /quiet
    ```
-3. Run installer:
+3. Install the application:
    ```powershell
-   .\Install-ZeroTrustMigrationAddin.ps1 -SkipBuild
+   msiexec /i ZeroTrustMigrationAddin.msi /qn
    ```
 
 ---
 
 ## 🗑️ Uninstallation
 
-After installation, an uninstaller is automatically created:
+Use standard Windows uninstall:
 
+1. Open **Settings** → **Apps** → **Installed apps**
+2. Search for "Cloud Native Assessment"
+3. Click **Uninstall**
+
+Or via command line:
 ```powershell
-.\Uninstall-ZeroTrustMigrationAddin.ps1
+msiexec /x ZeroTrustMigrationAddin.msi /qn
 ```
 
 The uninstaller removes:
@@ -1180,12 +1180,6 @@ Change the method via the **🔐 Auth** button in the toolbar.
 ## �🛠️ Troubleshooting
 
 ### Common Issues
-
-#### "Script is not digitally signed"
-Run PowerShell as Administrator:
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
 
 #### "Add-in not appearing in Console"
 - Verify XML file is in Extensions folder
@@ -1350,12 +1344,7 @@ This launches dashboard as standalone window with mock data.
 
 ### Testing with ConfigMgr Integration
 
-Use automated installer:
-```powershell
-.\Install-ZeroTrustMigrationAddin.ps1
-```
-
-Or manual deployment:
+Use the MSI installer from [GitHub Releases](https://github.com/sccmavenger/cmaddin/releases/latest), or for development use manual deployment:
 ```powershell
 # Build
 dotnet build -c Release
@@ -1568,5 +1557,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-03-04  
-**Version**: 3.17.223  
+**Version**: 3.17.224  
 **Maintainer:** Cloud Native Assessment Team

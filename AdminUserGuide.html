@@ -487,15 +487,28 @@
         <section id="installation">
             <h2><span class="emoji">📥</span> Installation</h2>
 
-            <h3>Quick Install</h3>
+            <h3>Quick Install (MSI Installer)</h3>
             <ol>
-                <li><strong>Download</strong> the latest release from GitHub:
+                <li><strong>Download</strong> the latest <code>.msi</code> installer from GitHub:
                     <pre><code>https://github.com/sccmavenger/cmaddin/releases/latest</code></pre>
                 </li>
-                <li><strong>Extract</strong> the ZIP file to a folder (e.g., <code>C:\ZeroTrustMigrationAddin</code>)</li>
-                <li><strong>Run</strong> <code>ZeroTrustMigrationAddin.exe</code></li>
+                <li><strong>Run</strong> the MSI installer (<code>ZeroTrustMigrationAddin-v*.msi</code>) and follow the wizard</li>
+                <li><strong>Launch</strong> from the Start Menu, Desktop shortcut, or ConfigMgr Console ribbon</li>
                 <li><strong>Authenticate</strong> with your Microsoft 365 account when prompted</li>
             </ol>
+
+            <div class="alert alert-info">
+                <strong>💡 The MSI installer automatically:</strong>
+                <ul>
+                    <li>Installs to the correct ConfigMgr Console location</li>
+                    <li>Registers the add-in with ConfigMgr</li>
+                    <li>Creates Start Menu and Desktop shortcuts</li>
+                    <li>Supports standard Add/Remove Programs uninstall</li>
+                </ul>
+            </div>
+
+            <h3>Silent Install (Enterprise Deployment)</h3>
+            <pre><code>msiexec /i ZeroTrustMigrationAddin.msi /qn</code></pre>
 
             <h3>First Launch</h3>
             <p>When you launch the app for the first time:</p>
@@ -794,22 +807,9 @@
             </ul>
 
             <div class="alert alert-success">
-                <strong>🎉 Version 3.17.223 - March 4, 2026</strong>
+                <strong>🎉 Version 3.17.224 - March 4, 2026</strong>
                 <ul>
-                    <li><strong>Cloud Comparison Details Tab</strong> : New hidden tab containing 15 comparison cards moved from main tab</li>
-                    <li>Default hidden (Collapsed), reveal via `/showtabs:cloudcomparisondetails` CLI arg</li>
-                    <li>Organized into 4 sections: Security, Visibility & Control, Migration Readiness, Infrastructure</li>
-                    <li>Files: `Views/CloudComparisonDetailsTab.xaml`, `Views/CloudComparisonDetailsTab.xaml.cs`</li>
-                    <li><strong>Enrollment Velocity Model & Service</strong> : New `EnrollmentVelocityComparison` model with weekly enrollment counts, trend detection (accelerating/steady/slowing), and provisioning time estimates</li>
-                    <li>Files: `Models/CloudReadinessModels.cs`, `Services/CloudReadinessService.cs`</li>
-                    <li><strong>Tab Visibility for Cloud Comparison Details</strong> : Added `ShowCloudComparisonDetailsTab` property with Collapsed default</li>
-                    <li>Files: `Models/TabVisibilityOptions.cs`, `ViewModels/DashboardViewModel.cs`, `Views/DashboardWindow.xaml`, `Views/DashboardWindow.xaml.cs`</li>
-                    <li><strong>Cloud Native Tab Refocus</strong> : Slimmed main Cloud Native tab from 20 cards to 4 high-impact cards + hero section</li>
-                    <li>Kept: Device Compliance, Security Blind Spots (stale devices), Zero Trust Ready, Cloud Native Progress hero with trend chart</li>
-                    <li>Added: NEW Enrollment Velocity card showing devices/week trend + Autopilot vs ConfigMgr provisioning time comparison</li>
-                    <li>Deleted: OS Currency and "5 Questions ConfigMgr Can't Answer" cards (low value)</li>
-                    <li>Moved 15 remaining cards to new hidden "Cloud Comparison Details" tab</li>
-                    <li>Files: `Views/CloudValueComparisonTab.xaml`, `Views/CloudValueComparisonTab.xaml.cs`</li>
+                    <li>Version update</li>
                 </ul>
             </div>
         </section>
@@ -1582,7 +1582,7 @@ CloudNative = IntuneDevices.Where(device =>
         </section>
 
         <footer>
-            <p>Cloud Native Assessment v3.17.223 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
+            <p>Cloud Native Assessment v3.17.224 | <a href="https://github.com/sccmavenger/cmaddin" style="color: #0078d4;">GitHub Repository</a></p>
             <p>© 2026 | For ConfigMgr and Intune administrators</p>
         </footer>
     </div>

@@ -96,22 +96,22 @@ Please complete **at least 10** of the following 20 test cases. Feel free to com
 
 ### Installation & Launch (Test Cases 1-4)
 
-#### Test Case 1: Fresh Installation
+#### Test Case 1: Fresh Installation (MSI)
 | Item | Details |
-|------|---------|
-| **Objective** | Verify the application installs correctly |
+|------|--------|
+| **Objective** | Verify the MSI installer works correctly |
 | **Prerequisites** | ConfigMgr Console installed, .NET 8.0 Desktop Runtime |
-| **Steps** | 1. Download the ZIP file<br>2. Extract to a folder<br>3. Run `ZeroTrustMigrationAddin.exe` |
-| **Expected Result** | Application launches without errors |
+| **Steps** | 1. Download the MSI from GitHub Releases<br>2. Run the MSI installer<br>3. Complete the installation wizard<br>4. Launch from Start Menu, Desktop shortcut, or ConfigMgr Console ribbon |
+| **Expected Result** | Installation completes, app appears in ConfigMgr Console ribbon |
 | **Your Result** | ☐ Pass ☐ Fail ☐ Blocked |
 | **Notes** | |
 
-#### Test Case 2: MSI Installation
+#### Test Case 2: Silent Installation
 | Item | Details |
 |------|---------|
-| **Objective** | Verify MSI installer works correctly |
+| **Objective** | Verify MSI silent install works correctly |
 | **Prerequisites** | ConfigMgr Console installed |
-| **Steps** | 1. Download the MSI file<br>2. Run the installer<br>3. Complete installation wizard<br>4. Launch from Start Menu or ConfigMgr Console |
+| **Steps** | 1. Run `msiexec /i ZeroTrustMigrationAddin.msi /qn` from an elevated command prompt<br>2. Launch from Start Menu or ConfigMgr Console |
 | **Expected Result** | Installation completes, app appears in ConfigMgr Console ribbon |
 | **Your Result** | ☐ Pass ☐ Fail ☐ Blocked |
 | **Notes** | |
@@ -439,7 +439,7 @@ Devices with missing inventory data are typically excluded from calculations.
 
 A: Try these steps:
 1. Ensure .NET 8.0 Desktop Runtime is installed
-2. Run the EXE directly (not from a ZIP without extracting)
+2. Try reinstalling via the MSI installer
 3. Check if antivirus is blocking the application
 4. Look for logs in `%LOCALAPPDATA%\ZeroTrustMigrationAddin\Logs\`
 
