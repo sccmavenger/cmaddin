@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.224** | March 4, 2026
+**Version 3.17.226** | March 4, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -242,6 +242,36 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.225 (March 4, 2026)
+
+### Added
+
+### Changed
+- **README: Updated Getting Started auth flow**: Changed Step 2 from Device Code Flow (copy code → devicelogin) to Interactive Browser Flow (browser opens automatically). Added tip about Device Code fallback via Auth button for remote sessions.
+  - Files: `README.md`
+
+### Fixed
+
+---
+
+### Version 3.17.224 (March 4, 2026)
+
+### Added
+
+### Changed
+- **Installation Docs: MSI-First**: Updated all installation instructions across AdminUserGuide.html, README.md, Alpha-Tester-Guide.md, AUTO_UPDATE_GUIDE.md, and QUICK_TEST_INSTRUCTIONS.md to use MSI installer as the primary (and recommended) install method
+  - Removed ZIP extraction + PowerShell script install references from user-facing docs
+  - Added silent install command (`msiexec /i ... /qn`) for enterprise deployment
+  - Updated uninstall instructions to use Add/Remove Programs
+  - Updated offline install to use MSI + .NET runtime
+  - Files: `AdminUserGuide.html`, `README.md`, `docs/Alpha-Tester-Guide.md`, `docs/AUTO_UPDATE_GUIDE.md`, `docs/QUICK_TEST_INSTRUCTIONS.md`
+
+### Fixed
+
+---
+
 ### Version 3.17.223 (March 4, 2026)
 
 ### Changed
@@ -309,40 +339,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 ### Fixed
 - N/A
-
----
-
-### Version 3.17.214 (February 19, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **Cloud Native Tab Comparison Accuracy**: Fixed misleading comparisons with small ConfigMgr populations
-  - Added minimum threshold (10 devices) before comparing percentages between platforms
-  - When ConfigMgr has <10 devices, shows "Limited ConfigMgr data" or "Cloud sees X devices ConfigMgr can't track"
-  - When Intune sees 2x+ more devices, reframes as cloud visibility benefit instead of percentage comparison
-  - Prevents "ConfigMgr is 74% more compliant" messages when comparing 4 vs 81 devices
-  - Updated DeviceComplianceComparison, StaleDeviceComparison, and SyncFreshnessComparison models
-- **AdminUserGuide.html**: Corrected co-management workload count from 8 to 7
-  - Removed incorrect "Inventory" workload from table (not a co-management workload)
-  - Fixed "all 8 workloads" → "all 7 workloads" in two places
-
----
-
-### Version 3.17.213 (February 19, 2026)
-
-### Added
-- **Autopilot Readiness**: Added Autopilot registration status check
-  - Shows devices that meet OS requirements AND are NOT yet registered in Autopilot
-  - "Ready" count = devices admin needs to go register with the Autopilot service
-  - Clear breakdown: Meeting OS requirements → Already registered vs Ready to register
-  - Diagnostic table shows devices ready for registration with OS version/edition
-
-### Changed
-
-### Fixed
 
 ---
 
@@ -437,13 +433,12 @@ Cloud Native Assessment requires outbound HTTPS (port 443) access to the followi
 
 **Step 2: Connect to Your Intune Data**
 1. Click the green **"🔗 Graph"** button at the top
-2. A popup shows a code (like "ABC-DEF-123")
-3. Copy that code
-4. Open your web browser → go to https://microsoft.com/devicelogin
-5. Paste the code and click Next
-6. Sign in with your Microsoft 365 admin account
-7. Click "Accept" when it asks for permissions
-8. Come back to the dashboard - it'll say "Connected" with a green checkmark
+2. Your default browser opens to the Microsoft sign-in page
+3. Sign in with your Microsoft 365 admin account
+4. Click "Accept" when it asks for permissions
+5. Come back to the dashboard - it'll say "Connected" with a green checkmark
+
+> **💡 Tip:** If browser authentication doesn't work in your environment (e.g., remote sessions), click the **"🔐 Auth"** button to switch to Device Code Flow as a fallback.
 
 **Step 3: Connect to Your ConfigMgr Data (Optional but Recommended)**
 1. Click the blue **"🖥️ ConfigMgr"** button at the top
@@ -1557,5 +1552,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-03-04  
-**Version**: 3.17.224  
+**Version**: 3.17.226  
 **Maintainer:** Cloud Native Assessment Team
