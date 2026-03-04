@@ -10,6 +10,28 @@
 - 
 
 
+## [3.17.226] - 2026-03-04
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.225] - 2026-03-04
+
+### Added
+
+### Changed
+- **README: Updated Getting Started auth flow**: Changed Step 2 from Device Code Flow (copy code → devicelogin) to Interactive Browser Flow (browser opens automatically). Added tip about Device Code fallback via Auth button for remote sessions.
+  - Files: `README.md`
+
+### Fixed
+- 
+
+
 ## [3.17.224] - 2026-03-04
 
 ### Added
