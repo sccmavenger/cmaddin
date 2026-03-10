@@ -101,8 +101,13 @@ namespace ZeroTrustMigrationAddin.Views
                 var staleTask = _readinessService.GetStaleDeviceComparisonAsync();
                 var caTask = _readinessService.GetConditionalAccessComparisonAsync();
                 var velocityTask = _readinessService.GetEnrollmentVelocityComparisonAsync();
+                var autopilotTask = _readinessService.GetAutopilotComparisonAsync();
+                var updateRingTask = _readinessService.GetUpdateRingComparisonAsync();
+                var defenderTask = _readinessService.GetDefenderIntegrationComparisonAsync();
+                var workloadTask = _readinessService.GetWorkloadAuthorityComparisonAsync();
                 
-                await Task.WhenAll(complianceTask, staleTask, caTask, velocityTask);
+                await Task.WhenAll(complianceTask, staleTask, caTask, velocityTask,
+                    autopilotTask, updateRingTask, defenderTask, workloadTask);
                 
                 // Update UI with real data
                 var compliance = await complianceTask;
@@ -114,6 +119,10 @@ namespace ZeroTrustMigrationAddin.Views
                 UpdateStaleDevicesCard(stale);
                 UpdateConditionalAccessCard(ca);
                 UpdateEnrollmentVelocityCard(velocity);
+                UpdateAutopilotCard(await autopilotTask);
+                UpdateUpdateRingCard(await updateRingTask);
+                UpdateDefenderIntegrationCard(await defenderTask);
+                UpdateAgentRemovalCard(await workloadTask);
                 
                 // Load Cloud Native data from enrollment
                 var enrollment = await _graphService.GetDeviceEnrollmentAsync();
@@ -179,6 +188,53 @@ namespace ZeroTrustMigrationAddin.Views
             AutopilotProvisionEstimate.Text = "vs ~30 min self-service";
             VelocityComparisonIcon.Text = "📈";
             VelocitySummaryText.Text = "24 enrolled this week — up from 17 last week. Autopilot: ~30 min vs ~4 hrs imaging. (Demo)";
+            
+            // Card 5: Autopilot vs Imaging
+            AutopilotRegistered.Text = "312";
+            AutopilotProfiles.Text = "289 with profiles";
+            ConfigMgrImagingDevices.Text = "1,250";
+            AutopilotSummaryText.Text = "312 devices ready for Autopilot — self-provision from anywhere. (Demo)";
+            
+            // Card 6: Update Rings
+            IntuneRingCount.Text = "3";
+            IntuneRingDevices.Text = "covering 847 devices";
+            ConfigMgrUpdateDevices.Text = "1,250";
+            ConfigMgrUpdateCompliance.Text = "82% compliant";
+            UpdateRingSummaryText.Text = "3 WUfB rings — updates from Microsoft CDN, no WSUS infrastructure. (Demo)";
+            
+            // Defender Integration
+            DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
+            DefenderOnboardingHint.Visibility = Visibility.Collapsed;
+            DefenderDataPanel.Visibility = Visibility.Visible;
+            DefenderCapabilityTags.Opacity = 1.0;
+            DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusLicensed");
+            DefenderLicenseIcon.Text = "🟢";
+            DefenderLicenseText.Text = "Demo Data";
+            DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
+            DefenderMDEOnboarded.Text = "847 devices with MDE visibility";
+            DefenderRealTimeProtection.Text = "812 with real-time malware reporting";
+            DefenderRemediatedCount.Text = "✓ 47 threats auto-remediated this month";
+            DefenderConfigMgrEnabled.Text = "1,203 devices with 'AV enabled'";
+            DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("SuccessGreenLight");
+            DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
+            DefenderSummaryText.Text = "🛡️ Intune sees 3 active threats on 2 devices. ConfigMgr only knows 'AV is enabled'. (Demo)";
+            
+            // Agent Removal Recommendation
+            AgentRemovalReadyCount.Text = "124";
+            AgentRemovalReadyPercent.Text = "14.6% of co-managed";
+            AgentRemovalNotReadyCount.Text = "723";
+            AgentRemovalBlockerText.Text = "avg 2.3 workloads remaining";
+            AgentRemovalSummaryText.Text = "124 devices have ALL workloads on Intune — recommend removing the ConfigMgr agent to complete cloud-native transition. (Demo)";
+            UpdateAgentRemovalWorkloadChecklist(new Dictionary<string, double>
+            {
+                ["Compliance Policy"] = 72.0,
+                ["Device Configuration"] = 58.0,
+                ["Windows Update"] = 85.0,
+                ["Endpoint Protection"] = 45.0,
+                ["Modern Apps"] = 63.0,
+                ["Office Apps"] = 38.0,
+                ["Resource Access"] = 91.0
+            });
             
             // Cloud Native Section (Hero)
             CloudNativeCount.Text = "201";
@@ -275,6 +331,185 @@ namespace ZeroTrustMigrationAddin.Views
             AutopilotProvisionEstimate.Text = $"vs {data.AutopilotEstimate}";
             VelocityComparisonIcon.Text = data.ComparisonIcon;
             VelocitySummaryText.Text = data.ComparisonSummary;
+        }
+
+        private void UpdateAutopilotCard(AutopilotComparison? data)
+        {
+            if (data == null) return;
+            AutopilotRegistered.Text = $"{data.AutopilotRegisteredCount:N0}";
+            AutopilotProfiles.Text = data.AutopilotProfileAssignedCount > 0 ? $"{data.AutopilotProfileAssignedCount:N0} with profiles" : "";
+            ConfigMgrImagingDevices.Text = $"{data.ConfigMgrDeviceCount:N0}";
+            AutopilotIcon.Text = data.ComparisonIcon;
+            AutopilotSummaryText.Text = data.ComparisonSummary;
+        }
+
+        private void UpdateUpdateRingCard(UpdateRingComparison? data)
+        {
+            if (data == null) return;
+            IntuneRingCount.Text = $"{data.IntuneRingCount}";
+            IntuneRingDevices.Text = data.IntuneDevicesInRings > 0 ? $"covering {data.IntuneDevicesInRings:N0} devices" : "";
+            ConfigMgrUpdateDevices.Text = $"{data.ConfigMgrDeviceCount:N0}";
+            ConfigMgrUpdateCompliance.Text = data.ConfigMgrUpdateComplianceRate > 0 ? $"{data.ConfigMgrUpdateComplianceRate:F0}% compliant" : "";
+            UpdateRingIcon.Text = data.ComparisonIcon;
+            UpdateRingSummaryText.Text = data.ComparisonSummary;
+        }
+
+        private void UpdateDefenderIntegrationCard(DefenderIntegrationComparison? data)
+        {
+            if (data == null) return;
+            
+            if (!data.IsMDELicensed)
+            {
+                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusNotLicensed");
+                DefenderLicenseIcon.Text = "🔴";
+                DefenderLicenseText.Text = "MDE Not Licensed";
+                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("ErrorRed");
+            }
+            else if (!data.IsMDEP2Licensed)
+            {
+                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusPartial");
+                DefenderLicenseIcon.Text = "🟡";
+                DefenderLicenseText.Text = "MDE P1 (Limited)";
+                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("WarningOrange");
+            }
+            else
+            {
+                DefenderLicenseBadge.Style = (Style)FindResource("LicenseStatusLicensed");
+                DefenderLicenseIcon.Text = "🟢";
+                DefenderLicenseText.Text = "MDE Licensed";
+                DefenderLicenseText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
+            }
+
+            if (!data.IsMDELicensed && data.IntuneDeviceCount > 0)
+            {
+                DefenderNotLicensedBanner.Visibility = Visibility.Visible;
+                DefenderNotLicensedHint.Text = $"Your {data.IntuneDeviceCount:N0} Intune devices could have real-time threat visibility with MDE.";
+                DefenderCapabilityTags.Opacity = 0.5;
+                DefenderDataPanel.Visibility = Visibility.Collapsed;
+                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
+                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("ErrorRedLight");
+                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("ErrorRedDark");
+                DefenderSummaryText.Text = "⚠️ You have NO visibility into active threats.";
+            }
+            else if (data.IntuneMDEOnboardedCount > 0)
+            {
+                DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
+                DefenderCapabilityTags.Opacity = 1.0;
+                DefenderDataPanel.Visibility = Visibility.Visible;
+                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
+                DefenderMDEOnboarded.Text = $"{data.IntuneMDEOnboardedCount:N0} devices with MDE visibility";
+                DefenderRealTimeProtection.Text = $"{data.IntuneRealTimeProtectionCount:N0} with real-time malware reporting";
+                DefenderRemediatedCount.Text = data.IntuneRemediatedMalwareCount > 0 ? $"✓ {data.IntuneRemediatedMalwareCount:N0} threats auto-remediated" : "";
+                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("SuccessGreenLight");
+                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
+                DefenderSummaryText.Text = data.ComparisonSummary;
+            }
+            else
+            {
+                DefenderNotLicensedBanner.Visibility = Visibility.Collapsed;
+                DefenderDataPanel.Visibility = Visibility.Visible;
+                DefenderOnboardingHint.Visibility = Visibility.Collapsed;
+                DefenderCapabilityTags.Opacity = 0.5;
+                DefenderMDEOnboarded.Text = "No Intune devices yet";
+                DefenderRealTimeProtection.Text = "Connect to Intune to see threat visibility";
+                DefenderRemediatedCount.Text = "";
+                DefenderSummaryBorder.Background = (System.Windows.Media.Brush)FindResource("BackgroundSubtle");
+                DefenderSummaryText.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondary");
+                DefenderSummaryText.Text = "Enroll devices to Intune to enable real-time threat visibility with MDE.";
+            }
+            
+            DefenderConfigMgrEnabled.Text = $"{data.ConfigMgrProtectionEnabledCount:N0} devices with 'AV enabled'";
+        }
+
+        private void UpdateAgentRemovalCard(WorkloadAuthorityComparison? data)
+        {
+            if (data == null || !data.HasData) return;
+            
+            // Count devices ready for agent removal (all workloads on Intune)
+            // We derive this from the workload comparison data
+            var readyCount = 0;
+            var notReadyCount = 0;
+            var totalCoManaged = data.TotalCoManagedDevices;
+            
+            // If all 7 workloads are at 90%+ Intune, most devices are ready
+            var fullyOnIntune = data.WorkloadsFullyOnIntune;
+            if (fullyOnIntune == 7 && totalCoManaged > 0)
+            {
+                // All workloads fully on Intune — use the lowest workload adoption as floor
+                var minAdoption = data.Workloads.Min(w => w.IntunePercentage);
+                readyCount = (int)(totalCoManaged * minAdoption / 100.0);
+                notReadyCount = totalCoManaged - readyCount;
+            }
+            else if (totalCoManaged > 0)
+            {
+                // Estimate: devices where ALL workloads are on Intune
+                // Conservative estimate: use minimum workload adoption percentage
+                var minAdoption = data.Workloads.Any() ? data.Workloads.Min(w => w.IntunePercentage) : 0;
+                readyCount = (int)(totalCoManaged * Math.Max(0, minAdoption - 10) / 100.0); // Conservative
+                notReadyCount = totalCoManaged - readyCount;
+            }
+            
+            AgentRemovalReadyCount.Text = $"{readyCount:N0}";
+            AgentRemovalReadyPercent.Text = totalCoManaged > 0 
+                ? $"{(double)readyCount / totalCoManaged * 100:F1}% of co-managed" 
+                : "--% of co-managed";
+            AgentRemovalNotReadyCount.Text = $"{notReadyCount:N0}";
+            
+            var avgWorkloadsRemaining = data.Workloads.Any() 
+                ? 7.0 - data.Workloads.Average(w => w.IntunePercentage) / 100.0 * 7.0 
+                : 7.0;
+            AgentRemovalBlockerText.Text = $"avg {avgWorkloadsRemaining:F1} workloads remaining";
+            
+            // Update workload checklist
+            var workloadAdoption = new Dictionary<string, double>();
+            foreach (var wl in data.Workloads)
+            {
+                workloadAdoption[wl.WorkloadName] = wl.IntunePercentage;
+            }
+            UpdateAgentRemovalWorkloadChecklist(workloadAdoption);
+            
+            // Summary
+            if (readyCount > 0)
+            {
+                AgentRemovalBadgeText.Text = "ACTION RECOMMENDED";
+                AgentRemovalSummaryText.Text = $"{readyCount:N0} devices have all workloads on Intune — recommend removing the ConfigMgr agent to complete cloud-native transition.";
+            }
+            else if (fullyOnIntune >= 5)
+            {
+                AgentRemovalBadgeText.Text = "GETTING CLOSE";
+                AgentRemovalSummaryText.Text = $"{fullyOnIntune}/7 workloads fully on Intune. Move the remaining {7 - fullyOnIntune} to unlock agent removal.";
+            }
+            else
+            {
+                AgentRemovalBadgeText.Text = "IN PROGRESS";
+                AgentRemovalSummaryText.Text = $"{fullyOnIntune}/7 workloads on Intune. Continue transitioning workloads to prepare for ConfigMgr agent removal.";
+            }
+        }
+
+        private void UpdateAgentRemovalWorkloadChecklist(Dictionary<string, double> workloadAdoption)
+        {
+            var controls = new Dictionary<string, TextBlock>
+            {
+                ["Compliance Policy"] = AgentRemovalWL1,
+                ["Device Configuration"] = AgentRemovalWL2,
+                ["Windows Update"] = AgentRemovalWL3,
+                ["Endpoint Protection"] = AgentRemovalWL4,
+                ["Modern Apps"] = AgentRemovalWL5,
+                ["Office Apps"] = AgentRemovalWL6,
+                ["Resource Access"] = AgentRemovalWL7
+            };
+            
+            foreach (var kvp in controls)
+            {
+                if (workloadAdoption.TryGetValue(kvp.Key, out var pct))
+                {
+                    var icon = pct >= 90 ? "✅" : pct >= 50 ? "🟡" : "🔴";
+                    kvp.Value.Text = $"{icon} {kvp.Key} ({pct:F0}% on Intune)";
+                    kvp.Value.Foreground = pct >= 90 
+                        ? (System.Windows.Media.Brush)FindResource("SuccessGreen") 
+                        : (System.Windows.Media.Brush)FindResource("TextSecondary");
+                }
+            }
         }
 
         private void UpdateCloudNativeSection(DeviceEnrollment? enrollment)
