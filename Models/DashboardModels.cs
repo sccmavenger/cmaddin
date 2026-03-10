@@ -157,6 +157,41 @@ namespace ZeroTrustMigrationAddin.Models
         public string Icon { get; set; } = "⚠️";
     }
 
+    /// <summary>
+    /// A data-driven migration sequencing step computed from real workload data.
+    /// </summary>
+    public class WorkloadSequenceStep
+    {
+        public int StepNumber { get; set; }
+        public string WorkloadName { get; set; } = string.Empty;
+        public double AdoptionPercentage { get; set; }
+        public string Rationale { get; set; } = string.Empty;
+        public string ReadinessLabel { get; set; } = string.Empty;
+        public string TimelineLabel { get; set; } = string.Empty;
+        public string RiskLevel { get; set; } = string.Empty;
+        public string DependencyNote { get; set; } = string.Empty;
+        public string EstimatedTime { get; set; } = string.Empty;
+        public int DeviceCount { get; set; }
+
+        /// <summary>Color key for step number badge</summary>
+        public string StepColor => StepNumber switch
+        {
+            1 => "#107C10",  // Green - ready now
+            2 => "#0078D4",  // Blue - next
+            3 => "#0078D4",
+            _ => "#FFB900"   // Yellow - later
+        };
+
+        /// <summary>Color key for readiness badge</summary>
+        public string ReadinessColor => AdoptionPercentage switch
+        {
+            >= 90 => "#107C10",
+            >= 50 => "#0078D4",
+            >= 20 => "#FFB900",
+            _ => "#D13438"
+        };
+    }
+
     public enum WorkloadStatus
     {
         NotStarted,

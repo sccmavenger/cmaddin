@@ -30,6 +30,7 @@
         <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
         <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
         <converters:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
+        <converters:HexColorToBrushConverter x:Key="HexColorToBrushConverter"/>
 
         <Style x:Key="SectionCard" TargetType="Border">
             <Setter Property="Background" Value="White"/>
@@ -3043,8 +3044,89 @@
                             <TextBlock Text="Experimental concepts to help entice customers to move workloads to Microsoft Intune" 
                                        FontSize="14" Foreground="#666" Margin="0,0,0,30"/>
                             
-                            <!-- Idea 2: Workload Migration Simulator -->
+                            <!-- Idea 5: Natural Language Query (Moved to top) -->
                             <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
+                                        <Run Text="💬 Natural Language Query"/>
+                                    </TextBlock>
+                                    
+                                    <TextBlock Text="Ask questions in plain English and AI answers with YOUR environment's specific data" 
+                                               FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
+                                    
+                                    <Border Background="{StaticResource BackgroundPage}" CornerRadius="6" Padding="20">
+                                        <StackPanel>
+                                            <TextBlock Text="🗣️ Ask AI About Your Migration" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,15"/>
+                                            
+                                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" 
+                                                    CornerRadius="4" Padding="15" Margin="0,0,0,10">
+                                                <Grid>
+                                                    <TextBlock Text="Type your question... e.g., 'Why should I migrate Windows Update workload?'" 
+                                                               FontSize="13" Foreground="#999"/>
+                                                </Grid>
+                                            </Border>
+                                            
+                                            <Button Content="🤖 Ask AI" Background="{StaticResource PrimaryBlue}" Foreground="White" 
+                                                    FontSize="14" FontWeight="Bold" Padding="15,10" Margin="0,0,0,20" 
+                                                    BorderThickness="0" Cursor="Hand" HorizontalAlignment="Right"/>
+                                            
+                                            <!-- Example Responses -->
+                                            <Border Background="{StaticResource InfoBlueLight}" CornerRadius="6" Padding="15" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,8">
+                                                        <Run Text="Example Question: "/>
+                                                        <Run Text="&quot;Why should I migrate Windows Update workload?&quot;" FontWeight="Normal"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="12" Foreground="#333" TextWrapping="Wrap">
+                                                        <Run Text="🤖 AI Answer: " FontWeight="Bold"/>
+                                                        <Run Text="Based on YOUR environment, here's why:"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,8,0,0">
+                                                        <Run Text="• Your WSUS server has failed 2,341 update deployments in the last 30 days (23% failure rate)"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
+                                                        <Run Text="• 1,205 remote devices haven't received updates in 45+ days due to VPN connectivity"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
+                                                        <Run Text="• Your IT team spends 12 hours/week troubleshooting WSUS sync errors and 0x80244021 failures"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
+                                                        <Run Text="• Intune WUfB would eliminate all infrastructure maintenance and enable automatic updates for remote workforce"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Border>
+                                            
+                                            <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="6" Padding="15">
+                                                <StackPanel>
+                                                    <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,8">
+                                                        <Run Text="Example Question: "/>
+                                                        <Run Text="&quot;What's the biggest risk if I don't migrate?&quot;" FontWeight="Normal"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="12" Foreground="#333" TextWrapping="Wrap">
+                                                        <Run Text="🤖 AI Answer: " FontWeight="Bold"/>
+                                                        <Run Text="Your biggest risk is compliance gaps for remote devices:"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,8,0,0">
+                                                        <Run Text="• 2,103 devices work primarily remotely and only check compliance when on VPN"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
+                                                        <Run Text="• Average time between compliance checks: 18 days (should be real-time)"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
+                                                        <Run Text="• Your Conditional Access policies can't enforce device compliance without Intune integration"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
+                                                        <Run Text="• Compliance Policies migration would enable continuous compliance monitoring 24/7"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                            
+                            <!-- Idea 2: Workload Migration Simulator (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="🎮 Idea #2: Workload Migration Simulator"/>
@@ -3115,113 +3197,70 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 3: Smart Sequencing Recommendation -->
+                            <!-- Idea 3: Smart Sequencing Recommendation (Data-Driven) -->
                             <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
-                                        <Run Text="🧠 Idea #3: Smart Sequencing Recommendation"/>
+                                        <Run Text="🧠 Smart Sequencing Recommendation"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI analyzes dependencies and suggests optimal migration order based on your environment" 
+                                    <TextBlock Text="Optimal migration order computed from your actual workload adoption data, dependencies, and risk levels" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="{StaticResource BackgroundPage}" CornerRadius="6" Padding="20">
                                         <StackPanel>
-                                            <TextBlock Text="🎯 AI-Recommended Migration Sequence" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,20"/>
+                                            <TextBlock Text="🎯 Data-Driven Migration Sequence" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,5"/>
+                                            <TextBlock Text="Sorted by adoption % — highest adoption first (path of least resistance)" 
+                                                       FontSize="11" Foreground="#999" Margin="0,0,0,20"/>
                                             
-                                            <!-- Step 1 -->
-                                            <Grid Margin="0,0,0,15">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="50"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                
-                                                <Border Grid.Column="0" Background="{StaticResource SuccessGreen}" CornerRadius="25" Width="40" Height="40">
-                                                    <TextBlock Text="1" FontSize="20" FontWeight="Bold" Foreground="White" 
-                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                                
-                                                <StackPanel Grid.Column="1" Margin="15,0,0,0">
-                                                    <TextBlock Text="Start with: Compliance Policies" FontSize="14" FontWeight="Bold" Foreground="#333"/>
-                                                    <TextBlock Text="Why now: 68% of devices are remote and can't verify compliance via ConfigMgr" 
-                                                               FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="0,3,0,0"/>
-                                                    <TextBlock FontSize="11" Foreground="{StaticResource SuccessGreen}" Margin="0,3,0,0">
-                                                        <Run Text="✓ 2,103 devices ready today • "/>
-                                                        <Run Text="Zero dependencies • "/>
-                                                        <Run Text="1-week rollout"/>
-                                                    </TextBlock>
-                                                </StackPanel>
-                                                
-                                                <Border Grid.Column="2" Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="8,4">
-                                                    <TextBlock Text="Ready Now" FontSize="11" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}"/>
-                                                </Border>
-                                            </Grid>
-                                            
-                                            <!-- Step 2 -->
-                                            <Grid Margin="0,0,0,15">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="50"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                
-                                                <Border Grid.Column="0" Background="{StaticResource PrimaryBlue}" CornerRadius="25" Width="40" Height="40">
-                                                    <TextBlock Text="2" FontSize="20" FontWeight="Bold" Foreground="White" 
-                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                                
-                                                <StackPanel Grid.Column="1" Margin="15,0,0,0">
-                                                    <TextBlock Text="Next: Device Configuration" FontSize="14" FontWeight="Bold" Foreground="#333"/>
-                                                    <TextBlock Text="Why next: Builds on compliance foundation, no app dependencies" 
-                                                               FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="0,3,0,0"/>
-                                                    <TextBlock FontSize="11" Foreground="{StaticResource PrimaryBlue}" Margin="0,3,0,0">
-                                                        <Run Text="✓ 1,847 devices ready in 2 weeks • "/>
-                                                        <Run Text="Requires step 1 • "/>
-                                                        <Run Text="2-week rollout"/>
-                                                    </TextBlock>
-                                                </StackPanel>
-                                                
-                                                <Border Grid.Column="2" Background="{StaticResource InfoBlueLight}" CornerRadius="4" Padding="8,4">
-                                                    <TextBlock Text="Week 2-4" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}"/>
-                                                </Border>
-                                            </Grid>
-                                            
-                                            <!-- Step 3 -->
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="50"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                
-                                                <Border Grid.Column="0" Background="#FFB900" CornerRadius="25" Width="40" Height="40">
-                                                    <TextBlock Text="3" FontSize="20" FontWeight="Bold" Foreground="White" 
-                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                                
-                                                <StackPanel Grid.Column="1" Margin="15,0,0,0">
-                                                    <TextBlock Text="Then: Windows Update for Business" FontSize="14" FontWeight="Bold" Foreground="#333"/>
-                                                    <TextBlock Text="Why wait: WSUS replacement requires testing, but fixes your failing patch compliance" 
-                                                               FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="0,3,0,0"/>
-                                                    <TextBlock FontSize="11" Foreground="#FFB900" Margin="0,3,0,0">
-                                                        <Run Text="⚠ Test with 100 devices first • "/>
-                                                        <Run Text="Requires steps 1-2 • "/>
-                                                        <Run Text="4-week phased rollout"/>
-                                                    </TextBlock>
-                                                </StackPanel>
-                                                
-                                                <Border Grid.Column="2" Background="#FFF8E1" CornerRadius="4" Padding="8,4">
-                                                    <TextBlock Text="Week 5-8" FontSize="11" FontWeight="Bold" Foreground="#FFB900"/>
-                                                </Border>
-                                            </Grid>
+                                            <ItemsControl ItemsSource="{Binding WorkloadSequenceSteps}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,0,0,15">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="50"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            
+                                                            <Border Grid.Column="0" Background="{Binding StepColor, Converter={StaticResource HexColorToBrushConverter}}" 
+                                                                    CornerRadius="25" Width="40" Height="40">
+                                                                <TextBlock Text="{Binding StepNumber}" FontSize="20" FontWeight="Bold" Foreground="White" 
+                                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            
+                                                            <StackPanel Grid.Column="1" Margin="15,0,0,0">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="{Binding WorkloadName}" FontSize="14" FontWeight="Bold" Foreground="#333"/>
+                                                                    <TextBlock Text="{Binding AdoptionPercentage, StringFormat=' — {0:F0}% adoption'}" 
+                                                                               FontSize="14" Foreground="#999" Margin="5,0,0,0"/>
+                                                                </StackPanel>
+                                                                <TextBlock Text="{Binding Rationale}" FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                                    <TextBlock Text="{Binding DependencyNote}" FontSize="11" Foreground="#999"/>
+                                                                    <TextBlock Text=" • " FontSize="11" Foreground="#999"/>
+                                                                    <TextBlock Text="{Binding RiskLevel, StringFormat='{}{0} risk'}" FontSize="11" Foreground="#999"/>
+                                                                    <TextBlock Text=" • " FontSize="11" Foreground="#999"/>
+                                                                    <TextBlock Text="{Binding EstimatedTime}" FontSize="11" Foreground="#999"/>
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                            
+                                                            <Border Grid.Column="2" CornerRadius="4" Padding="8,4" VerticalAlignment="Center"
+                                                                    Background="{Binding ReadinessColor, Converter={StaticResource HexColorToBrushConverter}}" Opacity="0.15">
+                                                                <TextBlock Text="{Binding ReadinessLabel}" FontSize="11" FontWeight="Bold" 
+                                                                           Foreground="{Binding ReadinessColor, Converter={StaticResource HexColorToBrushConverter}}"/>
+                                                            </Border>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 4: Success Probability Score -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 4: Success Probability Score (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="📊 Idea #4: Success Probability Score"/>
@@ -3338,89 +3377,8 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 5: Natural Language Query -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
-                                <StackPanel>
-                                    <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
-                                        <Run Text="💬 Idea #5: Natural Language Query"/>
-                                    </TextBlock>
-                                    
-                                    <TextBlock Text="Ask questions in plain English and AI answers with YOUR environment's specific data" 
-                                               FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
-                                    
-                                    <Border Background="{StaticResource BackgroundPage}" CornerRadius="6" Padding="20">
-                                        <StackPanel>
-                                            <TextBlock Text="🗣️ Ask AI About Your Migration" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,15"/>
-                                            
-                                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" 
-                                                    CornerRadius="4" Padding="15" Margin="0,0,0,10">
-                                                <Grid>
-                                                    <TextBlock Text="Type your question... e.g., 'Why should I migrate Windows Update workload?'" 
-                                                               FontSize="13" Foreground="#999"/>
-                                                </Grid>
-                                            </Border>
-                                            
-                                            <Button Content="🤖 Ask AI" Background="{StaticResource PrimaryBlue}" Foreground="White" 
-                                                    FontSize="14" FontWeight="Bold" Padding="15,10" Margin="0,0,0,20" 
-                                                    BorderThickness="0" Cursor="Hand" HorizontalAlignment="Right"/>
-                                            
-                                            <!-- Example Responses -->
-                                            <Border Background="{StaticResource InfoBlueLight}" CornerRadius="6" Padding="15" Margin="0,0,0,10">
-                                                <StackPanel>
-                                                    <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,8">
-                                                        <Run Text="Example Question: "/>
-                                                        <Run Text="&quot;Why should I migrate Windows Update workload?&quot;" FontWeight="Normal"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="12" Foreground="#333" TextWrapping="Wrap">
-                                                        <Run Text="🤖 AI Answer: " FontWeight="Bold"/>
-                                                        <Run Text="Based on YOUR environment, here's why:"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,8,0,0">
-                                                        <Run Text="• Your WSUS server has failed 2,341 update deployments in the last 30 days (23% failure rate)"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
-                                                        <Run Text="• 1,205 remote devices haven't received updates in 45+ days due to VPN connectivity"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
-                                                        <Run Text="• Your IT team spends 12 hours/week troubleshooting WSUS sync errors and 0x80244021 failures"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
-                                                        <Run Text="• Intune WUfB would eliminate all infrastructure maintenance and enable automatic updates for remote workforce"/>
-                                                    </TextBlock>
-                                                </StackPanel>
-                                            </Border>
-                                            
-                                            <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="6" Padding="15">
-                                                <StackPanel>
-                                                    <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,8">
-                                                        <Run Text="Example Question: "/>
-                                                        <Run Text="&quot;What's the biggest risk if I don't migrate?&quot;" FontWeight="Normal"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="12" Foreground="#333" TextWrapping="Wrap">
-                                                        <Run Text="🤖 AI Answer: " FontWeight="Bold"/>
-                                                        <Run Text="Your biggest risk is compliance gaps for remote devices:"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,8,0,0">
-                                                        <Run Text="• 2,103 devices work primarily remotely and only check compliance when on VPN"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
-                                                        <Run Text="• Average time between compliance checks: 18 days (should be real-time)"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
-                                                        <Run Text="• Your Conditional Access policies can't enforce device compliance without Intune integration"/>
-                                                    </TextBlock>
-                                                    <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,3,0,0">
-                                                        <Run Text="• Compliance Policies migration would enable continuous compliance monitoring 24/7"/>
-                                                    </TextBlock>
-                                                </StackPanel>
-                                            </Border>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                            </Border>
-                            
-                            <!-- Idea 6: What-If Scenario Analysis -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 6: What-If Scenario Analysis (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="🔮 Idea #6: What-If Scenario Analysis"/>
@@ -3543,8 +3501,8 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 8: Migration Health Score Dashboard -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 8: Migration Health Score Dashboard (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="🏥 Idea #8: Migration Health Score Dashboard"/>
@@ -3674,8 +3632,8 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 9: Automated Rollback Plan Generator -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 9: Automated Rollback Plan Generator (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="🔄 Idea #9: Automated Rollback Plan Generator"/>
@@ -3828,8 +3786,8 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 10: Business Impact Forecast -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 10: Business Impact Forecast (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="💼 Idea #10: Business Impact Forecast"/>
@@ -4030,8 +3988,8 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 11: Zero-Touch Migration Preview -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 11: Zero-Touch Migration Preview (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="🤖 Idea #11: Zero-Touch Migration Preview"/>
@@ -4349,8 +4307,8 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 13: Live Migration Progress Dashboard -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 13: Live Migration Progress Dashboard (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="📊 Idea #13: Live Migration Progress Dashboard"/>
@@ -4504,8 +4462,8 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 14: Migration ROI Calculator -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 14: Migration ROI Calculator (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="💰 Idea #14: Migration ROI Calculator"/>
@@ -4729,10 +4687,10 @@
                             <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
-                                        <Run Text="🔍 Idea #15: Compliance Gap Visualizer"/>
+                                        <Run Text="🔍 Compliance Gap Visualizer"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI identifies devices not receiving compliance checks today - see your blind spots and how migration eliminates them" 
+                                    <TextBlock Text="Identifies where ConfigMgr compliance evaluation falls short compared to Intune — the gaps that keep you up at night" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="White" BorderBrush="{StaticResource ErrorRed}" BorderThickness="3" CornerRadius="8" Padding="30">
@@ -4748,16 +4706,94 @@
                                                     <TextBlock Grid.Column="0" Text="⚠" FontSize="48" Foreground="{StaticResource ErrorRed}" Margin="0,0,20,0" VerticalAlignment="Center"/>
                                                     
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                        <TextBlock Text="26% of Your Devices Have Compliance Gaps" FontSize="18" FontWeight="Bold" Foreground="{StaticResource ErrorRed}" Margin="0,0,0,8"/>
+                                                        <TextBlock Text="4 Compliance Blind Spots Found" FontSize="18" FontWeight="Bold" Foreground="{StaticResource ErrorRed}" Margin="0,0,0,8"/>
                                                         <TextBlock FontSize="13" Foreground="#666" TextWrapping="Wrap">
-                                                            <Run Text="AI detected 740 devices that haven't received compliance checks in 18+ days due to VPN/connectivity issues"/>
+                                                            <Run Text="These are real-world gaps ConfigMgr admins encounter daily — scenarios where policy evaluation silently fails"/>
                                                         </TextBlock>
                                                     </StackPanel>
                                                 </Grid>
                                             </Border>
                                             
-                                            <!-- Gap Categories -->
+                                            <!-- Gap 1: Stale Client Health -->
                                             <TextBlock Text="Compliance Gap Breakdown" FontSize="14" FontWeight="Bold" Foreground="#333" Margin="0,0,0,15"/>
+                                            
+                                            <Grid Margin="0,0,0,15">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <!-- Gap 1 -->
+                                                <Border Grid.Column="0" Background="#FFF8E1" CornerRadius="6" Padding="20">
+                                                    <StackPanel>
+                                                        <TextBlock Text="🔌 Stale ConfigMgr Clients" FontSize="13" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" Margin="0,0,0,15"/>
+                                                        
+                                                        <Grid Margin="0,0,0,10">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="Client not checked in 30+ days" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="1" Text="312 devices" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
+                                                        </Grid>
+                                                        
+                                                        <Grid Margin="0,0,0,10">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="ConfigMgr shows 'Compliant'" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="1" Text="Stale data" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
+                                                        </Grid>
+                                                        
+                                                        <TextBlock FontSize="10" Foreground="#999" TextWrapping="Wrap" Margin="0,5,0,0">
+                                                            <Run Text="Console says compliant, but last evaluation was 30+ days ago. These devices could have anything running."/>
+                                                        </TextBlock>
+                                                        
+                                                        <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="10" Margin="0,10,0,0">
+                                                            <TextBlock FontSize="10" Foreground="{StaticResource SuccessGreen}" TextWrapping="Wrap">
+                                                                <Run Text="✓ Intune evaluates compliance over internet every 8 hours — no MP/DP connectivity required"/>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Border>
+                                                
+                                                <!-- Gap 2 -->
+                                                <Border Grid.Column="2" Background="#FFF8E1" CornerRadius="6" Padding="20">
+                                                    <StackPanel>
+                                                        <TextBlock Text="🛡️ Conditional Access Gaps" FontSize="13" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" Margin="0,0,0,15"/>
+                                                        
+                                                        <Grid Margin="0,0,0,10">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="No CA enforcement today" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="1" Text="All devices" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
+                                                        </Grid>
+                                                        
+                                                        <Grid Margin="0,0,0,10">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="Non-compliant accessing O365" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="1" Text="Unrestricted" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
+                                                        </Grid>
+                                                        
+                                                        <TextBlock FontSize="10" Foreground="#999" TextWrapping="Wrap" Margin="0,5,0,0">
+                                                            <Run Text="ConfigMgr compliance baselines don't feed into Entra Conditional Access. A non-compliant device can still access email, Teams, and SharePoint."/>
+                                                        </TextBlock>
+                                                        
+                                                        <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="10" Margin="0,10,0,0">
+                                                            <TextBlock FontSize="10" Foreground="{StaticResource SuccessGreen}" TextWrapping="Wrap">
+                                                                <Run Text="✓ Intune compliance state is the Conditional Access signal — non-compliant = blocked from corporate resources"/>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
                                             
                                             <Grid Margin="0,0,0,20">
                                                 <Grid.ColumnDefinitions>
@@ -4766,18 +4802,18 @@
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
                                                 
-                                                <!-- Remote Workers -->
+                                                <!-- Gap 3 -->
                                                 <Border Grid.Column="0" Background="#FFF8E1" CornerRadius="6" Padding="20">
                                                     <StackPanel>
-                                                        <TextBlock Text="🏠 Remote Workers" FontSize="13" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" Margin="0,0,0,15"/>
+                                                        <TextBlock Text="📋 Baseline Drift" FontSize="13" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" Margin="0,0,0,15"/>
                                                         
                                                         <Grid Margin="0,0,0,10">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
                                                             </Grid.ColumnDefinitions>
-                                                            <TextBlock Grid.Column="0" Text="Rarely connect to VPN" FontSize="11" Foreground="#666"/>
-                                                            <TextBlock Grid.Column="1" Text="487 devices" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
+                                                            <TextBlock Grid.Column="0" Text="Baselines with conflicting settings" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="1" Text="14 baselines" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
                                                         </Grid>
                                                         
                                                         <Grid Margin="0,0,0,10">
@@ -4785,30 +4821,34 @@
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
                                                             </Grid.ColumnDefinitions>
-                                                            <TextBlock Grid.Column="0" Text="Last compliance check" FontSize="11" Foreground="#666"/>
-                                                            <TextBlock Grid.Column="1" Text="23 days ago" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
+                                                            <TextBlock Grid.Column="0" Text="Devices reporting false-positive" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="1" Text="~180 devices" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
                                                         </Grid>
+                                                        
+                                                        <TextBlock FontSize="10" Foreground="#999" TextWrapping="Wrap" Margin="0,5,0,0">
+                                                            <Run Text="Years of layered compliance baselines create conflicts. Some report compliant even when settings contradict each other. Nobody wants to touch them."/>
+                                                        </TextBlock>
                                                         
                                                         <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="10" Margin="0,10,0,0">
                                                             <TextBlock FontSize="10" Foreground="{StaticResource SuccessGreen}" TextWrapping="Wrap">
-                                                                <Run Text="✓ Intune reaches these devices over internet - no VPN needed"/>
+                                                                <Run Text="✓ Intune compliance policies are declarative and conflict-free — settings catalog eliminates baseline drift"/>
                                                             </TextBlock>
                                                         </Border>
                                                     </StackPanel>
                                                 </Border>
                                                 
-                                                <!-- Traveling Employees -->
+                                                <!-- Gap 4 -->
                                                 <Border Grid.Column="2" Background="#FFF8E1" CornerRadius="6" Padding="20">
                                                     <StackPanel>
-                                                        <TextBlock Text="✈️ Traveling Employees" FontSize="13" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" Margin="0,0,0,15"/>
+                                                        <TextBlock Text="🔄 WSUS Patch Compliance Lag" FontSize="13" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" Margin="0,0,0,15"/>
                                                         
                                                         <Grid Margin="0,0,0,10">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
                                                             </Grid.ColumnDefinitions>
-                                                            <TextBlock Grid.Column="0" Text="Inconsistent connectivity" FontSize="11" Foreground="#666"/>
-                                                            <TextBlock Grid.Column="1" Text="253 devices" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
+                                                            <TextBlock Grid.Column="0" Text="SUP sync failures this month" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="1" Text="7 failures" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
                                                         </Grid>
                                                         
                                                         <Grid Margin="0,0,0,10">
@@ -4816,42 +4856,46 @@
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
                                                             </Grid.ColumnDefinitions>
-                                                            <TextBlock Grid.Column="0" Text="Avg time between checks" FontSize="11" Foreground="#666"/>
-                                                            <TextBlock Grid.Column="1" Text="18 days" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
+                                                            <TextBlock Grid.Column="0" Text="Devices missing last Patch Tuesday" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="1" Text="423 devices" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
                                                         </Grid>
+                                                        
+                                                        <TextBlock FontSize="10" Foreground="#999" TextWrapping="Wrap" Margin="0,5,0,0">
+                                                            <Run Text="WSUS/SUP sync failures mean scan results are stale. Devices show 'compliant' in console but haven't actually scanned against the latest catalog."/>
+                                                        </TextBlock>
                                                         
                                                         <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="10" Margin="0,10,0,0">
                                                             <TextBlock FontSize="10" Foreground="{StaticResource SuccessGreen}" TextWrapping="Wrap">
-                                                                <Run Text="✓ Intune checks compliance every 8 hours automatically"/>
+                                                                <Run Text="✓ WUfB scans directly against Microsoft Update — no WSUS/SUP infrastructure, no sync failures"/>
                                                             </TextBlock>
                                                         </Border>
                                                     </StackPanel>
                                                 </Border>
                                             </Grid>
                                             
-                                            <!-- Risk Impact -->
+                                            <!-- The Admin Reality Check -->
                                             <Border Background="{StaticResource ErrorRedLight}" CornerRadius="6" Padding="20" Margin="0,0,0,20">
                                                 <StackPanel>
                                                     <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource ErrorRed}" Margin="0,0,0,12">
-                                                        <Run Text="⚠ Current Risk Exposure"/>
+                                                        <Run Text="⚠ The Admin Reality Check"/>
                                                     </TextBlock>
                                                     
                                                     <TextBlock FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,15">
-                                                        <Run Text="These 740 devices could have:"/>
+                                                        <Run Text="What your compliance dashboard says vs. what's actually happening:"/>
                                                     </TextBlock>
                                                     
                                                     <StackPanel Margin="0,0,0,0">
                                                         <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
-                                                            <Run Text="• Disabled antivirus or firewall (no visibility for 18+ days)"/>
+                                                            <Run Text="• Console shows 94% compliant — but 312 of those haven't checked in for a month"/>
                                                         </TextBlock>
                                                         <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
-                                                            <Run Text="• Unpatched critical vulnerabilities (no update checks)"/>
+                                                            <Run Text="• A user disables BitLocker on Monday — ConfigMgr won't know until the next evaluation cycle (could be weeks)"/>
                                                         </TextBlock>
                                                         <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
-                                                            <Run Text="• Non-compliant password policies (not enforced)"/>
+                                                            <Run Text="• Security team asks 'are all devices patched?' — you check SUP and it last synced 3 days ago"/>
                                                         </TextBlock>
                                                         <TextBlock FontSize="11" Foreground="#666">
-                                                            <Run Text="• Disabled BitLocker encryption (data at risk)"/>
+                                                            <Run Text="• Auditor wants proof of compliance — you export a report knowing the data is 2+ weeks old for remote users"/>
                                                         </TextBlock>
                                                     </StackPanel>
                                                 </StackPanel>
@@ -4861,7 +4905,7 @@
                                             <Border Background="{StaticResource SuccessGreenLight}" BorderBrush="{StaticResource SuccessGreen}" BorderThickness="2" CornerRadius="6" Padding="20">
                                                 <StackPanel>
                                                     <TextBlock FontSize="14" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,12">
-                                                        <Run Text="✓ How Intune Eliminates These Gaps"/>
+                                                        <Run Text="✓ How Intune Closes Every Gap"/>
                                                     </TextBlock>
                                                     
                                                     <Grid>
@@ -4874,13 +4918,16 @@
                                                         <StackPanel Grid.Column="0">
                                                             <TextBlock Text="ConfigMgr Today" FontSize="12" FontWeight="Bold" Foreground="{StaticResource ErrorRed}" Margin="0,0,0,10"/>
                                                             <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
-                                                                <Run Text="• 74% coverage (2,107 devices)"/>
+                                                                <Run Text="• Compliance eval requires MP connectivity"/>
                                                             </TextBlock>
                                                             <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
-                                                                <Run Text="• Checks every 18 days avg"/>
+                                                                <Run Text="• Stale clients silently drop off"/>
+                                                            </TextBlock>
+                                                            <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
+                                                                <Run Text="• No Conditional Access integration"/>
                                                             </TextBlock>
                                                             <TextBlock FontSize="11" Foreground="#666">
-                                                                <Run Text="• 740 devices with gaps"/>
+                                                                <Run Text="• WSUS sync failures = blind spots"/>
                                                             </TextBlock>
                                                         </StackPanel>
                                                         
@@ -4889,13 +4936,16 @@
                                                         <StackPanel Grid.Column="2">
                                                             <TextBlock Text="Intune After Migration" FontSize="12" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,10"/>
                                                             <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
-                                                                <Run Text="• 100% coverage (2,847 devices)"/>
+                                                                <Run Text="• Evaluates over internet every 8 hours"/>
                                                             </TextBlock>
                                                             <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
-                                                                <Run Text="• Checks every 8 hours"/>
+                                                                <Run Text="• Non-check-in flagged immediately"/>
+                                                            </TextBlock>
+                                                            <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
+                                                                <Run Text="• CA blocks non-compliant from O365"/>
                                                             </TextBlock>
                                                             <TextBlock FontSize="11" Foreground="#666">
-                                                                <Run Text="• Zero gaps - real-time compliance"/>
+                                                                <Run Text="• Direct MS Update scan — no WSUS"/>
                                                             </TextBlock>
                                                         </StackPanel>
                                                     </Grid>
@@ -4906,8 +4956,8 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 16: Executive Summary Generator -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
+                            <!-- Idea 16: Executive Summary Generator (Hidden) -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
                                         <Run Text="📊 Idea #16: Executive Summary Generator"/>

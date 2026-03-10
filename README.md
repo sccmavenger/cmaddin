@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.230** | March 10, 2026
+**Version 3.17.231** | March 10, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -248,6 +248,18 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.230 (March 10, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- Workloads tab mock data now shows realistic mid-migration scenario (2/7 completed, 1,247 co-managed devices, per-workload adoption %, near-cloud-native count, last-holdout blockers) instead of 0% everywhere
+
+---
+
 ### Version 3.17.225 (March 4, 2026)
 
 ### Added
@@ -309,40 +321,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Converted 50+ telemetry log calls from `Info/Warning/Debug("[TELEMETRY]...")` to `LogTelemetry(...)`
   - Telemetry events no longer clutter main diagnostic log
   - Files: `Services/AzureTelemetryService.cs`, `Services/FileLogger.cs`
-
----
-
-### Version 3.17.216 (February 20, 2026)
-
-### Added
-- **Telemetry Opt-Out Toggle**: New toggle in Diagnostics window to enable/disable anonymous usage analytics
-  - Default: enabled (helps improve the product)
-  - When disabled: sends final "TelemetryDisabled" event, then no more data transmitted
-  - When re-enabled: sends "TelemetryEnabled" event
-  - Settings persisted to `%LOCALAPPDATA%\ZeroTrustMigrationAddin\telemetry-settings.json`
-- **First-Run Telemetry Notice**: Transparent popup on first launch explaining data collection with option to opt-out
-- **Separate Telemetry Log File**: All telemetry events now logged to dedicated `TelemetryLog_YYYYMMDD.log` for user transparency
-- **Preview Label**: Added "Preview" prefix to application title bar
-- **UI Zoom / Accessibility**: Added zoom controls for users with vision impairments
-  - Zoom footer bar with +/- buttons and percentage display
-  - Range: 80% to 150% in 10% increments
-  - Reset button to return to 100%
-  - Zoom preference persisted to `%LOCALAPPDATA%\ZeroTrustMigrationAddin\user-preferences.json`
-
-### Changed
-- **Telemetry Logging**: Moved telemetry events from main log to separate TelemetryLog file
-- **All Telemetry Methods**: Now respect user opt-out setting (TrackEvent, TrackMetric, TrackException, TrackDependency, TrackPageView)
-- **Title Bar**: Changed from "Cloud Native Assessment" to "Preview - Cloud Native Assessment Tool"
-
-### Security
-- **Privacy Compliance (EULA)**: Removed user PII from local log files
-  - Removed: username, domain, UPN, email, job title, user ID from logs
-  - Kept: device names (needed for troubleshooting, not sent to telemetry)
-  - Files: DashboardViewModel.cs, GraphDataService.cs, ConfigMgrAdminService.cs
-  - Telemetry already sanitized via `SanitizeString()` - no changes needed
-
-### Fixed
-- N/A
 
 ---
 
@@ -1556,5 +1534,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-03-10  
-**Version**: 3.17.230  
+**Version**: 3.17.231  
 **Maintainer:** Cloud Native Assessment Team
