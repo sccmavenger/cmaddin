@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.231** | March 10, 2026
+**Version 3.17.232** | March 10, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -249,6 +249,24 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.231 (March 10, 2026)
+
+### Added
+- **Smart Sequencing**: Data-driven migration sequence computed from real workload adoption data, dependencies, and risk levels — no AI required. Binds to `WorkloadSequenceSteps` via `ItemsControl` with color-coded step badges
+- **WorkloadSequenceStep model**: New model class with computed `StepColor` and `ReadinessColor` properties for data-bound UI
+- **HexColorToBrushConverter**: Converts hex color strings to WPF SolidColorBrush for data-driven color binding
+
+### Changed
+- **Brainstorm tab curated**: Hid 10 speculative ideas (#2,4,6,8,9,10,11,13,14,16), kept 4 actionable ones
+- **Natural Language Query** moved to top of Brainstorm tab, renamed to drop "Idea #5:" prefix
+- **Compliance Gap Visualizer** rewritten with admin-relatable scenarios: stale ConfigMgr clients, Conditional Access gaps, baseline drift, WSUS/SUP sync failures — replaces generic remote worker/VPN content
+- **Smart Sequencing** renamed from "AI-Recommended" to "Data-Driven Migration Sequence", removes all AI branding
+
+### Fixed
+
+---
+
 ### Version 3.17.230 (March 10, 2026)
 
 ### Added
@@ -307,20 +325,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Files: `Models/CloudReadinessModels.cs`, `Services/CloudReadinessService.cs`
 - **Tab Visibility for Cloud Comparison Details**: Added `ShowCloudComparisonDetailsTab` property with Collapsed default
   - Files: `Models/TabVisibilityOptions.cs`, `ViewModels/DashboardViewModel.cs`, `Views/DashboardWindow.xaml`, `Views/DashboardWindow.xaml.cs`
-
----
-
-### Version 3.17.219 (February 20, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- **Telemetry Log Separation**: All telemetry logging now writes to separate `TelemetryLog_*.log` file instead of main log
-  - Converted 50+ telemetry log calls from `Info/Warning/Debug("[TELEMETRY]...")` to `LogTelemetry(...)`
-  - Telemetry events no longer clutter main diagnostic log
-  - Files: `Services/AzureTelemetryService.cs`, `Services/FileLogger.cs`
 
 ---
 
@@ -1534,5 +1538,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-03-10  
-**Version**: 3.17.231  
+**Version**: 3.17.232  
 **Maintainer:** Cloud Native Assessment Team

@@ -2982,8 +2982,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Application Readiness Prerequisite for Client Apps -->
-                            <Border Style="{StaticResource SectionCard}" Margin="0,0,0,20">
+                            <!-- Application Readiness Prerequisite for Client Apps — MOVED TO APPLICATIONS TAB -->
+                            <Border Style="{StaticResource SectionCard}" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock Text="📦 Application Readiness (Client Apps Prerequisite)" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="0,0,0,5"/>
                                     <TextBlock Text="Client Apps is the most complex workload. Application migration readiness determines when you can safely move this workload." FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,15"/>
@@ -3039,9 +3039,9 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="30">
                         <StackPanel MaxWidth="1400">
                             <!-- Page Header -->
-                            <TextBlock Text="🤖 AI-Powered Workload Migration Ideas" 
+                            <TextBlock Text="💡 Workload Migration Ideas" 
                                        FontSize="28" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
-                            <TextBlock Text="Experimental concepts to help entice customers to move workloads to Microsoft Intune" 
+                            <TextBlock Text="Data-driven concepts to help plan and execute workload transitions to Microsoft Intune" 
                                        FontSize="14" Foreground="#666" Margin="0,0,0,30"/>
                             
                             <!-- Idea 5: Natural Language Query (Moved to top) -->
@@ -3051,12 +3051,12 @@
                                         <Run Text="💬 Natural Language Query"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="Ask questions in plain English and AI answers with YOUR environment's specific data" 
+                                    <TextBlock Text="Ask questions in plain English and get answers based on YOUR environment's specific data" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="{StaticResource BackgroundPage}" CornerRadius="6" Padding="20">
                                         <StackPanel>
-                                            <TextBlock Text="🗣️ Ask AI About Your Migration" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,15"/>
+                                            <TextBlock Text="🗣️ Ask About Your Migration" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,15"/>
                                             
                                             <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" 
                                                     CornerRadius="4" Padding="15" Margin="0,0,0,10">
@@ -3066,7 +3066,7 @@
                                                 </Grid>
                                             </Border>
                                             
-                                            <Button Content="🤖 Ask AI" Background="{StaticResource PrimaryBlue}" Foreground="White" 
+                                            <Button Content="🔍 Search" Background="{StaticResource PrimaryBlue}" Foreground="White" 
                                                     FontSize="14" FontWeight="Bold" Padding="15,10" Margin="0,0,0,20" 
                                                     BorderThickness="0" Cursor="Hand" HorizontalAlignment="Right"/>
                                             
@@ -3078,7 +3078,7 @@
                                                         <Run Text="&quot;Why should I migrate Windows Update workload?&quot;" FontWeight="Normal"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="12" Foreground="#333" TextWrapping="Wrap">
-                                                        <Run Text="🤖 AI Answer: " FontWeight="Bold"/>
+                                                        <Run Text="📊 Answer: " FontWeight="Bold"/>
                                                         <Run Text="Based on YOUR environment, here's why:"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,8,0,0">
@@ -3103,7 +3103,7 @@
                                                         <Run Text="&quot;What's the biggest risk if I don't migrate?&quot;" FontWeight="Normal"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="12" Foreground="#333" TextWrapping="Wrap">
-                                                        <Run Text="🤖 AI Answer: " FontWeight="Bold"/>
+                                                        <Run Text="📊 Answer: " FontWeight="Bold"/>
                                                         <Run Text="Your biggest risk is compliance gaps for remote devices:"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="10,8,0,0">
@@ -3132,7 +3132,7 @@
                                         <Run Text="🎮 Idea #2: Workload Migration Simulator"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI predicts migration impact before you commit - 'test drive' the migration virtually" 
+                                    <TextBlock Text="Predicts migration impact before you commit - 'test drive' the migration virtually" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="{StaticResource InfoBlueLight}" CornerRadius="6" Padding="20">
@@ -3173,7 +3173,7 @@
                                             
                                             <Border Background="#FFF" CornerRadius="4" Padding="15" Margin="0,15,0,0">
                                                 <StackPanel>
-                                                    <TextBlock Text="🔍 AI-Detected Issues:" FontSize="12" FontWeight="Bold" Foreground="#333" Margin="0,0,0,10"/>
+                                                    <TextBlock Text="🔍 Detected Issues:" FontSize="12" FontWeight="Bold" Foreground="#333" Margin="0,0,0,10"/>
                                                     <TextBlock FontSize="11" Foreground="#666" Margin="0,0,0,5">
                                                         <Run Text="• "/>
                                                         <Run Text="Custom compliance script 'Check-TPMStatus.ps1' has no Intune equivalent" Foreground="{StaticResource ErrorRed}"/>
@@ -3266,7 +3266,7 @@
                                         <Run Text="📊 Idea #4: Success Probability Score"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI calculates likelihood of successful migration for each workload based on readiness metrics" 
+                                    <TextBlock Text="Calculates likelihood of successful migration for each workload based on readiness metrics" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <ItemsControl>
@@ -3384,7 +3384,7 @@
                                         <Run Text="🔮 Idea #6: What-If Scenario Analysis"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI shows projected impact before you make changes - see the future before committing" 
+                                    <TextBlock Text="Shows projected impact before you make changes - see the future before committing" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="{StaticResource AccentAmberLight}" CornerRadius="6" Padding="20">
@@ -3493,7 +3493,7 @@
                                             
                                             <Border Background="{StaticResource SuccessGreen}" CornerRadius="4" Padding="15" Margin="0,20,0,0">
                                                 <TextBlock FontSize="14" FontWeight="Bold" Foreground="White" TextAlignment="Center">
-                                                    <Run Text="✓ AI Verdict: Low risk, high reward - Proceed with migration"/>
+                                                    <Run Text="✓ Verdict: Low risk, high reward - Proceed with migration"/>
                                                 </TextBlock>
                                             </Border>
                                         </StackPanel>
@@ -3508,7 +3508,7 @@
                                         <Run Text="🏥 Idea #8: Migration Health Score Dashboard"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="Real-time AI monitoring of your environment's migration readiness with actionable recommendations" 
+                                    <TextBlock Text="Real-time monitoring of your environment's migration readiness with actionable recommendations" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="2" CornerRadius="8" Padding="25">
@@ -3620,7 +3620,7 @@
                                             <Border Background="{StaticResource InfoBlueLight}" CornerRadius="6" Padding="15" Margin="0,20,0,0">
                                                 <StackPanel>
                                                     <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,8">
-                                                        <Run Text="🎯 AI Recommendation: Start with Compliance Policies"/>
+                                                        <Run Text="🎯 Recommendation: Start with Compliance Policies"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap">
                                                         <Run Text="Your health score indicates Compliance Policies workload can be migrated TODAY with 94% success probability. This will increase your overall health score to 92 and unlock Device Configuration migration next week."/>
@@ -3639,7 +3639,7 @@
                                         <Run Text="🔄 Idea #9: Automated Rollback Plan Generator"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI creates a detailed rollback plan BEFORE migration - know exactly how to undo changes if needed" 
+                                    <TextBlock Text="Creates a detailed rollback plan BEFORE migration - know exactly how to undo changes if needed" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="{StaticResource SuccessGreenLight}" BorderBrush="{StaticResource SuccessGreen}" BorderThickness="2" CornerRadius="8" Padding="25">
@@ -3657,7 +3657,7 @@
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                     <TextBlock Text="Rollback Plan Generated for Compliance Policies" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,5"/>
                                                     <TextBlock FontSize="12" Foreground="#666">
-                                                        <Run Text="AI analyzed your configuration and created a 7-step rollback plan with estimated 45-minute execution time"/>
+                                                        <Run Text="Analyzed your configuration and created a 7-step rollback plan with estimated 45-minute execution time"/>
                                                     </TextBlock>
                                                 </StackPanel>
                                             </Grid>
@@ -3749,7 +3749,7 @@
                                                     <StackPanel Grid.Column="1" Margin="15,0,0,0">
                                                         <TextBlock Text="Confirm Rollback Success" FontSize="12" FontWeight="Bold" Foreground="#333"/>
                                                         <TextBlock FontSize="11" Foreground="#666">
-                                                            <Run Text="AI verifies 100% of devices receiving ConfigMgr compliance checks again"/>
+                                                            <Run Text="Verifies 100% of devices receiving ConfigMgr compliance checks again"/>
                                                         </TextBlock>
                                                     </StackPanel>
                                                     
@@ -3763,7 +3763,7 @@
                                                         <Run Text="🛡️ Safety Net: Rollback can be initiated with ONE CLICK"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="11" Foreground="{StaticResource WarningOrange}" TextWrapping="Wrap">
-                                                        <Run Text="AI monitors migration in real-time. If success rate drops below 90% in first 2 hours, automatic rollback is triggered. You stay in control."/>
+                                                        <Run Text="Monitors migration in real-time. If success rate drops below 90% in first 2 hours, automatic rollback is triggered. You stay in control."/>
                                                     </TextBlock>
                                                 </StackPanel>
                                             </Border>
@@ -3793,7 +3793,7 @@
                                         <Run Text="💼 Idea #10: Business Impact Forecast"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI predicts migration impact on business operations, not just technical metrics - see effects on productivity, compliance, and user satisfaction" 
+                                    <TextBlock Text="Predicts migration impact on business operations, not just technical metrics - see effects on productivity, compliance, and user satisfaction" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="{StaticResource BackgroundPage}" CornerRadius="8" Padding="25">
@@ -3976,7 +3976,7 @@
                                                         <Run Text="💚 Overall Business Impact: HIGHLY POSITIVE"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,8">
-                                                        <Run Text="AI predicts this migration will improve employee productivity, strengthen security posture, reduce IT operational burden, and increase user satisfaction. Expected ROI: 340% in first year."/>
+                                                        <Run Text="This migration will improve employee productivity, strengthen security posture, reduce IT operational burden, and increase user satisfaction. Expected ROI: 340% in first year."/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="10" Foreground="#999" TextWrapping="Wrap">
                                                         <Run Text="Forecast confidence: 87% (based on 1,240 similar migrations analyzed)"/>
@@ -3992,10 +3992,10 @@
                             <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
-                                        <Run Text="🤖 Idea #11: Zero-Touch Migration Preview"/>
+                                        <Run Text="⚙️ Idea #11: Zero-Touch Migration Preview"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI shows how much of your migration can be fully automated - no manual work required" 
+                                    <TextBlock Text="Shows how much of your migration can be fully automated - no manual work required" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="White" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="3" CornerRadius="8" Padding="30">
@@ -4022,7 +4022,7 @@
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                     <TextBlock Text="Your Compliance Policies Migration Can Be FULLY AUTOMATED" FontSize="18" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,8"/>
                                                     <TextBlock FontSize="13" Foreground="#666" TextWrapping="Wrap">
-                                                        <Run Text="AI can handle 89% of migration tasks automatically. You only need to approve 3 manual decisions. Total hands-on time: 12 minutes."/>
+                                                        <Run Text="89% of migration tasks can be handled automatically. You only need to approve 3 manual decisions. Total hands-on time: 12 minutes."/>
                                                     </TextBlock>
                                                 </StackPanel>
                                             </Grid>
@@ -4104,7 +4104,7 @@
                                                             <ColumnDefinition Width="*"/>
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="• Approve pilot group selection (AI suggests 100 low-risk devices)" FontSize="11" Foreground="#666"/>
+                                                        <TextBlock Grid.Column="0" Text="• Approve pilot group selection (suggests 100 low-risk devices)" FontSize="11" Foreground="#666"/>
                                                         <TextBlock Grid.Column="1" Text="2 min" FontSize="11" FontWeight="Bold" Foreground="#FFB900"/>
                                                     </Grid>
                                                     
@@ -4134,7 +4134,7 @@
                                                         <Run Text="🚀 One-Click Migration Available"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,15">
-                                                        <Run Text="AI has analyzed your environment and prepared a fully automated migration plan. Click below to schedule the migration - AI will handle everything and notify you at each approval checkpoint."/>
+                                                        <Run Text="Your environment has been analyzed and a fully automated migration plan is prepared. Click below to schedule the migration - the system will handle everything and notify you at each approval checkpoint."/>
                                                     </TextBlock>
                                                     
                                                     <Button Content="🎯 Start Automated Migration" Foreground="White" 
@@ -4157,14 +4157,14 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Idea 12: AI-Powered Policy Translator -->
+                            <!-- Idea 12: Policy Translator -->
                             <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="25" Margin="0,0,0,20">
                                 <StackPanel>
                                     <TextBlock FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,15">
-                                        <Run Text="🔄 Idea #12: AI-Powered Policy Translator"/>
+                                        <Run Text="🔄 Policy Translator"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI automatically converts ConfigMgr compliance policies to Intune format - see side-by-side comparison before deploying" 
+                                    <TextBlock Text="Automatically maps ConfigMgr compliance policies to Intune equivalents - see side-by-side comparison before deploying" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="{StaticResource BackgroundPage}" CornerRadius="8" Padding="25">
@@ -4206,7 +4206,7 @@
                                                 <!-- Intune Policy -->
                                                 <Border Grid.Column="2" Background="White" CornerRadius="6" Padding="20">
                                                     <StackPanel>
-                                                        <TextBlock Text="☁️ Intune Policy (AI Generated)" FontSize="14" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,15"/>
+                                                        <TextBlock Text="☁️ Intune Policy (Converted)" FontSize="14" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,15"/>
                                                         
                                                         <TextBlock Text="Password Complexity Policy" FontSize="13" FontWeight="Bold" Foreground="#333" Margin="0,0,0,10"/>
                                                         
@@ -4257,13 +4257,13 @@
                                                                     <ColumnDefinition Width="Auto"/>
                                                                 </Grid.ColumnDefinitions>
                                                                 <TextBlock Grid.Column="0" Text="• Remediation script: Auto-generated" FontSize="11" Foreground="#666"/>
-                                                                <TextBlock Grid.Column="1" Text="🤖" FontSize="14"/>
+                                                                <TextBlock Grid.Column="1" Text="✓" FontSize="14" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}"/>
                                                             </Grid>
                                                         </StackPanel>
                                                         
                                                         <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="10" Margin="0,10,0,0">
                                                             <TextBlock FontSize="10" Foreground="{StaticResource SuccessGreen}" TextWrapping="Wrap">
-                                                                <Run Text="✓ AI converted custom script to Intune remediation - 100% functional parity"/>
+                                                                <Run Text="✓ Custom script converted to Intune remediation - 100% functional parity"/>
                                                             </TextBlock>
                                                         </Border>
                                                     </StackPanel>
@@ -4273,7 +4273,7 @@
                                             <Border Background="#FFF8E1" CornerRadius="6" Padding="20" Margin="0,0,0,15">
                                                 <StackPanel>
                                                     <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource WarningOrange}" Margin="0,0,0,10">
-                                                        <Run Text="🤖 AI Translation Summary"/>
+                                                        <Run Text="📋 Translation Summary"/>
                                                     </TextBlock>
                                                     <Grid>
                                                         <Grid.ColumnDefinitions>
@@ -4314,7 +4314,7 @@
                                         <Run Text="📊 Idea #13: Live Migration Progress Dashboard"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="Real-time tracking of migration progress with AI-powered anomaly detection and automatic alerts" 
+                                    <TextBlock Text="Real-time tracking of migration progress with anomaly detection and automatic alerts" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="White" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="3" CornerRadius="8" Padding="30">
@@ -4392,14 +4392,14 @@
                                                 </Border>
                                             </Grid>
                                             
-                                            <!-- AI Insights -->
+                                            <!-- Insights -->
                                             <Border Background="{StaticResource SuccessGreenLight}" BorderBrush="{StaticResource SuccessGreen}" BorderThickness="2" CornerRadius="6" Padding="20">
                                                 <StackPanel>
                                                     <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,12">
-                                                        <Run Text="🤖 AI Insight: Migration Accelerating"/>
+                                                        <Run Text="📊 Insight: Migration Accelerating"/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,10">
-                                                        <Run Text="AI detected that remote devices are migrating 43% faster than expected due to improved cloud connectivity. Adjusting completion estimate from 2 days to 1.5 days."/>
+                                                        <Run Text="Remote devices are migrating 43% faster than expected due to improved cloud connectivity. Adjusting completion estimate from 2 days to 1.5 days."/>
                                                     </TextBlock>
                                                     <TextBlock FontSize="11" Foreground="#999">
                                                         <Run Text="📈 Trend: Success rate improving hour-over-hour"/>
@@ -4441,7 +4441,7 @@
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock Grid.Column="0" Text="⚠" FontSize="14" Foreground="#FFB900" Margin="0,0,10,0"/>
-                                                        <TextBlock Grid.Column="1" Text="AI auto-resolved 12 offline device issues" FontSize="11" Foreground="#666"/>
+                                                        <TextBlock Grid.Column="1" Text="Auto-resolved 12 offline device issues" FontSize="11" Foreground="#666"/>
                                                         <TextBlock Grid.Column="2" Text="7 min ago" FontSize="10" Foreground="#999"/>
                                                     </Grid>
                                                     
@@ -4469,7 +4469,7 @@
                                         <Run Text="💰 Idea #14: Migration ROI Calculator"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI calculates your exact return on investment - see when migration pays for itself and ongoing savings" 
+                                    <TextBlock Text="Calculates your exact return on investment - see when migration pays for itself and ongoing savings" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="White" BorderBrush="{StaticResource SuccessGreen}" BorderThickness="3" CornerRadius="8" Padding="30">
@@ -4525,7 +4525,7 @@
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
                                                             </Grid.ColumnDefinitions>
-                                                            <TextBlock Grid.Column="0" Text="Policy conversion (AI-assisted)" FontSize="11" Foreground="#666"/>
+                                                            <TextBlock Grid.Column="0" Text="Policy conversion (automated)" FontSize="11" Foreground="#666"/>
                                                             <TextBlock Grid.Column="1" Text="$800" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ErrorRed}"/>
                                                         </Grid>
                                                         
@@ -4963,13 +4963,13 @@
                                         <Run Text="📊 Idea #16: Executive Summary Generator"/>
                                     </TextBlock>
                                     
-                                    <TextBlock Text="AI creates a board-ready presentation with ROI, timeline, and risk analysis - ready to present to leadership in 5 minutes" 
+                                    <TextBlock Text="Creates a board-ready presentation with ROI, timeline, and risk analysis - ready to present to leadership in 5 minutes" 
                                                FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                     
                                     <Border Background="{StaticResource BackgroundPage}" CornerRadius="8" Padding="30">
                                         <StackPanel>
-                                            <!-- Preview of AI-Generated Slides -->
-                                            <TextBlock Text="AI-Generated Executive Summary" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,20"/>
+                                            <!-- Preview of Generated Slides -->
+                                            <TextBlock Text="Auto-Generated Executive Summary" FontSize="16" FontWeight="Bold" Foreground="#333" Margin="0,0,0,20"/>
                                             
                                             <Grid Margin="0,0,0,15">
                                                 <Grid.ColumnDefinitions>
@@ -5044,7 +5044,7 @@
                                             <Border Background="{StaticResource InfoBlueLight}" CornerRadius="6" Padding="20" Margin="0,0,0,15">
                                                 <StackPanel>
                                                     <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,10">
-                                                        <Run Text="📋 AI-Generated Key Messages for Leadership:"/>
+                                                        <Run Text="📋 Auto-Generated Key Messages for Leadership:"/>
                                                     </TextBlock>
                                                     
                                                     <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,8">
@@ -5086,7 +5086,7 @@
                             <!-- Bottom CTA -->
                             <Border Background="{StaticResource PrimaryBlue}" CornerRadius="8" Padding="30" Margin="0,0,0,20">
                                 <StackPanel>
-                                    <TextBlock Text="🚀 Ready to implement these AI-powered features?" 
+                                    <TextBlock Text="🚀 Ready to implement these features?" 
                                                FontSize="20" FontWeight="Bold" Foreground="White" 
                                                TextAlignment="Center" Margin="0,0,0,10"/>
                                     <TextBlock Text="These concepts can transform workload migration from a technical burden into a data-driven strategic decision" 
@@ -5118,9 +5118,9 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="📦" FontSize="24" Margin="0,0,10,0" VerticalAlignment="Center"/>
                                                 <StackPanel>
-                                                    <TextBlock Text="Application Readiness" Style="{StaticResource SectionTitle}" Margin="0"/>
-                                                    <TextBlock Text="ConfigMgr applications ready for Intune deployment" 
-                                                               FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="Application Readiness (Client Apps Prerequisite)" Style="{StaticResource SectionTitle}" Margin="0"/>
+                                                    <TextBlock Text="Client Apps is the most complex workload — application migration readiness determines when you can safely transition" 
+                                                               FontSize="12" Foreground="#666" Margin="0,2,0,0" TextWrapping="Wrap"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </StackPanel>
