@@ -120,6 +120,16 @@ namespace ZeroTrustMigrationAddin.Models
         public string BlockReason { get; set; } = string.Empty;
         public int Order { get; set; } // Microsoft recommended order
         
+        // v3.17.227 - Real workload authority data from Graph API
+        /// <summary>Percentage of co-managed devices with this workload on Intune (0-100)</summary>
+        public double IntuneAdoptionPercentage { get; set; }
+        /// <summary>Number of devices with this workload managed by Intune</summary>
+        public int IntuneDeviceCount { get; set; }
+        /// <summary>Number of devices with this workload still on ConfigMgr</summary>
+        public int ConfigMgrDeviceCount { get; set; }
+        /// <summary>True when adoption data comes from real Graph API data</summary>
+        public bool HasRealData { get; set; }
+        
         // Computed properties for UI display
         public string StatusIcon => Status switch
         {
@@ -129,7 +139,22 @@ namespace ZeroTrustMigrationAddin.Models
             _ => "⏸️"
         };
         
+        public string AdoptionLabel => IntuneAdoptionPercentage > 0 
+            ? $"{IntuneAdoptionPercentage:F0}% Intune adoption" 
+            : ReadinessScore > 0 ? $"{ReadinessScore:F0}% readiness" : "Not started";
+        
         public bool IsLastItem { get; set; } // For timeline visualization
+    }
+
+    /// <summary>
+    /// Represents a workload that is the last holdout preventing devices from being cloud-native.
+    /// </summary>
+    public class LastHoldoutWorkload
+    {
+        public string WorkloadName { get; set; } = string.Empty;
+        /// <summary>Number of devices where this is the ONLY remaining ConfigMgr workload</summary>
+        public int DevicesBlockedCount { get; set; }
+        public string Icon { get; set; } = "⚠️";
     }
 
     public enum WorkloadStatus

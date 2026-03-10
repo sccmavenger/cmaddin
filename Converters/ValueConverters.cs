@@ -156,6 +156,27 @@ namespace ZeroTrustMigrationAddin.Converters
         }
     }
 
+    /// <summary>
+    /// Converts a percentage (0-100) to a proportional width given a max width as ConverterParameter.
+    /// Usage: Width="{Binding Percentage, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=200}"
+    /// </summary>
+    public class PercentToWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double pct = value is double d ? d : 0;
+            double maxWidth = 200;
+            if (parameter is string s && double.TryParse(s, out double mw))
+                maxWidth = mw;
+            return Math.Max(0, Math.Min(maxWidth, pct / 100.0 * maxWidth));
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class CountToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.226 |
+| **Version** | 3.17.230 |
 | **Last Updated** | 2026-03-10 |
 | **Branch** | main |
 | **Status** | Stable - Docs fully updated to MSI install + Interactive Browser auth |
