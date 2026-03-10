@@ -8,72 +8,44 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.218 (pending 3.17.219) |
-| **Last Updated** | 2026-03-02 |
+| **Version** | 3.17.226 |
+| **Last Updated** | 2026-03-10 |
 | **Branch** | main |
-| **Status** | Stable - Cloud Readiness tab reviewed, no code changes |
+| **Status** | Stable - Docs fully updated to MSI install + Interactive Browser auth |
 
 ---
 
 ## Active Features
 
+### Cloud Native Tab Refocus (v3.17.223)
+- **Status**: Published
+- **Changes**: Slimmed main Cloud Native tab from 20 cards to 4 high-impact cards + hero
+  - Kept: Device Compliance, Security Blind Spots, Zero Trust Ready, Cloud Native Progress hero
+  - Added: Enrollment Velocity card
+  - Moved 15 cards to hidden Cloud Comparison Details tab
+  - Deleted: OS Currency and "5 Questions" cards
+
+### Documentation Overhaul (v3.17.224-226)
+- **Status**: Published
+- **Changes**:
+  - All install instructions updated from ZIP/PS1 to MSI-first across 6 docs files
+  - Build script release notes template updated to MSI-first
+  - README Getting Started auth flow updated from Device Code to Interactive Browser
+  - AdminUserGuide.html already had correct auth flow
+
 ### Telemetry Transparency & Privacy (v3.17.216-218)
-- **Status**: Complete, ready for publish
-- **Changes**:
-  - **Telemetry Opt-Out Toggle**: New toggle in Diagnostics window to enable/disable anonymous usage analytics
-  - **First-Run Notice**: Telemetry notice popup on first launch with opt-out option
-  - **Separate Telemetry Log**: All telemetry events logged to `TelemetryLog_*.log` (not main log)
-  - **PII Removal**: Username, UPN, email, job title redacted from local logs (Microsoft Privacy compliance)
-- **Files Modified**:
-  - Views/DiagnosticsWindow.xaml/.cs (toggle UI)
-  - Views/TelemetryNoticeWindow.xaml/.cs (NEW - first-run popup)
-  - Models/TelemetrySettings.cs (NEW - settings model)
-  - Services/AzureTelemetryService.cs (opt-out logic, log separation)
-  - Services/FileLogger.cs (LogTelemetry method, PII redaction)
-
-### UI Zoom / Accessibility (v3.17.216)
-- **Status**: Complete
-- **Changes**:
-  - Zoom slider in title bar (80%-150% range)
-  - Keyboard shortcuts: Ctrl+Plus, Ctrl+Minus, Ctrl+0
-  - Persisted via ZoomLevel in settings
-- **Files Modified**:
-  - Views/MainWindow.xaml/.cs (ScaleTransform, slider UI)
-
-### Preview Title Bar (v3.17.216)
-- **Status**: Complete
-- **Changes**: "Preview" prefix added to application title
+- **Status**: Published
 
 ### Security Hardening (v3.17.193)
 - **Status**: Published
-- **Changes**:
-  - SSL certificate validation uses thumbprint-based trust
-  - All API keys/tokens encrypted with Windows DPAPI
-  - Centralized `SecureCredentialManager.cs`
 
 ### VP Dashboard & Workload Authority (v3.17.180)
 - **Status**: Published
-- **Features**:
-  - 4 new headline tiles: Co-Managed Opportunity, Identity Ready, Hardware Ready, Don't Waste Time
-  - WorkloadAuthoritySnapshot telemetry event
-  - Workload Authority Analysis section in Azure Workbook
-
-### Alternate Credentials for ConfigMgr (v3.17.115)
-- **Status**: Complete, production-ready
-- **Description**: Connect to ConfigMgr Admin Service with different credentials than Windows login
-- **Security**: Passwords encrypted with Windows DPAPI (user-scoped, machine-bound)
-- **Formats**: Supports `DOMAIN\username` and `user@domain.com` (UPN)
-
-### Cloud Value Comparison Tab
-- **Status**: Complete, hidden by default
-- **Enable**: Launch with `/showtabs:comparison` argument
-- **Location**: [CloudValueComparisonTab.xaml](Views/CloudValueComparisonTab.xaml)
-- **Description**: 11 comparison cards showing Intune vs ConfigMgr capabilities using real customer data
-- **Documentation**: [docs/COMPARISON_METHODOLOGY.md](docs/COMPARISON_METHODOLOGY.md)
 
 ### Hidden Tabs System
 All hidden tabs can be enabled via command-line:
-- `/showtabs:comparison` - Cloud Value Comparison (11 cards)
+- `/showtabs:comparison` - Cloud Value Comparison (4 high-impact cards)
+- `/showtabs:cloudcomparisondetails` - Cloud Comparison Details (15 detailed cards)
 - `/showtabs:agent` - Enrollment Agent (chat interface)
 
 ---
