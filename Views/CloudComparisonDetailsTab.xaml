@@ -537,8 +537,8 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 
-                <!-- Card: Autopilot vs Imaging -->
-                <Border Grid.Column="0" Style="{StaticResource ComparisonCard}">
+                <!-- Card: Autopilot vs Imaging (MOVED to Cloud Native tab) -->
+                <Border Grid.Column="0" Style="{StaticResource ComparisonCard}" Visibility="Collapsed">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🚀" FontSize="20" Margin="0,0,8,0"/>
@@ -667,8 +667,8 @@
                     </StackPanel>
                 </Border>
                 
-                <!-- Card: Update Ring Coverage -->
-                <Border Grid.Column="2" Style="{StaticResource ComparisonCard}">
+                <!-- Card: Update Ring Coverage (MOVED to Cloud Native tab) -->
+                <Border Grid.Column="2" Style="{StaticResource ComparisonCard}" Visibility="Collapsed">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="🔄" FontSize="20" Margin="0,0,8,0"/>
@@ -709,11 +709,11 @@
             </Grid>
 
             <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- DEFENDER INTEGRATION (Full-width)                              -->
+            <!-- DEFENDER INTEGRATION (MOVED to Cloud Native tab)               -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
-            <TextBlock Text="🛡️ DEFENDER INTEGRATION" FontSize="16" FontWeight="Bold" Foreground="{StaticResource InfoBlue}" Margin="0,20,0,15"/>
+            <TextBlock Text="🛡️ DEFENDER INTEGRATION" FontSize="16" FontWeight="Bold" Foreground="{StaticResource InfoBlue}" Margin="0,20,0,15" Visibility="Collapsed"/>
             
-            <Border Style="{StaticResource ComparisonCard}" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="2">
+            <Border Style="{StaticResource ComparisonCard}" BorderBrush="{StaticResource PrimaryBlue}" BorderThickness="2" Visibility="Collapsed">
                 <StackPanel>
                     <Grid Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>

@@ -10,6 +10,20 @@
 - 
 
 
+## [3.17.233] - 2026-03-10
+
+### Added
+- **Cloud Native tab**: Moved Autopilot vs. Imaging, Update Ring Coverage, and Microsoft Defender Integration cards from Cloud Comparison Details tab
+- **Cloud Native tab**: New "Ready for ConfigMgr Agent Removal" card — identifies co-managed devices with ALL 7 workloads on Intune, recommends removal of ConfigMgr agent to complete cloud-native transition
+- **Cloud Native tab**: Workload authority checklist showing per-workload Intune adoption percentage with green/yellow/red status indicators
+- **Cloud Comparison Details tab**: Collapsed 3 moved cards (Autopilot, Update Rings, Defender) with "MOVED to Cloud Native tab" comments
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.232] - 2026-03-10
 
 ### Added
