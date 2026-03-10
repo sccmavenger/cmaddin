@@ -29,6 +29,7 @@
         <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
         <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
         <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
+        <converters:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
 
         <Style x:Key="SectionCard" TargetType="Border">
             <Setter Property="Background" Value="White"/>
@@ -2799,18 +2800,236 @@
                 <!-- WORKLOAD MOMENTUM TAB -->
                 <TabItem Header="🔄 Workloads" Visibility="{Binding ShowWorkloadsTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
-                        <StackPanel>
-                            <!-- Placeholder - Content being redesigned -->
-                            <Border Style="{StaticResource SectionCard}">
-                                <StackPanel HorizontalAlignment="Center" Margin="60">
-                                    <TextBlock Text="🔄 Workload Management" 
-                                               FontSize="24" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" 
-                                               HorizontalAlignment="Center" Margin="0,0,0,15"/>
-                                    <TextBlock Text="This section is being redesigned to provide better workload transition guidance." 
-                                               FontSize="14" Foreground="#666" TextWrapping="Wrap" TextAlignment="Center" 
-                                               HorizontalAlignment="Center" MaxWidth="400"/>
+                        <StackPanel MaxWidth="1400">
+
+                            <!-- Hero: Workload Transition Progress -->
+                            <Border Style="{StaticResource SectionCard}" Margin="0,0,0,20">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Background="{StaticResource PrimaryBlue}" CornerRadius="50" Width="90" Height="90" Margin="0,0,25,0">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding WorkloadsCompletedCount}" FontSize="36" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="/7" FontSize="14" Foreground="White" HorizontalAlignment="Center" Opacity="0.8"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="🔄 Workload Transition Progress" FontSize="22" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,6"/>
+                                        <TextBlock FontSize="13" Foreground="#666" TextWrapping="Wrap">
+                                            <Run Text="Co-management workload slider positions from your environment. Status derived from real Intune adoption data via Microsoft Graph API."/>
+                                        </TextBlock>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <Border Background="{StaticResource SuccessGreenLight}" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                                <TextBlock FontSize="11" Foreground="{StaticResource SuccessGreen}">
+                                                    <Run Text="✅ ≥90% = Completed"/>
+                                                </TextBlock>
+                                            </Border>
+                                            <Border Background="{StaticResource InfoBlueLight}" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                                <TextBlock FontSize="11" Foreground="{StaticResource PrimaryBlue}">
+                                                    <Run Text="🔵 10-89% = In Progress"/>
+                                                </TextBlock>
+                                            </Border>
+                                            <Border Background="#F5F5F5" CornerRadius="4" Padding="8,3">
+                                                <TextBlock FontSize="11" Foreground="#666">
+                                                    <Run Text="⏸️ &lt;10% = Not Started"/>
+                                                </TextBlock>
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                        <Border Background="{StaticResource InfoBlueLight}" CornerRadius="6" Padding="15,10">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding TotalCoManagedDevices}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Co-Managed Devices" FontSize="11" Foreground="#666" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Per-Workload Cards -->
+                            <ItemsControl ItemsSource="{Binding Workloads}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,10">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="45"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="200"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Status Icon -->
+                                                <TextBlock Grid.Column="0" Text="{Binding StatusIcon}" FontSize="24" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+                                                <!-- Name + Description -->
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,15,0">
+                                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold" Foreground="#333"/>
+                                                    <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#999" Margin="0,3,0,0"/>
+                                                    <TextBlock Text="{Binding AdoptionLabel}" FontSize="12" Foreground="{Binding Status, Converter={StaticResource WorkloadStatusConverter}}" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                                </StackPanel>
+
+                                                <!-- Device Counts (only shown when real data available) -->
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,20,0" Visibility="{Binding HasRealData, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                    <TextBlock FontSize="11" Foreground="#666">
+                                                        <Run Text="Intune: "/>
+                                                        <Run Text="{Binding IntuneDeviceCount, Mode=OneWay}" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#666" Margin="0,2,0,0">
+                                                        <Run Text="ConfigMgr: "/>
+                                                        <Run Text="{Binding ConfigMgrDeviceCount, Mode=OneWay}" FontWeight="Bold" Foreground="#D13438"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <!-- Adoption Progress Bar -->
+                                                <Grid Grid.Column="3" VerticalAlignment="Center">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Border Grid.Row="0" Background="#E8E8E8" CornerRadius="4" Height="8" Margin="0,0,0,4">
+                                                        <Border Background="{StaticResource SuccessGreen}" CornerRadius="4" HorizontalAlignment="Left"
+                                                                Width="{Binding IntuneAdoptionPercentage, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=200}"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Row="1" FontSize="10" Foreground="#999" HorizontalAlignment="Right">
+                                                        <Run Text="{Binding IntuneAdoptionPercentage, StringFormat='{}{0:F0}%', Mode=OneWay}"/>
+                                                        <Run Text=" Intune"/>
+                                                    </TextBlock>
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Cloud-Native Opportunity Card -->
+                            <Border Background="White" BorderBrush="{StaticResource SuccessGreen}" BorderThickness="2" CornerRadius="8" Padding="25" Margin="0,10,0,20">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Background="{StaticResource SuccessGreenLight}" CornerRadius="50" Width="80" Height="80" Margin="0,0,20,0">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding NearCloudNativeCount}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="devices" FontSize="10" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="🌟 Near Cloud-Native Opportunity" FontSize="18" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" Margin="0,0,0,5"/>
+                                        <TextBlock FontSize="13" Foreground="#666" TextWrapping="Wrap">
+                                            <Run Text="These devices have 6 of 7 workloads on Intune — just ONE workload away from fully cloud-native. Moving the last holdout workload for these devices eliminates the ConfigMgr client dependency entirely."/>
+                                        </TextBlock>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <Border Background="{StaticResource InfoBlueLight}" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                                <TextBlock FontSize="11" Foreground="{StaticResource PrimaryBlue}">
+                                                    <Run Text="🔄 Already cloud-native: "/>
+                                                    <Run Text="{Binding DevicesReadyForCloudNative, Mode=OneWay}" FontWeight="Bold"/>
+                                                </TextBlock>
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Last-Holdout Blocker Matrix -->
+                            <Border Style="{StaticResource SectionCard}" Margin="0,0,0,20" Visibility="{Binding HasLastHoldouts, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel>
+                                    <TextBlock Text="🔒 Last-Holdout Blocker Matrix" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="0,0,0,5"/>
+                                    <TextBlock Text="For devices with 6/7 workloads on Intune, these are the workloads keeping them from being fully cloud-native:" FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                                    <ItemsControl ItemsSource="{Binding LastHoldoutWorkloads}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#FFF8E1" CornerRadius="6" Padding="15" Margin="0,0,0,8">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="30"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="18" VerticalAlignment="Center"/>
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                                            <TextBlock Text="{Binding WorkloadName}" FontSize="13" FontWeight="Bold" Foreground="#333"/>
+                                                            <TextBlock FontSize="11" Foreground="#666">
+                                                                <Run Text="Moving this workload to Intune would make "/>
+                                                                <Run Text="{Binding DevicesBlockedCount, Mode=OneWay}" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}"/>
+                                                                <Run Text=" devices fully cloud-native"/>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <Border Grid.Column="2" Background="#FFB900" CornerRadius="4" Padding="10,5" VerticalAlignment="Center">
+                                                            <TextBlock FontSize="12" FontWeight="Bold" Foreground="White">
+                                                                <Run Text="{Binding DevicesBlockedCount, Mode=OneWay}"/>
+                                                                <Run Text=" blocked"/>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
                             </Border>
+
+                            <!-- Application Readiness Prerequisite for Client Apps -->
+                            <Border Style="{StaticResource SectionCard}" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <TextBlock Text="📦 Application Readiness (Client Apps Prerequisite)" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="0,0,0,5"/>
+                                    <TextBlock Text="Client Apps is the most complex workload. Application migration readiness determines when you can safely move this workload." FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Background="{StaticResource SuccessGreenLight}" CornerRadius="6" Padding="15">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding AppReadinessEasyCount}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Easy Migration" FontSize="11" Foreground="{StaticResource SuccessGreen}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="MSI/MSIX - direct deploy" FontSize="10" Foreground="#999" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="2" Background="#FFF8E1" CornerRadius="6" Padding="15">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding AppReadinessModerateCount}" FontSize="28" FontWeight="Bold" Foreground="#FFB900" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Moderate" FontSize="11" Foreground="#FFB900" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Win32 packaging needed" FontSize="10" Foreground="#999" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="4" Background="{StaticResource ErrorRedLight}" CornerRadius="6" Padding="15">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding AppReadinessComplexCount}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource ErrorRed}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Complex" FontSize="11" Foreground="{StaticResource ErrorRed}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Re-engineering required" FontSize="10" Foreground="#999" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <Border Background="{StaticResource InfoBlueLight}" CornerRadius="6" Padding="15" Margin="0,15,0,0">
+                                        <TextBlock FontSize="12" Foreground="{StaticResource PrimaryBlue}" TextWrapping="Wrap">
+                                            <Run Text="💡 Tip: " FontWeight="Bold"/>
+                                            <Run Text="Address complex applications first. App-V packages and custom script deployments need re-engineering before the Client Apps workload can be safely transitioned."/>
+                                        </TextBlock>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>

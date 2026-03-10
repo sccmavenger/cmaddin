@@ -10,6 +10,46 @@
 - 
 
 
+## [3.17.230] - 2026-03-10
+
+### Added
+
+### Changed
+
+### Fixed
+- Workloads tab mock data now shows realistic mid-migration scenario (2/7 completed, 1,247 co-managed devices, per-workload adoption %, near-cloud-native count, last-holdout blockers) instead of 0% everywhere
+
+
+## [3.17.229] - 2026-03-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.228] - 2026-03-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.227] - 2026-03-10
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.226] - 2026-03-04
 
 ### Added

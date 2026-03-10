@@ -670,6 +670,38 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public int WorkloadBlockerDeviceCount => TopWorkloadBlockers.Sum(b => b.AffectedDevices);
         public string BlockedWorkloadName => "Device Configuration"; // Dynamically set based on blockers
         
+        // v3.17.227 - Real workload authority properties
+        private WorkloadAuthoritySummary? _workloadAuthority;
+        public WorkloadAuthoritySummary? WorkloadAuthority
+        {
+            get => _workloadAuthority;
+            set => SetProperty(ref _workloadAuthority, value);
+        }
+
+        /// <summary>Number of workloads with ≥90% Intune adoption (considered "Completed")</summary>
+        public int WorkloadsCompletedCount => Workloads.Count(w => w.Status == WorkloadStatus.Completed);
+        
+        /// <summary>Devices with 6 of 7 workloads on Intune (one workload away from cloud-native)</summary>
+        private int _nearCloudNativeCount;
+        public int NearCloudNativeCount
+        {
+            get => _nearCloudNativeCount;
+            set => SetProperty(ref _nearCloudNativeCount, value);
+        }
+
+        /// <summary>Workloads that are the last holdout for the most devices</summary>
+        private ObservableCollection<LastHoldoutWorkload> _lastHoldoutWorkloads = new();
+        public ObservableCollection<LastHoldoutWorkload> LastHoldoutWorkloads
+        {
+            get => _lastHoldoutWorkloads;
+            set => SetProperty(ref _lastHoldoutWorkloads, value);
+        }
+
+        public bool HasLastHoldouts => LastHoldoutWorkloads.Count > 0;
+        public bool HasWorkloadAuthority => WorkloadAuthority != null || Workloads.Any(w => w.IntuneAdoptionPercentage > 0);
+        public int TotalCoManagedDevices => WorkloadAuthority?.TotalCoManagedDevices ?? Workloads.Select(w => w.IntuneDeviceCount + w.ConfigMgrDeviceCount).DefaultIfEmpty(0).Max();
+        public int DevicesReadyForCloudNative => WorkloadAuthority?.DevicesReadyForCloudNative ?? 0;
+        
         private ObservableCollection<Blocker> _topWorkloadBlockers = new();
         public ObservableCollection<Blocker> TopWorkloadBlockers
         {
@@ -2230,15 +2262,16 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 };
 
                 // Calculate migration status based on real data
+                // v3.17.227 - Will be updated with real workload authority data in LoadWorkloadRecommendationDataAsync
                 int intuneDevices = DeviceEnrollment?.IntuneEnrolledDevices ?? 0;
                 int totalDevices = DeviceEnrollment?.TotalDevices ?? 1;
                 double progress = totalDevices > 0 ? (intuneDevices / (double)totalDevices) * 100 : 0;
 
                 MigrationStatus = new MigrationStatus
                 {
-                    WorkloadsTransitioned = (int)(progress / 14.3), // Rough estimate (100% / 7 workloads)
+                    WorkloadsTransitioned = 0, // Will be updated by workload authority bridge
                     TotalWorkloads = 7,
-                    ProjectedFinishDate = DateTime.Now.AddMonths((int)((100 - progress) / 5)), // Rough estimate
+                    ProjectedFinishDate = DateTime.Now.AddMonths((int)((100 - progress) / 5)),
                     LastUpdateDate = DateTime.Now
                 };
 
@@ -3347,12 +3380,18 @@ namespace ZeroTrustMigrationAddin.ViewModels
             {
                 Instance.Info("Loading workload momentum recommendation...");
 
-                // SKIP AI service call - use the mock data we already set in constructor
-                // The constructor already initialized WorkloadMomentumInsight with Priority #2 mock data
-                Instance.Info($"✅ Using constructor-initialized workload recommendation: {WorkloadMomentumInsight?.RecommendedWorkload ?? "None"}");
+                // v3.17.227 - Use real workload authority data when authenticated
+                if (UseRealData)
+                {
+                    await UpdateWorkloadsFromAuthorityDataAsync();
+                }
+                else
+                {
+                    // Use constructor-initialized mock data with realistic adoption figures
+                    Instance.Info($"✅ Using constructor-initialized workload recommendation: {WorkloadMomentumInsight?.RecommendedWorkload ?? "None"}");
+                    PopulateMockWorkloadAuthorityData();
+                }
 
-                // Update enhanced workload properties
-                UpdateWorkloadReadinessScores();
                 CalculateWorkloadVelocity();
                 UpdateWorkloadBlockers();
                 
@@ -4240,6 +4279,64 @@ namespace ZeroTrustMigrationAddin.ViewModels
         }
 
         /// <summary>
+        /// v3.17.229 - Populates realistic mock workload authority data for demonstration mode.
+        /// Simulates a mid-migration environment with 1,247 co-managed devices at various adoption stages.
+        /// </summary>
+        private void PopulateMockWorkloadAuthorityData()
+        {
+            const int totalDevices = 1247;
+
+            // Realistic mid-migration adoption data (percentage on Intune)
+            var mockAdoption = new Dictionary<string, (double pct, WorkloadStatus status)>
+            {
+                { "Compliance Policies",         (94.2, WorkloadStatus.Completed) },
+                { "Endpoint Protection",         (91.5, WorkloadStatus.Completed) },
+                { "Device Configuration",        (67.3, WorkloadStatus.InProgress) },
+                { "Resource Access",             (52.8, WorkloadStatus.InProgress) },
+                { "Windows Update for Business", (43.1, WorkloadStatus.InProgress) },
+                { "Office Click-to-Run",         (18.6, WorkloadStatus.InProgress) },
+                { "Client Apps",                 (6.4,  WorkloadStatus.NotStarted) }
+            };
+
+            foreach (var workload in Workloads)
+            {
+                if (mockAdoption.TryGetValue(workload.Name, out var data))
+                {
+                    int intuneCount = (int)Math.Round(totalDevices * data.pct / 100.0);
+                    workload.IntuneAdoptionPercentage = data.pct;
+                    workload.IntuneDeviceCount = intuneCount;
+                    workload.ConfigMgrDeviceCount = totalDevices - intuneCount;
+                    workload.HasRealData = true; // Show device count breakdown in demo
+                    workload.Status = data.status;
+                    workload.ReadinessScore = data.pct;
+                }
+            }
+
+            NearCloudNativeCount = 83;
+
+            LastHoldoutWorkloads.Clear();
+            LastHoldoutWorkloads.Add(new LastHoldoutWorkload { WorkloadName = "Client Apps", DevicesBlockedCount = 38, Icon = "🔒" });
+            LastHoldoutWorkloads.Add(new LastHoldoutWorkload { WorkloadName = "Office Click-to-Run", DevicesBlockedCount = 27, Icon = "🔒" });
+            LastHoldoutWorkloads.Add(new LastHoldoutWorkload { WorkloadName = "Windows Update for Business", DevicesBlockedCount = 18, Icon = "🔒" });
+
+            MigrationStatus = new MigrationStatus
+            {
+                WorkloadsTransitioned = Workloads.Count(w => w.Status == WorkloadStatus.Completed),
+                TotalWorkloads = 7,
+                LastUpdateDate = DateTime.Now
+            };
+
+            OnPropertyChanged(nameof(Workloads));
+            OnPropertyChanged(nameof(WorkloadsCompletedCount));
+            OnPropertyChanged(nameof(HasLastHoldouts));
+            OnPropertyChanged(nameof(HasWorkloadAuthority));
+            OnPropertyChanged(nameof(TotalCoManagedDevices));
+            OnPropertyChanged(nameof(DevicesReadyForCloudNative));
+
+            Instance.Info($"✅ Populated mock workload authority: {Workloads.Count(w => w.Status == WorkloadStatus.Completed)}/7 completed, {NearCloudNativeCount} near cloud-native");
+        }
+
+        /// <summary>
         /// Update workload readiness scores and status based on current state
         /// </summary>
         private void UpdateWorkloadReadinessScores()
@@ -4287,6 +4384,121 @@ namespace ZeroTrustMigrationAddin.ViewModels
             catch (Exception ex)
             {
                 FileLogger.Instance.Error($"❌ Failed to update workload readiness scores: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// v3.17.227 - Maps Graph API workload names to UI Workload.Name
+        /// </summary>
+        private static readonly Dictionary<string, string> WorkloadNameMapping = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Compliance Policy", "Compliance Policies" },
+            { "Device Configuration", "Device Configuration" },
+            { "Resource Access", "Resource Access" },
+            { "Windows Update", "Windows Update for Business" },
+            { "Endpoint Protection", "Endpoint Protection" },
+            { "Modern Apps", "Client Apps" },
+            { "Office Apps", "Office Click-to-Run" }
+        };
+
+        /// <summary>
+        /// v3.17.227 - Updates workload status and adoption from real Graph API workload authority data.
+        /// Replaces the generic formula with actual per-workload Intune adoption percentages.
+        /// </summary>
+        private async Task UpdateWorkloadsFromAuthorityDataAsync()
+        {
+            try
+            {
+                Instance.Info("Loading real workload authority data from Graph API...");
+                var authority = await _graphDataService.GetCoManagedWorkloadAuthorityAsync();
+                
+                if (authority == null || authority.TotalCoManagedDevices == 0)
+                {
+                    Instance.Warning("No co-managed workload authority data available");
+                    return;
+                }
+
+                WorkloadAuthority = authority;
+                Instance.Info($"Workload authority loaded: {authority.TotalCoManagedDevices} co-managed devices, {authority.DevicesReadyForCloudNative} cloud-native ready");
+
+                // Map adoption counts to each workload
+                foreach (var workload in Workloads)
+                {
+                    var graphKey = WorkloadNameMapping.FirstOrDefault(kvp => kvp.Value == workload.Name).Key;
+                    if (graphKey != null && authority.WorkloadIntuneAdoptionCounts.TryGetValue(graphKey, out int intuneCount))
+                    {
+                        int total = authority.TotalCoManagedDevices;
+                        double adoptionPct = total > 0 ? Math.Round((double)intuneCount / total * 100, 1) : 0;
+
+                        workload.IntuneAdoptionPercentage = adoptionPct;
+                        workload.IntuneDeviceCount = intuneCount;
+                        workload.ConfigMgrDeviceCount = total - intuneCount;
+                        workload.HasRealData = true;
+                        workload.ReadinessScore = adoptionPct; // Replace generic formula with real data
+
+                        // Derive status from adoption percentage
+                        workload.Status = adoptionPct switch
+                        {
+                            >= 90 => WorkloadStatus.Completed,
+                            >= 10 => WorkloadStatus.InProgress,
+                            _ => WorkloadStatus.NotStarted
+                        };
+
+                        Instance.Info($"  {workload.Name}: {adoptionPct:F1}% Intune ({intuneCount}/{total}) → {workload.Status}");
+                    }
+                }
+
+                // Calculate near-cloud-native devices (6 of 7 workloads on Intune)
+                NearCloudNativeCount = authority.Devices.Count(d => d.WorkloadsManagedByIntuneCount == 6);
+
+                // Calculate last-holdout workloads (for devices with exactly 6/7 on Intune)
+                var nearCloudNativeDevices = authority.Devices.Where(d => d.WorkloadsManagedByIntuneCount == 6).ToList();
+                var holdoutCounts = new Dictionary<string, int>();
+                foreach (var device in nearCloudNativeDevices)
+                {
+                    var remaining = device.WorkloadsStillOnConfigMgr;
+                    foreach (var wl in remaining)
+                    {
+                        string displayName = WorkloadNameMapping.TryGetValue(wl, out var mapped) ? mapped : wl;
+                        holdoutCounts[displayName] = holdoutCounts.GetValueOrDefault(displayName) + 1;
+                    }
+                }
+
+                LastHoldoutWorkloads.Clear();
+                foreach (var kvp in holdoutCounts.OrderByDescending(x => x.Value))
+                {
+                    LastHoldoutWorkloads.Add(new LastHoldoutWorkload
+                    {
+                        WorkloadName = kvp.Key,
+                        DevicesBlockedCount = kvp.Value,
+                        Icon = "🔒"
+                    });
+                }
+
+                // Update migration status from real data
+                int completed = Workloads.Count(w => w.Status == WorkloadStatus.Completed);
+                MigrationStatus = new MigrationStatus
+                {
+                    WorkloadsTransitioned = completed,
+                    TotalWorkloads = 7,
+                    LastUpdateDate = DateTime.Now
+                };
+
+                // Notify UI
+                OnPropertyChanged(nameof(Workloads));
+                OnPropertyChanged(nameof(WorkloadsCompletedCount));
+                OnPropertyChanged(nameof(HasLastHoldouts));
+                OnPropertyChanged(nameof(HasWorkloadAuthority));
+                OnPropertyChanged(nameof(TotalCoManagedDevices));
+                OnPropertyChanged(nameof(DevicesReadyForCloudNative));
+
+                Instance.Info($"✅ Workload authority bridge complete: {completed}/7 completed, {NearCloudNativeCount} near cloud-native, {LastHoldoutWorkloads.Count} holdout workloads");
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "UpdateWorkloadsFromAuthorityDataAsync");
+                // Fall back to generic readiness scores
+                UpdateWorkloadReadinessScores();
             }
         }
 
