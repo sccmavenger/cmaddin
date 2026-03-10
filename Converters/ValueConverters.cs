@@ -478,4 +478,30 @@ namespace ZeroTrustMigrationAddin.Converters
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Converts a hex color string (e.g., "#107C10") to a SolidColorBrush.
+    /// Used for data-driven color binding in ItemsControl templates.
+    /// </summary>
+    public class HexColorToBrushConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string hex && !string.IsNullOrEmpty(hex))
+            {
+                try
+                {
+                    var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                    return new SolidColorBrush(color);
+                }
+                catch { }
+            }
+            return new SolidColorBrush(System.Windows.Media.Colors.Gray);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

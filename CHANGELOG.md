@@ -10,6 +10,23 @@
 - 
 
 
+## [3.17.231] - 2026-03-10
+
+### Added
+- **Smart Sequencing**: Data-driven migration sequence computed from real workload adoption data, dependencies, and risk levels — no AI required. Binds to `WorkloadSequenceSteps` via `ItemsControl` with color-coded step badges
+- **WorkloadSequenceStep model**: New model class with computed `StepColor` and `ReadinessColor` properties for data-bound UI
+- **HexColorToBrushConverter**: Converts hex color strings to WPF SolidColorBrush for data-driven color binding
+
+### Changed
+- **Brainstorm tab curated**: Hid 10 speculative ideas (#2,4,6,8,9,10,11,13,14,16), kept 4 actionable ones
+- **Natural Language Query** moved to top of Brainstorm tab, renamed to drop "Idea #5:" prefix
+- **Compliance Gap Visualizer** rewritten with admin-relatable scenarios: stale ConfigMgr clients, Conditional Access gaps, baseline drift, WSUS/SUP sync failures — replaces generic remote worker/VPN content
+- **Smart Sequencing** renamed from "AI-Recommended" to "Data-Driven Migration Sequence", removes all AI branding
+
+### Fixed
+- 
+
+
 ## [3.17.230] - 2026-03-10
 
 ### Added

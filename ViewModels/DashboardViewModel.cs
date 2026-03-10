@@ -701,6 +701,15 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public bool HasWorkloadAuthority => WorkloadAuthority != null || Workloads.Any(w => w.IntuneAdoptionPercentage > 0);
         public int TotalCoManagedDevices => WorkloadAuthority?.TotalCoManagedDevices ?? Workloads.Select(w => w.IntuneDeviceCount + w.ConfigMgrDeviceCount).DefaultIfEmpty(0).Max();
         public int DevicesReadyForCloudNative => WorkloadAuthority?.DevicesReadyForCloudNative ?? 0;
+
+        /// <summary>Data-driven migration sequence computed from real workload adoption data</summary>
+        private ObservableCollection<WorkloadSequenceStep> _workloadSequenceSteps = new();
+        public ObservableCollection<WorkloadSequenceStep> WorkloadSequenceSteps
+        {
+            get => _workloadSequenceSteps;
+            set => SetProperty(ref _workloadSequenceSteps, value);
+        }
+        public bool HasWorkloadSequence => WorkloadSequenceSteps.Count > 0;
         
         private ObservableCollection<Blocker> _topWorkloadBlockers = new();
         public ObservableCollection<Blocker> TopWorkloadBlockers
@@ -3394,6 +3403,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
 
                 CalculateWorkloadVelocity();
                 UpdateWorkloadBlockers();
+                ComputeWorkloadSequence();
                 
                 // Set safety dashboard values
                 ReadyDevicesForWorkload = DeviceEnrollment?.IntuneEnrolledDevices ?? 0;
@@ -4334,6 +4344,97 @@ namespace ZeroTrustMigrationAddin.ViewModels
             OnPropertyChanged(nameof(DevicesReadyForCloudNative));
 
             Instance.Info($"✅ Populated mock workload authority: {Workloads.Count(w => w.Status == WorkloadStatus.Completed)}/7 completed, {NearCloudNativeCount} near cloud-native");
+        }
+
+        /// <summary>
+        /// Computes a data-driven migration sequence from actual workload data.
+        /// Sorts by: completed first (already done), then by adoption % descending (highest adoption = easiest next step),
+        /// respects dependencies, and generates rationale from real numbers.
+        /// </summary>
+        private void ComputeWorkloadSequence()
+        {
+            try
+            {
+                var steps = new List<WorkloadSequenceStep>();
+
+                // Separate completed from remaining
+                var completed = Workloads.Where(w => w.Status == WorkloadStatus.Completed)
+                    .OrderByDescending(w => w.IntuneAdoptionPercentage).ToList();
+                var remaining = Workloads.Where(w => w.Status != WorkloadStatus.Completed)
+                    .OrderByDescending(w => w.IntuneAdoptionPercentage).ToList();
+
+                // Completed workloads first (already done)
+                int step = 1;
+                foreach (var w in completed)
+                {
+                    steps.Add(new WorkloadSequenceStep
+                    {
+                        StepNumber = step++,
+                        WorkloadName = w.Name,
+                        AdoptionPercentage = w.IntuneAdoptionPercentage,
+                        DeviceCount = w.IntuneDeviceCount,
+                        RiskLevel = w.RiskLevel,
+                        EstimatedTime = w.EstimatedTime,
+                        Rationale = $"Already at {w.IntuneAdoptionPercentage:F0}% Intune adoption — {w.IntuneDeviceCount:N0} devices migrated",
+                        ReadinessLabel = "✓ Completed",
+                        TimelineLabel = "Done",
+                        DependencyNote = ""
+                    });
+                }
+
+                // Remaining workloads sorted by adoption (highest first = path of least resistance)
+                var completedNames = new HashSet<string>(completed.Select(w => w.Name));
+                foreach (var w in remaining)
+                {
+                    var unmetDeps = w.DependsOn.Where(d => !completedNames.Contains(d)).ToList();
+                    string depNote = unmetDeps.Count > 0
+                        ? $"After: {string.Join(", ", unmetDeps)}"
+                        : w.DependsOn.Count > 0 ? "Dependencies met" : "No dependencies";
+
+                    string rationale;
+                    if (w.IntuneAdoptionPercentage >= 50)
+                        rationale = $"{w.IntuneAdoptionPercentage:F0}% already on Intune — momentum is there, push to completion";
+                    else if (w.IntuneAdoptionPercentage >= 20)
+                        rationale = $"{w.IntuneAdoptionPercentage:F0}% started — {w.ConfigMgrDeviceCount:N0} devices still on ConfigMgr need migration";
+                    else if (w.IntuneAdoptionPercentage > 0)
+                        rationale = $"Only {w.IntuneAdoptionPercentage:F0}% adoption — pilot phase, validate before broad rollout";
+                    else
+                        rationale = $"Not started — {w.RiskLevel} risk, plan {w.EstimatedTime} for rollout";
+
+                    string readiness = w.IntuneAdoptionPercentage >= 50 ? "Ready" :
+                                       w.IntuneAdoptionPercentage >= 20 ? "In Progress" :
+                                       w.IntuneAdoptionPercentage > 0 ? "Pilot" : "Not Started";
+
+                    string timeline = w.IntuneAdoptionPercentage >= 50 ? "Push now" :
+                                      w.IntuneAdoptionPercentage >= 20 ? w.EstimatedTime :
+                                      $"{w.EstimatedTime} + pilot";
+
+                    steps.Add(new WorkloadSequenceStep
+                    {
+                        StepNumber = step++,
+                        WorkloadName = w.Name,
+                        AdoptionPercentage = w.IntuneAdoptionPercentage,
+                        DeviceCount = w.IntuneDeviceCount + w.ConfigMgrDeviceCount,
+                        RiskLevel = w.RiskLevel,
+                        EstimatedTime = w.EstimatedTime,
+                        Rationale = rationale,
+                        ReadinessLabel = readiness,
+                        TimelineLabel = timeline,
+                        DependencyNote = depNote
+                    });
+
+                    // Track completed for dependency resolution
+                    completedNames.Add(w.Name);
+                }
+
+                WorkloadSequenceSteps = new ObservableCollection<WorkloadSequenceStep>(steps);
+                OnPropertyChanged(nameof(HasWorkloadSequence));
+                Instance.Info($"✅ Computed workload sequence: {steps.Count} steps ({completed.Count} completed, {remaining.Count} remaining)");
+            }
+            catch (Exception ex)
+            {
+                Instance.Error($"❌ Failed to compute workload sequence: {ex.Message}");
+            }
         }
 
         /// <summary>
