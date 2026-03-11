@@ -345,7 +345,15 @@
                 </TabControl.Resources>
 
                 <!-- OVERVIEW TAB (All existing content) -->
-                <TabItem Header="📊 Overview">
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📊 Overview"/>
+                            <Ellipse Width="8" Height="8" Fill="#E53E3E" Margin="6,0,0,0" VerticalAlignment="Center"
+                                     Visibility="{Binding HasPipelineStall, Converter={StaticResource BoolToVisibilityConverter}}"
+                                     ToolTip="Enrollment stall detected by analysis pipeline"/>
+                        </StackPanel>
+                    </TabItem.Header>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel>
                             <!-- Loading Indicator -->
@@ -2799,7 +2807,15 @@
                 </TabItem>
 
                 <!-- WORKLOAD MOMENTUM TAB -->
-                <TabItem Header="🔄 Workloads" Visibility="{Binding ShowWorkloadsTab}">
+                <TabItem Visibility="{Binding ShowWorkloadsTab}">
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔄 Workloads"/>
+                            <Ellipse Width="8" Height="8" Fill="#E53E3E" Margin="6,0,0,0" VerticalAlignment="Center"
+                                     Visibility="{Binding HasWorkloadStall, Converter={StaticResource BoolToVisibilityConverter}}"
+                                     ToolTip="Workload stall detected"/>
+                        </StackPanel>
+                    </TabItem.Header>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel MaxWidth="1400">
 
@@ -2853,6 +2869,80 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
+
+                            <!-- v3.17.234 - Workload Stall Alert Banner (from Analysis Pipeline) -->
+                            <Border Background="#FFF3E0" BorderBrush="#FF9800" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15"
+                                    Visibility="{Binding HasWorkloadStall, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Background="#FF9800" CornerRadius="25" Width="50" Height="50" Margin="0,0,15,0">
+                                        <TextBlock Text="⚠️" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock FontSize="16" FontWeight="Bold" Foreground="#E65100">
+                                            <Run Text="{Binding WorkloadStallSummary, Mode=OneWay}"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="12" Foreground="#666" TextWrapping="Wrap" Margin="0,5,0,0"
+                                                   Text="The Analysis Pipeline detected workload transition stalls. Review stalled workloads below for specific remediation steps."/>
+                                    </StackPanel>
+
+                                    <Border Grid.Column="2" Background="#FFF8E1" CornerRadius="6" Padding="12,8" VerticalAlignment="Center"
+                                            Visibility="{Binding IsWorkloadTrustTrough, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <StackPanel>
+                                            <TextBlock Text="WORKLOAD TRUST TROUGH" FontSize="10" FontWeight="Bold" Foreground="#E65100"/>
+                                            <TextBlock Text="4-5 of 7 done, then stuck" FontSize="10" Foreground="#999"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <!-- Stalled Workload Details (from Analysis Pipeline) -->
+                            <ItemsControl ItemsSource="{Binding StalledWorkloadDetails}" Margin="0,0,0,10"
+                                          Visibility="{Binding HasWorkloadStall, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#FFF8E1" BorderBrush="#FFE082" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                    <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="#333">
+                                                        <Run Text="🔸 "/>
+                                                        <Run Text="{Binding Name, Mode=OneWay}"/>
+                                                        <Run Text=" — stalled" Foreground="#E65100"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="#999" Margin="0,3,0,0"
+                                                               Text="{Binding BlockReason, Mode=OneWay}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
+                                                    <TextBlock FontSize="11" Foreground="#666">
+                                                        <Run Text="{Binding CurrentAdoptionPercentage, StringFormat='{}{0:F0}%', Mode=OneWay}"/>
+                                                        <Run Text=" adoption"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="2" Background="#FFECB3" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                                                    <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#E65100">
+                                                        <Run Text="{Binding DaysSinceChange, Mode=OneWay}"/>
+                                                        <Run Text=" days stalled"/>
+                                                    </TextBlock>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
                             <!-- Per-Workload Cards -->
                             <ItemsControl ItemsSource="{Binding Workloads}">

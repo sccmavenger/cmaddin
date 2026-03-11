@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.234** | March 11, 2026
+**Version 3.17.238** | March 11, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -252,6 +252,70 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+
+### Version 3.17.237 (March 11, 2026)
+
+### Added
+- **`/demostall` launch switch**: New command-line flag that injects realistic Trust Trough stall scenario into mock data, making all pipeline UI elements visible in disconnected mode
+- Demo scenario includes: enrollment stall at 57% (ConfidenceBased), 2 workload stalls (Client Apps at 34%, Device Configuration at 62%), 3 actionable recommendations with risk/effort/cost-of-inaction
+
+### Changed
+- Workloads tab now visible by default (was previously hidden, requiring `/showtabs:workloads`)
+
+### Fixed
+
+---
+
+### Version 3.17.236 (March 11, 2026)
+
+### Added
+- **`/demostall` launch switch**: New command-line flag that injects realistic Trust Trough stall scenario into mock data, making all pipeline UI elements visible in disconnected mode
+- Demo scenario includes: enrollment stall at 57% (ConfidenceBased), 2 workload stalls (Client Apps at 34%, Device Configuration at 62%), 3 actionable recommendations with risk/effort/cost-of-inaction
+- Workloads tab auto-shown when `/demostall` is active
+
+### Changed
+
+### Fixed
+
+---
+
+### Version 3.17.235 (March 11, 2026)
+
+### Added
+- **Pipeline UI Integration**: Wired Analysis Pipeline results into all major UI surfaces
+- **Overview tab**: Red severity dot on tab header when enrollment stall detected
+- **Workloads tab**: Red severity dot on tab header + orange stall alert banner + per-workload stall detail cards (name, block reason, adoption %, days stalled)
+- **Enrollment Momentum panel**: Pipeline stall classification badge, cost-of-inaction callout, Trust Reset Batch size indicator
+- **Recommendations window**: New "Pipeline Analysis — Device-Scoped Actions" section with risk-colored cards, effort/impact tags, and highlighted cost-of-inaction
+
+### Changed
+- DashboardViewModel now calls `LoadAnalysisPipelineAsync()` during data load, exposing 12 pipeline properties for XAML binding
+- DashboardWindow.xaml.cs pushes pipeline stall data to EnrollmentMomentumViewModel after real-data refresh
+- EnrollmentMomentumViewModel extended with 5 pipeline properties (HasPipelineStall, PipelineClassification, PipelineCostOfInaction, TrustResetBatchSize, HasTrustResetBatch)
+
+### Fixed
+
+---
+
+### Version 3.17.234 (March 11, 2026)
+
+### Added
+- **Analysis Pipeline Framework**: Three-layer Signal → Analyzer → Recommendation engine for detecting migration stalls with root-cause classification (Technical/Operational/ConfidenceBased/ResourceConstrained)
+- **Enrollment Stall Analyzer**: Detects Trust Trough zone (50-60% enrolled with declining velocity), general stalls, and velocity decline warnings. Classifies root cause and sizes Trust Reset Batches from Excellent-readiness devices.
+- **Workload Stall Analyzer**: Detects per-workload stalls, Workload Trust Trough (4-5 of 7 done then stuck), Client Apps holdout pattern, and last-holdout identification. Generates workload-specific remediation guidance.
+- **Pipeline Orchestrator**: Central runner with on-demand and background scheduled execution, severity change events, and disk-persisted result summaries
+- **DI Container**: Activated `Microsoft.Extensions.DependencyInjection` for typed pipeline service resolution while maintaining backward compatibility with existing singleton/direct-construction patterns
+- **Pipeline Models**: Typed signal, assessment, and recommendation models with severity levels, stall classifications, blast radius, risk rating, and cost of inaction
+- **Architecture Documentation**: Comprehensive `docs/ANALYSIS_PIPELINE_ARCHITECTURE.md` with what/how/why, file map, extension guide, and design decisions
+
+### Changed
+
+### Fixed
+
+---
+
 ### Version 3.17.233 (March 10, 2026)
 
 ### Added
@@ -261,62 +325,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - **Cloud Comparison Details tab**: Collapsed 3 moved cards (Autopilot, Update Rings, Defender) with "MOVED to Cloud Native tab" comments
 
 ### Changed
-
-### Fixed
-
----
-
-### Version 3.17.231 (March 10, 2026)
-
-### Added
-- **Smart Sequencing**: Data-driven migration sequence computed from real workload adoption data, dependencies, and risk levels — no AI required. Binds to `WorkloadSequenceSteps` via `ItemsControl` with color-coded step badges
-- **WorkloadSequenceStep model**: New model class with computed `StepColor` and `ReadinessColor` properties for data-bound UI
-- **HexColorToBrushConverter**: Converts hex color strings to WPF SolidColorBrush for data-driven color binding
-
-### Changed
-- **Brainstorm tab curated**: Hid 10 speculative ideas (#2,4,6,8,9,10,11,13,14,16), kept 4 actionable ones
-- **Natural Language Query** moved to top of Brainstorm tab, renamed to drop "Idea #5:" prefix
-- **Compliance Gap Visualizer** rewritten with admin-relatable scenarios: stale ConfigMgr clients, Conditional Access gaps, baseline drift, WSUS/SUP sync failures — replaces generic remote worker/VPN content
-- **Smart Sequencing** renamed from "AI-Recommended" to "Data-Driven Migration Sequence", removes all AI branding
-
-### Fixed
-
----
-
-### Version 3.17.230 (March 10, 2026)
-
-### Added
-
-### Changed
-
-### Fixed
-- Workloads tab mock data now shows realistic mid-migration scenario (2/7 completed, 1,247 co-managed devices, per-workload adoption %, near-cloud-native count, last-holdout blockers) instead of 0% everywhere
-
----
-
-### Version 3.17.225 (March 4, 2026)
-
-### Added
-
-### Changed
-- **README: Updated Getting Started auth flow**: Changed Step 2 from Device Code Flow (copy code → devicelogin) to Interactive Browser Flow (browser opens automatically). Added tip about Device Code fallback via Auth button for remote sessions.
-  - Files: `README.md`
-
-### Fixed
-
----
-
-### Version 3.17.224 (March 4, 2026)
-
-### Added
-
-### Changed
-- **Installation Docs: MSI-First**: Updated all installation instructions across AdminUserGuide.html, README.md, Alpha-Tester-Guide.md, AUTO_UPDATE_GUIDE.md, and QUICK_TEST_INSTRUCTIONS.md to use MSI installer as the primary (and recommended) install method
-  - Removed ZIP extraction + PowerShell script install references from user-facing docs
-  - Added silent install command (`msiexec /i ... /qn`) for enterprise deployment
-  - Updated uninstall instructions to use Add/Remove Programs
-  - Updated offline install to use MSI + .NET runtime
-  - Files: `AdminUserGuide.html`, `README.md`, `docs/Alpha-Tester-Guide.md`, `docs/AUTO_UPDATE_GUIDE.md`, `docs/QUICK_TEST_INSTRUCTIONS.md`
 
 ### Fixed
 
@@ -1532,5 +1540,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-03-11  
-**Version**: 3.17.234  
+**Version**: 3.17.238  
 **Maintainer:** Cloud Native Assessment Team

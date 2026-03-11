@@ -19,7 +19,7 @@ namespace ZeroTrustMigrationAddin.Models
         /// <summary>
         /// Shows or hides the Workloads tab
         /// </summary>
-        public Visibility ShowWorkloadsTab { get; set; } = Visibility.Collapsed;
+        public Visibility ShowWorkloadsTab { get; set; } = Visibility.Visible;
 
         /// <summary>
         /// Shows or hides the Workload Brainstorm tab
@@ -52,6 +52,12 @@ namespace ZeroTrustMigrationAddin.Models
         public Visibility ShowCloudComparisonDetailsTab { get; set; } = Visibility.Collapsed;
 
         /// <summary>
+        /// When true, injects realistic mock stall data so pipeline UI elements are visible in disconnected mode.
+        /// Activated via /demostall launch switch.
+        /// </summary>
+        public bool DemoStallMode { get; set; }
+
+        /// <summary>
         /// Parse command-line arguments to determine tab visibility.
         /// 
         /// Usage examples:
@@ -66,6 +72,15 @@ namespace ZeroTrustMigrationAddin.Models
             foreach (var arg in args)
             {
                 var lowerArg = arg.ToLower();
+
+                // Parse /demostall flag — shows pipeline stall data with mock values
+                if (lowerArg == "/demostall" || lowerArg == "-demostall")
+                {
+                    options.DemoStallMode = true;
+                    // Auto-show Workloads tab so stall alerts are visible
+                    options.ShowWorkloadsTab = Visibility.Visible;
+                    continue;
+                }
 
                 // Parse /hidetabs argument
                 if (lowerArg.StartsWith("/hidetabs:") || lowerArg.StartsWith("-hidetabs:"))

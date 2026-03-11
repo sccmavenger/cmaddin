@@ -8,6 +8,7 @@ using System.Windows.Input;
 using ZeroTrustMigrationAddin.Models;
 using ZeroTrustMigrationAddin.Services;
 using ZeroTrustMigrationAddin.Services.AgentTools;
+using ZeroTrustMigrationAddin.Services.Pipeline;
 using LiveCharts;
 using LiveCharts.Wpf;
 using static ZeroTrustMigrationAddin.Services.FileLogger;
@@ -85,6 +86,20 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private EnrollmentGoals? _agentGoals;
         private string? _agentCompletionMessage;
         
+        // v3.17.234 - Analysis Pipeline fields
+        private AnalysisPipelineResult? _pipelineResult;
+        private string _pipelineSeverity = "None";
+        private bool _hasPipelineStall;
+        private string _pipelineStallSummary = string.Empty;
+        private string _pipelineStallClassification = string.Empty;
+        private string _pipelineCostOfInaction = string.Empty;
+        private ObservableCollection<PipelineRecommendation> _pipelineRecommendations = new();
+        private int _trustResetBatchSize;
+        private bool _hasWorkloadStall;
+        private string _workloadStallSummary = string.Empty;
+        private bool _isWorkloadTrustTrough;
+        private ObservableCollection<StalledWorkload> _stalledWorkloadDetails = new();
+
         // v3.16.23 - Event for notifying UI when real data is loaded
         public event EventHandler? RealDataLoaded;
 
@@ -97,6 +112,10 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private Visibility _showCloudReadinessTab = Visibility.Visible;
         private Visibility _showCloudValueComparisonTab = Visibility.Collapsed;
         private Visibility _showCloudComparisonDetailsTab = Visibility.Collapsed;
+        private bool _demoStallMode;
+
+        /// <summary>When true, pipeline injects mock stall data for UI preview. Activated via /demostall launch switch.</summary>
+        public bool DemoStallMode => _demoStallMode;
 
         public DashboardViewModel(MockDataService mockDataService, TabVisibilityOptions? tabVisibilityOptions = null)
         {
@@ -114,6 +133,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 _showCloudReadinessTab = tabVisibilityOptions.ShowCloudReadinessTab;
                 _showCloudValueComparisonTab = tabVisibilityOptions.ShowCloudValueComparisonTab;
                 _showCloudComparisonDetailsTab = tabVisibilityOptions.ShowCloudComparisonDetailsTab;
+                _demoStallMode = tabVisibilityOptions.DemoStallMode;
             }
             
             // Initialize AI Recommendation Service - Azure OpenAI is now required
@@ -526,6 +546,84 @@ namespace ZeroTrustMigrationAddin.ViewModels
             get => _stalledWorkloadCount;
             set => SetProperty(ref _stalledWorkloadCount, value);
         }
+
+        #region Analysis Pipeline Properties
+
+        public AnalysisPipelineResult? PipelineResult
+        {
+            get => _pipelineResult;
+            set => SetProperty(ref _pipelineResult, value);
+        }
+
+        public string PipelineSeverity
+        {
+            get => _pipelineSeverity;
+            set => SetProperty(ref _pipelineSeverity, value);
+        }
+
+        public bool HasPipelineStall
+        {
+            get => _hasPipelineStall;
+            set => SetProperty(ref _hasPipelineStall, value);
+        }
+
+        public string PipelineStallSummary
+        {
+            get => _pipelineStallSummary;
+            set => SetProperty(ref _pipelineStallSummary, value);
+        }
+
+        public string PipelineStallClassification
+        {
+            get => _pipelineStallClassification;
+            set => SetProperty(ref _pipelineStallClassification, value);
+        }
+
+        public string PipelineCostOfInaction
+        {
+            get => _pipelineCostOfInaction;
+            set => SetProperty(ref _pipelineCostOfInaction, value);
+        }
+
+        public ObservableCollection<PipelineRecommendation> PipelineRecommendations
+        {
+            get => _pipelineRecommendations;
+            set => SetProperty(ref _pipelineRecommendations, value);
+        }
+
+        public int TrustResetBatchSize
+        {
+            get => _trustResetBatchSize;
+            set => SetProperty(ref _trustResetBatchSize, value);
+        }
+
+        public bool HasWorkloadStall
+        {
+            get => _hasWorkloadStall;
+            set => SetProperty(ref _hasWorkloadStall, value);
+        }
+
+        public string WorkloadStallSummary
+        {
+            get => _workloadStallSummary;
+            set => SetProperty(ref _workloadStallSummary, value);
+        }
+
+        public bool IsWorkloadTrustTrough
+        {
+            get => _isWorkloadTrustTrough;
+            set => SetProperty(ref _isWorkloadTrustTrough, value);
+        }
+
+        public ObservableCollection<StalledWorkload> StalledWorkloadDetails
+        {
+            get => _stalledWorkloadDetails;
+            set => SetProperty(ref _stalledWorkloadDetails, value);
+        }
+
+        public bool HasPipelineRecommendations => PipelineRecommendations.Count > 0;
+
+        #endregion
 
         public ObservableCollection<ApplicationMigrationAnalysis>? ApplicationMigrations
         {
@@ -2129,6 +2227,9 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 await LoadApplicationMigrationDataAsync();
                 await LoadExecutiveSummaryDataAsync();
 
+                // v3.17.234 - Run Analysis Pipeline (after all data is loaded)
+                await LoadAnalysisPipelineAsync();
+
                 // Update AI availability
                 CheckAIAvailability();
             }
@@ -3698,6 +3799,178 @@ namespace ZeroTrustMigrationAddin.ViewModels
             {
                 Instance.LogException(ex, "LoadExecutiveSummaryDataAsync");
             }
+        }
+
+        /// <summary>
+        /// Runs the Analysis Pipeline to detect enrollment and workload stalls.
+        /// Populates pipeline properties for UI binding.
+        /// </summary>
+        private async Task LoadAnalysisPipelineAsync()
+        {
+            try
+            {
+                var orchestrator = ServiceRegistration.GetPipelineOrchestrator();
+                if (orchestrator == null)
+                {
+                    Instance.Warning("[PIPELINE] Orchestrator not available — skipping pipeline analysis");
+                    return;
+                }
+
+                Instance.Info("[PIPELINE] Running analysis pipeline...");
+                var result = await orchestrator.RunAsync();
+                PipelineResult = result;
+                PipelineSeverity = result.OverallSeverity.ToString();
+
+                // Extract enrollment stall assessment
+                var enrollmentResult = result.AnalyzerResults.Find(r => r.AnalyzerName == "EnrollmentStallAnalyzer");
+                if (enrollmentResult?.Assessment is EnrollmentStallAssessment enrollmentAssessment)
+                {
+                    HasPipelineStall = enrollmentAssessment.IsStalled;
+                    PipelineStallClassification = enrollmentAssessment.Classification.ToString();
+                    TrustResetBatchSize = enrollmentAssessment.TrustResetBatchSize;
+
+                    if (enrollmentAssessment.IsStalled)
+                    {
+                        PipelineStallSummary = enrollmentAssessment.IsTrustTroughRisk
+                            ? $"Trust Trough detected — {enrollmentAssessment.CurrentEnrollmentPercentage:F0}% enrolled, stalled {enrollmentAssessment.StallDurationDays} days"
+                            : $"Enrollment stalled — {enrollmentAssessment.StallDurationDays} days at {enrollmentAssessment.CurrentEnrollmentPercentage:F0}%";
+
+                        PipelineCostOfInaction = enrollmentAssessment.PatchLatencyImpact;
+                    }
+                }
+
+                // Extract workload stall assessment
+                var workloadResult = result.AnalyzerResults.Find(r => r.AnalyzerName == "WorkloadStallAnalyzer");
+                if (workloadResult?.Assessment is WorkloadStallAssessment workloadAssessment)
+                {
+                    HasWorkloadStall = workloadAssessment.IsStalled;
+                    IsWorkloadTrustTrough = workloadAssessment.IsWorkloadTrustTrough;
+
+                    if (workloadAssessment.IsStalled)
+                    {
+                        var stalledNames = workloadAssessment.StalledWorkloads.Select(s => s.Name);
+                        WorkloadStallSummary = workloadAssessment.IsWorkloadTrustTrough
+                            ? $"Workload Trust Trough — {workloadAssessment.DaysSinceAnyProgress} days since progress"
+                            : $"{workloadAssessment.StalledWorkloads.Count} workload(s) stalled: {string.Join(", ", stalledNames)}";
+                    }
+
+                    StalledWorkloadDetails.Clear();
+                    foreach (var sw in workloadAssessment.StalledWorkloads)
+                        StalledWorkloadDetails.Add(sw);
+                }
+
+                // Collect pipeline recommendations
+                PipelineRecommendations.Clear();
+                foreach (var rec in result.AllRecommendations)
+                    PipelineRecommendations.Add(rec);
+                OnPropertyChanged(nameof(HasPipelineRecommendations));
+
+                Instance.Info($"[PIPELINE] Complete — severity: {result.OverallSeverity}, " +
+                    $"enrollment stall: {HasPipelineStall}, workload stall: {HasWorkloadStall}, " +
+                    $"recommendations: {PipelineRecommendations.Count}");
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "LoadAnalysisPipelineAsync");
+            }
+
+            // Demo stall mode: inject realistic mock stall data if pipeline didn't find real stalls
+            if (_demoStallMode && !HasPipelineStall && !HasWorkloadStall)
+            {
+                LoadDemoStallData();
+            }
+        }
+
+        /// <summary>
+        /// Injects realistic mock stall data for UI preview when launched with /demostall.
+        /// </summary>
+        private void LoadDemoStallData()
+        {
+            Instance.Info("[PIPELINE-DEMO] Injecting demo stall data for UI preview");
+
+            // Enrollment stall: Trust Trough scenario at 57%
+            HasPipelineStall = true;
+            PipelineStallClassification = StallClassification.ConfidenceBased.ToString();
+            PipelineStallSummary = "Trust Trough detected — 57% enrolled, stalled 18 days";
+            PipelineCostOfInaction = "1,075 devices remain on 48-hour patch delay. Estimated 3.2-day average exposure window for critical CVEs.";
+            PipelineSeverity = SeverityLevel.High.ToString();
+            TrustResetBatchSize = 142;
+
+            // Workload stall: 2 workloads stuck
+            HasWorkloadStall = true;
+            IsWorkloadTrustTrough = true;
+            WorkloadStallSummary = "Workload Trust Trough — 22 days since progress";
+
+            StalledWorkloadDetails.Clear();
+            StalledWorkloadDetails.Add(new StalledWorkload
+            {
+                Name = "Client Apps",
+                CurrentAdoptionPercentage = 34.2,
+                DaysSinceChange = 22,
+                DevicesBlocked = 412,
+                BlockReason = "Win32 app packaging not started for 6 LOB apps",
+                WhyStalled = StallClassification.Operational
+            });
+            StalledWorkloadDetails.Add(new StalledWorkload
+            {
+                Name = "Device Configuration",
+                CurrentAdoptionPercentage = 61.8,
+                DaysSinceChange = 15,
+                DevicesBlocked = 287,
+                BlockReason = "GPO-to-Intune migration blocked on VPN profile testing",
+                WhyStalled = StallClassification.Technical
+            });
+
+            // Demo recommendations
+            PipelineRecommendations.Clear();
+            PipelineRecommendations.Add(new PipelineRecommendation
+            {
+                Title = "Trust Reset Batch: Re-enroll 142 Excellent-readiness devices",
+                Description = "142 devices scored 'Excellent' readiness but failed initial enrollment. A targeted re-enrollment batch can break the Trust Trough by demonstrating safe migration at scale.",
+                RiskLevel = "Low",
+                CostOfInaction = "Trust Trough persists — remaining 1,075 devices stay on legacy patch cycle",
+                EstimatedEffort = "2-4 hours",
+                TargetDeviceCount = 142,
+                BlastRadiusDevices = 142,
+                BlastRadiusUsers = 118,
+                ImpactScore = 85,
+                Priority = RecommendationPriority.Critical,
+                Category = RecommendationCategory.DeviceEnrollment,
+                SourceAnalyzer = "EnrollmentStallAnalyzer"
+            });
+            PipelineRecommendations.Add(new PipelineRecommendation
+            {
+                Title = "Fast-track Win32 app packaging for 6 LOB applications",
+                Description = "Client Apps workload is blocked at 34% because 6 line-of-business apps have not been repackaged as Win32 apps for Intune deployment.",
+                RiskLevel = "Medium",
+                CostOfInaction = "412 devices cannot complete workload transition — dual management overhead continues",
+                EstimatedEffort = "1-2 weeks",
+                TargetDeviceCount = 412,
+                BlastRadiusDevices = 412,
+                BlastRadiusUsers = 380,
+                ImpactScore = 72,
+                Priority = RecommendationPriority.High,
+                Category = RecommendationCategory.WorkloadTransition,
+                SourceAnalyzer = "WorkloadStallAnalyzer"
+            });
+            PipelineRecommendations.Add(new PipelineRecommendation
+            {
+                Title = "Complete VPN profile testing to unblock Device Configuration",
+                Description = "Device Configuration workload stalled at 62% pending VPN profile validation. 287 devices waiting on GPO migration.",
+                RiskLevel = "Medium",
+                CostOfInaction = "287 devices remain GPO-managed — configuration drift risk increases weekly",
+                EstimatedEffort = "3-5 days",
+                TargetDeviceCount = 287,
+                BlastRadiusDevices = 287,
+                BlastRadiusUsers = 245,
+                ImpactScore = 68,
+                Priority = RecommendationPriority.High,
+                Category = RecommendationCategory.WorkloadTransition,
+                SourceAnalyzer = "WorkloadStallAnalyzer"
+            });
+            OnPropertyChanged(nameof(HasPipelineRecommendations));
+
+            Instance.Info("[PIPELINE-DEMO] Demo stall data loaded: enrollment stall + 2 workload stalls + 3 recommendations");
         }
 
         /// <summary>

@@ -10,6 +10,60 @@
 - 
 
 
+## [3.17.238] - 2026-03-11
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.237] - 2026-03-11
+
+### Added
+- **`/demostall` launch switch**: New command-line flag that injects realistic Trust Trough stall scenario into mock data, making all pipeline UI elements visible in disconnected mode
+- Demo scenario includes: enrollment stall at 57% (ConfidenceBased), 2 workload stalls (Client Apps at 34%, Device Configuration at 62%), 3 actionable recommendations with risk/effort/cost-of-inaction
+
+### Changed
+- Workloads tab now visible by default (was previously hidden, requiring `/showtabs:workloads`)
+
+### Fixed
+- 
+
+
+## [3.17.236] - 2026-03-11
+
+### Added
+- **`/demostall` launch switch**: New command-line flag that injects realistic Trust Trough stall scenario into mock data, making all pipeline UI elements visible in disconnected mode
+- Demo scenario includes: enrollment stall at 57% (ConfidenceBased), 2 workload stalls (Client Apps at 34%, Device Configuration at 62%), 3 actionable recommendations with risk/effort/cost-of-inaction
+- Workloads tab auto-shown when `/demostall` is active
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.235] - 2026-03-11
+
+### Added
+- **Pipeline UI Integration**: Wired Analysis Pipeline results into all major UI surfaces
+- **Overview tab**: Red severity dot on tab header when enrollment stall detected
+- **Workloads tab**: Red severity dot on tab header + orange stall alert banner + per-workload stall detail cards (name, block reason, adoption %, days stalled)
+- **Enrollment Momentum panel**: Pipeline stall classification badge, cost-of-inaction callout, Trust Reset Batch size indicator
+- **Recommendations window**: New "Pipeline Analysis — Device-Scoped Actions" section with risk-colored cards, effort/impact tags, and highlighted cost-of-inaction
+
+### Changed
+- DashboardViewModel now calls `LoadAnalysisPipelineAsync()` during data load, exposing 12 pipeline properties for XAML binding
+- DashboardWindow.xaml.cs pushes pipeline stall data to EnrollmentMomentumViewModel after real-data refresh
+- EnrollmentMomentumViewModel extended with 5 pipeline properties (HasPipelineStall, PipelineClassification, PipelineCostOfInaction, TrustResetBatchSize, HasTrustResetBatch)
+
+### Fixed
+- 
+
+
 ## [3.17.234] - 2026-03-11
 
 ### Added

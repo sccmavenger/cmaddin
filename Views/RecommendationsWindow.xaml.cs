@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ZeroTrustMigrationAddin.Models;
 using ZeroTrustMigrationAddin.Services;
+using ZeroTrustMigrationAddin.Services.Pipeline;
 using static ZeroTrustMigrationAddin.Services.FileLogger;
 
 namespace ZeroTrustMigrationAddin.Views
@@ -53,6 +54,140 @@ namespace ZeroTrustMigrationAddin.Views
             }
             
             SubtitleText.Text = $"{recommendations.Count} recommendations based on your current score of {_result?.Score ?? 0}/100";
+
+            // v3.17.234 - Add Analysis Pipeline recommendations (device-scoped)
+            AddPipelineRecommendations(priority);
+        }
+
+        /// <summary>
+        /// Adds device-scoped pipeline recommendations with blast radius and cost of inaction.
+        /// These are more precise than confidence-based recommendations.
+        /// </summary>
+        private void AddPipelineRecommendations(int startPriority)
+        {
+            var orchestrator = ServiceRegistration.GetPipelineOrchestrator();
+            var result = orchestrator?.LastResult;
+            if (result == null || result.AllRecommendations.Count == 0)
+                return;
+
+            // Section header
+            var headerBorder = new Border
+            {
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EFF6FF")),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(16, 12, 16, 12),
+                Margin = new Thickness(0, 16, 0, 12)
+            };
+            var headerPanel = new StackPanel();
+            headerPanel.Children.Add(new TextBlock
+            {
+                Text = "🎯 Pipeline Analysis — Device-Scoped Actions",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E40AF"))
+            });
+            headerPanel.Children.Add(new TextBlock
+            {
+                Text = "These recommendations target specific devices and quantify the impact of action vs. inaction.",
+                FontSize = 11,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#6B7280")),
+                Margin = new Thickness(0, 4, 0, 0)
+            });
+            headerBorder.Child = headerPanel;
+            RecommendationsPanel.Children.Add(headerBorder);
+
+            int priority = startPriority;
+            foreach (var rec in result.AllRecommendations)
+            {
+                AddPipelineRecommendationCard(rec, priority++);
+            }
+        }
+
+        private void AddPipelineRecommendationCard(PipelineRecommendation rec, int priority)
+        {
+            var border = new Border
+            {
+                Background = new SolidColorBrush(Colors.White),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(16),
+                Margin = new Thickness(0, 0, 0, 12),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
+                    rec.RiskLevel == "High" ? "#FCA5A5" : rec.RiskLevel == "Medium" ? "#FDE68A" : "#BBF7D0")),
+                BorderThickness = new Thickness(1, 1, 1, 1)
+            };
+
+            var mainStack = new StackPanel();
+
+            // Title row
+            var titlePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+            titlePanel.Children.Add(new TextBlock
+            {
+                Text = priority.ToString(),
+                FontSize = 12,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(Colors.White),
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3B82F6")),
+                Width = 24, Height = 24,
+                TextAlignment = TextAlignment.Center,
+                Padding = new Thickness(0, 3, 0, 0)
+            });
+            titlePanel.Children.Add(new TextBlock
+            {
+                Text = rec.Title,
+                FontSize = 14,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1F2937")),
+                Margin = new Thickness(10, 0, 0, 0),
+                TextWrapping = TextWrapping.Wrap
+            });
+            mainStack.Children.Add(titlePanel);
+
+            // Description
+            mainStack.Children.Add(new TextBlock
+            {
+                Text = rec.Description,
+                FontSize = 12,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#6B7280")),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 10)
+            });
+
+            // Tags row: Risk, Devices, Effort
+            var tagsPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+            AddTag(tagsPanel, $"Risk: {rec.RiskLevel}",
+                rec.RiskLevel == "High" ? "#FEE2E2" : rec.RiskLevel == "Medium" ? "#FEF3C7" : "#DCFCE7",
+                rec.RiskLevel == "High" ? "#991B1B" : rec.RiskLevel == "Medium" ? "#92400E" : "#166534");
+            if (rec.TargetDeviceCount > 0)
+                AddTag(tagsPanel, $"📱 {rec.TargetDeviceCount} devices", "#EFF6FF", "#1E40AF");
+            if (rec.BlastRadiusUsers > 0)
+                AddTag(tagsPanel, $"👥 {rec.BlastRadiusUsers} users affected", "#F3F4F6", "#6B7280");
+            if (!string.IsNullOrEmpty(rec.EstimatedEffort))
+                AddTag(tagsPanel, $"⏱ {rec.EstimatedEffort}", "#F3F4F6", "#6B7280");
+            AddTag(tagsPanel, rec.SourceAnalyzer, "#E0E7FF", "#4338CA");
+            mainStack.Children.Add(tagsPanel);
+
+            // Cost of Inaction (highlighted)
+            if (!string.IsNullOrEmpty(rec.CostOfInaction))
+            {
+                var coiBorder = new Border
+                {
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEF2F2")),
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new Thickness(10, 6, 10, 6),
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                coiBorder.Child = new TextBlock
+                {
+                    Text = $"⚠️ Cost of inaction: {rec.CostOfInaction}",
+                    FontSize = 11,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#991B1B")),
+                    TextWrapping = TextWrapping.Wrap
+                };
+                mainStack.Children.Add(coiBorder);
+            }
+
+            border.Child = mainStack;
+            RecommendationsPanel.Children.Add(border);
         }
 
         private List<Recommendation> GenerateRecommendations()
