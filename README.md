@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.233** | March 10, 2026
+**Version 3.17.234** | March 11, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -251,6 +251,21 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.233 (March 10, 2026)
+
+### Added
+- **Cloud Native tab**: Moved Autopilot vs. Imaging, Update Ring Coverage, and Microsoft Defender Integration cards from Cloud Comparison Details tab
+- **Cloud Native tab**: New "Ready for ConfigMgr Agent Removal" card — identifies co-managed devices with ALL 7 workloads on Intune, recommends removal of ConfigMgr agent to complete cloud-native transition
+- **Cloud Native tab**: Workload authority checklist showing per-workload Intune adoption percentage with green/yellow/red status indicators
+- **Cloud Comparison Details tab**: Collapsed 3 moved cards (Autopilot, Update Rings, Defender) with "MOVED to Cloud Native tab" comments
+
+### Changed
+
+### Fixed
+
+---
+
 ### Version 3.17.231 (March 10, 2026)
 
 ### Added
@@ -304,28 +319,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
   - Files: `AdminUserGuide.html`, `README.md`, `docs/Alpha-Tester-Guide.md`, `docs/AUTO_UPDATE_GUIDE.md`, `docs/QUICK_TEST_INSTRUCTIONS.md`
 
 ### Fixed
-
----
-
-### Version 3.17.223 (March 4, 2026)
-
-### Changed
-- **Cloud Native Tab Refocus**: Slimmed main Cloud Native tab from 20 cards to 4 high-impact cards + hero section
-  - Kept: Device Compliance, Security Blind Spots (stale devices), Zero Trust Ready, Cloud Native Progress hero with trend chart
-  - Added: NEW Enrollment Velocity card showing devices/week trend + Autopilot vs ConfigMgr provisioning time comparison
-  - Deleted: OS Currency and "5 Questions ConfigMgr Can't Answer" cards (low value)
-  - Moved 15 remaining cards to new hidden "Cloud Comparison Details" tab
-  - Files: `Views/CloudValueComparisonTab.xaml`, `Views/CloudValueComparisonTab.xaml.cs`
-
-### Added
-- **Cloud Comparison Details Tab**: New hidden tab containing 15 comparison cards moved from main tab
-  - Default hidden (Collapsed), reveal via `/showtabs:cloudcomparisondetails` CLI arg
-  - Organized into 4 sections: Security, Visibility & Control, Migration Readiness, Infrastructure
-  - Files: `Views/CloudComparisonDetailsTab.xaml`, `Views/CloudComparisonDetailsTab.xaml.cs`
-- **Enrollment Velocity Model & Service**: New `EnrollmentVelocityComparison` model with weekly enrollment counts, trend detection (accelerating/steady/slowing), and provisioning time estimates
-  - Files: `Models/CloudReadinessModels.cs`, `Services/CloudReadinessService.cs`
-- **Tab Visibility for Cloud Comparison Details**: Added `ShowCloudComparisonDetailsTab` property with Collapsed default
-  - Files: `Models/TabVisibilityOptions.cs`, `ViewModels/DashboardViewModel.cs`, `Views/DashboardWindow.xaml`, `Views/DashboardWindow.xaml.cs`
 
 ---
 
@@ -1538,6 +1531,6 @@ Historical documentation moved to `/documents` folder:
 
 ---
 
-**Last Updated**: 2026-03-10  
-**Version**: 3.17.233  
+**Last Updated**: 2026-03-11  
+**Version**: 3.17.234  
 **Maintainer:** Cloud Native Assessment Team

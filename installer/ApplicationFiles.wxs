@@ -341,7 +341,7 @@
     <Fragment>
         <ComponentGroup Id="AppFiles_49" Directory="INSTALLFOLDER">
             <Component Id="cmp_49" Guid="*">
-                <File Id="fil_49" Source="$(var.PublishDir)\mscordaccore_amd64_amd64_8.0.2426.7010.dll" KeyPath="yes" />
+                <File Id="fil_49" Source="$(var.PublishDir)\mscordaccore_amd64_amd64_8.0.2526.11203.dll" KeyPath="yes" />
             </Component>
         </ComponentGroup>
     </Fragment>
