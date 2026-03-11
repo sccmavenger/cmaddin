@@ -65,6 +65,35 @@ namespace ZeroTrustMigrationAddin.Views
                 {
                     var momentumVM = new EnrollmentMomentumViewModel(graphDataService);
                     LoadMockMomentumData(momentumVM);
+
+                    // If /demostall flag is active, show pipeline stall data in mock mode
+                    if (DataContext is DashboardViewModel dashVM && dashVM.DemoStallMode)
+                    {
+                        // Override to Trust Trough scenario
+                        momentumVM.TotalIntuneDevices = 1425;
+                        momentumVM.EnrolledPct = 57.0;
+                        momentumVM.EnrolledPctDisplay = "57.0%";
+                        momentumVM.Gap = 1075;
+                        momentumVM.Velocity7Day = 1.2;
+                        momentumVM.Velocity30 = 3.8;
+                        momentumVM.DevicesPerWeek = 8.4;
+                        momentumVM.TrendDescription = "📉 Decelerating";
+                        momentumVM.TrendState = "Decelerating";
+                        momentumVM.WeekOverWeekChange = -68.5;
+                        momentumVM.WeekOverWeekDisplay = "-68.5%";
+                        momentumVM.IsAtRisk = true;
+                        momentumVM.StallRiskLevel = "Critical";
+                        momentumVM.StallRiskDescription = "Enrollment velocity has dropped 68% — Trust Trough zone";
+                        momentumVM.IsTrustTroughRisk = true;
+
+                        // Pipeline-specific stall properties
+                        momentumVM.HasPipelineStall = true;
+                        momentumVM.PipelineClassification = "ConfidenceBased";
+                        momentumVM.PipelineCostOfInaction = "1,075 devices remain on 48-hour patch delay. Estimated 3.2-day average exposure window for critical CVEs.";
+                        momentumVM.TrustResetBatchSize = 142;
+                        momentumVM.HasTrustResetBatch = true;
+                    }
+
                     EnrollmentMomentumView.DataContext = momentumVM;
                 }
                 
@@ -507,6 +536,16 @@ namespace ZeroTrustMigrationAddin.Views
                         // Create new analytics service with authenticated GraphDataService
                         var newMomentumVM = new EnrollmentMomentumViewModel(graphDataService);
                         await newMomentumVM.RefreshAsync();
+                        
+                        // Push pipeline stall data if available
+                        if (viewModel.HasPipelineStall)
+                        {
+                            newMomentumVM.HasPipelineStall = viewModel.HasPipelineStall;
+                            newMomentumVM.PipelineClassification = viewModel.PipelineStallClassification;
+                            newMomentumVM.PipelineCostOfInaction = viewModel.PipelineCostOfInaction;
+                            newMomentumVM.TrustResetBatchSize = viewModel.TrustResetBatchSize;
+                            newMomentumVM.HasTrustResetBatch = viewModel.TrustResetBatchSize > 0;
+                        }
                         
                         // Update on UI thread
                         await Dispatcher.InvokeAsync(() =>

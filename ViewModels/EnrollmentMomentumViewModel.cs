@@ -182,6 +182,42 @@ namespace ZeroTrustMigrationAddin.ViewModels
             set => SetProperty(ref _analyticsResult, value);
         }
 
+        // v3.17.234 - Pipeline stall classification (set from DashboardWindow when pipeline runs)
+        private bool _hasPipelineStall;
+        public bool HasPipelineStall
+        {
+            get => _hasPipelineStall;
+            set => SetProperty(ref _hasPipelineStall, value);
+        }
+
+        private string _pipelineClassification = string.Empty;
+        public string PipelineClassification
+        {
+            get => _pipelineClassification;
+            set => SetProperty(ref _pipelineClassification, value);
+        }
+
+        private string _pipelineCostOfInaction = string.Empty;
+        public string PipelineCostOfInaction
+        {
+            get => _pipelineCostOfInaction;
+            set => SetProperty(ref _pipelineCostOfInaction, value);
+        }
+
+        private int _trustResetBatchSize;
+        public int TrustResetBatchSize
+        {
+            get => _trustResetBatchSize;
+            set => SetProperty(ref _trustResetBatchSize, value);
+        }
+
+        private bool _hasTrustResetBatch;
+        public bool HasTrustResetBatch
+        {
+            get => _hasTrustResetBatch;
+            set => SetProperty(ref _hasTrustResetBatch, value);
+        }
+
         #endregion
 
         #region Commands

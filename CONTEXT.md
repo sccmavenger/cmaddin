@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.234 |
+| **Version** | 3.17.238 |
 | **Last Updated** | 2026-03-11 |
 | **Branch** | main |
 | **Status** | Stable - Analysis Pipeline framework built, pending UI integration |
