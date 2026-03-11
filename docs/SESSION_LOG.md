@@ -179,3 +179,65 @@ Cloud Native tab restructure, documentation overhaul (MSI install + auth flow).
 - Monitor user feedback on slimmed Cloud Native tab
 - Consider re-enabling any of the 6 hidden Cloud Readiness signals if requested
 - Evaluate whether Cloud Comparison Details tab should become visible by default
+
+---
+
+## 2026-03-11 Session Summary
+
+### Focus
+Analysis Pipeline Framework — architecture design and full implementation of stall detection engine.
+
+### Completed
+- **Conceptual design session**: Reviewed copilot_recommendations.md, analyzed stall detection gaps in existing codebase, designed three-layer pipeline architecture (Signal → Analyzer → Recommendation)
+- **Clarified requirements**: DI container (yes), pipeline scope (general framework), execution model (on-demand + background)
+- **Mapped existing UI**: Identified 42 XAML views, 7 ViewModels, confirmed substantial UI already exists for enrollment momentum, workloads, recommendations — new work is extensions, not ground-up
+- **Implemented 10 new files**:
+  - Core framework: `ISignalCollector.cs`, `IAnalyzer.cs`, `IRecommendationProvider.cs`, `AnalysisPipelineOrchestrator.cs`
+  - Models: `PipelineModels.cs` (signals, assessments, recommendations, enums)
+  - Enrollment chain: `EnrollmentSignalCollector.cs`, `EnrollmentStallAnalyzer.cs`, `EnrollmentStallRecommendationProvider.cs`
+  - Workload chain: `WorkloadSignalCollector.cs`, `WorkloadStallAnalyzer.cs`, `WorkloadStallRecommendationProvider.cs`
+  - DI: `ServiceRegistration.cs`
+- **Modified 1 file**: `App.xaml.cs` — added DI container initialization at startup
+- **Build verified**: Zero new errors, zero new warnings in pipeline code
+- **Comprehensive documentation**: Created `docs/ANALYSIS_PIPELINE_ARCHITECTURE.md`, added ADR-011 and ADR-012 to `docs/DECISIONS.md`, updated CHANGELOG.md, CONTEXT.md
+
+### Key Decisions
+- **ADR-011**: Three-layer pipeline (not monolithic, not event bus) — separation of concerns, typed generics for safety, extensible (3 classes to add new analyzer)
+- **ADR-012**: DI additive — pipeline uses DI, existing code unchanged (backward compatible)
+- Pipeline and AI recommendations coexist — pipeline for precision (device-scoped), AI for creative insight
+- Singletons for pipeline services (cache integrity requires single instances)
+- JSON file persistence (no database) — consistent with project conventions
+
+### Files Created
+- Services/Pipeline/ISignalCollector.cs (interface + base with caching)
+- Services/Pipeline/IAnalyzer.cs (interface + base with timing/logging)
+- Services/Pipeline/IRecommendationProvider.cs (interface)
+- Services/Pipeline/AnalysisPipelineOrchestrator.cs (chain runner, events, scheduling, persistence)
+- Services/Pipeline/Signals/EnrollmentSignalCollector.cs
+- Services/Pipeline/Signals/WorkloadSignalCollector.cs
+- Services/Pipeline/Analyzers/EnrollmentStallAnalyzer.cs
+- Services/Pipeline/Analyzers/WorkloadStallAnalyzer.cs
+- Services/Pipeline/Recommendations/EnrollmentStallRecommendationProvider.cs
+- Services/Pipeline/Recommendations/WorkloadStallRecommendationProvider.cs
+- Services/ServiceRegistration.cs
+- Models/PipelineModels.cs
+- docs/ANALYSIS_PIPELINE_ARCHITECTURE.md
+
+### Files Modified
+- App.xaml.cs (DI startup)
+- CHANGELOG.md (pipeline feature entries)
+- CONTEXT.md (current state, active features, next steps)
+- docs/DECISIONS.md (ADR-011, ADR-012)
+
+### Pending
+- UI integration: surface pipeline results in views
+- Background scheduling: activate `StartBackgroundSchedule()`
+- Historical snapshots: replace synthetic data with real stored history
+- Testing: unit tests for analyzers, integration test with MockDataService
+
+### Next Steps
+- Wire pipeline results into Enrollment Momentum View (root-cause badge, Trust Trough warning)
+- Wire pipeline results into Workloads Tab (per-workload stall alerts)
+- Wire pipeline recommendations into Recommendations Window (action cards with blast radius)
+- Add severity badge to dashboard tab header
+- Unit tests for EnrollmentStallAnalyzer and WorkloadStallAnalyzer

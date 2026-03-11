@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using ZeroTrustMigrationAddin.Views;
 using ZeroTrustMigrationAddin.Models;
+using ZeroTrustMigrationAddin.Services;
 using Microsoft.Win32;
 
 namespace ZeroTrustMigrationAddin
@@ -85,6 +86,9 @@ namespace ZeroTrustMigrationAddin
             {
                 // Initialize telemetry service
                 _ = Services.AzureTelemetryService.Instance;
+
+                // Configure DI container and analysis pipeline
+                ServiceRegistration.ConfigureServices();
 
                 // Track app start event
                 Services.AzureTelemetryService.Instance.TrackEvent("AppStarted", new System.Collections.Generic.Dictionary<string, string>

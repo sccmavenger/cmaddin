@@ -8,14 +8,28 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.233 |
-| **Last Updated** | 2026-03-10 |
+| **Version** | 3.17.234 |
+| **Last Updated** | 2026-03-11 |
 | **Branch** | main |
-| **Status** | Stable - Docs fully updated to MSI install + Interactive Browser auth |
+| **Status** | Stable - Analysis Pipeline framework built, pending UI integration |
 
 ---
 
 ## Active Features
+
+### Analysis Pipeline Framework (v3.17.233+, Unreleased)
+- **Status**: Framework built, compiles clean, not yet wired to UI
+- **What**: Three-layer pipeline (Signal → Analyzer → Recommendation) for detecting migration stalls
+- **Architecture doc**: `docs/ANALYSIS_PIPELINE_ARCHITECTURE.md`
+- **Decisions**: ADR-011 and ADR-012 in `docs/DECISIONS.md`
+- **Chains implemented**:
+  - Enrollment Stall: Trust Trough detection, root-cause classification, Trust Reset Batch sizing
+  - Workload Stall: Per-workload stall, Workload Trust Trough, Client Apps holdout, last holdout
+- **Pending**:
+  - UI integration (surface results in Enrollment Momentum, Workloads tab, Recommendations window)
+  - Background scheduling activation
+  - Real historical snapshot persistence (currently synthetic)
+- **Files**: 10 new files in `Services/Pipeline/`, `Models/PipelineModels.cs`, `Services/ServiceRegistration.cs`
 
 ### Cloud Native Tab Refocus (v3.17.223)
 - **Status**: Published
@@ -50,32 +64,42 @@ All hidden tabs can be enabled via command-line:
 
 ---
 
-## Recent Session Summary (2026-03-02)
+## Recent Session Summary (2026-03-11)
 
 ### Completed
-- **Cloud Readiness tab deep-dive review** — mapped architecture across View, code-behind, models, and service layers
-- Documented 2 active signals (Autopilot Readiness, Cloud-Native Readiness) with data sources and assessment logic
-- Identified 6 hidden signals disabled per stakeholder feedback
-- No code changes — planning/review session
+- **Analysis Pipeline Framework** — designed and implemented full Signal → Analyzer → Recommendation engine
+- Created 10 new files: core interfaces, base classes, orchestrator, 2 complete analyzer chains, DI registration
+- Activated `Microsoft.Extensions.DependencyInjection` for pipeline services
+- Build verified clean (zero new errors/warnings)
+- Comprehensive documentation: `docs/ANALYSIS_PIPELINE_ARCHITECTURE.md`, ADR-011, ADR-012
 
 ### Key Decisions
-- Cloud-Native signal scopes to migration targets only (excludes born-in-cloud devices)
-- Hybrid Entra ID Join is not a blocker (expected intermediate state)
-- 6 signals hidden per Rob's feedback — may revisit later
+- Three-layer pipeline (not monolithic service or event bus) for separation of concerns and extensibility
+- Typed generics for compile-time chain safety
+- Singletons for pipeline services (caching requires single instances)
+- DI additive — existing singleton/direct-construction patterns unchanged
+- Pipeline and AI recommendations coexist (precision + insight)
 
 ---
 
 ## Known Issues
 
-1. **None critical** - v3.17.116 is stable
+1. **Pipeline UI not wired** — results are produced but not visible in any view yet
+2. **Historical snapshots synthetic** — `EnrollmentAnalyticsService` generates synthetic history, not real stored data
+3. **Background schedule not activated** — `StartBackgroundSchedule()` is implemented but not called
 
 ---
 
 ## Immediate Next Steps
 
-1. Decide on Cloud Readiness tab changes (re-enable signals? adjust logic? UI tweaks?)
-2. Consider whether hidden signals (Win 11, Identity, WUfB, Endpoint Security, Autopatch, App Readiness) should be revisited or removed
-3. Test alternate credentials feature with customer environment
+1. **UI Integration** — surface pipeline results in existing views:
+   - Enrollment Momentum View: add root-cause classification badge, Trust Trough warning
+   - Workloads Tab: add per-workload velocity and stall alerts
+   - Recommendations Window: add pipeline action cards with blast radius and cost of inaction
+2. **Background scheduling** — activate `StartBackgroundSchedule()` after initial data load
+3. **Historical snapshot persistence** — store real enrollment snapshots daily for accurate velocity/stall detection
+4. **Testing** — unit tests for analyzers (deterministic signal → expected assessment), integration test with MockDataService
+5. **Additional analyzers** (future) — compliance drift, cost modeling, security posture, agent removal readiness
 
 ---
 
@@ -102,6 +126,10 @@ dotnet build
 UI (Views) → ViewModels → Services → External APIs
                               ↓
                     FileLogger (singleton)
+                              ↓
+            ┌── Analysis Pipeline (DI) ──┐
+            │ Signal → Analyzer → Recs   │
+            └────────────────────────────┘
 ```
 
 ### Data Sources

@@ -10,6 +10,23 @@
 - 
 
 
+## [3.17.234] - 2026-03-11
+
+### Added
+- **Analysis Pipeline Framework**: Three-layer Signal → Analyzer → Recommendation engine for detecting migration stalls with root-cause classification (Technical/Operational/ConfidenceBased/ResourceConstrained)
+- **Enrollment Stall Analyzer**: Detects Trust Trough zone (50-60% enrolled with declining velocity), general stalls, and velocity decline warnings. Classifies root cause and sizes Trust Reset Batches from Excellent-readiness devices.
+- **Workload Stall Analyzer**: Detects per-workload stalls, Workload Trust Trough (4-5 of 7 done then stuck), Client Apps holdout pattern, and last-holdout identification. Generates workload-specific remediation guidance.
+- **Pipeline Orchestrator**: Central runner with on-demand and background scheduled execution, severity change events, and disk-persisted result summaries
+- **DI Container**: Activated `Microsoft.Extensions.DependencyInjection` for typed pipeline service resolution while maintaining backward compatibility with existing singleton/direct-construction patterns
+- **Pipeline Models**: Typed signal, assessment, and recommendation models with severity levels, stall classifications, blast radius, risk rating, and cost of inaction
+- **Architecture Documentation**: Comprehensive `docs/ANALYSIS_PIPELINE_ARCHITECTURE.md` with what/how/why, file map, extension guide, and design decisions
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.233] - 2026-03-10
 
 ### Added
