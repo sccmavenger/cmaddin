@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.238** | March 11, 2026
+**Version 3.17.241** | March 11, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -255,6 +255,29 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+
+### Version 3.17.239 (March 11, 2026)
+
+### Added
+- **💡 Ideas tab**: New tab replacing "Workload Brainstorm" with 5 data-driven decision features:
+  - **Decision Cards**: Per-workload cards answering 4 key questions (What decision? Why now? Cost of inaction? Lowest-risk next step?) with 5 card types (ReadyToStart, ExpandScope, StallRecovery, NearComplete, Complete)
+  - **Workload Unlock Chain**: Shows downstream workloads unlocked by completing each workload
+  - **ConfigMgr Coverage**: Visual split showing Intune vs ConfigMgr device coverage per workload
+  - **Safe to Remove Confidence**: Per-workload safety scores with "what stops running" details and rollback time estimates
+  - **Last Holdout Spotlight**: Special card when 5+ of 7 workloads are complete, highlighting paths to finish
+- **DecisionCardModels.cs**: Models for DecisionCard, WorkloadUnlockChain, ConfigMgrCoverage, WorkloadSafetyScore, LastHoldoutSpotlight
+- **DecisionCardGenerator.cs**: Pure synthesis service transforming existing pipeline data into Ideas tab content (no new API calls)
+- **IntToVisibilityConverter**: New WPF converter (int > 0 → Visible, else Collapsed)
+
+### Changed
+- Old "💡 Workload Brainstorm" tab (~2000 lines of static mockups) replaced with data-driven "💡 Ideas" tab
+- Ideas tab visible by default, controllable via `/hidetabs:ideas` and `/showtabs:ideas`
+
+### Fixed
+
+---
+
 ### Version 3.17.237 (March 11, 2026)
 
 ### Added
@@ -309,20 +332,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - **DI Container**: Activated `Microsoft.Extensions.DependencyInjection` for typed pipeline service resolution while maintaining backward compatibility with existing singleton/direct-construction patterns
 - **Pipeline Models**: Typed signal, assessment, and recommendation models with severity levels, stall classifications, blast radius, risk rating, and cost of inaction
 - **Architecture Documentation**: Comprehensive `docs/ANALYSIS_PIPELINE_ARCHITECTURE.md` with what/how/why, file map, extension guide, and design decisions
-
-### Changed
-
-### Fixed
-
----
-
-### Version 3.17.233 (March 10, 2026)
-
-### Added
-- **Cloud Native tab**: Moved Autopilot vs. Imaging, Update Ring Coverage, and Microsoft Defender Integration cards from Cloud Comparison Details tab
-- **Cloud Native tab**: New "Ready for ConfigMgr Agent Removal" card — identifies co-managed devices with ALL 7 workloads on Intune, recommends removal of ConfigMgr agent to complete cloud-native transition
-- **Cloud Native tab**: Workload authority checklist showing per-workload Intune adoption percentage with green/yellow/red status indicators
-- **Cloud Comparison Details tab**: Collapsed 3 moved cards (Autopilot, Update Rings, Defender) with "MOVED to Cloud Native tab" comments
 
 ### Changed
 
@@ -1540,5 +1549,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-03-11  
-**Version**: 3.17.238  
+**Version**: 3.17.241  
 **Maintainer:** Cloud Native Assessment Team
