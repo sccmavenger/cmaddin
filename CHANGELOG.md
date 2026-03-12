@@ -10,6 +10,47 @@
 - 
 
 
+## [3.17.241] - 2026-03-11
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.240] - 2026-03-11
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
+## [3.17.239] - 2026-03-11
+
+### Added
+- **💡 Ideas tab**: New tab replacing "Workload Brainstorm" with 5 data-driven decision features:
+  - **Decision Cards**: Per-workload cards answering 4 key questions (What decision? Why now? Cost of inaction? Lowest-risk next step?) with 5 card types (ReadyToStart, ExpandScope, StallRecovery, NearComplete, Complete)
+  - **Workload Unlock Chain**: Shows downstream workloads unlocked by completing each workload
+  - **ConfigMgr Coverage**: Visual split showing Intune vs ConfigMgr device coverage per workload
+  - **Safe to Remove Confidence**: Per-workload safety scores with "what stops running" details and rollback time estimates
+  - **Last Holdout Spotlight**: Special card when 5+ of 7 workloads are complete, highlighting paths to finish
+- **DecisionCardModels.cs**: Models for DecisionCard, WorkloadUnlockChain, ConfigMgrCoverage, WorkloadSafetyScore, LastHoldoutSpotlight
+- **DecisionCardGenerator.cs**: Pure synthesis service transforming existing pipeline data into Ideas tab content (no new API calls)
+- **IntToVisibilityConverter**: New WPF converter (int > 0 → Visible, else Collapsed)
+
+### Changed
+- Old "💡 Workload Brainstorm" tab (~2000 lines of static mockups) replaced with data-driven "💡 Ideas" tab
+- Ideas tab visible by default, controllable via `/hidetabs:ideas` and `/showtabs:ideas`
+
+### Fixed
+- 
+
+
 ## [3.17.238] - 2026-03-11
 
 ### Added

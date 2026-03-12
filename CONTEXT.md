@@ -8,16 +8,28 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.238 |
+| **Version** | 3.17.241 |
 | **Last Updated** | 2026-03-11 |
 | **Branch** | main |
-| **Status** | Stable - Analysis Pipeline framework built, pending UI integration |
+| **Status** | Stable - Ideas tab replacing Workload Brainstorm with data-driven Decision Cards |
 
 ---
 
 ## Active Features
 
-### Analysis Pipeline Framework (v3.17.233+, Unreleased)
+### 💡 Ideas Tab (v3.17.239)
+- **Status**: Built, compiles clean
+- **What**: Replaced old "Workload Brainstorm" tab (~2000 lines of static mockups) with 5 data-driven features
+- **Features**:
+  - Decision Cards — per-workload 4-question cards (What decision? Why now? Cost of inaction? Next step?)
+  - Workload Unlock Chain — shows downstream workloads unlocked by completing each one
+  - ConfigMgr Coverage — Intune vs ConfigMgr device split visualization
+  - Safe to Remove Confidence — safety scores with "what stops running" details + rollback estimates
+  - Last Holdout Spotlight — special card when 5+ of 7 workloads are complete
+- **Files**: `Models/DecisionCardModels.cs`, `Services/DecisionCardGenerator.cs`, updated `DashboardViewModel.cs`, `DashboardWindow.xaml`, `TabVisibilityOptions.cs`, `ValueConverters.cs`
+- **Tab visibility**: Visible by default, controllable via `/hidetabs:ideas` and `/showtabs:ideas`
+
+### Analysis Pipeline Framework (v3.17.233+)
 - **Status**: Framework built, compiles clean, not yet wired to UI
 - **What**: Three-layer pipeline (Signal → Analyzer → Recommendation) for detecting migration stalls
 - **Architecture doc**: `docs/ANALYSIS_PIPELINE_ARCHITECTURE.md`

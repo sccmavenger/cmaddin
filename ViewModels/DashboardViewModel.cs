@@ -112,6 +112,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private Visibility _showCloudReadinessTab = Visibility.Visible;
         private Visibility _showCloudValueComparisonTab = Visibility.Collapsed;
         private Visibility _showCloudComparisonDetailsTab = Visibility.Collapsed;
+        private Visibility _showIdeasTab = Visibility.Visible;
         private bool _demoStallMode;
 
         /// <summary>When true, pipeline injects mock stall data for UI preview. Activated via /demostall launch switch.</summary>
@@ -133,6 +134,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 _showCloudReadinessTab = tabVisibilityOptions.ShowCloudReadinessTab;
                 _showCloudValueComparisonTab = tabVisibilityOptions.ShowCloudValueComparisonTab;
                 _showCloudComparisonDetailsTab = tabVisibilityOptions.ShowCloudComparisonDetailsTab;
+                _showIdeasTab = tabVisibilityOptions.ShowIdeasTab;
                 _demoStallMode = tabVisibilityOptions.DemoStallMode;
             }
             
@@ -483,6 +485,27 @@ namespace ZeroTrustMigrationAddin.ViewModels
             get => _showCloudComparisonDetailsTab;
             set => SetProperty(ref _showCloudComparisonDetailsTab, value);
         }
+
+        public Visibility ShowIdeasTab
+        {
+            get => _showIdeasTab;
+            set => SetProperty(ref _showIdeasTab, value);
+        }
+
+        // === Ideas Tab Properties (Decision Cards + Tier 1) ===
+        public ObservableCollection<DecisionCard> DecisionCards { get; } = new();
+        public ObservableCollection<WorkloadUnlockChain> UnlockChains { get; } = new();
+        public ObservableCollection<ConfigMgrCoverage> CoverageCards { get; } = new();
+        public ObservableCollection<WorkloadSafetyScore> SafetyScores { get; } = new();
+
+        private LastHoldoutSpotlight? _lastHoldoutSpotlight;
+        public LastHoldoutSpotlight? LastHoldoutSpotlightCard
+        {
+            get => _lastHoldoutSpotlight;
+            set => SetProperty(ref _lastHoldoutSpotlight, value);
+        }
+        public bool HasLastHoldoutSpotlight => LastHoldoutSpotlightCard?.IsVisible == true;
+        public bool HasDecisionCards => DecisionCards.Count > 0;
 
         // Phase 1 AI Enhancement Properties
         public ZeroTrustMigrationAddin.Services.MigrationPlan? MigrationPlan
@@ -3878,6 +3901,66 @@ namespace ZeroTrustMigrationAddin.ViewModels
             if (_demoStallMode && !HasPipelineStall && !HasWorkloadStall)
             {
                 LoadDemoStallData();
+            }
+
+            // Generate Ideas tab content (Decision Cards + Tier 1 features)
+            GenerateIdeasTabContent();
+        }
+
+        /// <summary>
+        /// Populates all Ideas tab collections from existing data using DecisionCardGenerator.
+        /// </summary>
+        private void GenerateIdeasTabContent()
+        {
+            try
+            {
+                var generator = new DecisionCardGenerator();
+
+                // Extract workload stall assessment from pipeline result
+                WorkloadStallAssessment? workloadAssessment = null;
+                if (PipelineResult != null)
+                {
+                    var workloadResult = PipelineResult.AnalyzerResults
+                        .Find(r => r.AnalyzerName == "WorkloadStallAnalyzer");
+                    workloadAssessment = workloadResult?.Assessment as WorkloadStallAssessment;
+                }
+
+                // Decision Cards
+                var cards = generator.GenerateDecisionCards(
+                    Workloads, workloadAssessment, WorkloadMomentumInsight, NearCloudNativeCount);
+                DecisionCards.Clear();
+                foreach (var card in cards) DecisionCards.Add(card);
+                OnPropertyChanged(nameof(HasDecisionCards));
+
+                // Workload Unlock Chains
+                var chains = generator.GenerateUnlockChains(Workloads);
+                UnlockChains.Clear();
+                foreach (var chain in chains) UnlockChains.Add(chain);
+
+                // ConfigMgr Coverage Cards
+                var coverage = generator.GenerateCoverageCards(Workloads);
+                CoverageCards.Clear();
+                foreach (var c in coverage) CoverageCards.Add(c);
+
+                // Safety Scores
+                var safety = generator.GenerateSafetyScores(Workloads, WorkloadMomentumInsight);
+                SafetyScores.Clear();
+                foreach (var s in safety) SafetyScores.Add(s);
+
+                // Last Holdout Spotlight
+                var spotlight = generator.GenerateLastHoldoutSpotlight(
+                    Workloads, workloadAssessment, NearCloudNativeCount);
+                LastHoldoutSpotlightCard = spotlight;
+                OnPropertyChanged(nameof(HasLastHoldoutSpotlight));
+
+                Instance.Info($"[IDEAS] Generated {DecisionCards.Count} decision cards, " +
+                    $"{UnlockChains.Count} unlock chains, {CoverageCards.Count} coverage cards, " +
+                    $"{SafetyScores.Count} safety scores, " +
+                    $"spotlight: {(LastHoldoutSpotlightCard != null ? "yes" : "no")}");
+            }
+            catch (Exception ex)
+            {
+                Instance.LogException(ex, "GenerateIdeasTabContent");
             }
         }
 
