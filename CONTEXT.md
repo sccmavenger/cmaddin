@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.244 |
+| **Version** | 3.17.246 |
 | **Last Updated** | 2026-03-11 |
 | **Branch** | main |
 | **Status** | Stable - Ideas tab replacing Workload Brainstorm with data-driven Decision Cards |

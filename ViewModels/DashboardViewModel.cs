@@ -498,7 +498,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public ObservableCollection<ConfigMgrCoverage> CoverageCards { get; } = new();
         public ObservableCollection<WorkloadSafetyScore> SafetyScores { get; } = new();
 
-        // === Deep Analysis Features (8 implemented features) ===
+        // === Deep Analysis Features (3 deep-dive features) ===
         private UninstallReadinessResult? _uninstallReadiness;
         public UninstallReadinessResult? UninstallReadiness
         {
@@ -513,31 +513,11 @@ namespace ZeroTrustMigrationAddin.ViewModels
             set => SetProperty(ref _securityExposure, value);
         }
 
-        private ConfigMgrFreeCountdown? _configMgrFreeCountdown;
-        public ConfigMgrFreeCountdown? ConfigMgrFreeCountdown
-        {
-            get => _configMgrFreeCountdown;
-            set => SetProperty(ref _configMgrFreeCountdown, value);
-        }
-
-        public ObservableCollection<PilotWave> PilotWaves { get; } = new();
-
-        public ObservableCollection<WorkloadWhatIf> WhatIfResults { get; } = new();
-
         private StaleOrphanResult? _staleOrphanResult;
         public StaleOrphanResult? StaleOrphanResult
         {
             get => _staleOrphanResult;
             set => SetProperty(ref _staleOrphanResult, value);
-        }
-
-        public ObservableCollection<InfraRetirementItem> InfraRetirementItems { get; } = new();
-
-        private ComplianceTrendSnapshot? _complianceTrend;
-        public ComplianceTrendSnapshot? ComplianceTrend
-        {
-            get => _complianceTrend;
-            set => SetProperty(ref _complianceTrend, value);
         }
 
         private LastHoldoutSpotlight? _lastHoldoutSpotlight;
@@ -4003,34 +3983,12 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 // Feature 2: Security Exposure Gap
                 SecurityExposure = generator.GenerateSecurityExposure(Workloads, DeviceEnrollment, ComplianceScore);
 
-                // Feature 3: ConfigMgr-Free Countdown
-                ConfigMgrFreeCountdown = generator.GenerateCountdown(Workloads, DeviceEnrollment, CurrentEnrollmentVelocity);
-
-                // Feature 4: Pilot Waves
-                var waves = generator.GeneratePilotWaves(Workloads, DeviceEnrollment);
-                PilotWaves.Clear();
-                foreach (var w in waves) PilotWaves.Add(w);
-
-                // Feature 5: What-If Analysis
-                var whatIfs = generator.GenerateWhatIfAnalysis(Workloads);
-                WhatIfResults.Clear();
-                foreach (var wi in whatIfs) WhatIfResults.Add(wi);
-
-                // Feature 6: Stale/Orphan Detection
+                // Feature 3: Stale/Orphan Detection
                 StaleOrphanResult = generator.GenerateStaleOrphanDetection(Workloads, DeviceEnrollment);
-
-                // Feature 7: Infrastructure Retirement Map
-                var infraItems = generator.GenerateInfraRetirementMap(Workloads);
-                InfraRetirementItems.Clear();
-                foreach (var item in infraItems) InfraRetirementItems.Add(item);
-
-                // Feature 8: Compliance Trend
-                ComplianceTrend = generator.GenerateComplianceTrend(Workloads, ComplianceScore);
 
                 Instance.Info($"[IDEAS] Generated {DecisionCards.Count} decision cards, " +
                     $"{UnlockChains.Count} unlock chains, {CoverageCards.Count} coverage cards, " +
                     $"{SafetyScores.Count} safety scores, " +
-                    $"{WhatIfResults.Count} what-if results, {InfraRetirementItems.Count} infra items, " +
                     $"spotlight: {(LastHoldoutSpotlightCard != null ? "yes" : "no")}");
             }
             catch (Exception ex)
