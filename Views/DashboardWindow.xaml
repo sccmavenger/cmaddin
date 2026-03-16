@@ -3471,6 +3471,143 @@
                                        FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,25"/>
 
                             <!-- ============================== -->
+                            <!-- F2: SECURITY EXPOSURE GAP       -->
+                            <!-- ============================== -->
+                            <TextBlock Text="🛡️ Security Exposure Gap" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,10,0,5"/>
+                            <TextBlock Text="Facts-only comparison: Intune-managed vs ConfigMgr-only devices. Only metrics derived from real data or binary architectural truths." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <!-- Risk severity badge -->
+                            <Border Background="{Binding SecurityExposure.RiskSeverityColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                    CornerRadius="6" Padding="16,10" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding SecurityExposure.RiskSeverityIcon}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock FontSize="13" FontWeight="Bold" Foreground="White">
+                                            <Run Text="{Binding SecurityExposure.RiskSeverity, Mode=OneWay}"/><Run Text=" RISK — "/><Run Text="{Binding SecurityExposure.DevicesAtRisk, StringFormat='{}{0:N0}', Mode=OneWay}"/><Run Text=" devices outside Conditional Access"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding SecurityExposure.ExecutiveRiskSummary}" FontSize="11" Foreground="#FFFFFFCC" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="2" Background="#FFFFFF33" CornerRadius="4" Padding="10,5" VerticalAlignment="Center">
+                                        <TextBlock FontSize="11" FontWeight="Bold" Foreground="White">
+                                            <Run Text="{Binding SecurityExposure.DevicesAtRisk, StringFormat='{}{0:N0}', Mode=OneWay}"/><Run Text=" at risk"/>
+                                        </TextBlock>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <!-- Column headers -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="METRIC" FontSize="9" FontWeight="Bold" Foreground="#94A3B8"/>
+                                        <TextBlock Grid.Column="1" Text="☁️ INTUNE" FontSize="9" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="🖥️ CONFIGMGR" FontSize="9" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="DELTA" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" HorizontalAlignment="Right" Margin="15,0,0,0"/>
+                                    </Grid>
+
+                                    <ItemsControl ItemsSource="{Binding SecurityExposure.Metrics}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="140"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding MetricIcon}" FontSize="14" Margin="0,0,6,0"/>
+                                                        <TextBlock Text="{Binding MetricName}" FontSize="12" FontWeight="SemiBold" Foreground="#1E293B"/>
+                                                    </StackPanel>
+
+                                                    <Border Grid.Column="1" Background="#F0FDF4" CornerRadius="4" Padding="10,5" HorizontalAlignment="Center">
+                                                        <TextBlock Text="{Binding IntuneLabel}" FontSize="14" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                                    </Border>
+
+                                                    <Border Grid.Column="2" Background="#FEF2F2" CornerRadius="4" Padding="10,5" HorizontalAlignment="Center">
+                                                        <TextBlock Text="{Binding ConfigMgrLabel}" FontSize="14" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                    </Border>
+
+                                                    <TextBlock Grid.Column="3" Text="{Binding DeltaLabel}" FontSize="10" FontWeight="SemiBold"
+                                                               Foreground="{Binding DeltaColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                               VerticalAlignment="Center" Margin="15,0,0,0"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Per-workload security impact -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="SECURITY IMPACT BY WORKLOAD" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,0,10"/>
+                                    <ItemsControl ItemsSource="{Binding SecurityExposure.WorkloadImpacts}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#F8FAFC" CornerRadius="6" Padding="14,10" Margin="0,0,0,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="28"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="16" VerticalAlignment="Center"/>
+                                                        <StackPanel Grid.Column="1" Margin="8,0,10,0">
+                                                            <TextBlock Text="{Binding WorkloadName}" FontSize="12" FontWeight="Bold" Foreground="#1E293B"/>
+                                                            <TextBlock Text="{Binding RiskContribution}" FontSize="10" Foreground="#64748B" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                                        </StackPanel>
+                                                        <Border Grid.Column="2" Background="{Binding GapColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                                CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                                                            <TextBlock FontSize="10" FontWeight="Bold" Foreground="White">
+                                                                <Run Text="+"/><Run Text="{Binding GapPoints, Mode=OneWay}"/><Run Text=" pts"/>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Remediation actions -->
+                            <Border Background="#FEF2F2" CornerRadius="8" Padding="16" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="⚠️ SECURITY VERDICT" FontSize="9" FontWeight="Bold" Foreground="#991B1B" Margin="0,0,0,3"/>
+                                    <TextBlock Text="{Binding SecurityExposure.Verdict}" FontSize="12" Foreground="#7F1D1D" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#EFF6FF" CornerRadius="8" Padding="16" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <TextBlock Text="🔧 REMEDIATION ACTIONS" FontSize="9" FontWeight="Bold" Foreground="#1E40AF" Margin="0,0,0,5"/>
+                                    <ItemsControl ItemsSource="{Binding SecurityExposure.RemediationActions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock FontSize="11" Foreground="#1E3A8A" Margin="8,1,0,1" TextWrapping="Wrap">
+                                                    <Run Text="→ "/><Run Text="{Binding Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+
+                            <!-- ============================== -->
                             <!-- F1: UNINSTALL READINESS         -->
                             <!-- ============================== -->
                             <TextBlock Text="🗑️ ConfigMgr Client Uninstall Readiness" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,5"/>
@@ -3610,153 +3747,16 @@
                             </Border>
 
                             <!-- ============================== -->
-                            <!-- F2: SECURITY EXPOSURE GAP       -->
-                            <!-- ============================== -->
-                            <TextBlock Text="🛡️ Security Exposure Gap" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,10,0,5"/>
-                            <TextBlock Text="Side-by-side comparison: Intune-managed vs ConfigMgr-only devices across 6 security dimensions." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
-
-                            <!-- Risk severity badge -->
-                            <Border Background="{Binding SecurityExposure.RiskSeverityColor, Converter={StaticResource HexColorToBrushConverter}}"
-                                    CornerRadius="6" Padding="16,10" Margin="0,0,0,12">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding SecurityExposure.RiskSeverityIcon}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock FontSize="13" FontWeight="Bold" Foreground="White">
-                                            <Run Text="{Binding SecurityExposure.RiskSeverity, Mode=OneWay}"/><Run Text=" RISK — "/><Run Text="{Binding SecurityExposure.SecurityDeltaScore, Mode=OneWay}"/><Run Text="-point security gap"/>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding SecurityExposure.ExecutiveRiskSummary}" FontSize="11" Foreground="#FFFFFFCC" TextWrapping="Wrap" Margin="0,3,0,0"/>
-                                    </StackPanel>
-                                    <Border Grid.Column="2" Background="#FFFFFF33" CornerRadius="4" Padding="10,5" VerticalAlignment="Center">
-                                        <TextBlock FontSize="11" FontWeight="Bold" Foreground="White">
-                                            <Run Text="{Binding SecurityExposure.DevicesAtRisk, StringFormat='{}{0:N0}', Mode=OneWay}"/><Run Text=" at risk"/>
-                                        </TextBlock>
-                                    </Border>
-                                </Grid>
-                            </Border>
-
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,8">
-                                <StackPanel>
-                                    <!-- Column headers -->
-                                    <Grid Margin="0,0,0,12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="140"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="METRIC" FontSize="9" FontWeight="Bold" Foreground="#94A3B8"/>
-                                        <TextBlock Grid.Column="1" Text="☁️ INTUNE" FontSize="9" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2" Text="🖥️ CONFIGMGR" FontSize="9" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="DELTA" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" HorizontalAlignment="Right" Margin="15,0,0,0"/>
-                                    </Grid>
-
-                                    <ItemsControl ItemsSource="{Binding SecurityExposure.Metrics}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid Margin="0,0,0,8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="140"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding MetricIcon}" FontSize="14" Margin="0,0,6,0"/>
-                                                        <TextBlock Text="{Binding MetricName}" FontSize="12" FontWeight="SemiBold" Foreground="#1E293B"/>
-                                                    </StackPanel>
-
-                                                    <Border Grid.Column="1" Background="#F0FDF4" CornerRadius="4" Padding="10,5" HorizontalAlignment="Center">
-                                                        <TextBlock Text="{Binding IntuneLabel}" FontSize="14" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center"/>
-                                                    </Border>
-
-                                                    <Border Grid.Column="2" Background="#FEF2F2" CornerRadius="4" Padding="10,5" HorizontalAlignment="Center">
-                                                        <TextBlock Text="{Binding ConfigMgrLabel}" FontSize="14" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
-                                                    </Border>
-
-                                                    <TextBlock Grid.Column="3" Text="{Binding DeltaLabel}" FontSize="10" FontWeight="SemiBold"
-                                                               Foreground="{Binding DeltaColor, Converter={StaticResource HexColorToBrushConverter}}"
-                                                               VerticalAlignment="Center" Margin="15,0,0,0"/>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Per-workload security impact -->
-                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,8">
-                                <StackPanel>
-                                    <TextBlock Text="SECURITY IMPACT BY WORKLOAD" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,0,10"/>
-                                    <ItemsControl ItemsSource="{Binding SecurityExposure.WorkloadImpacts}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Background="#F8FAFC" CornerRadius="6" Padding="14,10" Margin="0,0,0,6">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="28"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="16" VerticalAlignment="Center"/>
-                                                        <StackPanel Grid.Column="1" Margin="8,0,10,0">
-                                                            <TextBlock Text="{Binding WorkloadName}" FontSize="12" FontWeight="Bold" Foreground="#1E293B"/>
-                                                            <TextBlock Text="{Binding RiskContribution}" FontSize="10" Foreground="#64748B" TextWrapping="Wrap" Margin="0,2,0,0"/>
-                                                        </StackPanel>
-                                                        <Border Grid.Column="2" Background="{Binding GapColor, Converter={StaticResource HexColorToBrushConverter}}"
-                                                                CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
-                                                            <TextBlock FontSize="10" FontWeight="Bold" Foreground="White">
-                                                                <Run Text="+"/><Run Text="{Binding GapPoints, Mode=OneWay}"/><Run Text=" pts"/>
-                                                            </TextBlock>
-                                                        </Border>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Remediation actions -->
-                            <Border Background="#FEF2F2" CornerRadius="8" Padding="16" Margin="0,0,0,8">
-                                <StackPanel>
-                                    <TextBlock Text="⚠️ SECURITY VERDICT" FontSize="9" FontWeight="Bold" Foreground="#991B1B" Margin="0,0,0,3"/>
-                                    <TextBlock Text="{Binding SecurityExposure.Verdict}" FontSize="12" Foreground="#7F1D1D" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="#EFF6FF" CornerRadius="8" Padding="16" Margin="0,0,0,20">
-                                <StackPanel>
-                                    <TextBlock Text="🔧 REMEDIATION ACTIONS" FontSize="9" FontWeight="Bold" Foreground="#1E40AF" Margin="0,0,0,5"/>
-                                    <ItemsControl ItemsSource="{Binding SecurityExposure.RemediationActions}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock FontSize="11" Foreground="#1E3A8A" Margin="8,1,0,1" TextWrapping="Wrap">
-                                                    <Run Text="→ "/><Run Text="{Binding Mode=OneWay}"/>
-                                                </TextBlock>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- ============================== -->
                             <!-- F6: STALE/ORPHAN DETECTION       -->
                             <!-- ============================== -->
                             <TextBlock Text="👻 Stale Device &amp; Orphan Detection" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,30,0,5"/>
                             <TextBlock Text="Devices consuming ConfigMgr infrastructure with no management value — by category with remediation guidance." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
 
-                            <!-- Cost impact header -->
+                            <!-- Infrastructure impact header -->
                             <Border Background="#1E293B" CornerRadius="8" Padding="16,12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
@@ -3766,13 +3766,18 @@
                                             <Run Text="{Binding StaleOrphanResult.WastePercent, StringFormat='{}{0:F1}%', Mode=OneWay}"/><Run Text=" of fleet)"/>
                                         </TextBlock>
                                     </StackPanel>
-                                    <Border Grid.Column="1" Background="#DC2626" CornerRadius="4" Padding="12,6" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <Border Grid.Column="1" Background="#475569" CornerRadius="4" Padding="12,6" VerticalAlignment="Center" Margin="12,0,0,0">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="EST. ANNUAL COST" FontSize="8" FontWeight="Bold" Foreground="#FECACA" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding StaleOrphanResult.EstimatedAnnualWaste}" FontSize="16" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="INFRA DEPENDENCY" FontSize="8" FontWeight="Bold" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding StaleOrphanResult.EstimatedAnnualWaste}" FontSize="11" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="220"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
+                            </Border>
+
+                            <!-- Data confidence indicator -->
+                            <Border Background="#F1F5F9" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
+                                <TextBlock Text="{Binding StaleOrphanResult.DataConfidence}" FontSize="11" Foreground="#475569" TextWrapping="Wrap"/>
                             </Border>
 
                             <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,8">
@@ -3843,10 +3848,11 @@
                                                     <Border Grid.Column="2" Background="{Binding SeverityColor, Converter={StaticResource HexColorToBrushConverter}}"
                                                             CornerRadius="4" Padding="10,4">
                                                         <TextBlock FontSize="10" FontWeight="Bold" Foreground="White">
-                                                            <Run Text="{Binding DeviceCount, StringFormat='{}{0:N0}', Mode=OneWay}"/><Run Text=" devices"/>
+                                                            <Run Text="{Binding DeviceCountLow, StringFormat='{}{0:N0}', Mode=OneWay}"/><Run Text="–"/><Run Text="{Binding DeviceCountHigh, StringFormat='{}{0:N0}', Mode=OneWay}"/>
                                                         </TextBlock>
                                                     </Border>
                                                 </Grid>
+                                                <TextBlock Text="{Binding Methodology}" FontSize="9" Foreground="#94A3B8" FontStyle="Italic" Margin="0,0,0,4"/>
                                                 <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#475569" TextWrapping="Wrap" Margin="0,0,0,6"/>
                                                 <TextBlock Text="{Binding Impact}" FontSize="11" Foreground="#64748B" TextWrapping="Wrap" FontStyle="Italic" Margin="0,0,0,6"/>
                                                 <Border Background="#FFFFFF66" CornerRadius="4" Padding="10,6">
