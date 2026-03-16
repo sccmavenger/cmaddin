@@ -491,31 +491,27 @@ namespace ZeroTrustMigrationAddin.Services
             IEnumerable<Workload> workloads, DeviceEnrollment? enrollment)
         {
             var wl = workloads.ToList();
-            int totalDevices = enrollment?.TotalDevices ?? wl.FirstOrDefault()?.ConfigMgrDeviceCount + wl.FirstOrDefault()?.IntuneDeviceCount ?? 0;
-            if (totalDevices == 0) totalDevices = wl.Sum(w => Math.Max(w.IntuneDeviceCount, w.ConfigMgrDeviceCount));
+            int coManagedDevices = enrollment?.CoManagedDevices ?? wl.Max(w => w.IntuneDeviceCount + w.ConfigMgrDeviceCount);
+            if (coManagedDevices == 0) coManagedDevices = enrollment?.TotalDevices ?? 1;
 
-            int completedWorkloads = wl.Count(w => w.Status == WorkloadStatus.Completed || w.IntuneAdoptionPercentage >= 90);
             int totalWorkloads = wl.Count > 0 ? wl.Count : 7;
 
-            // Estimate device tiers based on workload completion
-            int green = 0, yellow = 0, red = 0;
-            if (completedWorkloads == totalWorkloads)
-            {
-                green = totalDevices;
-            }
-            else if (completedWorkloads >= totalWorkloads - 2)
-            {
-                green = (int)(totalDevices * (completedWorkloads / (double)totalWorkloads) * 0.8);
-                yellow = (int)(totalDevices * 0.15);
-                red = totalDevices - green - yellow;
-            }
-            else
-            {
-                double completionRatio = completedWorkloads / (double)totalWorkloads;
-                green = (int)(totalDevices * completionRatio * 0.5);
-                yellow = (int)(totalDevices * 0.2);
-                red = totalDevices - green - yellow;
-            }
+            // BOTTLENECK MATH: A device can only uninstall ConfigMgr when ALL 7 workloads are on Intune.
+            // The bottleneck workload (lowest adoption) caps the green tier.
+            // Sort workloads by adoption ascending — the worst one defines the ceiling.
+            var sortedByAdoption = wl.OrderBy(w => w.IntuneAdoptionPercentage).ToList();
+            double worstAdoption = sortedByAdoption.First().IntuneAdoptionPercentage;
+            double secondWorstAdoption = sortedByAdoption.Count > 1 ? sortedByAdoption[1].IntuneAdoptionPercentage : worstAdoption;
+
+            // Green = devices where the BOTTLENECK workload has authority on Intune.
+            // This is at most the min adoption % across all workloads.
+            int green = (int)(coManagedDevices * (worstAdoption / 100.0));
+
+            // Yellow = devices between 2nd-worst and worst (1-2 workloads from green).
+            int yellow = (int)(coManagedDevices * ((secondWorstAdoption - worstAdoption) / 100.0));
+
+            // Red = everything else
+            int red = Math.Max(0, coManagedDevices - green - yellow);
 
             // Per-workload gap breakdown
             var gaps = wl
@@ -531,70 +527,61 @@ namespace ZeroTrustMigrationAddin.Services
                 })
                 .ToList();
 
-            var blockers = wl
-                .Where(w => w.Status != WorkloadStatus.Completed && w.IntuneAdoptionPercentage < 90)
+            var blockerWorkloads = wl
+                .Where(w => w.IntuneAdoptionPercentage < 90)
                 .OrderBy(w => w.IntuneAdoptionPercentage)
-                .Take(3)
-                .Select(w => $"{w.Name} ({w.IntuneAdoptionPercentage:F0}% Intune)")
                 .ToList();
 
-            // Find nearest-to-completion workload for "next win" projection
-            var nearestWorkload = wl
-                .Where(w => w.Status != WorkloadStatus.Completed && w.IntuneAdoptionPercentage < 90)
-                .OrderByDescending(w => w.IntuneAdoptionPercentage)
-                .FirstOrDefault();
+            var blockers = blockerWorkloads
+                .Take(3)
+                .Select(w => $"{w.Name} at {w.IntuneAdoptionPercentage:F0}% — bottleneck for {w.ConfigMgrDeviceCount:N0} devices")
+                .ToList();
 
-            int nextWinDevices = 0;
-            string nextWinName = "";
-            if (nearestWorkload != null)
-            {
-                nextWinName = nearestWorkload.Name;
-                // Completing this workload could move some yellow→green
-                int newCompleted = completedWorkloads + 1;
-                if (newCompleted >= totalWorkloads - 2)
-                    nextWinDevices = Math.Max(0, yellow / 2);
-                else
-                    nextWinDevices = (int)(totalDevices * 0.05);
-            }
+            // "Next win" = if the bottleneck workload completes, new green ceiling becomes 2nd-worst adoption
+            var bottleneck = sortedByAdoption.First();
+            int nextWinDevices = (int)(coManagedDevices * ((secondWorstAdoption - worstAdoption) / 100.0));
+            string nextWinName = bottleneck.Name;
+
+            // Dual-management cost messaging
+            int dualManagedDevices = coManagedDevices - green;
 
             return new UninstallReadinessResult
             {
                 GreenCount = Math.Max(0, green),
                 YellowCount = Math.Max(0, yellow),
                 RedCount = Math.Max(0, red),
-                TotalDevices = totalDevices,
+                TotalDevices = coManagedDevices,
                 TopBlockers = blockers,
                 WorkloadGaps = gaps,
                 GreenActions = green > 0
                     ? new List<string>
                     {
-                        $"Schedule ConfigMgr client uninstall for {green:N0} fully-managed Intune devices",
-                        "Validate Intune policy enforcement before removing the client",
-                        "Monitor for 48 hours post-uninstall to catch any policy gaps"
+                        $"Schedule ConfigMgr client uninstall for {green:N0} devices with all workload authorities on Intune",
+                        $"Each dual-managed device runs two management agents — uninstalling eliminates agent conflicts and reduces helpdesk tickets",
+                        $"Validate Intune policy enforcement on a pilot batch of 50 devices before bulk uninstall"
                     }
-                    : new List<string> { "No devices are ready yet — focus on completing workload transitions" },
+                    : new List<string> { $"No devices have all {totalWorkloads} workloads on Intune yet. The bottleneck is {bottleneck.Name} at {worstAdoption:F0}% adoption." },
                 YellowActions = yellow > 0
                     ? new List<string>
                     {
-                        nearestWorkload != null ? $"Complete {nearestWorkload.Name} ({nearestWorkload.IntuneAdoptionPercentage:F0}% → 90%+) to move {nextWinDevices:N0} devices to green" : "Continue workload transitions",
-                        $"{yellow:N0} devices need 1-2 more workloads transitioned to Intune",
-                        "Review co-management workload slider settings for remaining workloads"
+                        $"Complete {nextWinName} ({worstAdoption:F0}% → 90%+) to unlock {nextWinDevices:N0} additional devices for uninstall",
+                        $"These {yellow:N0} devices are 1-2 workloads away — the fastest path to reducing dual management overhead"
                     }
                     : new List<string>(),
                 RedActions = red > 0
                     ? new List<string>
                     {
-                        $"{red:N0} devices have 3+ workloads still on ConfigMgr",
-                        $"Prioritize workloads with highest device overlap to maximize impact",
-                        "Check for devices with co-management enrollment failures"
+                        $"{red:N0} devices have 3+ workloads still on ConfigMgr — start with {blockerWorkloads.LastOrDefault()?.Name ?? "the highest-adoption workload"} to build momentum",
+                        $"Every workload you complete raises the green ceiling for ALL {coManagedDevices:N0} co-managed devices"
                     }
                     : new List<string>(),
                 NextWinDeviceCount = nextWinDevices,
                 NextWinWorkload = nextWinName,
                 Summary = green > 0
-                    ? $"{green:N0} devices have all workload authorities on Intune and could uninstall the ConfigMgr client today. " +
-                      $"Completing {nextWinName} would move ~{nextWinDevices:N0} more devices to ready."
-                    : "No devices are fully ready to uninstall the ConfigMgr client yet. Complete more workload transitions to unlock this."
+                    ? $"{green:N0} of {coManagedDevices:N0} co-managed devices have all {totalWorkloads} workload authorities on Intune. " +
+                      $"Bottleneck: {nextWinName} at {worstAdoption:F0}%. Completing it would unlock {nextWinDevices:N0} more."
+                    : $"The bottleneck workload is {nextWinName} at {worstAdoption:F0}% Intune adoption — " +
+                      $"no devices can uninstall ConfigMgr until all {totalWorkloads} workloads reach 90%+."
             };
         }
 
@@ -606,88 +593,115 @@ namespace ZeroTrustMigrationAddin.Services
             IEnumerable<Workload> workloads, DeviceEnrollment? enrollment, ComplianceScore? compliance)
         {
             var wl = workloads.ToList();
-            double intuneCompliance = compliance?.IntuneScore ?? 85;
-            double configMgrCompliance = compliance?.ConfigMgrScore ?? 52;
-
-            // Encryption: Intune enforces BitLocker via compliance policy
-            double intuneEncryption = Math.Min(99, intuneCompliance + 8);
-            double configMgrEncryption = Math.Max(30, configMgrCompliance - 20);
-
-            // Active threats: inverse relationship with compliance
-            double intuneThreats = Math.Max(0.1, (100 - intuneCompliance) * 0.08);
-            double configMgrThreats = Math.Max(0.5, (100 - configMgrCompliance) * 0.15);
-
-            // Patch currency
-            var wuWorkload = wl.FirstOrDefault(w => w.Name.Contains("Windows Update", StringComparison.OrdinalIgnoreCase));
-            double intunePatch = wuWorkload != null && wuWorkload.IntuneAdoptionPercentage > 50 ? 91 : 82;
-            double configMgrPatch = wuWorkload != null ? Math.Max(45, 70 - (100 - wuWorkload.IntuneAdoptionPercentage) * 0.3) : 55;
-
-            // Conditional Access enforcement (Intune only)
-            double intuneCA = Math.Min(95, intuneCompliance + 5);
-            double configMgrCA = 0; // ConfigMgr-only devices can't enforce CA
-
-            // Device health attestation
-            double intuneHealth = Math.Min(92, intuneCompliance + 3);
-            double configMgrHealth = Math.Max(20, configMgrCompliance - 30);
-
-            var metrics = new List<SecurityMetricComparison>
-            {
-                new() { MetricName = "Compliance Rate", MetricIcon = "✅", IntuneValue = intuneCompliance, ConfigMgrValue = configMgrCompliance, IntuneLabel = $"{intuneCompliance:F0}%", ConfigMgrLabel = $"{configMgrCompliance:F0}%", HigherIsBetter = true },
-                new() { MetricName = "Encryption Rate", MetricIcon = "🔒", IntuneValue = intuneEncryption, ConfigMgrValue = configMgrEncryption, IntuneLabel = $"{intuneEncryption:F0}%", ConfigMgrLabel = $"{configMgrEncryption:F0}%", HigherIsBetter = true },
-                new() { MetricName = "Active Threats", MetricIcon = "🛡️", IntuneValue = intuneThreats, ConfigMgrValue = configMgrThreats, IntuneLabel = $"{intuneThreats:F1}%", ConfigMgrLabel = $"{configMgrThreats:F1}%", HigherIsBetter = false },
-                new() { MetricName = "Patch Currency", MetricIcon = "📦", IntuneValue = intunePatch, ConfigMgrValue = configMgrPatch, IntuneLabel = $"{intunePatch:F0}%", ConfigMgrLabel = $"{configMgrPatch:F0}%", HigherIsBetter = true },
-                new() { MetricName = "Conditional Access", MetricIcon = "🔑", IntuneValue = intuneCA, ConfigMgrValue = configMgrCA, IntuneLabel = $"{intuneCA:F0}%", ConfigMgrLabel = "N/A", HigherIsBetter = true },
-                new() { MetricName = "Health Attestation", MetricIcon = "🏥", IntuneValue = intuneHealth, ConfigMgrValue = configMgrHealth, IntuneLabel = $"{intuneHealth:F0}%", ConfigMgrLabel = $"{configMgrHealth:F0}%", HigherIsBetter = true },
-            };
-
-            int delta = (int)((intuneCompliance - configMgrCompliance + intuneEncryption - configMgrEncryption) / 2);
-
-            // Risk severity
-            string severity = delta >= 30 ? "Critical" : delta >= 20 ? "High" : delta >= 10 ? "Moderate" : "Low";
-
-            // Devices at risk
             int configMgrOnly = enrollment?.ConfigMgrOnlyDevices ?? (int)((enrollment?.TotalDevices ?? 100000) * 0.4);
+            int totalDevices = enrollment?.TotalDevices ?? 100000;
 
-            // Per-workload security impact
+            // === FACTS ONLY — metrics derived from real data or binary truths ===
+
+            // 1. Compliance Rate — REAL DATA from ComplianceScore
+            double intuneCompliance = compliance?.IntuneScore ?? 0;
+            double configMgrCompliance = compliance?.ConfigMgrScore ?? 0;
+            bool hasComplianceData = compliance != null && intuneCompliance > 0;
+
+            // 2. Conditional Access — BINARY FACT: ConfigMgr-only devices cannot enforce CA
+            int devicesWithoutCA = compliance?.DevicesLackingConditionalAccess ?? configMgrOnly;
+
+            // 3. Workload authority gap — computed from REAL workload adoption data
+            int workloadsOnConfigMgr = wl.Count(w => w.IntuneAdoptionPercentage < 90);
+
+            var metrics = new List<SecurityMetricComparison>();
+
+            // Metric 1: Conditional Access — the HEADLINE. Binary fact, not estimated.
+            metrics.Add(new SecurityMetricComparison
+            {
+                MetricName = "Conditional Access",
+                MetricIcon = "🔑",
+                IntuneValue = 100,
+                ConfigMgrValue = 0,
+                IntuneLabel = "Enforced",
+                ConfigMgrLabel = "Impossible",
+                HigherIsBetter = true
+            });
+
+            // Metric 2: Compliance Rate — REAL if connected
+            if (hasComplianceData)
+            {
+                metrics.Add(new SecurityMetricComparison
+                {
+                    MetricName = "Compliance Rate",
+                    MetricIcon = "✅",
+                    IntuneValue = intuneCompliance,
+                    ConfigMgrValue = configMgrCompliance,
+                    IntuneLabel = $"{intuneCompliance:F0}%",
+                    ConfigMgrLabel = $"{configMgrCompliance:F0}%",
+                    HigherIsBetter = true
+                });
+            }
+
+            // Metric 3: Workload authority — computed from real workload data
+            double intuneAuthorityPct = wl.Count > 0 ? wl.Average(w => w.IntuneAdoptionPercentage) : 0;
+            metrics.Add(new SecurityMetricComparison
+            {
+                MetricName = "Workload Authority",
+                MetricIcon = "⚙️",
+                IntuneValue = intuneAuthorityPct,
+                ConfigMgrValue = 100 - intuneAuthorityPct,
+                IntuneLabel = $"{intuneAuthorityPct:F0}% cloud",
+                ConfigMgrLabel = $"{100 - intuneAuthorityPct:F0}% on-prem",
+                HigherIsBetter = true
+            });
+
+            // Risk severity based on factual gaps
+            string severity;
+            if (configMgrOnly > totalDevices * 0.3)
+                severity = "Critical";
+            else if (configMgrOnly > totalDevices * 0.15)
+                severity = "High";
+            else if (configMgrOnly > totalDevices * 0.05)
+                severity = "Moderate";
+            else
+                severity = "Low";
+
+            int securityDelta = hasComplianceData ? (int)(intuneCompliance - configMgrCompliance) : 0;
+
+            // Per-workload security impact — GAP POINTS scaled by actual adoption gap
             var workloadImpacts = wl
-                .Where(w => w.Status != WorkloadStatus.Completed && w.IntuneAdoptionPercentage < 90)
-                .OrderByDescending(w => GetSecurityWeight(w.Name))
+                .Where(w => w.IntuneAdoptionPercentage < 90)
+                .OrderByDescending(w => GetSecurityWeight(w.Name) * (100 - w.IntuneAdoptionPercentage) / 100.0)
                 .Select(w => new WorkloadSecurityImpact
                 {
                     WorkloadName = w.Name,
                     Icon = GetSecurityIcon(w.Name),
-                    GapPoints = GetSecurityWeight(w.Name),
+                    GapPoints = (int)(GetSecurityWeight(w.Name) * (100 - w.IntuneAdoptionPercentage) / 100.0),
                     RiskContribution = GetSecurityRiskDescription(w.Name)
                 })
                 .ToList();
 
-            // Remediation actions
+            // Remediation actions — specific, not generic
             var actions = new List<string>();
-            if (configMgrEncryption < 60)
-                actions.Add("Deploy Intune BitLocker compliance policy to close encryption gap");
-            if (configMgrThreats > 2)
-                actions.Add("Enable Microsoft Defender for Endpoint for ConfigMgr-only devices");
-            if (configMgrPatch < 60)
-                actions.Add($"Transition Windows Update workload to Intune (currently {wuWorkload?.IntuneAdoptionPercentage ?? 0:F0}%)");
-            if (configMgrCA == 0)
-                actions.Add("Enroll ConfigMgr-only devices into Intune to enable Conditional Access enforcement");
-            if (actions.Count == 0)
-                actions.Add("Continue workload transitions to maintain security posture improvement");
+            if (configMgrOnly > 0)
+                actions.Add($"Enroll {configMgrOnly:N0} ConfigMgr-only devices into Intune — they cannot enforce Conditional Access until enrolled");
+            var worstWorkload = wl.Where(w => w.IntuneAdoptionPercentage < 90).OrderBy(w => w.IntuneAdoptionPercentage).FirstOrDefault();
+            if (worstWorkload != null)
+                actions.Add($"Move {worstWorkload.Name} workload authority to Intune ({worstWorkload.IntuneAdoptionPercentage:F0}% → 90%+) — this is the current bottleneck");
+            if (devicesWithoutCA > 0)
+                actions.Add($"{devicesWithoutCA:N0} devices lack Conditional Access — these devices bypass your Zero Trust access policies");
 
             return new SecurityExposureResult
             {
                 Metrics = metrics,
-                SecurityDeltaScore = delta,
+                SecurityDeltaScore = securityDelta,
                 RiskSeverity = severity,
                 DevicesAtRisk = configMgrOnly,
                 WorkloadImpacts = workloadImpacts,
                 RemediationActions = actions,
-                ExecutiveRiskSummary = $"{configMgrOnly:N0} devices lack Intune security enforcement. " +
-                    $"These devices have {delta}-point lower compliance, {(configMgrEncryption < 60 ? "inadequate encryption, " : "")}" +
-                    $"and no Conditional Access protection — representing elevated organizational risk.",
-                Verdict = delta > 20
-                    ? $"ConfigMgr-only devices are significantly less secure. {delta}-point security gap means unmanaged devices carry higher risk of compliance violations, unpatched vulnerabilities, and unencrypted data."
-                    : $"Security gap of {delta} points between Intune-managed and ConfigMgr-only devices. Migrating remaining workloads will close this gap."
+                ExecutiveRiskSummary = $"{configMgrOnly:N0} devices cannot enforce Conditional Access. " +
+                    $"These devices bypass your Zero Trust access controls — they can access corporate resources " +
+                    $"even when non-compliant, unencrypted, or compromised.",
+                Verdict = configMgrOnly > 0
+                    ? $"Conditional Access is your strongest security control — and {configMgrOnly:N0} devices are completely outside it. " +
+                      $"Every device not enrolled in Intune is a device that can access Exchange, SharePoint, and Teams regardless of compliance state."
+                    : "All devices are enrolled in Intune with Conditional Access enforcement. Security posture is strong."
             };
         }
 
@@ -736,32 +750,46 @@ namespace ZeroTrustMigrationAddin.Services
             int totalDevices = enrollment?.TotalDevices ?? 100000;
             int configMgrOnly = enrollment?.ConfigMgrOnlyDevices ?? (int)(totalDevices * 0.4);
             int coManaged = enrollment?.CoManagedDevices ?? (int)(totalDevices * 0.45);
+            bool isMock = enrollment?.IsMockData ?? true;
 
-            // Estimate stale devices (industry average: ~5-8% of fleet inactive 30+ days)
-            int stale = (int)(configMgrOnly * 0.07);
-            // Orphaned: co-managed devices where ConfigMgr can't reach Intune
-            int orphaned = (int)(coManaged * 0.03);
-            // Ghost: devices in Intune without ConfigMgr match
-            int ghost = (int)(totalDevices * 0.015);
-            // Blockers: active devices that failed co-management enrollment
-            int blockers = (int)(configMgrOnly * 0.04);
+            // === RANGES, NOT SINGLE NUMBERS ===
+            // Industry benchmarks applied to YOUR fleet size — shown as ranges
 
-            int total = stale + orphaned + ghost + blockers;
-            double wastePercent = totalDevices > 0 ? (double)total / totalDevices * 100 : 0;
+            // Stale: 5-8% of ConfigMgr-managed devices inactive 30+ days (Gartner/Forrester range)
+            int staleLow = (int)(configMgrOnly * 0.05);
+            int staleHigh = (int)(configMgrOnly * 0.08);
+            int staleMid = (staleLow + staleHigh) / 2;
 
-            // Estimated annual waste: ~2 hours per device per year for ConfigMgr maintenance @ $75/hr
-            double annualCost = total * 2 * 75;
+            // Orphaned: 2-4% of co-managed fail enrollment handshake
+            int orphanedLow = (int)(coManaged * 0.02);
+            int orphanedHigh = (int)(coManaged * 0.04);
+            int orphanedMid = (orphanedLow + orphanedHigh) / 2;
 
-            // Per-category detailed breakdowns
+            // Ghost: 1-2% identity mismatches across directories
+            int ghostLow = (int)(totalDevices * 0.01);
+            int ghostHigh = (int)(totalDevices * 0.02);
+            int ghostMid = (ghostLow + ghostHigh) / 2;
+
+            // Blockers: 3-5% of ConfigMgr-only have enrollment failures
+            int blockerLow = (int)(configMgrOnly * 0.03);
+            int blockerHigh = (int)(configMgrOnly * 0.05);
+            int blockerMid = (blockerLow + blockerHigh) / 2;
+
+            int totalMid = staleMid + orphanedMid + ghostMid + blockerMid;
+            double wastePercent = totalDevices > 0 ? (double)totalMid / totalDevices * 100 : 0;
+
             var categories = new List<StaleOrphanCategory>
             {
                 new()
                 {
                     CategoryName = "Stale Devices",
                     Icon = "💤",
-                    DeviceCount = stale,
+                    DeviceCount = staleMid,
+                    DeviceCountLow = staleLow,
+                    DeviceCountHigh = staleHigh,
+                    Methodology = "5–8% of ConfigMgr-managed devices (industry benchmark)",
                     Description = "Devices inactive 30+ days — no heartbeat, no policy refresh, no inventory update",
-                    Impact = $"Consuming ConfigMgr client licenses and inflating device counts. {stale:N0} devices report stale data that skews compliance metrics.",
+                    Impact = $"Each stale device holds a ConfigMgr client license and inflates reporting. {staleLow:N0}–{staleHigh:N0} stale records skew your compliance metrics.",
                     ActionItem = "Run ConfigMgr Device Collection cleanup rule or create a dynamic collection filtering lastActiveTime > 30 days, then disable/remove",
                     SeverityColor = "#D97706",
                     SeverityBackground = "#FFFBEB"
@@ -770,9 +798,12 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     CategoryName = "Orphaned Devices",
                     Icon = "🔗",
-                    DeviceCount = orphaned,
-                    Description = "ConfigMgr-registered but not enrolling in Intune — co-management handshake never completed",
-                    Impact = $"These {orphaned:N0} devices are stuck in a split-management state: ConfigMgr manages them but Intune can't see or enforce policies on them.",
+                    DeviceCount = orphanedMid,
+                    DeviceCountLow = orphanedLow,
+                    DeviceCountHigh = orphanedHigh,
+                    Methodology = "2–4% of co-managed devices (enrollment handshake failure rate)",
+                    Description = "ConfigMgr-registered but co-management handshake never completed — Intune cannot see these devices",
+                    Impact = $"{orphanedLow:N0}–{orphanedHigh:N0} devices are stuck in split-management: ConfigMgr manages them but Intune policies are not applied.",
                     ActionItem = "Check Azure AD Hybrid Join status and co-management prerequisites. Re-run co-management enrollment on affected devices via ConfigMgr client action.",
                     SeverityColor = "#DC2626",
                     SeverityBackground = "#FEF2F2"
@@ -781,9 +812,12 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     CategoryName = "Ghost Devices",
                     Icon = "👻",
-                    DeviceCount = ghost,
+                    DeviceCount = ghostMid,
+                    DeviceCountLow = ghostLow,
+                    DeviceCountHigh = ghostHigh,
+                    Methodology = "1–2% of total fleet (directory identity mismatches)",
                     Description = "Exists in Intune but has no matching ConfigMgr record — could be cloud-native, decommissioned, or data mismatch",
-                    Impact = $"{ghost:N0} devices appear in Intune without ConfigMgr counterparts. If not intentionally cloud-native, these represent identity mismatches that need reconciliation.",
+                    Impact = $"{ghostLow:N0}–{ghostHigh:N0} devices appear in Intune without ConfigMgr counterparts. If not intentionally cloud-native, these represent identity mismatches blocking accurate migration counts.",
                     ActionItem = "Cross-reference Intune device list with ConfigMgr inventory by serial number. Validate cloud-native devices are intentional; clean up duplicates.",
                     SeverityColor = "#7C3AED",
                     SeverityBackground = "#F5F3FF"
@@ -792,39 +826,50 @@ namespace ZeroTrustMigrationAddin.Services
                 {
                     CategoryName = "Enrollment Blockers",
                     Icon = "🚫",
-                    DeviceCount = blockers,
-                    Description = "Active devices where co-management enrollment explicitly failed — error codes logged",
-                    Impact = $"{blockers:N0} devices attempted Intune enrollment but failed. These are active production devices stuck on ConfigMgr-only management.",
+                    DeviceCount = blockerMid,
+                    DeviceCountLow = blockerLow,
+                    DeviceCountHigh = blockerHigh,
+                    Methodology = "3–5% of ConfigMgr-only devices (enrollment failure rate)",
+                    Description = "Active devices where co-management enrollment explicitly failed — these devices cannot transition until errors are resolved",
+                    Impact = $"{blockerLow:N0}–{blockerHigh:N0} active production devices attempted Intune enrollment and failed. These directly block your migration timeline.",
                     ActionItem = "Review CoManagementHandler.log on affected devices. Common fixes: renew Azure AD device certificate, verify MDM authority URL, check enrollment restrictions.",
                     SeverityColor = "#1E293B",
                     SeverityBackground = "#F1F5F9"
                 }
             };
 
-            // Prioritized cleanup actions
+            // Actions framed around infrastructure decommission blocking
             var actions = new List<string>();
-            if (stale > 0)
-                actions.Add($"Clean up {stale:N0} stale devices to reduce ConfigMgr footprint by {(double)stale / totalDevices * 100:F1}%");
-            if (blockers > 0)
-                actions.Add($"Remediate {blockers:N0} enrollment failures — these are active devices missing cloud management");
-            if (orphaned > 0)
-                actions.Add($"Re-enroll {orphaned:N0} orphaned devices to restore co-management state");
-            if (ghost > 0)
-                actions.Add($"Reconcile {ghost:N0} ghost devices — verify cloud-native intent or clean up duplicates");
+            if (staleMid > 0)
+                actions.Add($"Clean up {staleLow:N0}–{staleHigh:N0} stale devices — these inflate your ConfigMgr device count and block accurate migration planning");
+            if (blockerMid > 0)
+                actions.Add($"Remediate {blockerLow:N0}–{blockerHigh:N0} enrollment failures — every blocked device extends your ConfigMgr infrastructure dependency");
+            if (orphanedMid > 0)
+                actions.Add($"Re-enroll {orphanedLow:N0}–{orphanedHigh:N0} orphaned devices to complete co-management and reduce ConfigMgr-only load");
+            if (ghostMid > 0)
+                actions.Add($"Reconcile {ghostLow:N0}–{ghostHigh:N0} ghost devices — accurate device counts are required before decommissioning any ConfigMgr infrastructure");
+
+            // Infrastructure decommission framing instead of fabricated dollar costs
+            string infraMessage = configMgrOnly > 0
+                ? $"{configMgrOnly:N0} devices still require ConfigMgr infrastructure"
+                : "All devices are cloud-managed — ConfigMgr infrastructure can be evaluated for retirement";
 
             return new StaleOrphanResult
             {
-                StaleCount = stale,
-                OrphanedCount = orphaned,
-                GhostCount = ghost,
-                BlockerCount = blockers,
+                StaleCount = staleMid,
+                OrphanedCount = orphanedMid,
+                GhostCount = ghostMid,
+                BlockerCount = blockerMid,
                 WastePercent = wastePercent,
                 Categories = categories,
                 CleanupActions = actions,
-                EstimatedAnnualWaste = annualCost >= 1000 ? $"${annualCost:N0}" : $"${annualCost:F0}",
-                WasteSummary = $"{total:N0} devices ({wastePercent:F1}% of fleet) are consuming ConfigMgr infrastructure with limited or no management value. " +
-                    $"Estimated annual cost: ${annualCost:N0} in IT labor. " +
-                    $"Cleaning up stale ({stale:N0}) and orphaned ({orphaned:N0}) devices alone would reduce your ConfigMgr footprint by {(double)(stale + orphaned) / totalDevices * 100:F1}%."
+                EstimatedAnnualWaste = infraMessage,
+                DataConfidence = isMock
+                    ? "⚠️ Estimated — industry benchmarks applied to your fleet size. Connect to live data for actual counts."
+                    : "📊 Ranges based on industry benchmarks applied to your actual device counts.",
+                WasteSummary = $"An estimated {totalMid:N0} devices ({wastePercent:F1}% of your fleet) are consuming ConfigMgr infrastructure " +
+                    $"with limited or no management value. Until these are cleaned up, you cannot accurately scope your migration " +
+                    $"or plan ConfigMgr infrastructure retirement. {infraMessage}."
             };
         }
 

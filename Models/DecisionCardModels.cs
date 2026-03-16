@@ -329,7 +329,7 @@ namespace ZeroTrustMigrationAddin.Models
         /// Per-category detailed breakdown with action items
         public List<StaleOrphanCategory> Categories { get; set; } = new();
 
-        /// Estimated annual cost of maintaining waste devices (hours × cost)
+        /// Infrastructure decommission impact message
         public string EstimatedAnnualWaste { get; set; } = string.Empty;
 
         /// Cleanup priority actions
@@ -337,6 +337,9 @@ namespace ZeroTrustMigrationAddin.Models
 
         /// Percentage of fleet that is waste
         public double WastePercent { get; set; }
+
+        /// Data confidence label (e.g., "Estimated — industry benchmarks applied to your fleet size")
+        public string DataConfidence { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -347,6 +350,9 @@ namespace ZeroTrustMigrationAddin.Models
         public string CategoryName { get; set; } = string.Empty;
         public string Icon { get; set; } = string.Empty;
         public int DeviceCount { get; set; }
+        public int DeviceCountLow { get; set; }
+        public int DeviceCountHigh { get; set; }
+        public string Methodology { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Impact { get; set; } = string.Empty;
         public string ActionItem { get; set; } = string.Empty;
