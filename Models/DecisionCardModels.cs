@@ -181,11 +181,11 @@ namespace ZeroTrustMigrationAddin.Models
     }
 
     // ================================================================
-    // IMPLEMENTED FEATURE MODELS (8 deep-analysis features)
+    // IMPLEMENTED FEATURE MODELS (3 deep-analysis features)
     // ================================================================
 
     /// <summary>
-    /// Feature 1: ConfigMgr Client Uninstall Readiness — per-tier device counts.
+    /// Feature 1: ConfigMgr Client Uninstall Readiness — per-tier device counts with deep drill-down.
     /// </summary>
     public class UninstallReadinessResult
     {
@@ -196,19 +196,95 @@ namespace ZeroTrustMigrationAddin.Models
         public List<string> TopBlockers { get; set; } = new();
         public string Summary { get; set; } = string.Empty;
 
+        /// Per-workload gap breakdown showing which workloads block uninstall readiness
+        public List<WorkloadGapDetail> WorkloadGaps { get; set; } = new();
+
+        /// Actionable next steps per readiness tier
+        public List<string> GreenActions { get; set; } = new();
+        public List<string> YellowActions { get; set; } = new();
+        public List<string> RedActions { get; set; } = new();
+
+        /// Devices that moved from Yellow→Green if the nearest-to-completion workload finishes
+        public int NextWinDeviceCount { get; set; }
+        public string NextWinWorkload { get; set; } = string.Empty;
+
         public double GreenPercent => TotalDevices > 0 ? (double)GreenCount / TotalDevices * 100 : 0;
         public double YellowPercent => TotalDevices > 0 ? (double)YellowCount / TotalDevices * 100 : 0;
         public double RedPercent => TotalDevices > 0 ? (double)RedCount / TotalDevices * 100 : 0;
     }
 
     /// <summary>
-    /// Feature 2: Security Exposure Gap — Intune vs ConfigMgr cohort comparison.
+    /// Per-workload detail showing how many devices a workload is blocking from uninstall readiness.
+    /// </summary>
+    public class WorkloadGapDetail
+    {
+        public string WorkloadName { get; set; } = string.Empty;
+        public double AdoptionPercent { get; set; }
+        public int DevicesBlocked { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string StatusIcon => Status switch
+        {
+            "Complete" => "✅",
+            "Almost" => "🟡",
+            "Blocking" => "🔴",
+            _ => "⚪"
+        };
+        public string BarColor => AdoptionPercent >= 90 ? "#16A34A"
+            : AdoptionPercent >= 50 ? "#D97706"
+            : "#DC2626";
+    }
+
+    /// <summary>
+    /// Feature 2: Security Exposure Gap — Intune vs ConfigMgr cohort comparison with deep drill-down.
     /// </summary>
     public class SecurityExposureResult
     {
         public List<SecurityMetricComparison> Metrics { get; set; } = new();
         public string Verdict { get; set; } = string.Empty;
         public int SecurityDeltaScore { get; set; }
+
+        /// Overall risk severity: Critical, High, Moderate, Low
+        public string RiskSeverity { get; set; } = string.Empty;
+        public string RiskSeverityIcon => RiskSeverity switch
+        {
+            "Critical" => "🔴",
+            "High" => "🟠",
+            "Moderate" => "🟡",
+            "Low" => "🟢",
+            _ => "⚪"
+        };
+        public string RiskSeverityColor => RiskSeverity switch
+        {
+            "Critical" => "#DC2626",
+            "High" => "#EA580C",
+            "Moderate" => "#D97706",
+            "Low" => "#16A34A",
+            _ => "#9CA3AF"
+        };
+
+        /// Executive risk summary — 1-2 sentence impact statement for leadership
+        public string ExecutiveRiskSummary { get; set; } = string.Empty;
+
+        /// Per-workload security impact — what each unmoved workload contributes to the gap
+        public List<WorkloadSecurityImpact> WorkloadImpacts { get; set; } = new();
+
+        /// Estimated devices at elevated risk
+        public int DevicesAtRisk { get; set; }
+
+        /// Top remediation actions
+        public List<string> RemediationActions { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Per-workload contribution to the overall security exposure gap.
+    /// </summary>
+    public class WorkloadSecurityImpact
+    {
+        public string WorkloadName { get; set; } = string.Empty;
+        public string RiskContribution { get; set; } = string.Empty;
+        public int GapPoints { get; set; }
+        public string Icon { get; set; } = string.Empty;
+        public string GapColor => GapPoints >= 15 ? "#DC2626" : GapPoints >= 8 ? "#D97706" : "#16A34A";
     }
 
     public class SecurityMetricComparison
@@ -239,78 +315,7 @@ namespace ZeroTrustMigrationAddin.Models
     }
 
     /// <summary>
-    /// Feature 3: Days to ConfigMgr-Free countdown projection.
-    /// </summary>
-    public class ConfigMgrFreeCountdown
-    {
-        public DateTime ProjectedDate { get; set; }
-        public DateTime AcceleratedDate { get; set; }
-        public int DaysRemaining { get; set; }
-        public int DaysWithAcceleration { get; set; }
-        public int WeeksSaved { get; set; }
-        public double CurrentVelocity { get; set; }
-        public double AcceleratedVelocity { get; set; }
-        public int DevicesRemaining { get; set; }
-        public int WorkloadsRemaining { get; set; }
-        public List<string> TopAccelerators { get; set; } = new();
-
-        public string ProjectedDateLabel => ProjectedDate.ToString("MMMM yyyy");
-        public string AcceleratedDateLabel => AcceleratedDate.ToString("MMMM yyyy");
-    }
-
-    /// <summary>
-    /// Feature 4: Pilot Wave — batch of devices for next migration wave.
-    /// </summary>
-    public class PilotWave
-    {
-        public int WaveNumber { get; set; }
-        public string WaveName { get; set; } = string.Empty;
-        public int DeviceCount { get; set; }
-        public double ExpectedSuccessRate { get; set; }
-        public string RiskProfile { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-
-        public string RiskColor => RiskProfile switch
-        {
-            "Low" => "#16A34A",
-            "Medium" => "#D97706",
-            "High" => "#DC2626",
-            _ => "#9CA3AF"
-        };
-
-        public string RiskBackground => RiskProfile switch
-        {
-            "Low" => "#F0FDF4",
-            "Medium" => "#FFFBEB",
-            "High" => "#FEF2F2",
-            _ => "#F9FAFB"
-        };
-    }
-
-    /// <summary>
-    /// Feature 5: Workload What-If — projected impact of moving a single workload.
-    /// </summary>
-    public class WorkloadWhatIf
-    {
-        public string WorkloadName { get; set; } = string.Empty;
-        public int DevicesAffected { get; set; }
-        public int SecurityDelta { get; set; }
-        public int OperationsDelta { get; set; }
-        public int ComplianceDelta { get; set; }
-        public List<string> WorkloadsUnblocked { get; set; } = new();
-        public int NewUninstallReadyDevices { get; set; }
-        public string Recommendation { get; set; } = string.Empty;
-
-        public string SecurityDeltaLabel => SecurityDelta >= 0 ? $"+{SecurityDelta}" : $"{SecurityDelta}";
-        public string OperationsDeltaLabel => OperationsDelta >= 0 ? $"+{OperationsDelta}" : $"{OperationsDelta}";
-        public string ComplianceDeltaLabel => ComplianceDelta >= 0 ? $"+{ComplianceDelta}" : $"{ComplianceDelta}";
-        public string SecurityColor => SecurityDelta > 0 ? "#16A34A" : SecurityDelta < 0 ? "#DC2626" : "#9CA3AF";
-        public string OperationsColor => OperationsDelta > 0 ? "#16A34A" : OperationsDelta < 0 ? "#DC2626" : "#9CA3AF";
-        public string ComplianceColor => ComplianceDelta > 0 ? "#16A34A" : ComplianceDelta < 0 ? "#DC2626" : "#9CA3AF";
-    }
-
-    /// <summary>
-    /// Feature 6: Stale/Orphan detection — 4 categories of device waste.
+    /// Feature 3: Stale/Orphan detection — 4 categories of device waste with deep drill-down.
     /// </summary>
     public class StaleOrphanResult
     {
@@ -320,60 +325,33 @@ namespace ZeroTrustMigrationAddin.Models
         public int BlockerCount { get; set; }
         public int TotalWaste => StaleCount + OrphanedCount + GhostCount + BlockerCount;
         public string WasteSummary { get; set; } = string.Empty;
+
+        /// Per-category detailed breakdown with action items
+        public List<StaleOrphanCategory> Categories { get; set; } = new();
+
+        /// Estimated annual cost of maintaining waste devices (hours × cost)
+        public string EstimatedAnnualWaste { get; set; } = string.Empty;
+
+        /// Cleanup priority actions
+        public List<string> CleanupActions { get; set; } = new();
+
+        /// Percentage of fleet that is waste
+        public double WastePercent { get; set; }
     }
 
     /// <summary>
-    /// Feature 7: Infrastructure Retirement Map — what can be decommissioned per workload.
+    /// Detailed breakdown for each waste detection category.
     /// </summary>
-    public class InfraRetirementItem
+    public class StaleOrphanCategory
     {
-        public string WorkloadName { get; set; } = string.Empty;
-        public string InfrastructureName { get; set; } = string.Empty;
-        public string InfrastructureDescription { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public string StatusIcon => Status switch
-        {
-            "Ready to Retire" => "🟢",
-            "Partially Retired" => "🟡",
-            "Still Needed" => "🔴",
-            _ => "⚪"
-        };
-        public string StatusColor => Status switch
-        {
-            "Ready to Retire" => "#16A34A",
-            "Partially Retired" => "#D97706",
-            "Still Needed" => "#DC2626",
-            _ => "#9CA3AF"
-        };
-        public string StatusBackground => Status switch
-        {
-            "Ready to Retire" => "#F0FDF4",
-            "Partially Retired" => "#FFFBEB",
-            "Still Needed" => "#FEF2F2",
-            _ => "#F9FAFB"
-        };
-    }
-
-    /// <summary>
-    /// Feature 8: Compliance trend snapshot (pre-time-series: current projected impact).
-    /// </summary>
-    public class ComplianceTrendSnapshot
-    {
-        public double CurrentComplianceRate { get; set; }
-        public double ProjectedComplianceRate { get; set; }
-        public double ImprovementPercent => ProjectedComplianceRate - CurrentComplianceRate;
-        public List<ComplianceWorkloadImpact> WorkloadImpacts { get; set; } = new();
-        public string Insight { get; set; } = string.Empty;
-    }
-
-    public class ComplianceWorkloadImpact
-    {
-        public string WorkloadName { get; set; } = string.Empty;
-        public double CurrentCompliance { get; set; }
-        public double ProjectedCompliance { get; set; }
-        public double Improvement => ProjectedCompliance - CurrentCompliance;
-        public string ImprovementLabel => $"+{Improvement:F0}%";
-        public string BarColor => Improvement >= 20 ? "#16A34A" : Improvement >= 10 ? "#2563EB" : "#D97706";
+        public string CategoryName { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
+        public int DeviceCount { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public string Impact { get; set; } = string.Empty;
+        public string ActionItem { get; set; } = string.Empty;
+        public string SeverityColor { get; set; } = "#9CA3AF";
+        public string SeverityBackground { get; set; } = "#F9FAFB";
     }
 
     /// <summary>
