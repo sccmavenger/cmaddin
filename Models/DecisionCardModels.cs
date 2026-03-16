@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace ZeroTrustMigrationAddin.Models
@@ -179,66 +180,97 @@ namespace ZeroTrustMigrationAddin.Models
         };
     }
 
+    // ================================================================
+    // IMPLEMENTED FEATURE MODELS (8 deep-analysis features)
+    // ================================================================
+
     /// <summary>
-    /// A proposed feature for the roadmap — shown in the Decision Cards tab for brainstorming.
+    /// Feature 1: ConfigMgr Client Uninstall Readiness — per-tier device counts.
     /// </summary>
-    public class FeatureRoadmapItem
+    public class UninstallReadinessResult
     {
-        public int Number { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Goal { get; set; } = string.Empty;
+        public int GreenCount { get; set; }
+        public int YellowCount { get; set; }
+        public int RedCount { get; set; }
+        public int TotalDevices { get; set; }
+        public List<string> TopBlockers { get; set; } = new();
+        public string Summary { get; set; } = string.Empty;
+
+        public double GreenPercent => TotalDevices > 0 ? (double)GreenCount / TotalDevices * 100 : 0;
+        public double YellowPercent => TotalDevices > 0 ? (double)YellowCount / TotalDevices * 100 : 0;
+        public double RedPercent => TotalDevices > 0 ? (double)RedCount / TotalDevices * 100 : 0;
+    }
+
+    /// <summary>
+    /// Feature 2: Security Exposure Gap — Intune vs ConfigMgr cohort comparison.
+    /// </summary>
+    public class SecurityExposureResult
+    {
+        public List<SecurityMetricComparison> Metrics { get; set; } = new();
+        public string Verdict { get; set; } = string.Empty;
+        public int SecurityDeltaScore { get; set; }
+    }
+
+    public class SecurityMetricComparison
+    {
+        public string MetricName { get; set; } = string.Empty;
+        public string MetricIcon { get; set; } = string.Empty;
+        public double IntuneValue { get; set; }
+        public double ConfigMgrValue { get; set; }
+        public string IntuneLabel { get; set; } = string.Empty;
+        public string ConfigMgrLabel { get; set; } = string.Empty;
+        public bool HigherIsBetter { get; set; } = true;
+
+        public string DeltaLabel
+        {
+            get
+            {
+                var diff = IntuneValue - ConfigMgrValue;
+                if (HigherIsBetter)
+                    return diff > 0 ? $"+{diff:F0}% better with Intune" : $"{diff:F0}% gap";
+                else
+                    return diff < 0 ? $"{Math.Abs(diff):F1}x fewer with Intune" : $"{diff:F1}x more";
+            }
+        }
+
+        public string DeltaColor => HigherIsBetter
+            ? (IntuneValue > ConfigMgrValue ? "#16A34A" : "#DC2626")
+            : (IntuneValue < ConfigMgrValue ? "#16A34A" : "#DC2626");
+    }
+
+    /// <summary>
+    /// Feature 3: Days to ConfigMgr-Free countdown projection.
+    /// </summary>
+    public class ConfigMgrFreeCountdown
+    {
+        public DateTime ProjectedDate { get; set; }
+        public DateTime AcceleratedDate { get; set; }
+        public int DaysRemaining { get; set; }
+        public int DaysWithAcceleration { get; set; }
+        public int WeeksSaved { get; set; }
+        public double CurrentVelocity { get; set; }
+        public double AcceleratedVelocity { get; set; }
+        public int DevicesRemaining { get; set; }
+        public int WorkloadsRemaining { get; set; }
+        public List<string> TopAccelerators { get; set; } = new();
+
+        public string ProjectedDateLabel => ProjectedDate.ToString("MMMM yyyy");
+        public string AcceleratedDateLabel => AcceleratedDate.ToString("MMMM yyyy");
+    }
+
+    /// <summary>
+    /// Feature 4: Pilot Wave — batch of devices for next migration wave.
+    /// </summary>
+    public class PilotWave
+    {
+        public int WaveNumber { get; set; }
+        public string WaveName { get; set; } = string.Empty;
+        public int DeviceCount { get; set; }
+        public double ExpectedSuccessRate { get; set; }
+        public string RiskProfile { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Phase { get; set; } = string.Empty;
-        public string Effort { get; set; } = string.Empty;
-        public string Impact { get; set; } = string.Empty;
-        public List<string> DataSources { get; set; } = new();
-        public string WhyItDrivesAction { get; set; } = string.Empty;
-        public string MicrosoftDocsUrl { get; set; } = string.Empty;
-        public bool RequiresNewApiCalls { get; set; }
 
-        // UI helpers
-        public string PhaseIcon => Phase switch
-        {
-            "Phase 1" => "🟢",
-            "Phase 2" => "🟡",
-            "Phase 3" => "🔵",
-            _ => "⚪"
-        };
-
-        public string PhaseColor => Phase switch
-        {
-            "Phase 1" => "#16A34A",
-            "Phase 2" => "#D97706",
-            "Phase 3" => "#2563EB",
-            _ => "#9CA3AF"
-        };
-
-        public string PhaseBackground => Phase switch
-        {
-            "Phase 1" => "#F0FDF4",
-            "Phase 2" => "#FFFBEB",
-            "Phase 3" => "#EFF6FF",
-            _ => "#F9FAFB"
-        };
-
-        public string PhaseBorder => Phase switch
-        {
-            "Phase 1" => "#86EFAC",
-            "Phase 2" => "#FCD34D",
-            "Phase 3" => "#93C5FD",
-            _ => "#D1D5DB"
-        };
-
-        public string ImpactColor => Impact switch
-        {
-            "Very High" => "#DC2626",
-            "High" => "#D97706",
-            "Medium-High" => "#2563EB",
-            "Medium" => "#6B7280",
-            _ => "#9CA3AF"
-        };
-
-        public string EffortBadgeColor => Effort switch
+        public string RiskColor => RiskProfile switch
         {
             "Low" => "#16A34A",
             "Medium" => "#D97706",
@@ -246,8 +278,102 @@ namespace ZeroTrustMigrationAddin.Models
             _ => "#9CA3AF"
         };
 
-        public string ApiCallBadge => RequiresNewApiCalls ? "New API calls needed" : "Uses existing data";
-        public string ApiCallBadgeColor => RequiresNewApiCalls ? "#D97706" : "#16A34A";
+        public string RiskBackground => RiskProfile switch
+        {
+            "Low" => "#F0FDF4",
+            "Medium" => "#FFFBEB",
+            "High" => "#FEF2F2",
+            _ => "#F9FAFB"
+        };
+    }
+
+    /// <summary>
+    /// Feature 5: Workload What-If — projected impact of moving a single workload.
+    /// </summary>
+    public class WorkloadWhatIf
+    {
+        public string WorkloadName { get; set; } = string.Empty;
+        public int DevicesAffected { get; set; }
+        public int SecurityDelta { get; set; }
+        public int OperationsDelta { get; set; }
+        public int ComplianceDelta { get; set; }
+        public List<string> WorkloadsUnblocked { get; set; } = new();
+        public int NewUninstallReadyDevices { get; set; }
+        public string Recommendation { get; set; } = string.Empty;
+
+        public string SecurityDeltaLabel => SecurityDelta >= 0 ? $"+{SecurityDelta}" : $"{SecurityDelta}";
+        public string OperationsDeltaLabel => OperationsDelta >= 0 ? $"+{OperationsDelta}" : $"{OperationsDelta}";
+        public string ComplianceDeltaLabel => ComplianceDelta >= 0 ? $"+{ComplianceDelta}" : $"{ComplianceDelta}";
+        public string SecurityColor => SecurityDelta > 0 ? "#16A34A" : SecurityDelta < 0 ? "#DC2626" : "#9CA3AF";
+        public string OperationsColor => OperationsDelta > 0 ? "#16A34A" : OperationsDelta < 0 ? "#DC2626" : "#9CA3AF";
+        public string ComplianceColor => ComplianceDelta > 0 ? "#16A34A" : ComplianceDelta < 0 ? "#DC2626" : "#9CA3AF";
+    }
+
+    /// <summary>
+    /// Feature 6: Stale/Orphan detection — 4 categories of device waste.
+    /// </summary>
+    public class StaleOrphanResult
+    {
+        public int StaleCount { get; set; }
+        public int OrphanedCount { get; set; }
+        public int GhostCount { get; set; }
+        public int BlockerCount { get; set; }
+        public int TotalWaste => StaleCount + OrphanedCount + GhostCount + BlockerCount;
+        public string WasteSummary { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Feature 7: Infrastructure Retirement Map — what can be decommissioned per workload.
+    /// </summary>
+    public class InfraRetirementItem
+    {
+        public string WorkloadName { get; set; } = string.Empty;
+        public string InfrastructureName { get; set; } = string.Empty;
+        public string InfrastructureDescription { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string StatusIcon => Status switch
+        {
+            "Ready to Retire" => "🟢",
+            "Partially Retired" => "🟡",
+            "Still Needed" => "🔴",
+            _ => "⚪"
+        };
+        public string StatusColor => Status switch
+        {
+            "Ready to Retire" => "#16A34A",
+            "Partially Retired" => "#D97706",
+            "Still Needed" => "#DC2626",
+            _ => "#9CA3AF"
+        };
+        public string StatusBackground => Status switch
+        {
+            "Ready to Retire" => "#F0FDF4",
+            "Partially Retired" => "#FFFBEB",
+            "Still Needed" => "#FEF2F2",
+            _ => "#F9FAFB"
+        };
+    }
+
+    /// <summary>
+    /// Feature 8: Compliance trend snapshot (pre-time-series: current projected impact).
+    /// </summary>
+    public class ComplianceTrendSnapshot
+    {
+        public double CurrentComplianceRate { get; set; }
+        public double ProjectedComplianceRate { get; set; }
+        public double ImprovementPercent => ProjectedComplianceRate - CurrentComplianceRate;
+        public List<ComplianceWorkloadImpact> WorkloadImpacts { get; set; } = new();
+        public string Insight { get; set; } = string.Empty;
+    }
+
+    public class ComplianceWorkloadImpact
+    {
+        public string WorkloadName { get; set; } = string.Empty;
+        public double CurrentCompliance { get; set; }
+        public double ProjectedCompliance { get; set; }
+        public double Improvement => ProjectedCompliance - CurrentCompliance;
+        public string ImprovementLabel => $"+{Improvement:F0}%";
+        public string BarColor => Improvement >= 20 ? "#16A34A" : Improvement >= 10 ? "#2563EB" : "#D97706";
     }
 
     /// <summary>

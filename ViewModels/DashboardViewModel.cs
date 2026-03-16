@@ -497,7 +497,48 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public ObservableCollection<WorkloadUnlockChain> UnlockChains { get; } = new();
         public ObservableCollection<ConfigMgrCoverage> CoverageCards { get; } = new();
         public ObservableCollection<WorkloadSafetyScore> SafetyScores { get; } = new();
-        public ObservableCollection<FeatureRoadmapItem> FeatureRoadmapItems { get; } = new();
+
+        // === Deep Analysis Features (8 implemented features) ===
+        private UninstallReadinessResult? _uninstallReadiness;
+        public UninstallReadinessResult? UninstallReadiness
+        {
+            get => _uninstallReadiness;
+            set => SetProperty(ref _uninstallReadiness, value);
+        }
+
+        private SecurityExposureResult? _securityExposure;
+        public SecurityExposureResult? SecurityExposure
+        {
+            get => _securityExposure;
+            set => SetProperty(ref _securityExposure, value);
+        }
+
+        private ConfigMgrFreeCountdown? _configMgrFreeCountdown;
+        public ConfigMgrFreeCountdown? ConfigMgrFreeCountdown
+        {
+            get => _configMgrFreeCountdown;
+            set => SetProperty(ref _configMgrFreeCountdown, value);
+        }
+
+        public ObservableCollection<PilotWave> PilotWaves { get; } = new();
+
+        public ObservableCollection<WorkloadWhatIf> WhatIfResults { get; } = new();
+
+        private StaleOrphanResult? _staleOrphanResult;
+        public StaleOrphanResult? StaleOrphanResult
+        {
+            get => _staleOrphanResult;
+            set => SetProperty(ref _staleOrphanResult, value);
+        }
+
+        public ObservableCollection<InfraRetirementItem> InfraRetirementItems { get; } = new();
+
+        private ComplianceTrendSnapshot? _complianceTrend;
+        public ComplianceTrendSnapshot? ComplianceTrend
+        {
+            get => _complianceTrend;
+            set => SetProperty(ref _complianceTrend, value);
+        }
 
         private LastHoldoutSpotlight? _lastHoldoutSpotlight;
         public LastHoldoutSpotlight? LastHoldoutSpotlightCard
@@ -3954,14 +3995,42 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 LastHoldoutSpotlightCard = spotlight;
                 OnPropertyChanged(nameof(HasLastHoldoutSpotlight));
 
-                // Feature Roadmap
-                var roadmap = generator.GenerateFeatureRoadmap();
-                FeatureRoadmapItems.Clear();
-                foreach (var item in roadmap) FeatureRoadmapItems.Add(item);
+                // === Deep Analysis Features ===
+
+                // Feature 1: Uninstall Readiness
+                UninstallReadiness = generator.GenerateUninstallReadiness(Workloads, DeviceEnrollment);
+
+                // Feature 2: Security Exposure Gap
+                SecurityExposure = generator.GenerateSecurityExposure(Workloads, DeviceEnrollment, ComplianceScore);
+
+                // Feature 3: ConfigMgr-Free Countdown
+                ConfigMgrFreeCountdown = generator.GenerateCountdown(Workloads, DeviceEnrollment, CurrentEnrollmentVelocity);
+
+                // Feature 4: Pilot Waves
+                var waves = generator.GeneratePilotWaves(Workloads, DeviceEnrollment);
+                PilotWaves.Clear();
+                foreach (var w in waves) PilotWaves.Add(w);
+
+                // Feature 5: What-If Analysis
+                var whatIfs = generator.GenerateWhatIfAnalysis(Workloads);
+                WhatIfResults.Clear();
+                foreach (var wi in whatIfs) WhatIfResults.Add(wi);
+
+                // Feature 6: Stale/Orphan Detection
+                StaleOrphanResult = generator.GenerateStaleOrphanDetection(Workloads, DeviceEnrollment);
+
+                // Feature 7: Infrastructure Retirement Map
+                var infraItems = generator.GenerateInfraRetirementMap(Workloads);
+                InfraRetirementItems.Clear();
+                foreach (var item in infraItems) InfraRetirementItems.Add(item);
+
+                // Feature 8: Compliance Trend
+                ComplianceTrend = generator.GenerateComplianceTrend(Workloads, ComplianceScore);
 
                 Instance.Info($"[IDEAS] Generated {DecisionCards.Count} decision cards, " +
                     $"{UnlockChains.Count} unlock chains, {CoverageCards.Count} coverage cards, " +
-                    $"{SafetyScores.Count} safety scores, {FeatureRoadmapItems.Count} roadmap items, " +
+                    $"{SafetyScores.Count} safety scores, " +
+                    $"{WhatIfResults.Count} what-if results, {InfraRetirementItems.Count} infra items, " +
                     $"spotlight: {(LastHoldoutSpotlightCard != null ? "yes" : "no")}");
             }
             catch (Exception ex)

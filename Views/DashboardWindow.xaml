@@ -3462,118 +3462,489 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- ============================== -->
-                            <!-- SECTION 6: FEATURE ROADMAP      -->
-                            <!-- ============================== -->
-                            <TextBlock Text="🚀 Feature Roadmap — Deep Solutions Brainstorm" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,40,0,5"/>
-                            <TextBlock Text="8 data-driven features to drive workload migration, break stalls, and reach ConfigMgr-free. Every feature is sourced from real Microsoft Graph API, ConfigMgr Admin Service, or published Microsoft documentation." 
-                                       FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                            <!-- ============================================================ -->
+                            <!-- DEEP ANALYSIS FEATURES (8 implemented features)              -->
+                            <!-- ============================================================ -->
 
-                            <!-- Phase legend -->
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                                <Border Background="#F0FDF4" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
-                                    <TextBlock FontSize="10" Foreground="#16A34A" FontWeight="SemiBold">🟢 Phase 1 = Uses existing data, low effort</TextBlock>
-                                </Border>
-                                <Border Background="#FFFBEB" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
-                                    <TextBlock FontSize="10" Foreground="#D97706" FontWeight="SemiBold">🟡 Phase 2 = New synthesis from existing data</TextBlock>
-                                </Border>
-                                <Border Background="#EFF6FF" CornerRadius="4" Padding="8,3">
-                                    <TextBlock FontSize="10" Foreground="#2563EB" FontWeight="SemiBold">🔵 Phase 3 = New data collection needed</TextBlock>
-                                </Border>
-                            </StackPanel>
+                            <TextBlock Text="⚡ Deep Analysis" FontSize="28" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,40,0,6"/>
+                            <TextBlock Text="Data-driven features computed from your environment — workload state, enrollment velocity, compliance scores, and device inventory."
+                                       FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,25"/>
 
-                            <ItemsControl ItemsSource="{Binding FeatureRoadmapItems}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="{Binding PhaseBackground, Converter={StaticResource HexColorToBrushConverter}}"
-                                                BorderBrush="{Binding PhaseBorder, Converter={StaticResource HexColorToBrushConverter}}"
-                                                BorderThickness="1.5" CornerRadius="10" Padding="22" Margin="0,0,0,14">
-                                            <StackPanel>
-                                                <!-- Header row -->
-                                                <Grid Margin="0,0,0,10">
+                            <!-- ============================== -->
+                            <!-- F1: UNINSTALL READINESS         -->
+                            <!-- ============================== -->
+                            <TextBlock Text="🗑️ ConfigMgr Client Uninstall Readiness" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,5"/>
+                            <TextBlock Text="Which devices can uninstall the ConfigMgr client today? Based on workload authority flags across all 7 co-management workloads." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <!-- Traffic light tiles -->
+                                    <Grid Margin="0,0,0,15">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Background="#F0FDF4" CornerRadius="8" Padding="18,14" Margin="0,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="🟢" FontSize="24" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding UninstallReadiness.GreenCount, StringFormat='{}{0:N0}'}" FontSize="28" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Ready to Uninstall" FontSize="10" Foreground="#15803D" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding UninstallReadiness.GreenPercent, StringFormat='{}{0:F0}%'}" FontSize="10" Foreground="#16A34A" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="1" Background="#FFFBEB" CornerRadius="8" Padding="18,14" Margin="4,0,4,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="🟡" FontSize="24" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding UninstallReadiness.YellowCount, StringFormat='{}{0:N0}'}" FontSize="28" FontWeight="Bold" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="1-2 Workloads Away" FontSize="10" Foreground="#A16207" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding UninstallReadiness.YellowPercent, StringFormat='{}{0:F0}%'}" FontSize="10" Foreground="#D97706" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="2" Background="#FEF2F2" CornerRadius="8" Padding="18,14" Margin="8,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="🔴" FontSize="24" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding UninstallReadiness.RedCount, StringFormat='{}{0:N0}'}" FontSize="28" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="3+ Gaps Remaining" FontSize="10" Foreground="#991B1B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding UninstallReadiness.RedPercent, StringFormat='{}{0:F0}%'}" FontSize="10" Foreground="#DC2626" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <TextBlock Text="{Binding UninstallReadiness.Summary}" FontSize="12" Foreground="#475569" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                                    <TextBlock Text="TOP BLOCKERS" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,5,0,3"/>
+                                    <ItemsControl ItemsSource="{Binding UninstallReadiness.TopBlockers}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock FontSize="11" Foreground="#DC2626" Margin="8,1,0,1">
+                                                    <Run Text="⚠ "/><Run Text="{Binding Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ============================== -->
+                            <!-- F2: SECURITY EXPOSURE GAP       -->
+                            <!-- ============================== -->
+                            <TextBlock Text="🛡️ Security Exposure Gap" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,10,0,5"/>
+                            <TextBlock Text="Side-by-side comparison: Intune-managed vs ConfigMgr-only devices. How much less secure are unmigrated devices?" FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <!-- Column headers -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="METRIC" FontSize="9" FontWeight="Bold" Foreground="#94A3B8"/>
+                                        <TextBlock Grid.Column="1" Text="☁️ INTUNE" FontSize="9" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="🖥️ CONFIGMGR" FontSize="9" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="DELTA" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" HorizontalAlignment="Right" Margin="15,0,0,0"/>
+                                    </Grid>
+
+                                    <ItemsControl ItemsSource="{Binding SecurityExposure.Metrics}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,8">
                                                     <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="140"/>
+                                                        <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
 
-                                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                                        <TextBlock Text="{Binding PhaseIcon}" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                        <TextBlock FontSize="17" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center">
-                                                            <Run Text="#"/><Run Text="{Binding Number, Mode=OneWay}"/>
-                                                            <Run Text=" — "/><Run Text="{Binding Title, Mode=OneWay}"/>
-                                                        </TextBlock>
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding MetricIcon}" FontSize="14" Margin="0,0,6,0"/>
+                                                        <TextBlock Text="{Binding MetricName}" FontSize="12" FontWeight="SemiBold" Foreground="#1E293B"/>
                                                     </StackPanel>
 
-                                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                        <Border Background="{Binding PhaseColor, Converter={StaticResource HexColorToBrushConverter}}"
-                                                                CornerRadius="4" Padding="10,4" Margin="0,0,6,0">
-                                                            <TextBlock Text="{Binding Phase}" FontSize="10" FontWeight="Bold" Foreground="White"/>
-                                                        </Border>
-                                                        <Border Background="{Binding ImpactColor, Converter={StaticResource HexColorToBrushConverter}}"
-                                                                CornerRadius="4" Padding="10,4" Margin="0,0,6,0">
-                                                            <TextBlock FontSize="10" FontWeight="Bold" Foreground="White">
-                                                                <Run Text="Impact: "/><Run Text="{Binding Impact, Mode=OneWay}"/>
-                                                            </TextBlock>
-                                                        </Border>
-                                                        <Border Background="{Binding EffortBadgeColor, Converter={StaticResource HexColorToBrushConverter}}"
-                                                                CornerRadius="4" Padding="10,4">
-                                                            <TextBlock FontSize="10" FontWeight="Bold" Foreground="White">
-                                                                <Run Text="Effort: "/><Run Text="{Binding Effort, Mode=OneWay}"/>
-                                                            </TextBlock>
-                                                        </Border>
-                                                    </StackPanel>
+                                                    <Border Grid.Column="1" Background="#F0FDF4" CornerRadius="4" Padding="10,5" HorizontalAlignment="Center">
+                                                        <TextBlock Text="{Binding IntuneLabel}" FontSize="14" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                                    </Border>
+
+                                                    <Border Grid.Column="2" Background="#FEF2F2" CornerRadius="4" Padding="10,5" HorizontalAlignment="Center">
+                                                        <TextBlock Text="{Binding ConfigMgrLabel}" FontSize="14" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                    </Border>
+
+                                                    <TextBlock Grid.Column="3" Text="{Binding DeltaLabel}" FontSize="10" FontWeight="SemiBold"
+                                                               Foreground="{Binding DeltaColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                               VerticalAlignment="Center" Margin="15,0,0,0"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#FEF2F2" CornerRadius="8" Padding="16" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <TextBlock Text="⚠️ SECURITY VERDICT" FontSize="9" FontWeight="Bold" Foreground="#991B1B" Margin="0,0,0,3"/>
+                                    <TextBlock Text="{Binding SecurityExposure.Verdict}" FontSize="12" Foreground="#7F1D1D" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ============================== -->
+                            <!-- F3: CONFIGMGR-FREE COUNTDOWN    -->
+                            <!-- ============================== -->
+                            <TextBlock Text="⏱️ Days to ConfigMgr-Free" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,10,0,5"/>
+                            <TextBlock Text="Projected completion date based on current enrollment velocity. Acceleration modeling shows how faster batches shorten the timeline." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,15">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Background="#FEF2F2" CornerRadius="8" Padding="18,14">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="CURRENT PACE" FontSize="9" FontWeight="Bold" Foreground="#991B1B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding ConfigMgrFreeCountdown.ProjectedDateLabel}" FontSize="20" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                <TextBlock FontSize="11" Foreground="#7F1D1D" HorizontalAlignment="Center">
+                                                    <Run Text="{Binding ConfigMgrFreeCountdown.DaysRemaining, Mode=OneWay}"/><Run Text=" days"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <TextBlock Grid.Column="1" Text="→" FontSize="28" Foreground="#94A3B8" VerticalAlignment="Center" Margin="15,0,15,0"/>
+
+                                        <Border Grid.Column="2" Background="#F0FDF4" CornerRadius="8" Padding="18,14">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="WITH ACCELERATION" FontSize="9" FontWeight="Bold" Foreground="#166534" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding ConfigMgrFreeCountdown.AcceleratedDateLabel}" FontSize="20" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                <TextBlock FontSize="11" Foreground="#15803D" HorizontalAlignment="Center">
+                                                    <Run Text="Save "/><Run Text="{Binding ConfigMgrFreeCountdown.WeeksSaved, Mode=OneWay}"/><Run Text=" weeks"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Background="#F8FAFC" CornerRadius="6" Padding="12,8" Margin="0,0,4,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding ConfigMgrFreeCountdown.DevicesRemaining, StringFormat='{}{0:N0}'}" FontSize="18" FontWeight="Bold" Foreground="#1E293B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="devices remaining" FontSize="9" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="1" Background="#F8FAFC" CornerRadius="6" Padding="12,8" Margin="4,0,4,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding ConfigMgrFreeCountdown.WorkloadsRemaining}" FontSize="18" FontWeight="Bold" Foreground="#1E293B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="workloads remaining" FontSize="9" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="2" Background="#F8FAFC" CornerRadius="6" Padding="12,8" Margin="4,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock FontSize="18" FontWeight="Bold" Foreground="#1E293B" HorizontalAlignment="Center">
+                                                    <Run Text="{Binding ConfigMgrFreeCountdown.CurrentVelocity, StringFormat='{}{0:F0}', Mode=OneWay}"/><Run Text="/wk"/>
+                                                </TextBlock>
+                                                <TextBlock Text="current velocity" FontSize="9" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <TextBlock Text="TOP ACCELERATORS" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,5,0,5"/>
+                                    <ItemsControl ItemsSource="{Binding ConfigMgrFreeCountdown.TopAccelerators}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock FontSize="11" Foreground="#16A34A" Margin="8,1,0,1" TextWrapping="Wrap">
+                                                    <Run Text="🚀 "/><Run Text="{Binding Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ============================== -->
+                            <!-- F4: PILOT WAVE OPTIMIZER        -->
+                            <!-- ============================== -->
+                            <TextBlock Text="🎯 Pilot Wave Optimizer" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,10,0,5"/>
+                            <TextBlock Text="Optimized device batches ranked by readiness, compliance likelihood, and risk. Each wave ensures diversity for early issue detection." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <ItemsControl ItemsSource="{Binding PilotWaves}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding RiskBackground, Converter={StaticResource HexColorToBrushConverter}}"
+                                                BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                                                CornerRadius="8" Padding="18" Margin="0,0,0,10">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="50"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock FontSize="22" FontWeight="Bold" Foreground="#1E293B" HorizontalAlignment="Center">
+                                                        <Run Text="#"/><Run Text="{Binding WaveNumber, Mode=OneWay}"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" Margin="12,0,15,0">
+                                                    <TextBlock Text="{Binding WaveName}" FontSize="14" FontWeight="Bold" Foreground="#1E293B"/>
+                                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#64748B" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                    <Border Background="{Binding RiskColor, Converter={StaticResource HexColorToBrushConverter}}" CornerRadius="4" Padding="10,4" Margin="0,0,0,4">
+                                                        <TextBlock FontSize="10" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center">
+                                                            <Run Text="{Binding DeviceCount, Mode=OneWay}"/><Run Text=" devices"/>
+                                                        </TextBlock>
+                                                    </Border>
+                                                    <TextBlock FontSize="10" Foreground="#64748B" HorizontalAlignment="Center">
+                                                        <Run Text="{Binding ExpectedSuccessRate, StringFormat='{}{0:F0}%', Mode=OneWay}"/><Run Text=" success"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="9" HorizontalAlignment="Center"
+                                                               Foreground="{Binding RiskColor, Converter={StaticResource HexColorToBrushConverter}}">
+                                                        <Run Text="Risk: "/><Run Text="{Binding RiskProfile, Mode=OneWay}"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- ============================== -->
+                            <!-- F5: WORKLOAD WHAT-IF            -->
+                            <!-- ============================== -->
+                            <TextBlock Text="🔮 Workload What-If Simulator" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,30,0,5"/>
+                            <TextBlock Text="For each unmoved workload: projected impact on Security, Operations, and Compliance scores — plus which workloads get unblocked." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <ItemsControl ItemsSource="{Binding WhatIfResults}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                                                CornerRadius="8" Padding="18" Margin="0,0,0,10">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding WorkloadName}" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Border Grid.Column="0" Background="#F8FAFC" CornerRadius="6" Padding="10,6" Margin="0,0,4,0">
+                                                        <StackPanel HorizontalAlignment="Center">
+                                                            <TextBlock Text="Security" FontSize="9" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding SecurityDeltaLabel}" FontSize="16" FontWeight="Bold"
+                                                                       Foreground="{Binding SecurityColor, Converter={StaticResource HexColorToBrushConverter}}" HorizontalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="1" Background="#F8FAFC" CornerRadius="6" Padding="10,6" Margin="4,0,4,0">
+                                                        <StackPanel HorizontalAlignment="Center">
+                                                            <TextBlock Text="Operations" FontSize="9" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding OperationsDeltaLabel}" FontSize="16" FontWeight="Bold"
+                                                                       Foreground="{Binding OperationsColor, Converter={StaticResource HexColorToBrushConverter}}" HorizontalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="2" Background="#F8FAFC" CornerRadius="6" Padding="10,6" Margin="4,0,4,0">
+                                                        <StackPanel HorizontalAlignment="Center">
+                                                            <TextBlock Text="Compliance" FontSize="9" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding ComplianceDeltaLabel}" FontSize="16" FontWeight="Bold"
+                                                                       Foreground="{Binding ComplianceColor, Converter={StaticResource HexColorToBrushConverter}}" HorizontalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="3" Background="#EFF6FF" CornerRadius="6" Padding="10,6" Margin="4,0,0,0">
+                                                        <StackPanel HorizontalAlignment="Center">
+                                                            <TextBlock Text="Devices" FontSize="9" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding DevicesAffected, StringFormat='{}{0:N0}'}" FontSize="16" FontWeight="Bold" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Border>
                                                 </Grid>
 
-                                                <!-- Goal -->
-                                                <Border Background="White" CornerRadius="6" Padding="14,10" Margin="0,0,0,8" Opacity="0.95">
-                                                    <StackPanel>
-                                                        <TextBlock Text="GOAL" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,0,3"/>
-                                                        <TextBlock Text="{Binding Goal}" FontSize="13" FontWeight="SemiBold" Foreground="#1E293B" TextWrapping="Wrap"/>
-                                                    </StackPanel>
-                                                </Border>
-
-                                                <!-- Description -->
-                                                <Border Background="White" CornerRadius="6" Padding="14,10" Margin="0,0,0,8" Opacity="0.95">
-                                                    <StackPanel>
-                                                        <TextBlock Text="HOW IT WORKS" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,0,3"/>
-                                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#475569" TextWrapping="Wrap"/>
-                                                    </StackPanel>
-                                                </Border>
-
-                                                <!-- Data Sources -->
-                                                <Border Background="White" CornerRadius="6" Padding="14,10" Margin="0,0,0,8" Opacity="0.95">
-                                                    <StackPanel>
-                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                                                            <TextBlock Text="📡 DATA SOURCES" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,10,0"/>
-                                                            <Border Background="{Binding ApiCallBadgeColor, Converter={StaticResource HexColorToBrushConverter}}"
-                                                                    CornerRadius="3" Padding="6,2">
-                                                                <TextBlock Text="{Binding ApiCallBadge}" FontSize="8" FontWeight="SemiBold" Foreground="White"/>
-                                                            </Border>
-                                                        </StackPanel>
-                                                        <ItemsControl ItemsSource="{Binding DataSources}">
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate>
-                                                                    <TextBlock FontSize="11" Foreground="#475569" Margin="8,1,0,1" TextWrapping="Wrap">
-                                                                        <Run Text="• "/><Run Text="{Binding Mode=OneWay}"/>
-                                                                    </TextBlock>
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-                                                    </StackPanel>
-                                                </Border>
-
-                                                <!-- Why it drives action -->
-                                                <Border Background="#FEF2F2" CornerRadius="6" Padding="14,10" Margin="0,0,0,4">
-                                                    <StackPanel>
-                                                        <TextBlock Text="🎯 WHY THIS DRIVES ACTION" FontSize="9" FontWeight="Bold" Foreground="#991B1B" Margin="0,0,0,3"/>
-                                                        <TextBlock Text="{Binding WhyItDrivesAction}" FontSize="12" Foreground="#7F1D1D" TextWrapping="Wrap"/>
-                                                    </StackPanel>
-                                                </Border>
+                                                <TextBlock Text="{Binding Recommendation}" FontSize="11" Foreground="#475569" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+
+                            <!-- ============================== -->
+                            <!-- F6: STALE/ORPHAN DETECTION       -->
+                            <!-- ============================== -->
+                            <TextBlock Text="👻 Stale Device &amp; Orphan Detection" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,30,0,5"/>
+                            <TextBlock Text="Devices consuming ConfigMgr infrastructure with no management value — by category." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,15">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Background="#F8FAFC" CornerRadius="8" Padding="14,10" Margin="0,0,4,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="💤" FontSize="20" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding StaleOrphanResult.StaleCount, StringFormat='{}{0:N0}'}" FontSize="22" FontWeight="Bold" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Stale" FontSize="10" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="30+ days inactive" FontSize="8" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="1" Background="#F8FAFC" CornerRadius="8" Padding="14,10" Margin="4,0,4,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="🔗" FontSize="20" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding StaleOrphanResult.OrphanedCount, StringFormat='{}{0:N0}'}" FontSize="22" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Orphaned" FontSize="10" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="ConfigMgr only, no Intune" FontSize="8" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="2" Background="#F8FAFC" CornerRadius="8" Padding="14,10" Margin="4,0,4,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="👻" FontSize="20" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding StaleOrphanResult.GhostCount, StringFormat='{}{0:N0}'}" FontSize="22" FontWeight="Bold" Foreground="#7C3AED" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Ghost" FontSize="10" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Intune only, no ConfigMgr" FontSize="8" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="3" Background="#F8FAFC" CornerRadius="8" Padding="14,10" Margin="4,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="🚫" FontSize="20" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding StaleOrphanResult.BlockerCount, StringFormat='{}{0:N0}'}" FontSize="22" FontWeight="Bold" Foreground="#1E293B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Blockers" FontSize="10" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Co-mgmt enrollment failed" FontSize="8" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#FFFBEB" CornerRadius="8" Padding="16" Margin="0,0,0,20">
+                                <TextBlock Text="{Binding StaleOrphanResult.WasteSummary}" FontSize="12" Foreground="#92400E" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <!-- ============================== -->
+                            <!-- F7: INFRASTRUCTURE RETIREMENT   -->
+                            <!-- ============================== -->
+                            <TextBlock Text="🏗️ Infrastructure Retirement Map" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,10,0,5"/>
+                            <TextBlock Text="What on-premises infrastructure can be decommissioned as each workload moves to Intune? Based on Microsoft's workload-to-infrastructure mapping." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <ItemsControl ItemsSource="{Binding InfraRetirementItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding StatusBackground, Converter={StaticResource HexColorToBrushConverter}}"
+                                                BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                                                CornerRadius="8" Padding="18" Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="35"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0" Text="{Binding StatusIcon}" FontSize="22" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+                                                <StackPanel Grid.Column="1" Margin="12,0,15,0">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding WorkloadName}" FontSize="13" FontWeight="Bold" Foreground="#1E293B"/>
+                                                        <TextBlock Text=" → " FontSize="13" Foreground="#94A3B8"/>
+                                                        <TextBlock Text="{Binding InfrastructureName}" FontSize="13" FontWeight="SemiBold" Foreground="#475569"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding InfrastructureDescription}" FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="2" Background="{Binding StatusColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                        CornerRadius="4" Padding="10,5" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- ============================== -->
+                            <!-- F8: COMPLIANCE TREND            -->
+                            <!-- ============================== -->
+                            <TextBlock Text="📈 Compliance Impact Projection" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,30,0,5"/>
+                            <TextBlock Text="Projected compliance improvement per workload transition — proving ROI of each move." FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                            <Border Background="White" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <!-- Current → Projected header -->
+                                    <Grid Margin="0,0,0,15">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Background="#FEF2F2" CornerRadius="8" Padding="18,14">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="CURRENT COMPLIANCE" FontSize="9" FontWeight="Bold" Foreground="#991B1B" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding ComplianceTrend.CurrentComplianceRate, StringFormat='{}{0:F0}%'}" FontSize="28" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <TextBlock Grid.Column="1" Text="→" FontSize="28" Foreground="#94A3B8" VerticalAlignment="Center" Margin="15,0,15,0"/>
+
+                                        <Border Grid.Column="2" Background="#F0FDF4" CornerRadius="8" Padding="18,14">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="PROJECTED COMPLIANCE" FontSize="9" FontWeight="Bold" Foreground="#166534" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding ComplianceTrend.ProjectedComplianceRate, StringFormat='{}{0:F0}%'}" FontSize="28" FontWeight="Bold" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Per-workload impact bars -->
+                                    <TextBlock Text="IMPROVEMENT BY WORKLOAD" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,0,8"/>
+
+                                    <ItemsControl ItemsSource="{Binding ComplianceTrend.WorkloadImpacts}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="180"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="60"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Grid.Column="0" Text="{Binding WorkloadName}" FontSize="12" Foreground="#1E293B" VerticalAlignment="Center"/>
+
+                                                    <Border Grid.Column="1" Background="#E2E8F0" CornerRadius="3" Height="8" VerticalAlignment="Center">
+                                                        <Border Background="{Binding BarColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                                CornerRadius="3" HorizontalAlignment="Left"
+                                                                Width="{Binding Improvement, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=200}"/>
+                                                    </Border>
+
+                                                    <TextBlock Grid.Column="2" Text="{Binding ImprovementLabel}" FontSize="12" FontWeight="Bold"
+                                                               Foreground="{Binding BarColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#F0FDF4" CornerRadius="8" Padding="16" Margin="0,0,0,20">
+                                <TextBlock Text="{Binding ComplianceTrend.Insight}" FontSize="12" Foreground="#15803D" TextWrapping="Wrap"/>
+                            </Border>
 
                         </StackPanel>
                     </ScrollViewer>

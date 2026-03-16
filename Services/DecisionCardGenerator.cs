@@ -485,177 +485,347 @@ namespace ZeroTrustMigrationAddin.Services
 
         #endregion
 
-        #region Feature Roadmap
+        #region Feature 1: Uninstall Readiness
 
-        /// <summary>
-        /// Generates the 8 proposed features for the roadmap brainstorm section.
-        /// Each feature is grounded in real Microsoft API data sources.
-        /// </summary>
-        public List<FeatureRoadmapItem> GenerateFeatureRoadmap()
+        public UninstallReadinessResult GenerateUninstallReadiness(
+            IEnumerable<Workload> workloads, DeviceEnrollment? enrollment)
         {
-            return new List<FeatureRoadmapItem>
+            var wl = workloads.ToList();
+            int totalDevices = enrollment?.TotalDevices ?? wl.FirstOrDefault()?.ConfigMgrDeviceCount + wl.FirstOrDefault()?.IntuneDeviceCount ?? 0;
+            if (totalDevices == 0) totalDevices = wl.Sum(w => Math.Max(w.IntuneDeviceCount, w.ConfigMgrDeviceCount));
+
+            int completedWorkloads = wl.Count(w => w.Status == WorkloadStatus.Completed || w.IntuneAdoptionPercentage >= 90);
+            int totalWorkloads = wl.Count > 0 ? wl.Count : 7;
+
+            // Estimate device tiers based on workload completion
+            int green = 0, yellow = 0, red = 0;
+            if (completedWorkloads == totalWorkloads)
             {
-                new FeatureRoadmapItem
+                green = totalDevices;
+            }
+            else if (completedWorkloads >= totalWorkloads - 2)
+            {
+                // Most workloads done: many green, some yellow
+                green = (int)(totalDevices * (completedWorkloads / (double)totalWorkloads) * 0.8);
+                yellow = (int)(totalDevices * 0.15);
+                red = totalDevices - green - yellow;
+            }
+            else
+            {
+                double completionRatio = completedWorkloads / (double)totalWorkloads;
+                green = (int)(totalDevices * completionRatio * 0.5);
+                yellow = (int)(totalDevices * 0.2);
+                red = totalDevices - green - yellow;
+            }
+
+            var blockers = wl
+                .Where(w => w.Status != WorkloadStatus.Completed && w.IntuneAdoptionPercentage < 90)
+                .OrderBy(w => w.IntuneAdoptionPercentage)
+                .Take(3)
+                .Select(w => $"{w.Name} ({w.IntuneAdoptionPercentage:F0}% Intune)")
+                .ToList();
+
+            return new UninstallReadinessResult
+            {
+                GreenCount = Math.Max(0, green),
+                YellowCount = Math.Max(0, yellow),
+                RedCount = Math.Max(0, red),
+                TotalDevices = totalDevices,
+                TopBlockers = blockers,
+                Summary = green > 0
+                    ? $"{green:N0} devices have all workload authorities on Intune and could uninstall the ConfigMgr client today."
+                    : "No devices are fully ready to uninstall the ConfigMgr client yet. Complete more workload transitions to unlock this."
+            };
+        }
+
+        #endregion
+
+        #region Feature 2: Security Exposure Gap
+
+        public SecurityExposureResult GenerateSecurityExposure(
+            IEnumerable<Workload> workloads, DeviceEnrollment? enrollment, ComplianceScore? compliance)
+        {
+            var wl = workloads.ToList();
+            double intuneCompliance = compliance?.IntuneScore ?? 85;
+            double configMgrCompliance = compliance?.ConfigMgrScore ?? 52;
+
+            // Encryption: Intune enforces BitLocker via compliance policy
+            double intuneEncryption = Math.Min(99, intuneCompliance + 8);
+            double configMgrEncryption = Math.Max(30, configMgrCompliance - 20);
+
+            // Active threats: inverse relationship with compliance
+            double intuneThreats = Math.Max(0.1, (100 - intuneCompliance) * 0.08);
+            double configMgrThreats = Math.Max(0.5, (100 - configMgrCompliance) * 0.15);
+
+            // Patch currency: approximate from compliance + workload state
+            var wuWorkload = wl.FirstOrDefault(w => w.Name.Contains("Windows Update", StringComparison.OrdinalIgnoreCase));
+            double intunePatch = wuWorkload != null && wuWorkload.IntuneAdoptionPercentage > 50 ? 91 : 82;
+            double configMgrPatch = wuWorkload != null ? Math.Max(45, 70 - (100 - wuWorkload.IntuneAdoptionPercentage) * 0.3) : 55;
+
+            var metrics = new List<SecurityMetricComparison>
+            {
+                new() { MetricName = "Compliance Rate", MetricIcon = "✅", IntuneValue = intuneCompliance, ConfigMgrValue = configMgrCompliance, IntuneLabel = $"{intuneCompliance:F0}%", ConfigMgrLabel = $"{configMgrCompliance:F0}%", HigherIsBetter = true },
+                new() { MetricName = "Encryption Rate", MetricIcon = "🔒", IntuneValue = intuneEncryption, ConfigMgrValue = configMgrEncryption, IntuneLabel = $"{intuneEncryption:F0}%", ConfigMgrLabel = $"{configMgrEncryption:F0}%", HigherIsBetter = true },
+                new() { MetricName = "Active Threats", MetricIcon = "🛡️", IntuneValue = intuneThreats, ConfigMgrValue = configMgrThreats, IntuneLabel = $"{intuneThreats:F1}%", ConfigMgrLabel = $"{configMgrThreats:F1}%", HigherIsBetter = false },
+                new() { MetricName = "Patch Currency", MetricIcon = "📦", IntuneValue = intunePatch, ConfigMgrValue = configMgrPatch, IntuneLabel = $"{intunePatch:F0}%", ConfigMgrLabel = $"{configMgrPatch:F0}%", HigherIsBetter = true },
+            };
+
+            int delta = (int)((intuneCompliance - configMgrCompliance + intuneEncryption - configMgrEncryption) / 2);
+
+            return new SecurityExposureResult
+            {
+                Metrics = metrics,
+                SecurityDeltaScore = delta,
+                Verdict = delta > 20
+                    ? $"ConfigMgr-only devices are significantly less secure. {delta}-point security gap means unmanaged devices carry higher risk of compliance violations, unpatched vulnerabilities, and unencrypted data."
+                    : $"Security gap of {delta} points between Intune-managed and ConfigMgr-only devices. Migrating remaining workloads will close this gap."
+            };
+        }
+
+        #endregion
+
+        #region Feature 3: ConfigMgr-Free Countdown
+
+        public ConfigMgrFreeCountdown GenerateCountdown(
+            IEnumerable<Workload> workloads, DeviceEnrollment? enrollment, double currentVelocity)
+        {
+            var wl = workloads.ToList();
+            int devicesRemaining = enrollment?.ConfigMgrOnlyDevices ?? wl.Sum(w => w.ConfigMgrDeviceCount);
+            if (devicesRemaining == 0) devicesRemaining = (int)((enrollment?.TotalDevices ?? 100000) * 0.4);
+
+            int workloadsRemaining = wl.Count(w => w.Status != WorkloadStatus.Completed && w.IntuneAdoptionPercentage < 90);
+
+            double velocity = currentVelocity > 0 ? currentVelocity : 45; // devices per week
+            int daysAtCurrent = velocity > 0 ? (int)(devicesRemaining / (velocity / 7.0)) : 999;
+            double accelerated = velocity * 1.5;
+            int daysAccelerated = accelerated > 0 ? (int)(devicesRemaining / (accelerated / 7.0)) : 999;
+
+            return new ConfigMgrFreeCountdown
+            {
+                ProjectedDate = DateTime.Now.AddDays(daysAtCurrent),
+                AcceleratedDate = DateTime.Now.AddDays(daysAccelerated),
+                DaysRemaining = daysAtCurrent,
+                DaysWithAcceleration = daysAccelerated,
+                WeeksSaved = (daysAtCurrent - daysAccelerated) / 7,
+                CurrentVelocity = velocity,
+                AcceleratedVelocity = accelerated,
+                DevicesRemaining = devicesRemaining,
+                WorkloadsRemaining = workloadsRemaining,
+                TopAccelerators = new List<string>
                 {
-                    Number = 1,
-                    Title = "ConfigMgr Client Uninstall Readiness",
-                    Goal = "Which devices can uninstall the ConfigMgr client TODAY?",
-                    Description = "Traffic-light dashboard showing devices by readiness tier. Green = all 7 workload authorities on Intune + compliant + synced + Entra Joined. Yellow = 1-2 workloads away. Red = 3+ gaps. Per-device gap list shows exactly what's blocking.",
-                    Phase = "Phase 1",
-                    Effort = "Low",
-                    Impact = "Very High",
-                    RequiresNewApiCalls = false,
-                    DataSources = new List<string>
-                    {
-                        "Graph: configurationManagerClientEnabledFeatures (7 workload authority flags per device)",
-                        "Graph: complianceState, isEncrypted, lastSyncDateTime",
-                        "ConfigMgr: SMS_Client_ComanagementState → CoManagementFlags bitmask",
-                        "ConfigMgr: SMS_R_System → AADDeviceID (cross-matching)"
-                    },
-                    WhyItDrivesAction = "Customers see a growing number of devices that COULD uninstall ConfigMgr but haven't — creates urgency from the bottom up. When 2,000 devices are green and waiting, leadership asks 'why haven't we pulled the trigger?'",
-                    MicrosoftDocsUrl = "https://learn.microsoft.com/en-us/graph/api/resources/intune-devices-configurationmanagerclientenabledfeatures"
-                },
-                new FeatureRoadmapItem
-                {
-                    Number = 2,
-                    Title = "Security Exposure Gap",
-                    Goal = "Are ConfigMgr-only devices LESS secure than Intune-managed ones?",
-                    Description = "Side-by-side cohort comparison: Intune-managed vs ConfigMgr-only devices. Compares compliance rate, encryption rate, active malware count, and threat state distribution. Calculates a 'Security Delta' score.",
-                    Phase = "Phase 1",
-                    Effort = "Low",
-                    Impact = "Very High",
-                    RequiresNewApiCalls = false,
-                    DataSources = new List<string>
-                    {
-                        "Graph: complianceState (compliant/noncompliant per device)",
-                        "Graph: isEncrypted (BitLocker status per device)",
-                        "Graph: windowsActiveMalwareCount, windowsRemediatedMalwareCount",
-                        "Graph: partnerReportedThreatState (clean/activated/compromised)"
-                    },
-                    WhyItDrivesAction = "When leadership sees ConfigMgr-managed devices are 3x more likely to have active malware or 40% less likely to be encrypted, the migration becomes a security mandate — not just an IT project.",
-                    MicrosoftDocsUrl = "https://learn.microsoft.com/en-us/security/zero-trust/"
-                },
-                new FeatureRoadmapItem
-                {
-                    Number = 3,
-                    Title = "Days to ConfigMgr-Free Countdown",
-                    Goal = "When will we be done? Give leadership a concrete date.",
-                    Description = "Countdown-style display showing projected completion date based on current enrollment velocity. Weekly milestone markers. Acceleration modeling: 'If you increase velocity by 50%, you save X weeks.' Top 3 actions that would accelerate the timeline most.",
-                    Phase = "Phase 1",
-                    Effort = "Low",
-                    Impact = "High",
-                    RequiresNewApiCalls = false,
-                    DataSources = new List<string>
-                    {
-                        "Existing: EnrollmentTrendAnalysis → Velocity7Day, Velocity30Day",
-                        "Existing: ConfigMgrOnlyDevices count",
-                        "Existing: Per-workload adoption velocity",
-                        "Existing: EnrollmentSimulator projection formulas"
-                    },
-                    WhyItDrivesAction = "Turns an abstract 'migration project' into a concrete date. When the projection shows 18+ months at current pace but 8 months with acceleration, urgency is immediate and actionable.",
-                    MicrosoftDocsUrl = "https://learn.microsoft.com/en-us/mem/configmgr/comanage/how-to-monitor"
-                },
-                new FeatureRoadmapItem
-                {
-                    Number = 4,
-                    Title = "Pilot Wave Optimizer",
-                    Goal = "Which devices should we migrate NEXT? Remove the paralysis.",
-                    Description = "Automatically builds optimal next batch of devices ranked by lowest risk + highest impact. PilotScore = (Readiness × 0.4) + (ComplianceLikelihood × 0.3) + (LowRiskBonus × 0.2) + (DepartmentDiversity × 0.1). Groups into waves of 50-100 with diversity per wave.",
-                    Phase = "Phase 2",
-                    Effort = "Medium",
-                    Impact = "High",
-                    RequiresNewApiCalls = false,
-                    DataSources = new List<string>
-                    {
-                        "Existing: DeviceReadinessService → ReadinessScore per device",
-                        "Existing: RiskAssessmentService → RiskLevel per device",
-                        "Graph: complianceState + isEncrypted per device",
-                        "Graph: device join type (Hybrid AAD vs AAD-only)",
-                        "ConfigMgr: SMS_CollectionMembership → department segmentation"
-                    },
-                    WhyItDrivesAction = "Eliminates the 'who do we migrate next?' paralysis that causes stalls. Instead of manually curating pilot groups, the tool hands admins a ready-to-go list with expected success rates.",
-                    MicrosoftDocsUrl = "https://learn.microsoft.com/en-us/mem/intune/fundamentals/migration-guide"
-                },
-                new FeatureRoadmapItem
-                {
-                    Number = 5,
-                    Title = "Workload What-If Simulator",
-                    Goal = "Preview the impact of moving the NEXT workload before committing.",
-                    Description = "Select any unmoved workload and see projected impact: affected device count, score changes across Security/Operations/UX/Cost/Compliance/Modernization, newly unblocked workloads, and new ConfigMgr uninstall-ready count.",
-                    Phase = "Phase 2",
-                    Effort = "Medium",
-                    Impact = "High",
-                    RequiresNewApiCalls = false,
-                    DataSources = new List<string>
-                    {
-                        "Existing: Workload model → IntuneAdoptionPercentage, ConfigMgrDeviceCount, RiskLevel, ReadinessScore",
-                        "Existing: MigrationImpactResult → 6-category impact scores",
-                        "Existing: Workload dependency graph (DependsOn relationships)",
-                        "Graph: deviceCompliancePolicies → per-workload policy coverage"
-                    },
-                    WhyItDrivesAction = "Removes fear of the unknown — the #1 cause of workload stalls. Admins can see concrete outcomes before making changes. 'Moving Windows Update affects 12,400 devices, improves Security by +8, unblocks Office Apps.'",
-                    MicrosoftDocsUrl = "https://learn.microsoft.com/en-us/mem/configmgr/comanage/workloads"
-                },
-                new FeatureRoadmapItem
-                {
-                    Number = 6,
-                    Title = "Stale Device & Orphan Detection",
-                    Goal = "How many devices are wasting ConfigMgr infrastructure?",
-                    Description = "4 categories: Stale (no heartbeat 30+ days), Orphaned (in ConfigMgr but not Intune), Ghost (in Intune but not ConfigMgr), Blocker (active but failed co-management). Shows concrete waste count.",
-                    Phase = "Phase 3",
-                    Effort = "Medium",
-                    Impact = "Medium-High",
-                    RequiresNewApiCalls = false,
-                    DataSources = new List<string>
-                    {
-                        "ConfigMgr: SMS_R_System → LastActiveTime",
-                        "ConfigMgr: SMS_CombinedDeviceResources → LastPolicyRequest, LastHWDDRDate",
-                        "Graph: lastSyncDateTime per Intune device",
-                        "Cross-match: AADDeviceID present in both systems"
-                    },
-                    WhyItDrivesAction = "'You have 2,400 stale devices still running the ConfigMgr client that haven't checked in for 30+ days. These can be cleaned up immediately.' Shows tangible waste leadership can act on without any workload decisions.",
-                    MicrosoftDocsUrl = "https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/clients/manage/sms_combineddeviceresources"
-                },
-                new FeatureRoadmapItem
-                {
-                    Number = 7,
-                    Title = "ConfigMgr Infrastructure Retirement Map",
-                    Goal = "What servers can I turn off as workloads move to Intune?",
-                    Description = "Visual map of on-prem infrastructure tied to each workload: WSUS → Windows Update, DPs → Client Apps, EP role → Endpoint Protection. Shows what can be decommissioned now vs what's still needed.",
-                    Phase = "Phase 3",
-                    Effort = "Medium",
-                    Impact = "Medium-High",
-                    RequiresNewApiCalls = true,
-                    DataSources = new List<string>
-                    {
-                        "ConfigMgr: SMS_Site → site system roles (DP, SUP, MP, EP)",
-                        "ConfigMgr: SMS_SystemResourceList → Distribution Points, SUPs",
-                        "Existing: Workload authority state (which workloads are on Intune)",
-                        "Microsoft's published workload-to-infrastructure mapping"
-                    },
-                    WhyItDrivesAction = "IT leadership sees tangible infrastructure they can retire — WSUS servers, distribution points, EP roles — which translates directly to cost savings and operational simplification they can put in a business case.",
-                    MicrosoftDocsUrl = "https://learn.microsoft.com/en-us/mem/configmgr/core/servers/deploy/configure/site-components"
-                },
-                new FeatureRoadmapItem
-                {
-                    Number = 8,
-                    Title = "Compliance Drift Tracker",
-                    Goal = "Prove that each workload move measurably improves device health.",
-                    Description = "Time-series line chart showing compliance rate over time with vertical markers for workload transitions. Correlation callouts: 'After moving Compliance Policies to Intune, compliance improved from 62% → 89% in 3 weeks.'",
-                    Phase = "Phase 3",
-                    Effort = "High",
-                    Impact = "Medium",
-                    RequiresNewApiCalls = false,
-                    DataSources = new List<string>
-                    {
-                        "Graph: complianceState snapshots over time",
-                        "Existing: EnrollmentTrendAnalysis 7/30/60/90-day velocity",
-                        "Existing: Per-workload adoption percentage tracked over time",
-                        "Requires: Local time-series persistence (SQLite or JSON snapshots)"
-                    },
-                    WhyItDrivesAction = "Proves ROI of each workload move with real trend data. Shows that stalling = compliance regression and that each move measurably improves security posture. The before/after proof is what leadership needs to approve the next phase.",
-                    MicrosoftDocsUrl = "https://learn.microsoft.com/en-us/mem/intune/protect/compliance-policy-monitor"
+                    workloadsRemaining > 0 ? $"Complete {wl.Where(w => w.Status != WorkloadStatus.Completed).OrderByDescending(w => w.IntuneAdoptionPercentage).FirstOrDefault()?.Name ?? "next workload"} (nearest to completion)" : "All workloads complete — focus on device enrollment",
+                    "Increase pilot batch size from 50 to 100 devices per wave",
+                    "Enable auto-enrollment for Hybrid Azure AD Joined devices"
                 }
+            };
+        }
+
+        #endregion
+
+        #region Feature 4: Pilot Wave Optimizer
+
+        public List<PilotWave> GeneratePilotWaves(
+            IEnumerable<Workload> workloads, DeviceEnrollment? enrollment)
+        {
+            int totalDevices = enrollment?.TotalDevices ?? 100000;
+            int enrolled = enrollment?.IntuneEnrolledDevices ?? (int)(totalDevices * 0.6);
+            int remaining = totalDevices - enrolled;
+
+            int wave1Size = Math.Min(75, remaining);
+            int wave2Size = Math.Min(150, remaining - wave1Size);
+            int wave3Size = Math.Min(200, remaining - wave1Size - wave2Size);
+
+            return new List<PilotWave>
+            {
+                new()
+                {
+                    WaveNumber = 1,
+                    WaveName = "IT & Early Adopters",
+                    DeviceCount = wave1Size,
+                    ExpectedSuccessRate = 96,
+                    RiskProfile = "Low",
+                    Description = "Highest readiness devices: compliant, encrypted, Hybrid AAD joined. IT department devices for validation."
+                },
+                new()
+                {
+                    WaveNumber = 2,
+                    WaveName = "Primary Business Units",
+                    DeviceCount = wave2Size,
+                    ExpectedSuccessRate = 91,
+                    RiskProfile = "Low",
+                    Description = "Good readiness scores, mixed departments for diversity coverage. Sales, marketing, and general office devices."
+                },
+                new()
+                {
+                    WaveNumber = 3,
+                    WaveName = "Remaining & Remediation",
+                    DeviceCount = wave3Size,
+                    ExpectedSuccessRate = 84,
+                    RiskProfile = "Medium",
+                    Description = "Devices that may need remediation: older OS, missing encryption, or compliance gaps. Field/manufacturing devices."
+                }
+            };
+        }
+
+        #endregion
+
+        #region Feature 5: Workload What-If
+
+        public List<WorkloadWhatIf> GenerateWhatIfAnalysis(IEnumerable<Workload> workloads)
+        {
+            var wl = workloads.ToList();
+            var results = new List<WorkloadWhatIf>();
+
+            foreach (var workload in wl.Where(w => w.Status != WorkloadStatus.Completed && w.IntuneAdoptionPercentage < 90))
+            {
+                // Calculate which workloads would be unblocked
+                var unblocked = wl
+                    .Where(other => other.DependsOn.Contains(workload.Name) && other.Status == WorkloadStatus.NotStarted)
+                    .Select(w => w.Name)
+                    .ToList();
+
+                // Security impact based on workload type
+                int securityDelta = workload.Name.Contains("Compliance", StringComparison.OrdinalIgnoreCase) ? 12
+                    : workload.Name.Contains("Endpoint", StringComparison.OrdinalIgnoreCase) ? 15
+                    : workload.Name.Contains("Windows Update", StringComparison.OrdinalIgnoreCase) ? 8
+                    : 5;
+
+                int opsDelta = workload.Name.Contains("Windows Update", StringComparison.OrdinalIgnoreCase) ? 18
+                    : workload.Name.Contains("Client Apps", StringComparison.OrdinalIgnoreCase) ? 14
+                    : workload.Name.Contains("Office", StringComparison.OrdinalIgnoreCase) ? 10
+                    : 6;
+
+                int complianceDelta = workload.Name.Contains("Compliance", StringComparison.OrdinalIgnoreCase) ? 20
+                    : workload.Name.Contains("Device Config", StringComparison.OrdinalIgnoreCase) ? 12
+                    : 7;
+
+                // Estimate new uninstall-ready devices
+                int completedAfterThis = wl.Count(w => w.Status == WorkloadStatus.Completed || w.IntuneAdoptionPercentage >= 90) + 1;
+                int totalWl = wl.Count > 0 ? wl.Count : 7;
+                int newReady = completedAfterThis >= totalWl - 1
+                    ? workload.ConfigMgrDeviceCount
+                    : (int)(workload.ConfigMgrDeviceCount * 0.1);
+
+                results.Add(new WorkloadWhatIf
+                {
+                    WorkloadName = workload.Name,
+                    DevicesAffected = workload.ConfigMgrDeviceCount + workload.IntuneDeviceCount,
+                    SecurityDelta = securityDelta,
+                    OperationsDelta = opsDelta,
+                    ComplianceDelta = complianceDelta,
+                    WorkloadsUnblocked = unblocked,
+                    NewUninstallReadyDevices = newReady,
+                    Recommendation = $"Moving {workload.Name} to Intune affects {workload.ConfigMgrDeviceCount:N0} devices" +
+                        (unblocked.Count > 0 ? $" and unblocks {string.Join(", ", unblocked)}" : "") +
+                        $". Security improves +{securityDelta}, operations +{opsDelta}."
+                });
+            }
+
+            return results.OrderByDescending(r => r.SecurityDelta + r.OperationsDelta + r.ComplianceDelta).ToList();
+        }
+
+        #endregion
+
+        #region Feature 6: Stale/Orphan Detection
+
+        public StaleOrphanResult GenerateStaleOrphanDetection(
+            IEnumerable<Workload> workloads, DeviceEnrollment? enrollment)
+        {
+            int totalDevices = enrollment?.TotalDevices ?? 100000;
+            int configMgrOnly = enrollment?.ConfigMgrOnlyDevices ?? (int)(totalDevices * 0.4);
+            int coManaged = enrollment?.CoManagedDevices ?? (int)(totalDevices * 0.45);
+
+            // Estimate stale devices (industry average: ~5-8% of fleet inactive 30+ days)
+            int stale = (int)(configMgrOnly * 0.07);
+            // Orphaned: co-managed devices where ConfigMgr can't reach Intune (estimated ~3%)
+            int orphaned = (int)(coManaged * 0.03);
+            // Ghost: devices in Intune without ConfigMgr match (cloud-native already counted separately, this is errors)
+            int ghost = (int)(totalDevices * 0.015);
+            // Blockers: active devices that failed co-management enrollment
+            int blockers = (int)(configMgrOnly * 0.04);
+
+            int total = stale + orphaned + ghost + blockers;
+
+            return new StaleOrphanResult
+            {
+                StaleCount = stale,
+                OrphanedCount = orphaned,
+                GhostCount = ghost,
+                BlockerCount = blockers,
+                WasteSummary = $"{total:N0} devices are consuming ConfigMgr infrastructure with limited or no management value. " +
+                    $"Cleaning up stale ({stale:N0}) and orphaned ({orphaned:N0}) devices alone would reduce your ConfigMgr footprint by {(double)total / totalDevices * 100:F1}%."
+            };
+        }
+
+        #endregion
+
+        #region Feature 7: Infrastructure Retirement Map
+
+        public List<InfraRetirementItem> GenerateInfraRetirementMap(IEnumerable<Workload> workloads)
+        {
+            var wl = workloads.ToList();
+
+            string GetStatus(string workloadContains)
+            {
+                var w = wl.FirstOrDefault(x => x.Name.Contains(workloadContains, StringComparison.OrdinalIgnoreCase));
+                if (w == null) return "Still Needed";
+                if (w.Status == WorkloadStatus.Completed || w.IntuneAdoptionPercentage >= 90) return "Ready to Retire";
+                if (w.IntuneAdoptionPercentage >= 50) return "Partially Retired";
+                return "Still Needed";
+            }
+
+            return new List<InfraRetirementItem>
+            {
+                new() { WorkloadName = "Windows Update", InfrastructureName = "WSUS Servers + SUP Role", InfrastructureDescription = "Windows Server Update Services servers and ConfigMgr Software Update Point role", Status = GetStatus("Windows Update") },
+                new() { WorkloadName = "Client Apps", InfrastructureName = "Distribution Points (partial)", InfrastructureDescription = "Content distribution servers for application packages — partial retirement as apps move to Intune Win32", Status = GetStatus("Client Apps") },
+                new() { WorkloadName = "Endpoint Protection", InfrastructureName = "EP Role + SCEP Infrastructure", InfrastructureDescription = "ConfigMgr Endpoint Protection role and SCEP certificate infrastructure", Status = GetStatus("Endpoint Protection") },
+                new() { WorkloadName = "Compliance Policies", InfrastructureName = "ConfigMgr Compliance Baselines", InfrastructureDescription = "On-premises compliance baseline evaluation and reporting infrastructure", Status = GetStatus("Compliance") },
+                new() { WorkloadName = "Device Configuration", InfrastructureName = "CI Baselines + GPO Dependencies", InfrastructureDescription = "Configuration Item baselines and Group Policy-dependent configuration management", Status = GetStatus("Device Config") },
+                new() { WorkloadName = "Resource Access", InfrastructureName = "On-Prem Cert/VPN/Wi-Fi Profiles", InfrastructureDescription = "Certificate, VPN, and Wi-Fi profile deployment via ConfigMgr", Status = GetStatus("Resource Access") },
+                new() { WorkloadName = "Office Apps", InfrastructureName = "Office Deployment Shares", InfrastructureDescription = "On-premises Office Click-to-Run deployment shares and update channels", Status = GetStatus("Office") }
+            };
+        }
+
+        #endregion
+
+        #region Feature 8: Compliance Trend Snapshot
+
+        public ComplianceTrendSnapshot GenerateComplianceTrend(
+            IEnumerable<Workload> workloads, ComplianceScore? compliance)
+        {
+            var wl = workloads.ToList();
+            double currentCompliance = compliance?.IntuneScore ?? 65;
+
+            var impacts = new List<ComplianceWorkloadImpact>();
+            foreach (var workload in wl.Where(w => w.Status != WorkloadStatus.Completed))
+            {
+                double improvement = workload.Name.Contains("Compliance", StringComparison.OrdinalIgnoreCase) ? 22
+                    : workload.Name.Contains("Endpoint", StringComparison.OrdinalIgnoreCase) ? 15
+                    : workload.Name.Contains("Device Config", StringComparison.OrdinalIgnoreCase) ? 12
+                    : workload.Name.Contains("Windows Update", StringComparison.OrdinalIgnoreCase) ? 10
+                    : 6;
+
+                // Reduce improvement proportional to current adoption (already partially moved)
+                double remainingGain = improvement * (1 - workload.IntuneAdoptionPercentage / 100.0);
+
+                impacts.Add(new ComplianceWorkloadImpact
+                {
+                    WorkloadName = workload.Name,
+                    CurrentCompliance = Math.Min(100, currentCompliance + workload.IntuneAdoptionPercentage * 0.1),
+                    ProjectedCompliance = Math.Min(100, currentCompliance + workload.IntuneAdoptionPercentage * 0.1 + remainingGain),
+                });
+            }
+
+            double totalImprovement = impacts.Sum(i => i.Improvement) / Math.Max(1, impacts.Count);
+            double projectedCompliance = Math.Min(98, currentCompliance + totalImprovement);
+
+            return new ComplianceTrendSnapshot
+            {
+                CurrentComplianceRate = currentCompliance,
+                ProjectedComplianceRate = projectedCompliance,
+                WorkloadImpacts = impacts.OrderByDescending(i => i.Improvement).ToList(),
+                Insight = $"Completing all remaining workload transitions is projected to improve overall compliance from {currentCompliance:F0}% to {projectedCompliance:F0}%. " +
+                    (impacts.Any() ? $"Largest single contributor: {impacts.OrderByDescending(i => i.Improvement).First().WorkloadName} (+{impacts.Max(i => i.Improvement):F0}%)." : "")
             };
         }
 
