@@ -3126,16 +3126,16 @@
                     </ScrollViewer>
                 </TabItem>
                 
-                <TabItem Header="💡 Ideas" Visibility="{Binding ShowIdeasTab}">
+                <TabItem Header="🎯 Decision Cards" Visibility="{Binding ShowDecisionCardsTab}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                         <StackPanel MaxWidth="1400">
 
                             <!-- ============================== -->
                             <!-- PAGE HEADER                     -->
                             <!-- ============================== -->
-                            <TextBlock Text="💡 Ideas — Data-Driven Migration Decisions"
+                            <TextBlock Text="🎯 Decision Cards — Data-Driven Migration Decisions"
                                        FontSize="28" FontWeight="Bold" Foreground="{StaticResource PrimaryBlue}" Margin="0,0,0,6"/>
-                            <TextBlock Text="Decision Cards and workload insights synthesized from your environment data. Each card answers: What decision? Why now? Cost of inaction? Lowest-risk next step."
+                            <TextBlock Text="Each card answers: What decision? Why now? Cost of inaction? Lowest-risk next step. Completed workloads are not shown."
                                        FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,25"/>
 
                             <!-- ============================== -->
@@ -3216,14 +3216,6 @@
                                                         <TextBlock FontSize="10" Foreground="#64748B">
                                                             <Run Text="Risk: "/>
                                                             <Run Text="{Binding RiskLevel, Mode=OneWay}" FontWeight="SemiBold"/>
-                                                        </TextBlock>
-                                                    </Border>
-                                                    <Border Background="#F8FAFC" CornerRadius="4" Padding="8,3" Margin="0,0,8,0"
-                                                            Visibility="{Binding RollbackTimeMinutes, Converter={StaticResource IntToVisibilityConverter}}">
-                                                        <TextBlock FontSize="10" Foreground="#64748B">
-                                                            <Run Text="🔄 Rollback: "/>
-                                                            <Run Text="{Binding RollbackTimeMinutes, Mode=OneWay}"/>
-                                                            <Run Text=" min"/>
                                                         </TextBlock>
                                                     </Border>
                                                     <Border Background="#F8FAFC" CornerRadius="4" Padding="8,3"
@@ -3343,7 +3335,20 @@
                             <!-- SECTION 4: SAFE TO REMOVE       -->
                             <!-- ============================== -->
                             <TextBlock Text="🛡️ Safe to Remove — Per-Workload Confidence" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,30,0,5"/>
-                            <TextBlock Text="If you move the slider, here's what stops running from ConfigMgr, what Intune covers, and how fast you can roll back" FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,15"/>
+                            <TextBlock Text="Based on your environment data: adoption rates, readiness scores, risk levels, and Intune policy coverage" FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,5"/>
+
+                            <!-- Safety level legend -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                <Border Background="#F0FDF4" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                    <TextBlock FontSize="10" Foreground="#16A34A" FontWeight="SemiBold">🟢 High = Safe to move, Intune fully covers this workload</TextBlock>
+                                </Border>
+                                <Border Background="#FFFBEB" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                    <TextBlock FontSize="10" Foreground="#D97706" FontWeight="SemiBold">🟡 Medium = Mostly covered, review gaps first</TextBlock>
+                                </Border>
+                                <Border Background="#FEF2F2" CornerRadius="4" Padding="8,3">
+                                    <TextBlock FontSize="10" Foreground="#DC2626" FontWeight="SemiBold">🔴 Low = Significant gaps, not ready to move</TextBlock>
+                                </Border>
+                            </StackPanel>
 
                             <ItemsControl ItemsSource="{Binding SafetyScores}">
                                 <ItemsControl.ItemTemplate>
@@ -3355,22 +3360,33 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="50"/>
                                                     <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
                                                 <!-- Safety indicator -->
-                                                <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,4,0,0">
                                                     <TextBlock Text="{Binding SafetyIcon}" FontSize="26" HorizontalAlignment="Center"/>
                                                     <TextBlock Text="{Binding SafetyLevel}" FontSize="9" FontWeight="Bold"
                                                                Foreground="{Binding SafetyColor, Converter={StaticResource HexColorToBrushConverter}}"
                                                                HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                                 </StackPanel>
 
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,15,0">
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
                                                     <TextBlock Text="{Binding WorkloadName}" FontSize="14" FontWeight="Bold" Foreground="#1E293B"/>
 
+                                                    <!-- Safety level explanation -->
+                                                    <TextBlock Text="{Binding SafetyLevelExplanation}" FontSize="11" Foreground="#64748B" FontStyle="Italic" 
+                                                               TextWrapping="Wrap" Margin="0,4,0,0"/>
+
+                                                    <!-- WHY: Data-driven explanation -->
+                                                    <Border Background="White" CornerRadius="6" Padding="12,8" Margin="0,8,0,0" Opacity="0.95">
+                                                        <StackPanel>
+                                                            <TextBlock Text="WHY THIS RATING" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,0,3"/>
+                                                            <TextBlock Text="{Binding WhySafe}" FontSize="12" Foreground="#1E293B" TextWrapping="Wrap"/>
+                                                        </StackPanel>
+                                                    </Border>
+
                                                     <!-- What stops running -->
-                                                    <TextBlock Text="What stops running from ConfigMgr:" FontSize="10" FontWeight="SemiBold" Foreground="#64748B" Margin="0,6,0,2"/>
+                                                    <TextBlock Text="What stops running from ConfigMgr:" FontSize="10" FontWeight="SemiBold" Foreground="#64748B" Margin="0,8,0,2"/>
                                                     <ItemsControl ItemsSource="{Binding WhatStopsRunning}">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>
@@ -3381,27 +3397,7 @@
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
-
-                                                    <!-- Rollback -->
-                                                    <TextBlock FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,6,0,0">
-                                                        <Run Text="🔄 Rollback: " FontWeight="SemiBold"/>
-                                                        <Run Text="{Binding RollbackDescription, Mode=OneWay}"/>
-                                                    </TextBlock>
                                                 </StackPanel>
-
-                                                <!-- Rollback time badge -->
-                                                <Border Grid.Column="2" Background="White" CornerRadius="8" Padding="14,10" VerticalAlignment="Center">
-                                                    <StackPanel HorizontalAlignment="Center">
-                                                        <TextBlock FontSize="10" Foreground="#94A3B8" HorizontalAlignment="Center">Rollback</TextBlock>
-                                                        <TextBlock FontSize="22" FontWeight="Bold"
-                                                                   Foreground="{Binding SafetyColor, Converter={StaticResource HexColorToBrushConverter}}"
-                                                                   HorizontalAlignment="Center">
-                                                            <Run Text="~"/>
-                                                            <Run Text="{Binding RollbackTimeMinutes, Mode=OneWay}"/>
-                                                        </TextBlock>
-                                                        <TextBlock FontSize="10" Foreground="#94A3B8" HorizontalAlignment="Center">minutes</TextBlock>
-                                                    </StackPanel>
-                                                </Border>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -3457,22 +3453,127 @@
                                     </Grid>
 
                                     <!-- What needs to be done -->
-                                    <Border Background="White" CornerRadius="8" Padding="16" Margin="0,0,0,12" Opacity="0.95">
+                                    <Border Background="White" CornerRadius="8" Padding="16" Opacity="0.95">
                                         <StackPanel>
                                             <TextBlock Text="📋 WHAT NEEDS TO BE DONE" FontSize="10" FontWeight="Bold" Foreground="#166534" Margin="0,0,0,5"/>
                                             <TextBlock Text="{Binding LastHoldoutSpotlightCard.WhatNeedsToBeDone}" FontSize="12" Foreground="#1E293B" TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </Border>
-
-                                    <!-- Rollback plan -->
-                                    <Border Background="#F0FDF4" CornerRadius="8" Padding="16">
-                                        <StackPanel>
-                                            <TextBlock Text="🔄 ROLLBACK GUARANTEE" FontSize="10" FontWeight="Bold" Foreground="#166534" Margin="0,0,0,5"/>
-                                            <TextBlock Text="{Binding LastHoldoutSpotlightCard.RollbackPlan}" FontSize="12" Foreground="#14532D" TextWrapping="Wrap"/>
-                                        </StackPanel>
-                                    </Border>
                                 </StackPanel>
                             </Border>
+
+                            <!-- ============================== -->
+                            <!-- SECTION 6: FEATURE ROADMAP      -->
+                            <!-- ============================== -->
+                            <TextBlock Text="🚀 Feature Roadmap — Deep Solutions Brainstorm" FontSize="22" FontWeight="Bold" Foreground="#1E293B" Margin="0,40,0,5"/>
+                            <TextBlock Text="8 data-driven features to drive workload migration, break stalls, and reach ConfigMgr-free. Every feature is sourced from real Microsoft Graph API, ConfigMgr Admin Service, or published Microsoft documentation." 
+                                       FontSize="12" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,5"/>
+
+                            <!-- Phase legend -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                <Border Background="#F0FDF4" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                    <TextBlock FontSize="10" Foreground="#16A34A" FontWeight="SemiBold">🟢 Phase 1 = Uses existing data, low effort</TextBlock>
+                                </Border>
+                                <Border Background="#FFFBEB" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                    <TextBlock FontSize="10" Foreground="#D97706" FontWeight="SemiBold">🟡 Phase 2 = New synthesis from existing data</TextBlock>
+                                </Border>
+                                <Border Background="#EFF6FF" CornerRadius="4" Padding="8,3">
+                                    <TextBlock FontSize="10" Foreground="#2563EB" FontWeight="SemiBold">🔵 Phase 3 = New data collection needed</TextBlock>
+                                </Border>
+                            </StackPanel>
+
+                            <ItemsControl ItemsSource="{Binding FeatureRoadmapItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding PhaseBackground, Converter={StaticResource HexColorToBrushConverter}}"
+                                                BorderBrush="{Binding PhaseBorder, Converter={StaticResource HexColorToBrushConverter}}"
+                                                BorderThickness="1.5" CornerRadius="10" Padding="22" Margin="0,0,0,14">
+                                            <StackPanel>
+                                                <!-- Header row -->
+                                                <Grid Margin="0,0,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding PhaseIcon}" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                        <TextBlock FontSize="17" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center">
+                                                            <Run Text="#"/><Run Text="{Binding Number, Mode=OneWay}"/>
+                                                            <Run Text=" — "/><Run Text="{Binding Title, Mode=OneWay}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                        <Border Background="{Binding PhaseColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                                CornerRadius="4" Padding="10,4" Margin="0,0,6,0">
+                                                            <TextBlock Text="{Binding Phase}" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                        </Border>
+                                                        <Border Background="{Binding ImpactColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                                CornerRadius="4" Padding="10,4" Margin="0,0,6,0">
+                                                            <TextBlock FontSize="10" FontWeight="Bold" Foreground="White">
+                                                                <Run Text="Impact: "/><Run Text="{Binding Impact, Mode=OneWay}"/>
+                                                            </TextBlock>
+                                                        </Border>
+                                                        <Border Background="{Binding EffortBadgeColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                                CornerRadius="4" Padding="10,4">
+                                                            <TextBlock FontSize="10" FontWeight="Bold" Foreground="White">
+                                                                <Run Text="Effort: "/><Run Text="{Binding Effort, Mode=OneWay}"/>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <!-- Goal -->
+                                                <Border Background="White" CornerRadius="6" Padding="14,10" Margin="0,0,0,8" Opacity="0.95">
+                                                    <StackPanel>
+                                                        <TextBlock Text="GOAL" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,0,3"/>
+                                                        <TextBlock Text="{Binding Goal}" FontSize="13" FontWeight="SemiBold" Foreground="#1E293B" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- Description -->
+                                                <Border Background="White" CornerRadius="6" Padding="14,10" Margin="0,0,0,8" Opacity="0.95">
+                                                    <StackPanel>
+                                                        <TextBlock Text="HOW IT WORKS" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,0,3"/>
+                                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#475569" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- Data Sources -->
+                                                <Border Background="White" CornerRadius="6" Padding="14,10" Margin="0,0,0,8" Opacity="0.95">
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                                            <TextBlock Text="📡 DATA SOURCES" FontSize="9" FontWeight="Bold" Foreground="#94A3B8" Margin="0,0,10,0"/>
+                                                            <Border Background="{Binding ApiCallBadgeColor, Converter={StaticResource HexColorToBrushConverter}}"
+                                                                    CornerRadius="3" Padding="6,2">
+                                                                <TextBlock Text="{Binding ApiCallBadge}" FontSize="8" FontWeight="SemiBold" Foreground="White"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <ItemsControl ItemsSource="{Binding DataSources}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock FontSize="11" Foreground="#475569" Margin="8,1,0,1" TextWrapping="Wrap">
+                                                                        <Run Text="• "/><Run Text="{Binding Mode=OneWay}"/>
+                                                                    </TextBlock>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- Why it drives action -->
+                                                <Border Background="#FEF2F2" CornerRadius="6" Padding="14,10" Margin="0,0,0,4">
+                                                    <StackPanel>
+                                                        <TextBlock Text="🎯 WHY THIS DRIVES ACTION" FontSize="9" FontWeight="Bold" Foreground="#991B1B" Margin="0,0,0,3"/>
+                                                        <TextBlock Text="{Binding WhyItDrivesAction}" FontSize="12" Foreground="#7F1D1D" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
                         </StackPanel>
                     </ScrollViewer>

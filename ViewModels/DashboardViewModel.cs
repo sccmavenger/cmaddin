@@ -112,7 +112,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         private Visibility _showCloudReadinessTab = Visibility.Visible;
         private Visibility _showCloudValueComparisonTab = Visibility.Collapsed;
         private Visibility _showCloudComparisonDetailsTab = Visibility.Collapsed;
-        private Visibility _showIdeasTab = Visibility.Visible;
+        private Visibility _showDecisionCardsTab = Visibility.Visible;
         private bool _demoStallMode;
 
         /// <summary>When true, pipeline injects mock stall data for UI preview. Activated via /demostall launch switch.</summary>
@@ -134,7 +134,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 _showCloudReadinessTab = tabVisibilityOptions.ShowCloudReadinessTab;
                 _showCloudValueComparisonTab = tabVisibilityOptions.ShowCloudValueComparisonTab;
                 _showCloudComparisonDetailsTab = tabVisibilityOptions.ShowCloudComparisonDetailsTab;
-                _showIdeasTab = tabVisibilityOptions.ShowIdeasTab;
+                _showDecisionCardsTab = tabVisibilityOptions.ShowDecisionCardsTab;
                 _demoStallMode = tabVisibilityOptions.DemoStallMode;
             }
             
@@ -486,10 +486,10 @@ namespace ZeroTrustMigrationAddin.ViewModels
             set => SetProperty(ref _showCloudComparisonDetailsTab, value);
         }
 
-        public Visibility ShowIdeasTab
+        public Visibility ShowDecisionCardsTab
         {
-            get => _showIdeasTab;
-            set => SetProperty(ref _showIdeasTab, value);
+            get => _showDecisionCardsTab;
+            set => SetProperty(ref _showDecisionCardsTab, value);
         }
 
         // === Ideas Tab Properties (Decision Cards + Tier 1) ===
@@ -497,6 +497,7 @@ namespace ZeroTrustMigrationAddin.ViewModels
         public ObservableCollection<WorkloadUnlockChain> UnlockChains { get; } = new();
         public ObservableCollection<ConfigMgrCoverage> CoverageCards { get; } = new();
         public ObservableCollection<WorkloadSafetyScore> SafetyScores { get; } = new();
+        public ObservableCollection<FeatureRoadmapItem> FeatureRoadmapItems { get; } = new();
 
         private LastHoldoutSpotlight? _lastHoldoutSpotlight;
         public LastHoldoutSpotlight? LastHoldoutSpotlightCard
@@ -3953,9 +3954,14 @@ namespace ZeroTrustMigrationAddin.ViewModels
                 LastHoldoutSpotlightCard = spotlight;
                 OnPropertyChanged(nameof(HasLastHoldoutSpotlight));
 
+                // Feature Roadmap
+                var roadmap = generator.GenerateFeatureRoadmap();
+                FeatureRoadmapItems.Clear();
+                foreach (var item in roadmap) FeatureRoadmapItems.Add(item);
+
                 Instance.Info($"[IDEAS] Generated {DecisionCards.Count} decision cards, " +
                     $"{UnlockChains.Count} unlock chains, {CoverageCards.Count} coverage cards, " +
-                    $"{SafetyScores.Count} safety scores, " +
+                    $"{SafetyScores.Count} safety scores, {FeatureRoadmapItems.Count} roadmap items, " +
                     $"spotlight: {(LastHoldoutSpotlightCard != null ? "yes" : "no")}");
             }
             catch (Exception ex)

@@ -41,7 +41,6 @@ namespace ZeroTrustMigrationAddin.Models
         // Metadata
         public string RiskLevel { get; set; } = "Low";
         public int DevicesAffected { get; set; }
-        public int RollbackTimeMinutes { get; set; }
         public string SafetyScore { get; set; } = string.Empty;
         public double ReadinessScore { get; set; }
         public int Order { get; set; }
@@ -139,11 +138,21 @@ namespace ZeroTrustMigrationAddin.Models
     {
         public string WorkloadName { get; set; } = string.Empty;
         public string SafetyLevel { get; set; } = "Unknown";
-        public int RollbackTimeMinutes { get; set; }
-        public string RollbackDescription { get; set; } = string.Empty;
         public List<string> WhatStopsRunning { get; set; } = new();
         public List<string> IntuneCoverage { get; set; } = new();
         public int PolicyConflictCount { get; set; }
+
+        /// <summary>Data-driven explanation of WHY this safety level was assigned</summary>
+        public string WhySafe { get; set; } = string.Empty;
+
+        /// <summary>What the safety level means in plain language</summary>
+        public string SafetyLevelExplanation => SafetyLevel switch
+        {
+            "High" => "High confidence — Intune policies fully cover this workload. Moving the slider carries minimal risk.",
+            "Medium" => "Moderate confidence — Most devices are covered by Intune, but some gaps exist. Review before moving.",
+            "Low" => "Low confidence — Significant gaps in Intune coverage. Moving the slider could leave devices unmanaged.",
+            _ => "Insufficient data to determine safety."
+        };
 
         public string SafetyIcon => SafetyLevel switch
         {
@@ -171,6 +180,77 @@ namespace ZeroTrustMigrationAddin.Models
     }
 
     /// <summary>
+    /// A proposed feature for the roadmap — shown in the Decision Cards tab for brainstorming.
+    /// </summary>
+    public class FeatureRoadmapItem
+    {
+        public int Number { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Goal { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Phase { get; set; } = string.Empty;
+        public string Effort { get; set; } = string.Empty;
+        public string Impact { get; set; } = string.Empty;
+        public List<string> DataSources { get; set; } = new();
+        public string WhyItDrivesAction { get; set; } = string.Empty;
+        public string MicrosoftDocsUrl { get; set; } = string.Empty;
+        public bool RequiresNewApiCalls { get; set; }
+
+        // UI helpers
+        public string PhaseIcon => Phase switch
+        {
+            "Phase 1" => "🟢",
+            "Phase 2" => "🟡",
+            "Phase 3" => "🔵",
+            _ => "⚪"
+        };
+
+        public string PhaseColor => Phase switch
+        {
+            "Phase 1" => "#16A34A",
+            "Phase 2" => "#D97706",
+            "Phase 3" => "#2563EB",
+            _ => "#9CA3AF"
+        };
+
+        public string PhaseBackground => Phase switch
+        {
+            "Phase 1" => "#F0FDF4",
+            "Phase 2" => "#FFFBEB",
+            "Phase 3" => "#EFF6FF",
+            _ => "#F9FAFB"
+        };
+
+        public string PhaseBorder => Phase switch
+        {
+            "Phase 1" => "#86EFAC",
+            "Phase 2" => "#FCD34D",
+            "Phase 3" => "#93C5FD",
+            _ => "#D1D5DB"
+        };
+
+        public string ImpactColor => Impact switch
+        {
+            "Very High" => "#DC2626",
+            "High" => "#D97706",
+            "Medium-High" => "#2563EB",
+            "Medium" => "#6B7280",
+            _ => "#9CA3AF"
+        };
+
+        public string EffortBadgeColor => Effort switch
+        {
+            "Low" => "#16A34A",
+            "Medium" => "#D97706",
+            "High" => "#DC2626",
+            _ => "#9CA3AF"
+        };
+
+        public string ApiCallBadge => RequiresNewApiCalls ? "New API calls needed" : "Uses existing data";
+        public string ApiCallBadgeColor => RequiresNewApiCalls ? "#D97706" : "#16A34A";
+    }
+
+    /// <summary>
     /// Last Holdout spotlight — dedicated card for the 6/7 scenario.
     /// </summary>
     public class LastHoldoutSpotlight
@@ -179,7 +259,6 @@ namespace ZeroTrustMigrationAddin.Models
         public int DevicesBlocked { get; set; }
         public string WhyItMatters { get; set; } = string.Empty;
         public string WhatNeedsToBeDone { get; set; } = string.Empty;
-        public string RollbackPlan { get; set; } = string.Empty;
         public int CloudNativeDevicesOnCompletion { get; set; }
         public bool IsVisible { get; set; }
     }

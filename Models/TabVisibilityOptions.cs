@@ -52,9 +52,9 @@ namespace ZeroTrustMigrationAddin.Models
         public Visibility ShowCloudComparisonDetailsTab { get; set; } = Visibility.Collapsed;
 
         /// <summary>
-        /// Shows or hides the Ideas tab (Decision Cards + Tier 1 features)
+        /// Shows or hides the Decision Cards tab
         /// </summary>
-        public Visibility ShowIdeasTab { get; set; } = Visibility.Visible;
+        public Visibility ShowDecisionCardsTab { get; set; } = Visibility.Visible;
 
         /// <summary>
         /// When true, injects realistic mock stall data so pipeline UI elements are visible in disconnected mode.
@@ -128,7 +128,8 @@ namespace ZeroTrustMigrationAddin.Models
                                 options.ShowCloudComparisonDetailsTab = Visibility.Collapsed;
                                 break;
                             case "ideas":
-                                options.ShowIdeasTab = Visibility.Collapsed;
+                            case "decisioncards":
+                                options.ShowDecisionCardsTab = Visibility.Collapsed;
                                 break;
                         }
                     }
@@ -146,7 +147,7 @@ namespace ZeroTrustMigrationAddin.Models
                     options.ShowCloudReadinessTab = Visibility.Collapsed;
                     options.ShowCloudValueComparisonTab = Visibility.Collapsed;
                     options.ShowCloudComparisonDetailsTab = Visibility.Collapsed;
-                    options.ShowIdeasTab = Visibility.Collapsed;
+                    options.ShowDecisionCardsTab = Visibility.Collapsed;
 
                     // Then show only specified tabs
                     var tabsToShow = lowerArg.Substring(lowerArg.IndexOf(':') + 1).Split(',');
@@ -187,7 +188,8 @@ namespace ZeroTrustMigrationAddin.Models
                                 options.ShowCloudComparisonDetailsTab = Visibility.Visible;
                                 break;
                             case "ideas":
-                                options.ShowIdeasTab = Visibility.Visible;
+                            case "decisioncards":
+                                options.ShowDecisionCardsTab = Visibility.Visible;
                                 break;
                         }
                     }
