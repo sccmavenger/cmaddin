@@ -1,4 +1,4 @@
-# Cloud Native Assessment - Product Requirements Document
+ do# Cloud Native Assessment - Product Requirements Document
 
 Last updated: 2026-03-18
 
@@ -423,6 +423,32 @@ The product succeeds when a ConfigMgr admin can install the add-in, authenticate
 - [Azure Identity](https://github.com/Azure/azure-sdk-for-net/tree/main/sdk/identity/Azure.Identity) v1.17.1
 - [WiX Toolset](https://wixtoolset.org/) v6.0 for MSI packaging
 - [LiveCharts](https://lvcharts.net/) v0.9.7 for WPF charting
+
+### ConfigMgr & Intune Reference Documentation
+- [Co-management overview](https://learn.microsoft.com/mem/configmgr/comanage/overview) — What co-management is, how workloads transition
+- [Co-management workloads](https://learn.microsoft.com/mem/configmgr/comanage/workloads) — All 7 workloads and what each controls
+- [How to switch workloads](https://learn.microsoft.com/mem/configmgr/comanage/how-to-switch-workloads) — Pilot vs production slider mechanics
+- [How to monitor co-management](https://learn.microsoft.com/mem/configmgr/comanage/how-to-monitor) — Built-in ConfigMgr monitoring for co-management
+- [ConfigMgr Admin Service REST API](https://learn.microsoft.com/mem/configmgr/develop/adminservice/overview) — The REST API this tool uses for ConfigMgr data
+- [Admin Service usage guide](https://learn.microsoft.com/mem/configmgr/develop/adminservice/usage) — Authentication, querying, and endpoint reference
+- [Microsoft Graph: Intune device management](https://learn.microsoft.com/graph/api/resources/intune-devices-manageddevice) — ManagedDevice resource used for enrollment data
+- [Microsoft Graph: Device compliance](https://learn.microsoft.com/graph/api/resources/intune-deviceconfig-devicecompliancepolicy) — Compliance policy resources
+- [Entra hybrid join vs Entra join](https://learn.microsoft.com/entra/identity/devices/hybrid-join-plan) — Device identity states this tool categorizes
+- [Plan cloud-native Windows endpoints](https://learn.microsoft.com/mem/solutions/cloud-native-windows-endpoints/cloud-native-windows-endpoints) — The end-state this tool drives toward
+- [Conditional Access overview](https://learn.microsoft.com/entra/identity/conditional-access/overview) — The security control referenced in Security Exposure analysis
+- [Autopilot overview](https://learn.microsoft.com/autopilot/windows-autopilot) — Cloud-native provisioning referenced in Hybrid Join Growth alerts
+
+### Security Posture Reference Documentation
+- [Conditional Access: require compliant devices](https://learn.microsoft.com/entra/identity/conditional-access/howto-conditional-access-policy-compliant-device) — The specific CA policy gap quantified in Security Exposure analysis (ConfigMgr-only devices = 0% CA capable)
+- [Zero Trust identity and device access](https://learn.microsoft.com/microsoft-365/security/office-365-security/zero-trust-identity-device-access-policies-overview) — Zero Trust framework used in Cloud Readiness scoring
+- [Device health attestation](https://learn.microsoft.com/windows/security/hardware-security/tpm/trusted-platform-module-overview) — TPM attestation to Azure AD; only Intune can prove device health remotely
+- [Intune security baselines](https://learn.microsoft.com/mem/intune/protect/security-baselines) — Cloud-delivered hardening profiles referenced in Decision Cards security weights
+- [Microsoft Defender for Endpoint integration with Intune](https://learn.microsoft.com/mem/intune/protect/advanced-threat-protection) — MDE onboarding, threat state reporting (`partnerReportedThreatState`), ASR rules
+- [Attack surface reduction rules](https://learn.microsoft.com/defender-endpoint/attack-surface-reduction) — ASR rules referenced in Endpoint Security workload risk scoring
+- [BitLocker management with Intune](https://learn.microsoft.com/mem/intune/protect/encrypt-devices) — Cloud recovery key escrow vs MBAM; `isEncrypted` device property
+- [Intune device compliance policies](https://learn.microsoft.com/mem/intune/protect/device-compliance-get-started) — Compliance evaluation that feeds CA enforcement and Security Exposure analysis
+- [Windows active malware detection](https://learn.microsoft.com/graph/api/resources/intune-devices-manageddevice#properties) — `windowsActiveMalwareCount` property used in Active Malware comparison (requires MDE P2)
+- [Intune remote actions](https://learn.microsoft.com/mem/intune/remote-actions/device-management) — 15+ remote actions (wipe, retire, lock, rotate BitLocker keys) vs ConfigMgr's 3; referenced in Cloud Readiness comparison
 
 ### Repository
 - **GitHub**: `sccmavenger/cmaddin` (public)
