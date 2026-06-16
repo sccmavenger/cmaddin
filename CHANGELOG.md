@@ -7,6 +7,16 @@
 ### Changed
 
 ### Fixed
+- 
+
+
+## [3.17.250] - 2026-06-16
+
+### Added
+
+### Changed
+
+### Fixed
 - Build script smoke test no longer hangs indefinitely when `ZeroTrustMigrationAddin.exe --version` does not exit; it now times out and force-terminates the test process.
 
 
