@@ -12,12 +12,12 @@ namespace ZeroTrustMigrationAddin.Services
 {
     /// <summary>
     /// Service for checking GitHub Releases for CloudJourneyAddin updates.
-    /// Uses Octokit to query sccmavenger/cmaddin repository.
+    /// Uses Octokit to query dannygu_microsoft/cloud-native-assessment repository.
     /// </summary>
     public class GitHubUpdateService
     {
-        private const string RepoOwner = "sccmavenger";
-        private const string RepoName = "cmaddin";
+        private const string RepoOwner = "dannygu_microsoft";
+        private const string RepoName = "cloud-native-assessment";
         
         // Token should be set via environment variable or update-settings.json for security
         // Note: Public repositories don't require authentication for releases

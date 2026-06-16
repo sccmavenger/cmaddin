@@ -9,9 +9,9 @@
 | Property | Value |
 |----------|-------|
 | **Version** | 3.17.249 |
-| **Last Updated** | 2026-03-11 |
+| **Last Updated** | 2026-06-08 |
 | **Branch** | main |
-| **Status** | Stable - Ideas tab replacing Workload Brainstorm with data-driven Decision Cards |
+| **Status** | Stable - release pipeline smoke test timeout fix applied |
 
 ---
 
@@ -99,6 +99,11 @@ All hidden tabs can be enabled via command-line:
 1. **Pipeline UI not wired** — results are produced but not visible in any view yet
 2. **Historical snapshots synthetic** — `EnrollmentAnalyticsService` generates synthetic history, not real stored data
 3. **Background schedule not activated** — `StartBackgroundSchedule()` is implemented but not called
+
+## Recent Session Summary (2026-06-08)
+
+### Completed
+- Fixed build smoke test hang in `Build-And-Distribute.ps1` by replacing unbounded `Start-Process -Wait` with a 15-second timeout and forced process cleanup.
 
 ---
 

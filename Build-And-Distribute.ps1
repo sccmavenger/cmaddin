@@ -87,7 +87,7 @@
     
 .LINK
     Internal Documentation: BUILD_SCRIPT_GUIDE.md
-    GitHub Releases: https://github.com/sccmavenger/cmaddin/releases
+    GitHub Releases: https://github.com/dannygu_microsoft/cloud-native-assessment/releases
 #>
 
 [CmdletBinding()]
@@ -1125,6 +1125,7 @@ Write-Host ""
 # Post-build smoke test
 if (!$SkipTests) {
     Write-Host "[STEP 2/2] Post-build smoke test..." -ForegroundColor Yellow
+    $smokeTestTimeoutSeconds = 15
     
     # Extract to temp location
     $testFolder = Join-Path $env:TEMP "CloudJourney_SmokeTest"
@@ -1134,18 +1135,26 @@ if (!$SkipTests) {
     Expand-Archive -Path $packagePath -DestinationPath $testFolder -Force
     
     try {
-        # Test EXE launches
+        # Launch EXE and bound wait time so the build cannot hang indefinitely.
         $exePath = Join-Path $testFolder "ZeroTrustMigrationAddin.exe"
-        $testProcess = Start-Process $exePath -ArgumentList "--version" -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop
-        
-        if ($testProcess.ExitCode -eq 0) {
-            Write-Host "   ✅ Application launches successfully" -ForegroundColor Green
+        $testProcess = Start-Process $exePath -ArgumentList "--version" -PassThru -WindowStyle Hidden -ErrorAction Stop
+
+        if (Wait-Process -Id $testProcess.Id -Timeout $smokeTestTimeoutSeconds -ErrorAction SilentlyContinue) {
+            if ($testProcess.ExitCode -eq 0) {
+                Write-Host "   ✅ Application launches successfully" -ForegroundColor Green
+            } else {
+                Write-Host "   ⚠️ Application launched but returned exit code: $($testProcess.ExitCode)" -ForegroundColor Yellow
+            }
         } else {
-            Write-Host "   ⚠️ Application launched but returned exit code: $($testProcess.ExitCode)" -ForegroundColor Yellow
+            Write-Host "   ⚠️ Smoke test timed out after $smokeTestTimeoutSeconds seconds; terminating test process" -ForegroundColor Yellow
+            Stop-Process -Id $testProcess.Id -Force -ErrorAction SilentlyContinue
         }
     } catch {
         Write-Host "   ⚠️ Smoke test inconclusive: $_" -ForegroundColor Yellow
     } finally {
+        if ($testProcess -and -not $testProcess.HasExited) {
+            Stop-Process -Id $testProcess.Id -Force -ErrorAction SilentlyContinue
+        }
         Remove-Item $testFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
 } else {
@@ -1379,7 +1388,7 @@ Package Size: $packageSize MB
         
         if ($LASTEXITCODE -eq 0) {
             Write-Host "   ✅ GitHub Release created successfully" -ForegroundColor Green
-            Write-Host "   🔗 https://github.com/sccmavenger/cmaddin/releases/tag/v$newVersion" -ForegroundColor Cyan
+            Write-Host "   🔗 https://github.com/dannygu_microsoft/cloud-native-assessment/releases/tag/v$newVersion" -ForegroundColor Cyan
         } else {
             Write-Host "   ❌ Release creation failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
         }
@@ -1504,7 +1513,7 @@ if ($PublishToGitHub) {
     Write-Host "🐙 GITHUB RELEASE" -ForegroundColor Cyan
     Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Release URL:    https://github.com/sccmavenger/cmaddin/releases/tag/v$newVersion" -ForegroundColor Cyan
+    Write-Host "Release URL:    https://github.com/dannygu_microsoft/cloud-native-assessment/releases/tag/v$newVersion" -ForegroundColor Cyan
     Write-Host ""
 }
 
