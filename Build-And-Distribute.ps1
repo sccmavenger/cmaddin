@@ -123,6 +123,9 @@ if (!(Test-Path $buildLogDir)) {
 
 # Start transcript for full build log
 Start-Transcript -Path $buildLogPath -Append
+Write-Host "📄 Follow live build output in another terminal:" -ForegroundColor DarkCyan
+Write-Host "   Get-Content -Path '$buildLogPath' -Wait" -ForegroundColor Gray
+Write-Host ""
 
 # Display banner
 Write-Host ""
@@ -438,6 +441,25 @@ $($items -join "`n")
 "@
     
     return $html
+}
+
+function Get-GitHubRepoSlugFromRemoteUrl {
+    <#
+    .SYNOPSIS
+        Extract owner/repo slug from git remote URL
+    #>
+    param([string]$RemoteUrl)
+
+    if ([string]::IsNullOrWhiteSpace($RemoteUrl)) {
+        return $null
+    }
+
+    # HTTPS: https://github.com/owner/repo(.git)
+    if ($RemoteUrl -match 'github\.com[:/](?<slug>[^/\s]+/[^/\s]+?)(?:\.git)?$') {
+        return $matches['slug']
+    }
+
+    return $null
 }
 
 # ============================================
@@ -1306,6 +1328,32 @@ if ($PublishToGitHub) {
     Write-Host "🐙 GITHUB RELEASE AUTOMATION" -ForegroundColor Magenta
     Write-Host "═══════════════════════════════════════" -ForegroundColor Magenta
     Write-Host ""
+
+    $publishSucceeded = $true
+    $currentBranch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim()
+    if ([string]::IsNullOrWhiteSpace($currentBranch)) {
+        $currentBranch = "main"
+    }
+
+    $originUrl = (git remote get-url origin 2>$null).Trim()
+    $repoSlug = Get-GitHubRepoSlugFromRemoteUrl -RemoteUrl $originUrl
+    if ([string]::IsNullOrWhiteSpace($repoSlug)) {
+        Write-Host "   ⚠️ Could not parse GitHub repo slug from origin URL: $originUrl" -ForegroundColor Yellow
+        Write-Host "   gh commands may require explicit --repo configuration" -ForegroundColor Yellow
+    } else {
+        Write-Host "   ✅ Target GitHub repository: $repoSlug" -ForegroundColor Green
+        $repoCheckOutput = & gh repo view $repoSlug --json nameWithOwner 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   ❌ Active gh account cannot access '$repoSlug'" -ForegroundColor Red
+            Write-Host "   ℹ️ gh output:" -ForegroundColor Yellow
+            $repoCheckOutput | ForEach-Object { Write-Host "      $_" -ForegroundColor Gray }
+            Write-Host "   👉 Fix: switch to an account with access, e.g.:" -ForegroundColor Yellow
+            Write-Host "      gh auth switch -u dannygu_microsoft" -ForegroundColor Gray
+            Stop-Transcript
+            exit 1
+        }
+    }
+    Write-Host ""
     
     # Generate release notes if not provided
     if (!$ReleaseNotes) {
@@ -1339,29 +1387,55 @@ Package Size: $packageSize MB
     
     Write-Host "[STEP 1/4] Committing version changes..." -ForegroundColor Yellow
     try {
-        git add .
-        git commit -m "Release v$newVersion - Auto-increment version"
-        Write-Host "   ✅ Changes committed" -ForegroundColor Green
+        & git add .
+        if ($LASTEXITCODE -ne 0) {
+            throw "git add failed (exit code: $LASTEXITCODE)"
+        }
+
+        $pendingChanges = git status --porcelain
+        if ($pendingChanges) {
+            & git commit -m "Release v$newVersion - Auto-increment version"
+            if ($LASTEXITCODE -ne 0) {
+                throw "git commit failed (exit code: $LASTEXITCODE)"
+            }
+            Write-Host "   ✅ Changes committed" -ForegroundColor Green
+        } else {
+            Write-Host "   ℹ️ No changes to commit" -ForegroundColor Gray
+        }
     } catch {
-        Write-Host "   ⚠️ Commit failed (may already be committed): $_" -ForegroundColor Yellow
+        $publishSucceeded = $false
+        Write-Host "   ❌ Commit step failed: $_" -ForegroundColor Red
     }
     Write-Host ""
     
     Write-Host "[STEP 2/4] Creating git tag..." -ForegroundColor Yellow
     try {
-        git tag -a "v$newVersion" -m "Version $newVersion"
-        Write-Host "   ✅ Tag created: v$newVersion" -ForegroundColor Green
+        $tagExists = git rev-parse --verify "refs/tags/v$newVersion" 2>$null
+        if ($LASTEXITCODE -eq 0 -and $tagExists) {
+            Write-Host "   ℹ️ Tag already exists: v$newVersion" -ForegroundColor Gray
+        } else {
+            & git tag -a "v$newVersion" -m "Version $newVersion"
+            if ($LASTEXITCODE -ne 0) {
+                throw "git tag failed (exit code: $LASTEXITCODE)"
+            }
+            Write-Host "   ✅ Tag created: v$newVersion" -ForegroundColor Green
+        }
     } catch {
-        Write-Host "   ⚠️ Tag may already exist: $_" -ForegroundColor Yellow
+        $publishSucceeded = $false
+        Write-Host "   ❌ Tag step failed: $_" -ForegroundColor Red
     }
     Write-Host ""
     
     Write-Host "[STEP 3/4] Pushing to GitHub..." -ForegroundColor Yellow
     try {
-        git push origin main --tags
-        Write-Host "   ✅ Pushed to GitHub" -ForegroundColor Green
+        & git push origin $currentBranch --tags
+        if ($LASTEXITCODE -ne 0) {
+            throw "git push failed (exit code: $LASTEXITCODE)"
+        }
+        Write-Host "   ✅ Pushed branch '$currentBranch' and tags" -ForegroundColor Green
     } catch {
-        Write-Host "   ⚠️ Push failed: $_" -ForegroundColor Yellow
+        $publishSucceeded = $false
+        Write-Host "   ❌ Push failed: $_" -ForegroundColor Red
     }
     Write-Host ""
     
@@ -1383,21 +1457,42 @@ Package Size: $packageSize MB
             "--title", "Cloud Native Assessment v$newVersion",
             "--notes-file", $notesFile
         )
+
+        if ($repoSlug) {
+            $releaseArgs += @("--repo", $repoSlug)
+        }
         
-        & gh @releaseArgs
+        $ghOutput = & gh @releaseArgs 2>&1
+        $ghExitCode = $LASTEXITCODE
         
-        if ($LASTEXITCODE -eq 0) {
+        if ($ghExitCode -eq 0) {
             Write-Host "   ✅ GitHub Release created successfully" -ForegroundColor Green
-            Write-Host "   🔗 https://github.com/dannygu_microsoft/cloud-native-assessment/releases/tag/v$newVersion" -ForegroundColor Cyan
+            if ($repoSlug) {
+                Write-Host "   🔗 https://github.com/$repoSlug/releases/tag/v$newVersion" -ForegroundColor Cyan
+            }
         } else {
-            Write-Host "   ❌ Release creation failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
+            $publishSucceeded = $false
+            Write-Host "   ❌ Release creation failed (exit code: $ghExitCode)" -ForegroundColor Red
+            if ($ghOutput) {
+                Write-Host "   ℹ️ gh output:" -ForegroundColor Yellow
+                $ghOutput | ForEach-Object { Write-Host "      $_" -ForegroundColor Gray }
+            }
         }
     } catch {
+        $publishSucceeded = $false
         Write-Host "   ❌ Release creation failed: $_" -ForegroundColor Red
     } finally {
         Remove-Item $notesFile -Force -ErrorAction SilentlyContinue
     }
     
+    if (-not $publishSucceeded) {
+        Write-Host ""
+        Write-Host "❌ Publish pipeline completed with errors." -ForegroundColor Red
+        Write-Host "   Check the log for details: $buildLogPath" -ForegroundColor Yellow
+        Stop-Transcript
+        exit 1
+    }
+
     Write-Host ""
 }
 
@@ -1510,10 +1605,16 @@ Write-Host "Build Log:      $buildLogPath" -ForegroundColor White
 Write-Host ""
 
 if ($PublishToGitHub) {
+    $summaryOriginUrl = (git remote get-url origin 2>$null).Trim()
+    $summaryRepoSlug = Get-GitHubRepoSlugFromRemoteUrl -RemoteUrl $summaryOriginUrl
     Write-Host "🐙 GITHUB RELEASE" -ForegroundColor Cyan
     Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Release URL:    https://github.com/dannygu_microsoft/cloud-native-assessment/releases/tag/v$newVersion" -ForegroundColor Cyan
+    if ($summaryRepoSlug) {
+        Write-Host "Release URL:    https://github.com/$summaryRepoSlug/releases/tag/v$newVersion" -ForegroundColor Cyan
+    } else {
+        Write-Host "Release URL:    <unable to determine repo from origin>" -ForegroundColor Yellow
+    }
     Write-Host ""
 }
 

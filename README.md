@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.250** | June 16, 2026
+**Version 3.17.251** | June 16, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -265,6 +265,18 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.250 (June 16, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- Build script smoke test no longer hangs indefinitely when `ZeroTrustMigrationAddin.exe --version` does not exit; it now times out and force-terminates the test process.
+
+---
+
 ### Version 3.17.239 (March 11, 2026)
 
 ### Added
@@ -325,23 +337,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - DashboardViewModel now calls `LoadAnalysisPipelineAsync()` during data load, exposing 12 pipeline properties for XAML binding
 - DashboardWindow.xaml.cs pushes pipeline stall data to EnrollmentMomentumViewModel after real-data refresh
 - EnrollmentMomentumViewModel extended with 5 pipeline properties (HasPipelineStall, PipelineClassification, PipelineCostOfInaction, TrustResetBatchSize, HasTrustResetBatch)
-
-### Fixed
-
----
-
-### Version 3.17.234 (March 11, 2026)
-
-### Added
-- **Analysis Pipeline Framework**: Three-layer Signal → Analyzer → Recommendation engine for detecting migration stalls with root-cause classification (Technical/Operational/ConfidenceBased/ResourceConstrained)
-- **Enrollment Stall Analyzer**: Detects Trust Trough zone (50-60% enrolled with declining velocity), general stalls, and velocity decline warnings. Classifies root cause and sizes Trust Reset Batches from Excellent-readiness devices.
-- **Workload Stall Analyzer**: Detects per-workload stalls, Workload Trust Trough (4-5 of 7 done then stuck), Client Apps holdout pattern, and last-holdout identification. Generates workload-specific remediation guidance.
-- **Pipeline Orchestrator**: Central runner with on-demand and background scheduled execution, severity change events, and disk-persisted result summaries
-- **DI Container**: Activated `Microsoft.Extensions.DependencyInjection` for typed pipeline service resolution while maintaining backward compatibility with existing singleton/direct-construction patterns
-- **Pipeline Models**: Typed signal, assessment, and recommendation models with severity levels, stall classifications, blast radius, risk rating, and cost of inaction
-- **Architecture Documentation**: Comprehensive `docs/ANALYSIS_PIPELINE_ARCHITECTURE.md` with what/how/why, file map, extension guide, and design decisions
-
-### Changed
 
 ### Fixed
 
@@ -1557,5 +1552,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-06-16  
-**Version**: 3.17.250  
+**Version**: 3.17.251  
 **Maintainer:** Cloud Native Assessment Team

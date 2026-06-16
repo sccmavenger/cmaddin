@@ -8,10 +8,10 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.250 |
-| **Last Updated** | 2026-06-08 |
+| **Version** | 3.17.251 |
+| **Last Updated** | 2026-06-16 |
 | **Branch** | main |
-| **Status** | Stable - release pipeline smoke test timeout fix applied |
+| **Status** | Stable - release pipeline now reports live-follow log path and fails fast with actionable GitHub publish errors |
 
 ---
 
@@ -104,6 +104,15 @@ All hidden tabs can be enabled via command-line:
 
 ### Completed
 - Fixed build smoke test hang in `Build-And-Distribute.ps1` by replacing unbounded `Start-Process -Wait` with a 15-second timeout and forced process cleanup.
+
+## Recent Session Summary (2026-06-16)
+
+### Completed
+- Improved `Build-And-Distribute.ps1` release feedback and reliability:
+  - prints a live-tail command for the transcript log at startup.
+  - validates `gh` access to the target repo before commit/tag/publish.
+  - pushes the current branch (instead of hardcoded `main`) during publish.
+  - captures and prints full `gh` error output and exits non-zero on publish failures.
 
 ---
 
