@@ -1429,13 +1429,13 @@ Package Size: $packageSize MB
     Write-Host "[STEP 3/4] Pushing to GitHub..." -ForegroundColor Yellow
     try {
         $env:GIT_TERMINAL_PROMPT = "0"
-        $pushOutput = & git push origin $currentBranch --tags 2>&1
+        $pushOutput = & git push origin $currentBranch "refs/tags/v$newVersion" 2>&1
         $pushExitCode = $LASTEXITCODE
         Remove-Item Env:GIT_TERMINAL_PROMPT -ErrorAction SilentlyContinue
         if ($pushExitCode -ne 0) {
             throw "git push failed (exit code: $pushExitCode)`n$($pushOutput -join "`n")"
         }
-        Write-Host "   ✅ Pushed branch '$currentBranch' and tags" -ForegroundColor Green
+        Write-Host "   ✅ Pushed branch '$currentBranch' and tag 'v$newVersion'" -ForegroundColor Green
     } catch {
         Remove-Item Env:GIT_TERMINAL_PROMPT -ErrorAction SilentlyContinue
         $publishSucceeded = $false

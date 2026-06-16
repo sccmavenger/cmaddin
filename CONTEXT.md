@@ -114,6 +114,7 @@ All hidden tabs can be enabled via command-line:
   - pushes the current branch (instead of hardcoded `main`) during publish.
   - captures and prints full `gh` error output and exits non-zero on publish failures.
   - disables interactive git credential prompts during publish push so credential gaps fail fast instead of hanging builds.
+  - pushes only the current release tag during publish (not all tags) to prevent unrelated remote tag conflicts.
 
 ---
 
