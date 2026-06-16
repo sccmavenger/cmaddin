@@ -10,6 +10,16 @@
 - 
 
 
+## [3.17.252] - 2026-06-16
+
+### Added
+
+### Changed
+
+### Fixed
+- 
+
+
 ## [3.17.251] - 2026-06-16
 
 ### Added
@@ -19,6 +29,7 @@
 ### Fixed
 - `Build-And-Distribute.ps1` now prints an explicit live-log follow command at startup so build progress can be tailed in real time.
 - GitHub release publishing now validates `gh` repository access up front, surfaces full `gh` error output, pushes the current branch (not hardcoded `main`), and exits non-zero when publish fails.
+- Git push in publish mode now runs with terminal prompts disabled so missing credentials fail fast with visible diagnostics instead of hanging.
 
 
 ## [3.17.250] - 2026-06-16

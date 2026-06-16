@@ -1,6 +1,6 @@
 # Cloud Native Assessment
 
-**Version 3.17.251** | June 16, 2026
+**Version 3.17.252** | June 16, 2026
 
 > **📋 Complete Documentation** - This README is the single source of truth for all product information, combining user guide, installation, development, testing, and reference documentation.
 
@@ -266,6 +266,20 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 
 
 
+
+### Version 3.17.251 (June 16, 2026)
+
+### Added
+
+### Changed
+
+### Fixed
+- `Build-And-Distribute.ps1` now prints an explicit live-log follow command at startup so build progress can be tailed in real time.
+- GitHub release publishing now validates `gh` repository access up front, surfaces full `gh` error output, pushes the current branch (not hardcoded `main`), and exits non-zero when publish fails.
+- Git push in publish mode now runs with terminal prompts disabled so missing credentials fail fast with visible diagnostics instead of hanging.
+
+---
+
 ### Version 3.17.250 (June 16, 2026)
 
 ### Added
@@ -319,24 +333,6 @@ C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\
 - Workloads tab auto-shown when `/demostall` is active
 
 ### Changed
-
-### Fixed
-
----
-
-### Version 3.17.235 (March 11, 2026)
-
-### Added
-- **Pipeline UI Integration**: Wired Analysis Pipeline results into all major UI surfaces
-- **Overview tab**: Red severity dot on tab header when enrollment stall detected
-- **Workloads tab**: Red severity dot on tab header + orange stall alert banner + per-workload stall detail cards (name, block reason, adoption %, days stalled)
-- **Enrollment Momentum panel**: Pipeline stall classification badge, cost-of-inaction callout, Trust Reset Batch size indicator
-- **Recommendations window**: New "Pipeline Analysis — Device-Scoped Actions" section with risk-colored cards, effort/impact tags, and highlighted cost-of-inaction
-
-### Changed
-- DashboardViewModel now calls `LoadAnalysisPipelineAsync()` during data load, exposing 12 pipeline properties for XAML binding
-- DashboardWindow.xaml.cs pushes pipeline stall data to EnrollmentMomentumViewModel after real-data refresh
-- EnrollmentMomentumViewModel extended with 5 pipeline properties (HasPipelineStall, PipelineClassification, PipelineCostOfInaction, TrustResetBatchSize, HasTrustResetBatch)
 
 ### Fixed
 
@@ -1552,5 +1548,5 @@ Historical documentation moved to `/documents` folder:
 ---
 
 **Last Updated**: 2026-06-16  
-**Version**: 3.17.251  
+**Version**: 3.17.252  
 **Maintainer:** Cloud Native Assessment Team

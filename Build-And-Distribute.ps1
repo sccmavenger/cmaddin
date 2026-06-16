@@ -1410,8 +1410,8 @@ Package Size: $packageSize MB
     
     Write-Host "[STEP 2/4] Creating git tag..." -ForegroundColor Yellow
     try {
-        $tagExists = git rev-parse --verify "refs/tags/v$newVersion" 2>$null
-        if ($LASTEXITCODE -eq 0 -and $tagExists) {
+        & git rev-parse --verify --quiet "refs/tags/v$newVersion" *> $null
+        if ($LASTEXITCODE -eq 0) {
             Write-Host "   ℹ️ Tag already exists: v$newVersion" -ForegroundColor Gray
         } else {
             & git tag -a "v$newVersion" -m "Version $newVersion"
@@ -1428,60 +1428,70 @@ Package Size: $packageSize MB
     
     Write-Host "[STEP 3/4] Pushing to GitHub..." -ForegroundColor Yellow
     try {
-        & git push origin $currentBranch --tags
-        if ($LASTEXITCODE -ne 0) {
-            throw "git push failed (exit code: $LASTEXITCODE)"
+        $env:GIT_TERMINAL_PROMPT = "0"
+        $pushOutput = & git push origin $currentBranch --tags 2>&1
+        $pushExitCode = $LASTEXITCODE
+        Remove-Item Env:GIT_TERMINAL_PROMPT -ErrorAction SilentlyContinue
+        if ($pushExitCode -ne 0) {
+            throw "git push failed (exit code: $pushExitCode)`n$($pushOutput -join "`n")"
         }
         Write-Host "   ✅ Pushed branch '$currentBranch' and tags" -ForegroundColor Green
     } catch {
+        Remove-Item Env:GIT_TERMINAL_PROMPT -ErrorAction SilentlyContinue
         $publishSucceeded = $false
         Write-Host "   ❌ Push failed: $_" -ForegroundColor Red
     }
     Write-Host ""
     
-    Write-Host "[STEP 4/4] Creating GitHub Release..." -ForegroundColor Yellow
-    try {
-        $releaseArgs = @(
-            "release", "create", "v$newVersion",
-            $packagePath,
-            $manifestPath
-        )
-        
-        # Add MSI to release ONLY if it was freshly built this run
-        if ($msiBuildSuccess -and $msiPath -and (Test-Path $msiPath)) {
-            $releaseArgs += $msiPath
-            Write-Host "   📦 Including MSI installer in release" -ForegroundColor Cyan
-        }
-        
-        $releaseArgs += @(
-            "--title", "Cloud Native Assessment v$newVersion",
-            "--notes-file", $notesFile
-        )
+    if ($publishSucceeded) {
+        Write-Host "[STEP 4/4] Creating GitHub Release..." -ForegroundColor Yellow
+        try {
+            $releaseArgs = @(
+                "release", "create", "v$newVersion",
+                $packagePath,
+                $manifestPath
+            )
+            
+            # Add MSI to release ONLY if it was freshly built this run
+            if ($msiBuildSuccess -and $msiPath -and (Test-Path $msiPath)) {
+                $releaseArgs += $msiPath
+                Write-Host "   📦 Including MSI installer in release" -ForegroundColor Cyan
+            }
+            
+            $releaseArgs += @(
+                "--title", "Cloud Native Assessment v$newVersion",
+                "--notes-file", $notesFile
+            )
 
-        if ($repoSlug) {
-            $releaseArgs += @("--repo", $repoSlug)
-        }
-        
-        $ghOutput = & gh @releaseArgs 2>&1
-        $ghExitCode = $LASTEXITCODE
-        
-        if ($ghExitCode -eq 0) {
-            Write-Host "   ✅ GitHub Release created successfully" -ForegroundColor Green
             if ($repoSlug) {
-                Write-Host "   🔗 https://github.com/$repoSlug/releases/tag/v$newVersion" -ForegroundColor Cyan
+                $releaseArgs += @("--repo", $repoSlug)
             }
-        } else {
+            
+            $ghOutput = & gh @releaseArgs 2>&1
+            $ghExitCode = $LASTEXITCODE
+            
+            if ($ghExitCode -eq 0) {
+                Write-Host "   ✅ GitHub Release created successfully" -ForegroundColor Green
+                if ($repoSlug) {
+                    Write-Host "   🔗 https://github.com/$repoSlug/releases/tag/v$newVersion" -ForegroundColor Cyan
+                }
+            } else {
+                $publishSucceeded = $false
+                Write-Host "   ❌ Release creation failed (exit code: $ghExitCode)" -ForegroundColor Red
+                if ($ghOutput) {
+                    Write-Host "   ℹ️ gh output:" -ForegroundColor Yellow
+                    $ghOutput | ForEach-Object { Write-Host "      $_" -ForegroundColor Gray }
+                }
+            }
+        } catch {
             $publishSucceeded = $false
-            Write-Host "   ❌ Release creation failed (exit code: $ghExitCode)" -ForegroundColor Red
-            if ($ghOutput) {
-                Write-Host "   ℹ️ gh output:" -ForegroundColor Yellow
-                $ghOutput | ForEach-Object { Write-Host "      $_" -ForegroundColor Gray }
-            }
+            Write-Host "   ❌ Release creation failed: $_" -ForegroundColor Red
+        } finally {
+            Remove-Item $notesFile -Force -ErrorAction SilentlyContinue
         }
-    } catch {
-        $publishSucceeded = $false
-        Write-Host "   ❌ Release creation failed: $_" -ForegroundColor Red
-    } finally {
+    } else {
+        Write-Host "[STEP 4/4] Creating GitHub Release..." -ForegroundColor Yellow
+        Write-Host "   ⏭️ Skipped because push failed in step 3" -ForegroundColor Yellow
         Remove-Item $notesFile -Force -ErrorAction SilentlyContinue
     }
     

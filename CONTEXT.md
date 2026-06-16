@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | 3.17.251 |
+| **Version** | 3.17.252 |
 | **Last Updated** | 2026-06-16 |
 | **Branch** | main |
 | **Status** | Stable - release pipeline now reports live-follow log path and fails fast with actionable GitHub publish errors |
@@ -113,6 +113,7 @@ All hidden tabs can be enabled via command-line:
   - validates `gh` access to the target repo before commit/tag/publish.
   - pushes the current branch (instead of hardcoded `main`) during publish.
   - captures and prints full `gh` error output and exits non-zero on publish failures.
+  - disables interactive git credential prompts during publish push so credential gaps fail fast instead of hanging builds.
 
 ---
 
